@@ -3,9 +3,132 @@
 <head>
   <meta charset="UTF-8" />
   <title>Monitoreo CONAP</title>
+
+  <!-- Estilos básicos para que se vea decente -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f7fa;
+    }
+    h1 {
+      margin-bottom: 5px;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    #download-csv {
+      background-color: #1d9bf0;
+      color: white;
+    }
+    #download-xlsx {
+      background-color: #16a34a;
+      color: white;
+    }
+    #tabla {
+      background-color: white;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      padding: 10px;
+    }
+  </style>
+
+  <!-- CSS de Tabulator -->
+  <link href="https://unpkg.com/tabulator-tables@5.6.2/dist/css/tabulator.min.css" rel="stylesheet">
+
 </head>
 <body>
-  <h1>Monitoreo CONAP - Versión de prueba</h1>
-  <p>Si ves esta página en GitHub Pages, todo va bien.</p>
+  <div class="top-bar">
+    <div>
+      <h1>Monitoreo CONAP</h1>
+      <p>Vista de registros (datos reales de datos.csv).</p>
+    </div>
+    <div class="buttons">
+      <button id="download-csv">Descargar CSV</button>
+      <button id="download-xlsx">Descargar Excel</button>
+    </div>
+  </div>
+
+  <div id="tabla"></div>
+
+  <!-- Librerías JS necesarias -->
+  <!-- Tabulator -->
+  <script src="https://unpkg.com/tabulator-tables@5.6.2/dist/js/tabulator.min.js"></script>
+  <!-- PapaParse para leer CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- SheetJS para exportar a XLSX -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // 1. Cargar el archivo CSV
+      fetch("datos.csv")
+        .then(function (response) {
+          return response.text();
+        })
+        .then(function (csvText) {
+          // 2. Parsear el CSV a objetos JS
+          const parsed = Papa.parse(csvText, {
+            header: true,          // usa la primera fila como nombres de columnas
+            skipEmptyLines: true,  // ignora filas vacías
+            delimiter: ";"         // <-- tu CSV usa punto y coma
+          });
+
+          const data = parsed.data;
+
+          if (!data || data.length === 0) {
+            alert("No se encontraron datos en datos.csv");
+            return;
+          }
+
+          // 3. Crear las columnas de Tabulator automáticamente según los encabezados del CSV
+          const columns = Object.keys(data[0]).map(function (field) {
+            return {
+              title: field,           // texto del encabezado
+              field: field,           // nombre de la propiedad en los datos
+              headerFilter: "input"   // cuadro de texto para filtrar por columna
+            };
+          });
+
+          // 4. Inicializar Tabulator
+          const table = new Tabulator("#tabla", {
+            data: data,
+            layout: "fitDataStretch",
+            pagination: "local",
+            paginationSize: 20,
+            paginationSizeSelector: [10, 20, 50, 100],
+            columns: columns,
+            movableColumns: true,
+          });
+
+          // 5. Botones de descarga
+          document.getElementById("download-csv").addEventListener("click", function () {
+            table.download("csv", "monitoreo_conap.csv");
+          });
+
+          document.getElementById("download-xlsx").addEventListener("click", function () {
+            table.download("xlsx", "monitoreo_conap.xlsx", { sheetName: "Datos" });
+          });
+        })
+        .catch(function (error) {
+          console.error("Error cargando datos.csv:", error);
+          alert("No se pudo cargar datos.csv (revisa que esté en el mismo repositorio).");
+        });
+    });
+  </script>
 </body>
 </html>
