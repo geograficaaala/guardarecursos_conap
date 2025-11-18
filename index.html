@@ -47,8 +47,8 @@
     }
   </style>
 
-  <!-- CSS de Tabulator (ahora desde jsDelivr) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tabulator-tables@5.6.2/dist/css/tabulator.min.css">
+  <!-- CSS de Tabulator desde cdnjs -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.1/css/tabulator.min.css">
 </head>
 <body>
   <div class="top-bar">
@@ -65,11 +65,11 @@
   <div id="tabla"></div>
 
   <!-- Librerías JS necesarias -->
-  <!-- Tabulator (desde jsDelivr) -->
-  <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@5.6.2/dist/js/tabulator.min.js"></script>
-  <!-- PapaParse para leer CSV -->
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <!-- SheetJS para exportar a XLSX -->
+  <!-- Tabulator desde cdnjs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.1/js/tabulator.min.js"></script>
+  <!-- PapaParse desde cdnjs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <!-- SheetJS para exportar a XLSX (ya estaba en cdnjs) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <script>
@@ -78,7 +78,7 @@
 
       // Comprobamos que Tabulator cargó
       if (typeof Tabulator === "undefined") {
-        alert("No se pudo cargar la librería Tabulator (revisa conexión a Internet o bloqueos a cdn.jsdelivr.net).");
+        alert("No se pudo cargar la librería Tabulator (revisa conexión a Internet o bloqueos a cdnjs.cloudflare.com).");
         return;
       }
 
