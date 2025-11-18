@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>AC210 Asistencia técnica a viveros - Datos detallados</title>
+
+  <!-- Estilos básicos -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f7fa;
+    }
+    h1 {
+      margin-bottom: 5px;
+    }
+    p {
+      margin-top: 0;
+      color: #555;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    #download-csv {
+      background-color: #1d9bf0;
+      color: white;
+    }
+    #download-xlsx {
+      background-color: #16a34a;
+      color: white;
+    }
+    #tabla {
+      background-color: white;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      padding: 10px;
+      margin-top: 20px;
+    }
+
+    /* Botón para regresar al dashboard */
+    .back-container {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    .back-link {
+      text-decoration: none;
+      font-size: 14px;
+      color: #1d9bf0;
+    }
+  </style>
+
+  <!-- CSS de Tabulator LOCAL -->
+  <link rel="stylesheet" href="tabulator.min.css">
+</head>
+<body>
+  <div class="top-bar">
+    <div>
+      <h1>AC210 Asistencia técnica a viveros</h1>
+      <p>Detalle de registros (tabla basada en base2_datos.csv).</p>
+    </div>
+    <div class="buttons">
+      <button id="download-csv">Descargar CSV</button>
+      <button id="download-xlsx">Descargar Excel</button>
+    </div>
+  </div>
+
+  <div class="back-container">
+    <a href="ac210_dashboard.html" class="back-link">← Volver al dashboard</a>
+  </div>
+
+  <!-- Solo la tabla aquí -->
+  <div id="tabla"></div>
+
+  <!-- Librerías JS necesarias (LOCALES) -->
+  <script src="tabulator.min.js"></script>
+  <script src="papaparse.min.js"></script>
+  <script src="xlsx.full.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      console.log("Página de datos de AC210 cargada, intentando leer ./base2_datos.csv ...");
+
+      if (typeof Tabulator === "undefined") {
+        alert("No se pudo cargar la librería Tabulator desde archivos locales.");
+        return;
+      }
+
+      // OJO: aquí ya usamos base2_datos.csv
+      fetch("./base2_datos.csv", { cache: "no-store" })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status + " " + response.statusText);
+          }
+          return response.text();
+        })
+        .then(function (csvText) {
+          console.log("Contenido bruto de base2_datos.csv (primeros 200 caracteres):");
+          console.log(csvText.slice(0, 200));
+
+          const parsed = Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            delimiter: ";"
+          });
+
+          console.log("Resultado de Papa.parse:", parsed);
+
+          const data = parsed.data;
+
+          if (!data || data.length === 0) {
+            alert("No se encontraron datos en base2_datos.csv (archivo vacío o encabezados incorrectos).");
+            return;
+          }
+
+          // No se oculta ninguna columna: se usan todos los encabezados
+          const columns = Object.keys(data[0]).map(function (field) {
+            return {
+              title: field,
+              field: field,
+              headerFilter: "input"
+            };
+          });
+
+          console.log("Columnas detectadas:", columns);
+
+          const table = new Tabulator("#tabla", {
+            data: data,
+            layout: "fitDataStretch",
+            pagination: "local",
+            paginationSize: 20,
+            paginationSizeSelector: [10, 20, 50, 100],
+            columns: columns,
+            movableColumns: true,
+          });
+
+          document.getElementById("download-csv").addEventListener("click", function () {
+            table.download("csv", "ac210_asistencia_viveros.csv");
+          });
+
+          document.getElementById("download-xlsx").addEventListener("click", function () {
+            table.download("xlsx", "ac210_asistencia_viveros.xlsx", { sheetName: "Datos" });
+          });
+        })
+        .catch(function (error) {
+          console.error("Error cargando base2_datos.csv:", error);
+          alert("Error al cargar base2_datos.csv: " + error);
+        });
+    });
+  </script>
+</body>
+</html>
