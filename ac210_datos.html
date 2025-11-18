@@ -102,7 +102,6 @@
         return;
       }
 
-      // OJO: aquí ya usamos base2_datos.csv
       fetch("./base2_datos.csv", { cache: "no-store" })
         .then(function (response) {
           if (!response.ok) {
