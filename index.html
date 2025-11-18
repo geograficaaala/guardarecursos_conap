@@ -46,10 +46,31 @@
       padding: 10px;
       margin-top: 20px;
     }
-    /* Opcional: separador para la sección del dashboard */
+
+    /* NUEVO: estilos para el dashboard embebido */
     #dashboard {
       margin-top: 20px;
       margin-bottom: 20px;
+    }
+    #dashboard h2 {
+      margin-bottom: 10px;
+    }
+    .embed-container {
+      position: relative;
+      padding-bottom: 65%; /* altura relativa (puedes ajustar) */
+      height: 0;
+      overflow: hidden;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      background: #fff;
+    }
+    .embed-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
     }
   </style>
 
@@ -68,20 +89,19 @@
     </div>
   </div>
 
-  <!-- AQUÍ VA TU DASHBOARD DE LOOKER STUDIO -->
+  <!-- NUEVO: sección del dashboard de Esri -->
   <section id="dashboard">
-    <h2>Dashboard de Solicitudes de Información Pública</h2>
-
-    <div style="position: relative; padding-bottom: 65%; height: 0; overflow: hidden;">
+    <h2>Dashboard geográfico (ArcGIS Experience)</h2>
+    <div class="embed-container">
       <iframe
-        src="https://lookerstudio.google.com/reporting/36ca8fe1-351d-4df4-963a-3036f65153e4"
-        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;"
+        src="https://experience.arcgis.com/experience/f6fc7c0301a6408294ce81e2941a6f99/"
         allowfullscreen
       ></iframe>
     </div>
   </section>
 
-  <!-- Tabla con Tabulator -->
+  <!-- Tabla de datos detallados -->
+  <h2>Detalle de registros (tabla)</h2>
   <div id="tabla"></div>
 
   <!-- Librerías JS necesarias (LOCALES) -->
