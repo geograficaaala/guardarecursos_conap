@@ -49,7 +49,6 @@
 
   <!-- CSS de Tabulator -->
   <link href="https://unpkg.com/tabulator-tables@5.6.2/dist/css/tabulator.min.css" rel="stylesheet">
-
 </head>
 <body>
   <div class="top-bar">
@@ -75,12 +74,20 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+      console.log("Página cargada, intentando leer ./datos.csv ...");
+
       // 1. Cargar el archivo CSV
-      fetch("datos.csv")
+      fetch("./datos.csv", { cache: "no-store" })
         .then(function (response) {
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status + " " + response.statusText);
+          }
           return response.text();
         })
         .then(function (csvText) {
+          console.log("Contenido bruto de datos.csv (primeros 200 caracteres):");
+          console.log(csvText.slice(0, 200));
+
           // 2. Parsear el CSV a objetos JS
           const parsed = Papa.parse(csvText, {
             header: true,          // usa la primera fila como nombres de columnas
@@ -88,10 +95,12 @@
             delimiter: ";"         // <-- tu CSV usa punto y coma
           });
 
+          console.log("Resultado de Papa.parse:", parsed);
+
           const data = parsed.data;
 
           if (!data || data.length === 0) {
-            alert("No se encontraron datos en datos.csv");
+            alert("No se encontraron datos en datos.csv (archivo vacío o encabezados incorrectos).");
             return;
           }
 
@@ -103,6 +112,8 @@
               headerFilter: "input"   // cuadro de texto para filtrar por columna
             };
           });
+
+          console.log("Columnas detectadas:", columns);
 
           // 4. Inicializar Tabulator
           const table = new Tabulator("#tabla", {
@@ -126,7 +137,7 @@
         })
         .catch(function (error) {
           console.error("Error cargando datos.csv:", error);
-          alert("No se pudo cargar datos.csv (revisa que esté en el mismo repositorio).");
+          alert("Error al cargar datos.csv: " + error);
         });
     });
   </script>
