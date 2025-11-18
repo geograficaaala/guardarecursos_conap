@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Monitoreo CONAP - Datos Detallados</title>
+  <title>Patrullajes de control y vigilancia - Datos detallados</title>
 
   <!-- Estilos básicos -->
   <style>
@@ -23,10 +23,13 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 15px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
     .buttons {
       display: flex;
       gap: 10px;
+      flex-wrap: wrap;
     }
     button {
       padding: 8px 14px;
@@ -69,7 +72,7 @@
 <body>
   <div class="top-bar">
     <div>
-      <h1>Monitoreo CONAP</h1>
+      <h1>Patrullajes de control y vigilancia</h1>
       <p>Detalle de registros (tabla basada en datos.csv).</p>
     </div>
     <div class="buttons">
@@ -79,7 +82,7 @@
   </div>
 
   <div class="back-container">
-    <a href="index.html" class="back-link">← Volver al dashboard</a>
+    <a href="patrullajes_dashboard.html" class="back-link">← Volver al dashboard</a>
   </div>
 
   <!-- Solo la tabla aquí -->
@@ -92,7 +95,7 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      console.log("Página de datos cargada, intentando leer ./datos.csv ...");
+      console.log("Página de datos de patrullajes cargada, intentando leer ./datos.csv ...");
 
       if (typeof Tabulator === "undefined") {
         alert("No se pudo cargar la librería Tabulator desde archivos locales.");
@@ -146,11 +149,11 @@
           });
 
           document.getElementById("download-csv").addEventListener("click", function () {
-            table.download("csv", "monitoreo_conap.csv");
+            table.download("csv", "patrullajes_control_vigilancia.csv");
           });
 
           document.getElementById("download-xlsx").addEventListener("click", function () {
-            table.download("xlsx", "monitoreo_conap.xlsx", { sheetName: "Datos" });
+            table.download("xlsx", "patrullajes_control_vigilancia.xlsx", { sheetName: "Datos" });
           });
         })
         .catch(function (error) {
