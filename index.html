@@ -2,68 +2,51 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Monitoreo CONAP</title>
+  <title>Monitoreo CONAP - Dashboard</title>
 
-  <!-- Estilos básicos para que se vea decente -->
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
       background-color: #f5f7fa;
     }
-    h1 {
-      margin-bottom: 5px;
-    }
+
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 15px;
     }
-    .buttons {
-      display: flex;
-      gap: 10px;
-    }
-    button {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    #download-csv {
-      background-color: #1d9bf0;
-      color: white;
-    }
-    #download-xlsx {
-      background-color: #16a34a;
-      color: white;
-    }
-    #tabla {
-      background-color: white;
-      border-radius: 6px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      padding: 10px;
-      margin-top: 20px;
+
+    h1 {
+      margin-bottom: 5px;
     }
 
-    /* NUEVO: estilos para el dashboard embebido */
+    p {
+      margin-top: 0;
+      color: #555;
+    }
+
+    /* Estilos para el dashboard embebido */
     #dashboard {
       margin-top: 20px;
-      margin-bottom: 20px;
+      margin-bottom: 30px;
     }
+
     #dashboard h2 {
       margin-bottom: 10px;
     }
+
     .embed-container {
       position: relative;
-      padding-bottom: 65%; /* altura relativa (puedes ajustar) */
+      padding-bottom: 65%; /* relación de aspecto del iframe */
       height: 0;
       overflow: hidden;
       border-radius: 6px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
       background: #fff;
     }
+
     .embed-container iframe {
       position: absolute;
       top: 0;
@@ -72,24 +55,39 @@
       height: 100%;
       border: 0;
     }
-  </style>
 
-  <!-- CSS de Tabulator LOCAL -->
-  <link rel="stylesheet" href="tabulator.min.css">
+    /* Botón "Explorar información" */
+    .center-button {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      padding: 10px 18px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 14px;
+      background-color: #1d9bf0;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+  </style>
 </head>
 <body>
   <div class="top-bar">
     <div>
       <h1>Monitoreo CONAP</h1>
-      <p>Vista de registros (datos reales de datos.csv).</p>
-    </div>
-    <div class="buttons">
-      <button id="download-csv">Descargar CSV</button>
-      <button id="download-xlsx">Descargar Excel</button>
+      <p>Dashboard geográfico de solicitudes de información pública.</p>
     </div>
   </div>
 
-  <!-- NUEVO: sección del dashboard de Esri -->
+  <!-- Sección del dashboard de Esri -->
   <section id="dashboard">
     <h2>Dashboard geográfico (ArcGIS Experience)</h2>
     <div class="embed-container">
@@ -100,92 +98,10 @@
     </div>
   </section>
 
-  <!-- Tabla de datos detallados -->
-  <h2>Detalle de registros (tabla)</h2>
-  <div id="tabla"></div>
-
-  <!-- Librerías JS necesarias (LOCALES) -->
-  <!-- Tabulator -->
-  <script src="tabulator.min.js"></script>
-  <!-- PapaParse -->
-  <script src="papaparse.min.js"></script>
-  <!-- SheetJS para exportar a XLSX -->
-  <script src="xlsx.full.min.js"></script>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      console.log("Página cargada, intentando leer ./datos.csv ...");
-
-      // Comprobamos que Tabulator cargó
-      if (typeof Tabulator === "undefined") {
-        alert("No se pudo cargar la librería Tabulator desde archivos locales.");
-        return;
-      }
-
-      // 1. Cargar el archivo CSV
-      fetch("./datos.csv", { cache: "no-store" })
-        .then(function (response) {
-          if (!response.ok) {
-            throw new Error("HTTP " + response.status + " " + response.statusText);
-          }
-          return response.text();
-        })
-        .then(function (csvText) {
-          console.log("Contenido bruto de datos.csv (primeros 200 caracteres):");
-          console.log(csvText.slice(0, 200));
-
-          // 2. Parsear el CSV a objetos JS
-          const parsed = Papa.parse(csvText, {
-            header: true,          // usa la primera fila como nombres de columnas
-            skipEmptyLines: true,  // ignora filas vacías
-            delimiter: ";"         // tu CSV usa ;
-          });
-
-          console.log("Resultado de Papa.parse:", parsed);
-
-          const data = parsed.data;
-
-          if (!data || data.length === 0) {
-            alert("No se encontraron datos en datos.csv (archivo vacío o encabezados incorrectos).");
-            return;
-          }
-
-          // 3. Crear las columnas de Tabulator según los encabezados del CSV
-          const columns = Object.keys(data[0]).map(function (field) {
-            return {
-              title: field,
-              field: field,
-              headerFilter: "input"
-            };
-          });
-
-          console.log("Columnas detectadas:", columns);
-
-          // 4. Inicializar Tabulator
-          const table = new Tabulator("#tabla", {
-            data: data,
-            layout: "fitDataStretch",
-            pagination: "local",
-            paginationSize: 20,
-            paginationSizeSelector: [10, 20, 50, 100],
-            columns: columns,
-            movableColumns: true,
-          });
-
-          // 5. Botones de descarga
-          document.getElementById("download-csv").addEventListener("click", function () {
-            table.download("csv", "monitoreo_conap.csv");
-          });
-
-          document.getElementById("download-xlsx").addEventListener("click", function () {
-            table.download("xlsx", "monitoreo_conap.xlsx", { sheetName: "Datos" });
-          });
-        })
-        .catch(function (error) {
-          console.error("Error cargando datos.csv:", error);
-          alert("Error al cargar datos.csv: " + error);
-        });
-    });
-  </script>
+  <div class="center-button">
+    <a href="datos.html" class="btn-primary">
+      Explorar información detallada
+    </a>
+  </div>
 </body>
 </html>
