@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Monitoreo CONAP - Datos detallados</title>
+  <title>Monitoreo CONAP - Datos Detallados</title>
 
   <!-- Estilos básicos -->
   <style>
@@ -13,6 +13,10 @@
     }
     h1 {
       margin-bottom: 5px;
+    }
+    p {
+      margin-top: 0;
+      color: #555;
     }
     .top-bar {
       display: flex;
@@ -47,17 +51,15 @@
       margin-top: 20px;
     }
 
-    /* enlace para volver al dashboard */
+    /* Botón para regresar al dashboard */
+    .back-container {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
     .back-link {
-      margin-bottom: 15px;
-    }
-    .back-link a {
       text-decoration: none;
-      color: #1d9bf0;
       font-size: 14px;
-    }
-    .back-link a:hover {
-      text-decoration: underline;
+      color: #1d9bf0;
     }
   </style>
 
@@ -67,8 +69,8 @@
 <body>
   <div class="top-bar">
     <div>
-      <h1>Monitoreo CONAP - Datos</h1>
-      <p>Vista de registros (datos reales de datos.csv).</p>
+      <h1>Monitoreo CONAP</h1>
+      <p>Detalle de registros (tabla basada en datos.csv).</p>
     </div>
     <div class="buttons">
       <button id="download-csv">Descargar CSV</button>
@@ -76,33 +78,27 @@
     </div>
   </div>
 
-  <div class="back-link">
-    <a href="index.html">&larr; Volver al dashboard</a>
+  <div class="back-container">
+    <a href="index.html" class="back-link">← Volver al dashboard</a>
   </div>
 
-  <!-- Tabla de datos detallados -->
-  <h2>Detalle de registros (tabla)</h2>
+  <!-- Solo la tabla aquí -->
   <div id="tabla"></div>
 
   <!-- Librerías JS necesarias (LOCALES) -->
-  <!-- Tabulator -->
   <script src="tabulator.min.js"></script>
-  <!-- PapaParse -->
   <script src="papaparse.min.js"></script>
-  <!-- SheetJS para exportar a XLSX -->
   <script src="xlsx.full.min.js"></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      console.log("Página cargada, intentando leer ./datos.csv ...");
+      console.log("Página de datos cargada, intentando leer ./datos.csv ...");
 
-      // Comprobamos que Tabulator cargó
       if (typeof Tabulator === "undefined") {
         alert("No se pudo cargar la librería Tabulator desde archivos locales.");
         return;
       }
 
-      // 1. Cargar el archivo CSV
       fetch("./datos.csv", { cache: "no-store" })
         .then(function (response) {
           if (!response.ok) {
@@ -114,11 +110,10 @@
           console.log("Contenido bruto de datos.csv (primeros 200 caracteres):");
           console.log(csvText.slice(0, 200));
 
-          // 2. Parsear el CSV a objetos JS
           const parsed = Papa.parse(csvText, {
-            header: true,          // usa la primera fila como nombres de columnas
-            skipEmptyLines: true,  // ignora filas vacías
-            delimiter: ";"         // tu CSV usa ;
+            header: true,
+            skipEmptyLines: true,
+            delimiter: ";"
           });
 
           console.log("Resultado de Papa.parse:", parsed);
@@ -130,7 +125,6 @@
             return;
           }
 
-          // 3. Crear las columnas de Tabulator según los encabezados del CSV
           const columns = Object.keys(data[0]).map(function (field) {
             return {
               title: field,
@@ -141,7 +135,6 @@
 
           console.log("Columnas detectadas:", columns);
 
-          // 4. Inicializar Tabulator
           const table = new Tabulator("#tabla", {
             data: data,
             layout: "fitDataStretch",
@@ -152,7 +145,6 @@
             movableColumns: true,
           });
 
-          // 5. Botones de descarga
           document.getElementById("download-csv").addEventListener("click", function () {
             table.download("csv", "monitoreo_conap.csv");
           });

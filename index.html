@@ -10,43 +10,31 @@
       margin: 20px;
       background-color: #f5f7fa;
     }
-
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-
     h1 {
       margin-bottom: 5px;
     }
-
     p {
       margin-top: 0;
       color: #555;
     }
 
-    /* Estilos para el dashboard embebido */
+    /* Sección de dashboard */
     #dashboard {
       margin-top: 20px;
       margin-bottom: 30px;
     }
-
     #dashboard h2 {
       margin-bottom: 10px;
     }
-
     .embed-container {
       position: relative;
-      padding-bottom: 65%; /* relación de aspecto del iframe */
+      padding-bottom: 65%;
       height: 0;
       overflow: hidden;
       border-radius: 6px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
       background: #fff;
     }
-
     .embed-container iframe {
       position: absolute;
       top: 0;
@@ -56,38 +44,34 @@
       border: 0;
     }
 
-    /* Botón "Explorar información" */
-    .center-button {
+    /* Botón para ir a la página de datos */
+    .explore-container {
       text-align: center;
-      margin-top: 10px;
+      margin-top: 25px;
     }
-
-    .btn-primary {
+    .explore-button {
       display: inline-block;
-      padding: 10px 18px;
-      border-radius: 4px;
-      text-decoration: none;
-      font-size: 14px;
+      padding: 10px 20px;
       background-color: #1d9bf0;
-      color: white;
-      border: none;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 15px;
+      font-weight: bold;
       cursor: pointer;
     }
-
-    .btn-primary:hover {
-      opacity: 0.9;
+    .explore-button:hover {
+      background-color: #0f80cc;
     }
   </style>
 </head>
 <body>
-  <div class="top-bar">
-    <div>
-      <h1>Monitoreo CONAP</h1>
-      <p>Dashboard geográfico de solicitudes de información pública.</p>
-    </div>
-  </div>
+  <header>
+    <h1>Monitoreo CONAP</h1>
+    <p>Panel geográfico de solicitudes de información pública.</p>
+  </header>
 
-  <!-- Sección del dashboard de Esri -->
+  <!-- Solo el dashboard aquí -->
   <section id="dashboard">
     <h2>Dashboard geográfico (ArcGIS Experience)</h2>
     <div class="embed-container">
@@ -98,9 +82,10 @@
     </div>
   </section>
 
-  <div class="center-button">
-    <a href="datos.html" class="btn-primary">
-      Explorar información detallada
+  <!-- Botón que lleva a la página con la tabla -->
+  <div class="explore-container">
+    <a href="datos.html" class="explore-button">
+      Explorar información
     </a>
   </div>
 </body>
