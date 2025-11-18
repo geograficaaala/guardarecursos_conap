@@ -47,8 +47,8 @@
     }
   </style>
 
-  <!-- CSS de Tabulator -->
-  <link href="https://unpkg.com/tabulator-tables@5.6.2/dist/css/tabulator.min.css" rel="stylesheet">
+  <!-- CSS de Tabulator (ahora desde jsDelivr) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tabulator-tables@5.6.2/dist/css/tabulator.min.css">
 </head>
 <body>
   <div class="top-bar">
@@ -65,8 +65,8 @@
   <div id="tabla"></div>
 
   <!-- Librerías JS necesarias -->
-  <!-- Tabulator -->
-  <script src="https://unpkg.com/tabulator-tables@5.6.2/dist/js/tabulator.min.js"></script>
+  <!-- Tabulator (desde jsDelivr) -->
+  <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@5.6.2/dist/js/tabulator.min.js"></script>
   <!-- PapaParse para leer CSV -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <!-- SheetJS para exportar a XLSX -->
@@ -75,6 +75,12 @@
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       console.log("Página cargada, intentando leer ./datos.csv ...");
+
+      // Comprobamos que Tabulator cargó
+      if (typeof Tabulator === "undefined") {
+        alert("No se pudo cargar la librería Tabulator (revisa conexión a Internet o bloqueos a cdn.jsdelivr.net).");
+        return;
+      }
 
       // 1. Cargar el archivo CSV
       fetch("./datos.csv", { cache: "no-store" })
@@ -92,7 +98,7 @@
           const parsed = Papa.parse(csvText, {
             header: true,          // usa la primera fila como nombres de columnas
             skipEmptyLines: true,  // ignora filas vacías
-            delimiter: ";"         // <-- tu CSV usa punto y coma
+            delimiter: ";"         // tu CSV usa ;
           });
 
           console.log("Resultado de Papa.parse:", parsed);
@@ -104,12 +110,12 @@
             return;
           }
 
-          // 3. Crear las columnas de Tabulator automáticamente según los encabezados del CSV
+          // 3. Crear las columnas de Tabulator según los encabezados del CSV
           const columns = Object.keys(data[0]).map(function (field) {
             return {
-              title: field,           // texto del encabezado
-              field: field,           // nombre de la propiedad en los datos
-              headerFilter: "input"   // cuadro de texto para filtrar por columna
+              title: field,
+              field: field,
+              headerFilter: "input"
             };
           });
 
