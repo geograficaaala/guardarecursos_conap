@@ -47,8 +47,8 @@
     }
   </style>
 
-  <!-- CSS de Tabulator desde cdnjs -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.1/css/tabulator.min.css">
+  <!-- CSS de Tabulator LOCAL -->
+  <link rel="stylesheet" href="tabulator.min.css">
 </head>
 <body>
   <div class="top-bar">
@@ -64,13 +64,13 @@
 
   <div id="tabla"></div>
 
-  <!-- Librerías JS necesarias -->
-  <!-- Tabulator desde cdnjs -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.1/js/tabulator.min.js"></script>
-  <!-- PapaParse desde cdnjs -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <!-- SheetJS para exportar a XLSX (ya estaba en cdnjs) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Librerías JS necesarias (LOCALES) -->
+  <!-- Tabulator -->
+  <script src="tabulator.min.js"></script>
+  <!-- PapaParse -->
+  <script src="papaparse.min.js"></script>
+  <!-- SheetJS para exportar a XLSX -->
+  <script src="xlsx.full.min.js"></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -78,7 +78,7 @@
 
       // Comprobamos que Tabulator cargó
       if (typeof Tabulator === "undefined") {
-        alert("No se pudo cargar la librería Tabulator (revisa conexión a Internet o bloqueos a cdnjs.cloudflare.com).");
+        alert("No se pudo cargar la librería Tabulator desde archivos locales.");
         return;
       }
 
