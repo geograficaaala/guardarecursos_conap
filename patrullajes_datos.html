@@ -148,10 +148,21 @@
   <script src="tabulator.min.js"></script>
   <script src="papaparse.min.js"></script>
   <script src="xlsx.full.min.js"></script>
+  <!-- Librería para generar PDFs en el navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <script>
     // Referencia global a la tabla de Tabulator
     let tablaPatrullajes;
+
+    // Pequeña función para crear nombres de archivo "limpios"
+    function slugify(texto) {
+      return String(texto || "")
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "_")
+        .replace(/[^\w\-]/g, "");
+    }
 
     document.addEventListener("DOMContentLoaded", function () {
       console.log("Página de datos de patrullajes cargada, intentando leer ./datos_patrullaje.csv ...");
@@ -207,7 +218,7 @@
             paginationSizeSelector: [10, 20, 50, 100],
             columns: columns,
             movableColumns: true,
-            selectableRows: 1 // <-- opción correcta en versiones nuevas
+            selectableRows: 1 // permitir seleccionar solo 1 fila
           });
 
           // Botón CSV
@@ -237,15 +248,222 @@
             const registro = seleccionadas[0];
             console.log("Registro seleccionado para el informe:", registro);
 
-            const mensajePrueba =
-              "Registro seleccionado (vista preliminar):\n\n" +
-              Object.entries(registro)
-                .map(([clave, valor]) => clave + ": " + valor)
-                .join("\n");
+            // ====== GENERAR PDF CON jsPDF USANDO LA PLANTILLA NARRATIVA ======
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
 
-            alert(mensajePrueba);
+            const margenIzq = 15;
+            const maxAnchoTexto = 180;
+            let y = 20;
 
-            // 👉 En el siguiente paso reemplazaremos esto por la generación real del PDF.
+            // Helper para añadir párrafos con salto de línea y de página
+            function addParagraph(texto, saltoLinea = 6) {
+              const contenido = String(texto || "").trim();
+              if (!contenido) return;
+              const lineas = doc.splitTextToSize(contenido, maxAnchoTexto);
+              lineas.forEach((linea) => {
+                if (y > 280) {
+                  doc.addPage();
+                  y = 20;
+                }
+                doc.text(linea, margenIzq, y);
+                y += saltoLinea;
+              });
+              y += 2; // un poquito más de espacio entre párrafos
+            }
+
+            // Extraer campos de la fila (tal como vienen en el CSV)
+            const guarda = registro["Guarda recursos responsable"] || "";
+            const municipio = registro["Municipio"] || "";
+            const fechaPatrullajeRaw = registro["Fecha de patrullaje"] || "";
+            const horaInicio = registro["Hora de Inicio del patrullaje"] || "";
+            const horaFin = registro["Hora de finalizacion de patrullaje"] || "";
+            const region = registro["Region"] || "";
+            const ubicacion = registro["Ubicacion"] || "";
+            const areaProtegida = registro["Area protegida"] || "";
+            const tipoPatrullaje = registro["Tipo de patrullaje"] || "";
+            const hayMasInst = (registro["Hay mas instituciones involucradas en el patrullaje"] || "").toString().trim();
+            const institucionesInvolucradas = registro["Instituciones involucradas"] || "";
+            const otraInstitucion = registro["Otra (especifique)"] || "";
+            const actividadIlegal = registro["Actividad ilegal observada"] || "";
+            const fechaCreacion = registro["Fecha de creacion de registro"] || "";
+            const fechaModificacion = registro["Fecha de modificacion de registro"] || "";
+            const coordX = registro["X"] || "";
+            const coordY = registro["Y"] || "";
+
+            // Procesar la fecha de patrullaje para mostrar solo la parte de fecha si viene con hora
+            let fechaPatrullaje = fechaPatrullajeRaw;
+            if (fechaPatrullajeRaw && fechaPatrullajeRaw.toString().includes(" ")) {
+              fechaPatrullaje = fechaPatrullajeRaw.toString().split(" ")[0];
+            }
+
+            // ----- ENCABEZADO -----
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Informe de patrullaje de control y vigilancia", margenIzq, y);
+
+            y += 8;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+            doc.text("Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central", margenIzq, y);
+
+            y += 12;
+
+            // ===== 1. Datos de identificación =====
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("1. Datos de identificación del registro", margenIzq, y);
+            y += 7;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+
+            addParagraph("Guarda recursos responsable: " + (guarda || "(sin nombre reportado)"));
+            addParagraph("Fecha de patrullaje: " + (fechaPatrullaje || "(sin fecha reportada)"));
+            addParagraph("Municipio: " + (municipio || "(sin municipio reportado)"));
+            addParagraph("Región: " + (region || "(sin región reportada)"));
+            addParagraph("Ubicación / sitio: " + (ubicacion || "(sin ubicación reportada)"));
+            addParagraph("Área protegida: " + (areaProtegida || "(sin área protegida reportada)"));
+            addParagraph("Tipo de patrullaje: " + (tipoPatrullaje || "(sin tipo reportado)"));
+            addParagraph(
+              "Horario del patrullaje: " +
+              (horaInicio || "(hora de inicio no registrada)") +
+              " a " +
+              (horaFin || "(hora de finalización no registrada)")
+            );
+
+            y += 4;
+
+            // Separador
+            doc.setDrawColor(150);
+            doc.line(margenIzq, y, 195 - margenIzq, y);
+            y += 8;
+
+            // ===== 2. Descripción del patrullaje (bloque narrativo) =====
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("2. Descripción del patrullaje", margenIzq, y);
+            y += 7;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+
+            const textoDescripcion =
+              "En fecha " + (fechaPatrullaje || "(sin fecha reportada)") + ", el guarda recursos " +
+              (guarda || "(sin nombre reportado)") +
+              " realizó un patrullaje de tipo " + (tipoPatrullaje || "(sin tipo reportado)") +
+              " en el municipio de " + (municipio || "(sin municipio reportado)") +
+              ", región " + (region || "(sin región reportada)") +
+              ", específicamente en " + (ubicacion || "(sin ubicación reportada)") +
+              ", dentro del área protegida " + (areaProtegida || "(sin área protegida reportada)") +
+              ". El patrullaje inició a las " + (horaInicio || "(hora no registrada)") +
+              " y finalizó a las " + (horaFin || "(hora no registrada)") +
+              ", de acuerdo con los lineamientos del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central de CONAP.";
+
+            addParagraph(textoDescripcion);
+
+            y += 2;
+
+            // ===== 3. Participación institucional =====
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("3. Participación institucional", margenIzq, y);
+            y += 7;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+
+            let textoInstituciones = "";
+
+            if (hayMasInst) {
+              const v = hayMasInst.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+              if (v === "si" || v === "sí") {
+                textoInstituciones =
+                  "En este patrullaje participaron además las siguientes instituciones: " +
+                  (institucionesInvolucradas || "(sin detalle reportado)") + ".";
+                if (otraInstitucion) {
+                  textoInstituciones +=
+                    " Otras instituciones reportadas: " + otraInstitucion + ".";
+                }
+              } else {
+                textoInstituciones =
+                  "Durante este patrullaje no se registró la participación de otras instituciones.";
+              }
+            } else {
+              textoInstituciones =
+                "Durante este patrullaje no se registró la participación de otras instituciones.";
+            }
+
+            addParagraph(textoInstituciones);
+
+            y += 2;
+
+            // ===== 4. Actividad ilegal observada =====
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("4. Actividad ilegal observada", margenIzq, y);
+            y += 7;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+
+            let textoActividadIlegal = "";
+
+            if (!actividadIlegal || actividadIlegal.toString().trim().length === 0) {
+              textoActividadIlegal =
+                "No se registró ninguna actividad ilegal durante el patrullaje.";
+            } else {
+              const valAI = actividadIlegal.toString().trim().toLowerCase();
+              if (valAI === "no") {
+                textoActividadIlegal =
+                  "No se registró ninguna actividad ilegal durante el patrullaje.";
+              } else {
+                textoActividadIlegal =
+                  "Se registró la siguiente actividad ilegal durante el patrullaje: " +
+                  actividadIlegal + ".";
+              }
+            }
+
+            addParagraph(textoActividadIlegal);
+
+            y += 2;
+
+            // ===== 5. Ubicación y metadatos =====
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("5. Ubicación y metadatos del registro", margenIzq, y);
+            y += 7;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+
+            addParagraph("Municipio: " + (municipio || "-"));
+            addParagraph("Ubicación / sitio: " + (ubicacion || "-"));
+            addParagraph("Área protegida: " + (areaProtegida || "-"));
+            addParagraph("Coordenadas (X, Y): " + (coordX || "-") + ", " + (coordY || "-"));
+            addParagraph("Fecha de creación del registro: " + (fechaCreacion || "-"));
+            addParagraph("Fecha de última modificación del registro: " + (fechaModificacion || "-"));
+
+            y += 4;
+
+            // Espacio para firmas
+            if (y > 240) {
+              doc.addPage();
+              y = 30;
+            }
+            doc.setFont("helvetica", "bold");
+            doc.text("6. Firmas (para uso institucional)", margenIzq, y);
+            y += 14;
+            doc.setFont("helvetica", "normal");
+
+            doc.text("______________________________", margenIzq, y);
+            doc.text("Guarda recursos / Responsable del registro", margenIzq, y + 6);
+
+            doc.text("______________________________", margenIzq + 90, y);
+            doc.text("Revisión / Supervisión", margenIzq + 90, y + 6);
+
+            // Nombre de archivo amigable
+            const slugGuarda = slugify(guarda || "sin_guardarecurso");
+            const slugFecha = slugify(fechaPatrullaje || "sin_fecha");
+            const nombreArchivo = `informe_patrullaje_${slugGuarda}_${slugFecha}.pdf`;
+
+            // Descargar PDF
+            doc.save(nombreArchivo);
           });
         })
         .catch(function (error) {
