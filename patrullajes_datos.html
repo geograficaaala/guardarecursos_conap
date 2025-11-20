@@ -73,7 +73,7 @@
   <div class="top-bar">
     <div>
       <h1>Patrullajes de control y vigilancia</h1>
-      <p>Detalle de registros (tabla basada en datos.csv).</p>
+      <p>Detalle de registros (tabla basada en datos_patrullaje.csv).</p>
     </div>
     <div class="buttons">
       <button id="download-csv">Descargar CSV</button>
@@ -95,14 +95,15 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      console.log("Página de datos de patrullajes cargada, intentando leer ./datos.csv ...");
+      console.log("Página de datos de patrullajes cargada, intentando leer ./datos_patrullaje.csv ...");
 
       if (typeof Tabulator === "undefined") {
         alert("No se pudo cargar la librería Tabulator desde archivos locales.");
         return;
       }
 
-      fetch("./datos.csv", { cache: "no-store" })
+      // NOMBRE CORRECTO DEL CSV
+      fetch("./datos_patrullaje.csv", { cache: "no-store" })
         .then(function (response) {
           if (!response.ok) {
             throw new Error("HTTP " + response.status + " " + response.statusText);
@@ -110,7 +111,7 @@
           return response.text();
         })
         .then(function (csvText) {
-          console.log("Contenido bruto de datos.csv (primeros 200 caracteres):");
+          console.log("Contenido bruto de datos_patrullaje.csv (primeros 200 caracteres):");
           console.log(csvText.slice(0, 200));
 
           const parsed = Papa.parse(csvText, {
@@ -124,7 +125,7 @@
           const data = parsed.data;
 
           if (!data || data.length === 0) {
-            alert("No se encontraron datos en datos.csv (archivo vacío o encabezados incorrectos).");
+            alert("No se encontraron datos en datos_patrullaje.csv (archivo vacío o encabezados incorrectos).");
             return;
           }
 
@@ -157,8 +158,8 @@
           });
         })
         .catch(function (error) {
-          console.error("Error cargando datos.csv:", error);
-          alert("Error al cargar datos.csv: " + error);
+          console.error("Error cargando datos_patrullaje.csv:", error);
+          alert("Error al cargar datos_patrullaje.csv: " + error);
         });
     });
   </script>
