@@ -2,36 +2,77 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Centro de consulta - Monitoreo CONAP</title>
 
   <style>
+    :root {
+      --verde-header: #0f766e;
+      --azul-boton: #1d9bf0;
+      --azul-boton-hover: #0f80cc;
+      --gris-fondo: #f5f7fa;
+      --texto-principal: #111827;
+      --texto-secundario: #555;
+    }
+
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background-color: #f5f7fa;
+      background-color: var(--gris-fondo);
+      color: var(--texto-principal);
     }
 
+    /* ENCABEZADO INSTITUCIONAL */
     header {
-      background-color: #0f766e;
+      background-color: var(--verde-header);
       color: #fff;
-      padding: 20px;
-      text-align: center;
+      padding: 16px 20px;
     }
 
-    header h1 {
-      margin: 0 0 8px 0;
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .logo-group img {
+      height: 46px;
+      max-width: 140px;
+      object-fit: contain;
+    }
+
+    .title-group {
+      text-align: center;
+      flex: 1 1 260px;
+    }
+
+    .title-group h1 {
+      margin: 0 0 4px 0;
       font-size: 24px;
     }
 
-    header p {
+    .title-group p {
       margin: 0;
-      font-size: 14px;
-      opacity: 0.9;
+      font-size: 13px;
+      opacity: 0.95;
+      line-height: 1.4;
     }
 
+    /* CONTENIDO PRINCIPAL */
     main {
-      max-width: 1000px;
+      max-width: 1100px;
       margin: 30px auto;
       padding: 0 20px 40px 20px;
     }
@@ -41,9 +82,17 @@
       text-align: center;
     }
 
+    .intro h2 {
+      margin: 0 0 8px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--texto-principal);
+    }
+
     .intro p {
-      margin: 5px 0;
-      color: #555;
+      margin: 3px 0;
+      color: var(--texto-secundario);
+      font-size: 14px;
     }
 
     /* Tarjetas de menú */
@@ -55,32 +104,54 @@
 
     .card {
       background-color: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      padding: 16px 18px;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 16px 18px 18px 18px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      border-top: 3px solid transparent;
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .card-icon {
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .card-badge {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--verde-header);
+      font-weight: 600;
+      margin-bottom: 3px;
     }
 
     .card h2 {
-      margin-top: 0;
-      margin-bottom: 8px;
-      font-size: 18px;
-      color: #111827;
+      margin: 0;
+      font-size: 17px;
+      color: var(--texto-principal);
     }
 
     .card p {
-      margin-top: 0;
+      margin-top: 10px;
       margin-bottom: 16px;
       font-size: 14px;
-      color: #555;
+      color: var(--texto-secundario);
+      line-height: 1.45;
     }
 
     .card a {
       display: inline-block;
       padding: 8px 14px;
-      background-color: #1d9bf0;
+      background-color: var(--azul-boton);
       color: #fff;
       text-decoration: none;
       border-radius: 4px;
@@ -89,76 +160,148 @@
       text-align: center;
     }
 
-    .card a:hover {
-      background-color: #0f80cc;
+    .card a span {
+      margin-left: 4px;
+      font-size: 13px;
     }
+
+    .card a:hover {
+      background-color: var(--azul-boton-hover);
+    }
+
+    /* Colores de borde por módulo */
+    .card-patrullajes { border-top-color: #2563eb; }
+    .card-ac210       { border-top-color: #16a34a; }
+    .card-ac297       { border-top-color: #f97316; }
+    .card-ac282       { border-top-color: #6366f1; }
 
     footer {
       text-align: center;
       font-size: 12px;
       color: #777;
-      padding-bottom: 15px;
+      padding: 10px 20px 18px 20px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    footer p {
+      margin: 3px 0;
+    }
+
+    /* Ajustes en pantallas pequeñas */
+    @media (max-width: 600px) {
+      .header-inner {
+        justify-content: center;
+      }
+      .logo-group {
+        justify-content: center;
+      }
+      .title-group h1 {
+        font-size: 20px;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Centro de consulta de datos</h1>
-    <p>Sistema de monitoreo de actividades CONAP-DIRECCIÓN REGIONAL ALTIPLANO CENTRAL</p>
+    <div class="header-inner">
+      <div class="logo-group">
+        <!-- Logos en la raíz del repositorio -->
+        <img src="conap_logo.jpg" alt="Logo CONAP">
+        <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
+      </div>
+      <div class="title-group">
+        <h1>Centro de consulta de datos</h1>
+        <p>Sistema de monitoreo de actividades</p>
+        <p>CONAP-DIRECCIÓN REGIONAL ALTIPLANO CENTRAL</p>
+      </div>
+    </div>
   </header>
 
   <main>
     <section class="intro">
-      <p>¿Qué base de datos le gustaría explorar?</p>
-      <p>Seleccione una opción para ver su panel geográfico y la tabla de registros detallados.</p>
+      <h2>Seleccione el módulo que desea explorar</h2>
+      <p>Cada módulo le permite consultar el panel geográfico y la tabla de registros detallados.</p>
+      <p>Puede aplicar filtros y descargar los datos en formatos CSV, Excel o reporte PDF.</p>
     </section>
 
     <section class="card-grid">
       <!-- Tarjeta 1: Patrullajes -->
-      <article class="card">
-        <h2>Patrullajes de guardarecursos</h2>
+      <article class="card card-patrullajes">
+        <div class="card-header-row">
+          <div class="card-icon">🛡️</div>
+          <div>
+            <div class="card-badge">Patrullajes</div>
+            <h2>Patrullajes de guardarecursos</h2>
+          </div>
+        </div>
         <p>
           Acceda al dashboard de patrullajes y a la tabla dinámica con filtros y
-          opciones de descarga de los registros de patrullaje.
+          opciones de descarga de los registros de patrullaje de control y vigilancia.
         </p>
-        <a href="patrullajes_dashboard.html">Abrir módulo de patrullajes</a>
+        <a href="patrullajes_dashboard.html">
+          Abrir módulo de patrullajes <span>↗</span>
+        </a>
       </article>
 
       <!-- Tarjeta 2: AC210 -->
-      <article class="card">
-        <h2>AC210 Asistencia técnica a viveros</h2>
+      <article class="card card-ac210">
+        <div class="card-header-row">
+          <div class="card-icon">🌱</div>
+          <div>
+            <div class="card-badge">AC210</div>
+            <h2>AC210 Asistencia técnica a viveros</h2>
+          </div>
+        </div>
         <p>
           Consulte el panel y los datos detallados de las asistencias técnicas
           brindadas a viveros en el marco del sistema de monitoreo.
         </p>
-        <a href="ac210_dashboard.html">Abrir módulo AC210</a>
+        <a href="ac210_dashboard.html">
+          Abrir módulo AC210 <span>↗</span>
+        </a>
       </article>
 
       <!-- Tarjeta 3: AC297 -->
-      <article class="card">
-        <h2>AC297 Consumo forestal familiar</h2>
+      <article class="card card-ac297">
+        <div class="card-header-row">
+          <div class="card-icon">🏠</div>
+          <div>
+            <div class="card-badge">AC297</div>
+            <h2>AC297 Consumo forestal familiar</h2>
+          </div>
+        </div>
         <p>
           Acceda al panel geográfico y a la tabla dinámica correspondiente
           al formulario AC297 de consumo forestal familiar.
         </p>
-        <a href="base3_dashboard.html">Abrir módulo AC297</a>
+        <a href="base3_dashboard.html">
+          Abrir módulo AC297 <span>↗</span>
+        </a>
       </article>
 
       <!-- Tarjeta 4: AC 282 -->
-      <article class="card">
-        <h2>AC 282 Asistencia técnica o monitoreo a reforestaciones por compromiso de consumo forestal familiar</h2>
+      <article class="card card-ac282">
+        <div class="card-header-row">
+          <div class="card-icon">🌳</div>
+          <div>
+            <div class="card-badge">AC 282</div>
+            <h2>AC 282 Asistencia técnica o monitoreo a reforestaciones por compromiso de consumo forestal familiar</h2>
+          </div>
+        </div>
         <p>
           Acceda al panel geográfico compartido y a la tabla dinámica
           correspondiente al formulario AC 282 de asistencia técnica o monitoreo
           a reforestaciones por compromiso de consumo forestal familiar.
         </p>
-        <a href="base4_dashboard.html">Abrir módulo AC 282</a>
+        <a href="base4_dashboard.html">
+          Abrir módulo AC 282 <span>↗</span>
+        </a>
       </article>
     </section>
   </main>
 
   <footer>
-    &copy; 2025 LABORATORIO SIG AALA EN APOYO A CONAP- DIRECCIÓN REGIONAL ALTIPLANO CENTRAL 
+    <p>© 2025 LABORATORIO SIG AALA EN APOYO A CONAP – DIRECCIÓN REGIONAL ALTIPLANO CENTRAL</p>
   </footer>
 </body>
 </html>
