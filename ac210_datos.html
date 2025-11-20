@@ -78,6 +78,11 @@
       background-color: #16a34a;
       color: white;
     }
+    /* Nuevo botón para informe */
+    #generate-report {
+      background-color: #f97316;
+      color: white;
+    }
 
     #tabla {
       background-color: white;
@@ -86,6 +91,11 @@
       padding: 10px;
       margin-top: 20px;
       overflow-x: auto; /* Mejor en pantallas pequeñas */
+    }
+
+    /* Estilo visible para la fila seleccionada de Tabulator */
+    .tabulator-row.tabulator-selected {
+      background-color: #bfdbfe !important; /* azul clarito */
     }
 
     /* Botón para regresar al dashboard */
@@ -125,6 +135,8 @@
       <div class="buttons">
         <button id="download-csv">Descargar CSV</button>
         <button id="download-xlsx">Descargar Excel</button>
+        <!-- Nuevo botón para informe -->
+        <button id="generate-report">Generar informe del registro seleccionado</button>
       </div>
     </div>
 
@@ -140,8 +152,50 @@
   <script src="tabulator.min.js"></script>
   <script src="papaparse.min.js"></script>
   <script src="xlsx.full.min.js"></script>
+  <!-- Librería para generar PDFs en el navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <script>
+    // Referencia global a la tabla de Tabulator
+    let tablaAC210;
+
+    // Función para nombre de archivo "limpio"
+    function slugify(texto) {
+      return String(texto || "")
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "_")
+        .replace(/[^\w\-]/g, "");
+    }
+
+    // Normalizar nombres de campos
+    function normalizarNombreCampo(nombre) {
+      return nombre
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    }
+
+    // Buscar un campo que contenga todas las palabras clave
+    function buscarCampo(registro, palabrasClave) {
+      const keys = Object.keys(registro || {});
+      for (const key of keys) {
+        const normKey = normalizarNombreCampo(key);
+        let coincide = true;
+        for (const palabra of palabrasClave) {
+          const normPal = normalizarNombreCampo(palabra);
+          if (!normKey.includes(normPal)) {
+            coincide = false;
+            break;
+          }
+        }
+        if (coincide) {
+          return { campo: key, valor: registro[key] };
+        }
+      }
+      return { campo: "", valor: "" };
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
       console.log("Página de datos de AC210 cargada, intentando leer ./base2_datos.csv ...");
 
@@ -187,7 +241,7 @@
 
           console.log("Columnas detectadas:", columns);
 
-          const table = new Tabulator("#tabla", {
+          tablaAC210 = new Tabulator("#tabla", {
             data: data,
             layout: "fitDataStretch",
             pagination: "local",
@@ -195,14 +249,194 @@
             paginationSizeSelector: [10, 20, 50, 100],
             columns: columns,
             movableColumns: true,
+            selectableRows: 1 // solo una fila seleccionada
           });
 
           document.getElementById("download-csv").addEventListener("click", function () {
-            table.download("csv", "ac210_asistencia_viveros.csv");
+            tablaAC210.download("csv", "ac210_asistencia_viveros.csv");
           });
 
           document.getElementById("download-xlsx").addEventListener("click", function () {
-            table.download("xlsx", "ac210_asistencia_viveros.xlsx", { sheetName: "Datos" });
+            tablaAC210.download("xlsx", "ac210_asistencia_viveros.xlsx", { sheetName: "Datos" });
+          });
+
+          // Botón generar informe
+          document.getElementById("generate-report").addEventListener("click", function () {
+            if (!tablaAC210) {
+              alert("La tabla aún no está lista.");
+              return;
+            }
+
+            const seleccionadas = tablaAC210.getSelectedData();
+            if (!seleccionadas || seleccionadas.length === 0) {
+              alert("Por favor, seleccione un registro en la tabla antes de generar el informe.");
+              return;
+            }
+
+            const registro = seleccionadas[0];
+            console.log("Registro AC210 seleccionado para el informe:", registro);
+
+            // ====== GENERAR PDF CON jsPDF ======
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const margenIzq = 15;
+            const maxAnchoTexto = 180;
+            let y = 20;
+
+            // Helper para añadir párrafos
+            function addParagraph(texto, saltoLinea = 6) {
+              const contenido = String(texto || "").trim();
+              if (!contenido) return;
+              const lineas = doc.splitTextToSize(contenido, maxAnchoTexto);
+              lineas.forEach((linea) => {
+                if (y > 280) {
+                  doc.addPage();
+                  y = 20;
+                }
+                doc.text(linea, margenIzq, y);
+                y += saltoLinea;
+              });
+              y += 2;
+            }
+
+            // Intentamos detectar campos clave según su nombre
+            const { valor: nombreVivero } = buscarCampo(registro, ["vivero"]);
+            const { valor: tecnico }     = buscarCampo(registro, ["tecnico"]); // técnico
+            const { valor: municipio }   = buscarCampo(registro, ["municipio"]);
+            const { valor: fechaVisitaEspecifica } = buscarCampo(registro, ["fecha", "visita"]);
+            const { valor: fechaGenerica }         = buscarCampo(registro, ["fecha"]);
+            const { valor: depto }       = buscarCampo(registro, ["departamento"]);
+            const { valor: fechaCreacion }      = buscarCampo(registro, ["creacion"]);
+            const { valor: fechaModificacion }  = buscarCampo(registro, ["modificacion"]);
+
+            const fechaReferencia = fechaVisitaEspecifica || fechaGenerica || "";
+
+            // ----- ENCABEZADO -----
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Informe de asistencia técnica a viveros (AC210)", margenIzq, y);
+
+            y += 8;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+            doc.text("Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central", margenIzq, y);
+
+            y += 12;
+
+            // ===== 1. Datos básicos del registro =====
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("1. Datos básicos del registro", margenIzq, y);
+            y += 7;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+
+            addParagraph("Nombre del vivero: " + (nombreVivero || "(sin nombre de vivero reportado)"));
+            addParagraph("Técnico responsable / persona que brinda la asistencia: " + (tecnico || "(sin técnico responsable reportado)"));
+            addParagraph("Fecha de la atención / visita: " + (fechaReferencia || "(sin fecha de visita reportada)"));
+            addParagraph("Departamento: " + (depto || "(sin departamento reportado)"));
+            addParagraph("Municipio: " + (municipio || "(sin municipio reportado)"));
+
+            y += 4;
+
+            // Separador
+            doc.setDrawColor(150);
+            doc.line(margenIzq, y, 195 - margenIzq, y);
+            y += 8;
+
+            // ===== 2. Descripción de la asistencia técnica (bloque narrativo) =====
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("2. Descripción de la asistencia técnica", margenIzq, y);
+            y += 7;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+
+            const textoDescripcion =
+              "Este informe corresponde a un registro del formulario AC210 de asistencia técnica a viveros. " +
+              "La atención se realizó el " + (fechaReferencia || "(sin fecha de visita reportada)") +
+              " en el vivero " + (nombreVivero || "(sin nombre de vivero reportado)") +
+              ", ubicado en el municipio de " + (municipio || "(sin municipio reportado)") +
+              (depto ? ", departamento de " + depto : "") +
+              ". La asistencia fue brindada por " + (tecnico || "(sin técnico responsable reportado)") +
+              ", en el marco del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central de CONAP.";
+
+            addParagraph(textoDescripcion);
+
+            y += 2;
+
+            // ===== 3. Detalle de las variables registradas =====
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("3. Detalle de las variables registradas", margenIzq, y);
+            y += 7;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+
+            const entries = Object.entries(registro || {});
+            entries.forEach(([campo, valor]) => {
+              const textoCampo = campo + ": " + String(valor);
+              const lineas = doc.splitTextToSize(textoCampo, maxAnchoTexto);
+              lineas.forEach((linea) => {
+                if (y > 280) {
+                  doc.addPage();
+                  y = 20;
+                }
+                doc.text(linea, margenIzq, y);
+                y += 6;
+              });
+              y += 2;
+            });
+
+            y += 4;
+
+            // Separador
+            if (y > 260) {
+              doc.addPage();
+              y = 20;
+            }
+            doc.setDrawColor(150);
+            doc.line(margenIzq, y, 195 - margenIzq, y);
+            y += 8;
+
+            // ===== 4. Metadatos del formulario =====
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("4. Metadatos del formulario", margenIzq, y);
+            y += 7;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+
+            addParagraph("Fecha de creación del registro: " + (fechaCreacion || "(no especificada)"));
+            addParagraph("Fecha de última modificación del registro: " + (fechaModificacion || "(no especificada)"));
+
+            y += 4;
+
+            // Espacio para firmas
+            if (y > 240) {
+              doc.addPage();
+              y = 30;
+            }
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("5. Firmas (para uso institucional)", margenIzq, y);
+            y += 14;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+
+            doc.text("______________________________", margenIzq, y);
+            doc.text("Responsable de la asistencia / técnico", margenIzq, y + 6);
+
+            doc.text("______________________________", margenIzq + 90, y);
+            doc.text("Revisión / Supervisión", margenIzq + 90, y + 6);
+
+            // Nombre de archivo
+            const slugVivero = slugify(nombreVivero || "sin_vivero");
+            const slugFecha  = slugify(fechaReferencia || "sin_fecha");
+            const nombreArchivo = `informe_ac210_${slugVivero}_${slugFecha}.pdf`;
+
+            doc.save(nombreArchivo);
           });
         })
         .catch(function (error) {
