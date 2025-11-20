@@ -4,20 +4,46 @@
   <meta charset="UTF-8" />
   <title>AC210 Asistencia técnica a viveros - Datos detallados</title>
 
-  <!-- Estilos básicos -->
+  <!-- Estilos -->
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
+      margin: 0;
       background-color: #f5f7fa;
     }
-    h1 {
+
+    /* Header general del sitio */
+    .header-bar {
+      background-color: #0f766e;
+      color: #fff;
+      padding: 16px 20px;
+      text-align: center;
+    }
+    .header-bar h1 {
+      margin: 0 0 4px 0;
+      font-size: 22px;
+    }
+    .header-bar p {
+      margin: 0;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    /* Contenedor principal */
+    .main-container {
+      max-width: 1100px;
+      margin: 24px auto 40px auto;
+      padding: 0 16px;
+    }
+
+    h2 {
       margin-bottom: 5px;
     }
     p {
       margin-top: 0;
       color: #555;
     }
+
     .top-bar {
       display: flex;
       justify-content: space-between;
@@ -26,11 +52,13 @@
       gap: 10px;
       flex-wrap: wrap;
     }
+
     .buttons {
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
     }
+
     button {
       padding: 8px 14px;
       border: none;
@@ -38,6 +66,10 @@
       cursor: pointer;
       font-size: 14px;
     }
+    button:hover {
+      filter: brightness(0.95);
+    }
+
     #download-csv {
       background-color: #1d9bf0;
       color: white;
@@ -46,12 +78,14 @@
       background-color: #16a34a;
       color: white;
     }
+
     #tabla {
       background-color: white;
       border-radius: 6px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
       padding: 10px;
       margin-top: 20px;
+      overflow-x: auto; /* Mejor en pantallas pequeñas */
     }
 
     /* Botón para regresar al dashboard */
@@ -60,9 +94,16 @@
       margin-bottom: 10px;
     }
     .back-link {
-      text-decoration: none;
-      font-size: 14px;
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: 1px solid #1d9bf0;
       color: #1d9bf0;
+      font-size: 14px;
+      text-decoration: none;
+    }
+    .back-link:hover {
+      background-color: #e0f2ff;
     }
   </style>
 
@@ -70,23 +111,30 @@
   <link rel="stylesheet" href="tabulator.min.css">
 </head>
 <body>
-  <div class="top-bar">
-    <div>
-      <h1>AC210 Asistencia técnica a viveros</h1>
-      <p>Detalle de registros (tabla basada en base2_datos.csv).</p>
-    </div>
-    <div class="buttons">
-      <button id="download-csv">Descargar CSV</button>
-      <button id="download-xlsx">Descargar Excel</button>
-    </div>
-  </div>
+  <header class="header-bar">
+    <h1>Centro de consulta de datos</h1>
+    <p>Sistema de monitoreo de actividades CONAP-DIRECCIÓN REGIONAL ALTIPLANO CENTRAL</p>
+  </header>
 
-  <div class="back-container">
-    <a href="ac210_dashboard.html" class="back-link">← Volver al dashboard</a>
-  </div>
+  <main class="main-container">
+    <div class="top-bar">
+      <div>
+        <h2>AC210 Asistencia técnica a viveros</h2>
+        <p>Detalle de registros (tabla basada en base2_datos.csv).</p>
+      </div>
+      <div class="buttons">
+        <button id="download-csv">Descargar CSV</button>
+        <button id="download-xlsx">Descargar Excel</button>
+      </div>
+    </div>
 
-  <!-- Solo la tabla aquí -->
-  <div id="tabla"></div>
+    <div class="back-container">
+      <a href="ac210_dashboard.html" class="back-link">← Volver al dashboard</a>
+    </div>
+
+    <!-- Solo la tabla aquí -->
+    <div id="tabla"></div>
+  </main>
 
   <!-- Librerías JS necesarias (LOCALES) -->
   <script src="tabulator.min.js"></script>
