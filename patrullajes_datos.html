@@ -91,6 +91,11 @@
       overflow-x: auto;
     }
 
+    /* Estilo visible para la fila seleccionada de Tabulator */
+    .tabulator-row.tabulator-selected {
+      background-color: #bfdbfe !important; /* azul clarito */
+    }
+
     .back-container {
       margin-top: 10px;
       margin-bottom: 10px;
@@ -202,7 +207,7 @@
             paginationSizeSelector: [10, 20, 50, 100],
             columns: columns,
             movableColumns: true,
-            selectable: 1 // permitir seleccionar solo 1 fila
+            selectableRows: 1 // <-- opción correcta en versiones nuevas
           });
 
           // Botón CSV
@@ -232,7 +237,6 @@
             const registro = seleccionadas[0];
             console.log("Registro seleccionado para el informe:", registro);
 
-            // Vista preliminar: mostramos todos los campos del registro en un alert
             const mensajePrueba =
               "Registro seleccionado (vista preliminar):\n\n" +
               Object.entries(registro)
