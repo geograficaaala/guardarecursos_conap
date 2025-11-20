@@ -76,6 +76,11 @@
       background-color: #16a34a;
       color: white;
     }
+    /* Nuevo botón para informe */
+    #generate-report {
+      background-color: #f97316;
+      color: white;
+    }
 
     #tabla {
       background-color: white;
@@ -122,6 +127,8 @@
       <div class="buttons">
         <button id="download-csv">Descargar CSV</button>
         <button id="download-xlsx">Descargar Excel</button>
+        <!-- Nuevo botón para informe -->
+        <button id="generate-report">Generar informe del registro seleccionado</button>
       </div>
     </div>
 
@@ -138,6 +145,9 @@
   <script src="xlsx.full.min.js"></script>
 
   <script>
+    // Referencia global a la tabla de Tabulator
+    let tablaPatrullajes;
+
     document.addEventListener("DOMContentLoaded", function () {
       console.log("Página de datos de patrullajes cargada, intentando leer ./datos_patrullaje.csv ...");
 
@@ -183,7 +193,8 @@
 
           console.log("Columnas detectadas:", columns);
 
-          const table = new Tabulator("#tabla", {
+          // Crear tabla y guardar referencia global
+          tablaPatrullajes = new Tabulator("#tabla", {
             data: data,
             layout: "fitDataStretch",
             pagination: "local",
@@ -191,14 +202,46 @@
             paginationSizeSelector: [10, 20, 50, 100],
             columns: columns,
             movableColumns: true,
+            selectable: 1 // permitir seleccionar solo 1 fila
           });
 
+          // Botón CSV
           document.getElementById("download-csv").addEventListener("click", function () {
-            table.download("csv", "patrullajes_control_vigilancia.csv");
+            tablaPatrullajes.download("csv", "patrullajes_control_vigilancia.csv");
           });
 
+          // Botón Excel
           document.getElementById("download-xlsx").addEventListener("click", function () {
-            table.download("xlsx", "patrullajes_control_vigilancia.xlsx", { sheetName: "Datos" });
+            tablaPatrullajes.download("xlsx", "patrullajes_control_vigilancia.xlsx", { sheetName: "Datos" });
+          });
+
+          // Botón Generar informe
+          document.getElementById("generate-report").addEventListener("click", function () {
+            if (!tablaPatrullajes) {
+              alert("La tabla aún no está lista.");
+              return;
+            }
+
+            const seleccionadas = tablaPatrullajes.getSelectedData();
+
+            if (!seleccionadas || seleccionadas.length === 0) {
+              alert("Por favor, seleccione un registro en la tabla antes de generar el informe.");
+              return;
+            }
+
+            const registro = seleccionadas[0];
+            console.log("Registro seleccionado para el informe:", registro);
+
+            // Vista preliminar: mostramos todos los campos del registro en un alert
+            const mensajePrueba =
+              "Registro seleccionado (vista preliminar):\n\n" +
+              Object.entries(registro)
+                .map(([clave, valor]) => clave + ": " + valor)
+                .join("\n");
+
+            alert(mensajePrueba);
+
+            // 👉 En el siguiente paso reemplazaremos esto por la generación real del PDF.
           });
         })
         .catch(function (error) {
