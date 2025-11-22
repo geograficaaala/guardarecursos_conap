@@ -148,8 +148,6 @@
   <script src="tabulator.min.js"></script>
   <script src="papaparse.min.js"></script>
   <script src="xlsx.full.min.js"></script>
-  <!-- Librería para generar PDFs en el navegador -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <script>
     // Referencia global a la tabla de Tabulator
@@ -162,6 +160,40 @@
         .trim()
         .replace(/\s+/g, "_")
         .replace(/[^\w\-]/g, "");
+    }
+
+    // Escapar HTML básico
+    function escapeHtml(texto) {
+      return String(texto || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    // Crear y descargar un .doc que Word pueda abrir
+    function crearDocumentoWord(nombreArchivo, contenidoHTML) {
+      const header =
+        "<html xmlns:o='urn:schemas-microsoft-com:office:office' " +
+        "xmlns:w='urn:schemas-microsoft-com:office:word' " +
+        "xmlns='http://www.w3.org/TR/REC-html40'>" +
+        "<head><meta charset='utf-8'><title>Informe</title></head><body>";
+      const footer = "</body></html>";
+      const source = header + contenidoHTML + footer;
+
+      const blob = new Blob(["\ufeff", source], {
+        type: "application/msword"
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = nombreArchivo.endsWith(".doc") ? nombreArchivo : nombreArchivo + ".doc";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -231,7 +263,7 @@
             tablaPatrullajes.download("xlsx", "patrullajes_control_vigilancia.xlsx", { sheetName: "Datos" });
           });
 
-          // Botón Generar informe
+          // Botón Generar informe (Word)
           document.getElementById("generate-report").addEventListener("click", function () {
             if (!tablaPatrullajes) {
               alert("La tabla aún no está lista.");
@@ -247,30 +279,6 @@
 
             const registro = seleccionadas[0];
             console.log("Registro seleccionado para el informe:", registro);
-
-            // ====== GENERAR PDF CON jsPDF USANDO LA PLANTILLA NARRATIVA ======
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
-            const margenIzq = 15;
-            const maxAnchoTexto = 180;
-            let y = 20;
-
-            // Helper para añadir párrafos con salto de línea y de página
-            function addParagraph(texto, saltoLinea = 6) {
-              const contenido = String(texto || "").trim();
-              if (!contenido) return;
-              const lineas = doc.splitTextToSize(contenido, maxAnchoTexto);
-              lineas.forEach((linea) => {
-                if (y > 280) {
-                  doc.addPage();
-                  y = 20;
-                }
-                doc.text(linea, margenIzq, y);
-                y += saltoLinea;
-              });
-              y += 2; // un poquito más de espacio entre párrafos
-            }
 
             // Extraer campos de la fila (tal como vienen en el CSV)
             const guarda = registro["Guarda recursos responsable"] || "";
@@ -297,55 +305,7 @@
               fechaPatrullaje = fechaPatrullajeRaw.toString().split(" ")[0];
             }
 
-            // ----- ENCABEZADO -----
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(16);
-            doc.text("Informe de patrullaje de control y vigilancia", margenIzq, y);
-
-            y += 8;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-            doc.text("Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central", margenIzq, y);
-
-            y += 12;
-
-            // ===== 1. Datos de identificación =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("1. Datos de identificación del registro", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-
-            addParagraph("Guarda recursos responsable: " + (guarda || "(sin nombre reportado)"));
-            addParagraph("Fecha de patrullaje: " + (fechaPatrullaje || "(sin fecha reportada)"));
-            addParagraph("Municipio: " + (municipio || "(sin municipio reportado)"));
-            addParagraph("Región: " + (region || "(sin región reportada)"));
-            addParagraph("Ubicación / sitio: " + (ubicacion || "(sin ubicación reportada)"));
-            addParagraph("Área protegida: " + (areaProtegida || "(sin área protegida reportada)"));
-            addParagraph("Tipo de patrullaje: " + (tipoPatrullaje || "(sin tipo reportado)"));
-            addParagraph(
-              "Horario del patrullaje: " +
-              (horaInicio || "(hora de inicio no registrada)") +
-              " a " +
-              (horaFin || "(hora de finalización no registrada)")
-            );
-
-            y += 4;
-
-            // Separador
-            doc.setDrawColor(150);
-            doc.line(margenIzq, y, 195 - margenIzq, y);
-            y += 8;
-
-            // ===== 2. Descripción del patrullaje (bloque narrativo) =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("2. Descripción del patrullaje", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-
+            // --- Texto narrativo (igual que el PDF) ---
             const textoDescripcion =
               "En fecha " + (fechaPatrullaje || "(sin fecha reportada)") + ", el guarda recursos " +
               (guarda || "(sin nombre reportado)") +
@@ -358,20 +318,7 @@
               " y finalizó a las " + (horaFin || "(hora no registrada)") +
               ", de acuerdo con los lineamientos del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central de CONAP.";
 
-            addParagraph(textoDescripcion);
-
-            y += 2;
-
-            // ===== 3. Participación institucional =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("3. Participación institucional", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-
             let textoInstituciones = "";
-
             if (hayMasInst) {
               const v = hayMasInst.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
               if (v === "si" || v === "sí") {
@@ -391,20 +338,7 @@
                 "Durante este patrullaje no se registró la participación de otras instituciones.";
             }
 
-            addParagraph(textoInstituciones);
-
-            y += 2;
-
-            // ===== 4. Actividad ilegal observada =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("4. Actividad ilegal observada", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-
             let textoActividadIlegal = "";
-
             if (!actividadIlegal || actividadIlegal.toString().trim().length === 0) {
               textoActividadIlegal =
                 "No se registró ninguna actividad ilegal durante el patrullaje.";
@@ -420,50 +354,53 @@
               }
             }
 
-            addParagraph(textoActividadIlegal);
+            // --- Construir HTML del informe ---
+            const html =
+              "<h1 style='text-align:center;'>Informe de patrullaje de control y vigilancia</h1>" +
+              "<p style='text-align:center;'>Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central</p>" +
+              "<hr />" +
 
-            y += 2;
+              "<h2>1. Datos de identificación del registro</h2>" +
+              "<p><strong>Guarda recursos responsable:</strong> " + escapeHtml(guarda || "(sin nombre reportado)") + "</p>" +
+              "<p><strong>Fecha de patrullaje:</strong> " + escapeHtml(fechaPatrullaje || "(sin fecha reportada)") + "</p>" +
+              "<p><strong>Municipio:</strong> " + escapeHtml(municipio || "(sin municipio reportado)") + "</p>" +
+              "<p><strong>Región:</strong> " + escapeHtml(region || "(sin región reportada)") + "</p>" +
+              "<p><strong>Ubicación / sitio:</strong> " + escapeHtml(ubicacion || "(sin ubicación reportada)") + "</p>" +
+              "<p><strong>Área protegida:</strong> " + escapeHtml(areaProtegida || "(sin área protegida reportada)") + "</p>" +
+              "<p><strong>Tipo de patrullaje:</strong> " + escapeHtml(tipoPatrullaje || "(sin tipo reportado)") + "</p>" +
+              "<p><strong>Horario del patrullaje:</strong> " +
+                escapeHtml(horaInicio || "(hora de inicio no registrada)") +
+                " a " +
+                escapeHtml(horaFin || "(hora de finalización no registrada)") +
+              "</p>" +
 
-            // ===== 5. Ubicación y metadatos =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("5. Ubicación y metadatos del registro", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
+              "<h2>2. Descripción del patrullaje</h2>" +
+              "<p>" + escapeHtml(textoDescripcion) + "</p>" +
 
-            addParagraph("Municipio: " + (municipio || "-"));
-            addParagraph("Ubicación / sitio: " + (ubicacion || "-"));
-            addParagraph("Área protegida: " + (areaProtegida || "-"));
-            addParagraph("Coordenadas (X, Y): " + (coordX || "-") + ", " + (coordY || "-"));
-            addParagraph("Fecha de creación del registro: " + (fechaCreacion || "-"));
-            addParagraph("Fecha de última modificación del registro: " + (fechaModificacion || "-"));
+              "<h2>3. Participación institucional</h2>" +
+              "<p>" + escapeHtml(textoInstituciones) + "</p>" +
 
-            y += 4;
+              "<h2>4. Actividad ilegal observada</h2>" +
+              "<p>" + escapeHtml(textoActividadIlegal) + "</p>" +
 
-            // Espacio para firmas
-            if (y > 240) {
-              doc.addPage();
-              y = 30;
-            }
-            doc.setFont("helvetica", "bold");
-            doc.text("6. Firmas (para uso institucional)", margenIzq, y);
-            y += 14;
-            doc.setFont("helvetica", "normal");
+              "<h2>5. Ubicación y metadatos del registro</h2>" +
+              "<p><strong>Municipio:</strong> " + escapeHtml(municipio || "-") + "</p>" +
+              "<p><strong>Ubicación / sitio:</strong> " + escapeHtml(ubicacion || "-") + "</p>" +
+              "<p><strong>Área protegida:</strong> " + escapeHtml(areaProtegida || "-") + "</p>" +
+              "<p><strong>Coordenadas (X, Y):</strong> " + escapeHtml(coordX || "-") + ", " + escapeHtml(coordY || "-") + "</p>" +
+              "<p><strong>Fecha de creación del registro:</strong> " + escapeHtml(fechaCreacion || "-") + "</p>" +
+              "<p><strong>Fecha de última modificación del registro:</strong> " + escapeHtml(fechaModificacion || "-") + "</p>" +
 
-            doc.text("______________________________", margenIzq, y);
-            doc.text("Guarda recursos / Responsable del registro", margenIzq, y + 6);
-
-            doc.text("______________________________", margenIzq + 90, y);
-            doc.text("Revisión / Supervisión", margenIzq + 90, y + 6);
+              "<h2>6. Firmas (para uso institucional)</h2>" +
+              "<p>______________________________<br/>Guarda recursos / Responsable del registro</p>" +
+              "<p>______________________________<br/>Revisión / Supervisión</p>";
 
             // Nombre de archivo amigable
             const slugGuarda = slugify(guarda || "sin_guardarecurso");
             const slugFecha = slugify(fechaPatrullaje || "sin_fecha");
-            const nombreArchivo = `informe_patrullaje_${slugGuarda}_${slugFecha}.pdf`;
+            const nombreArchivo = "informe_patrullaje_" + slugGuarda + "_" + slugFecha + ".doc";
 
-            // Descargar PDF
-            doc.save(nombreArchivo);
+            crearDocumentoWord(nombreArchivo, html);
           });
         })
         .catch(function (error) {

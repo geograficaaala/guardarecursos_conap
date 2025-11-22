@@ -147,8 +147,6 @@
   <script src="tabulator.min.js"></script>
   <script src="papaparse.min.js"></script>
   <script src="xlsx.full.min.js"></script>
-  <!-- Librería para generar PDFs en el navegador -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <script>
     // Referencia global a la tabla de Tabulator
@@ -160,6 +158,15 @@
         .trim()
         .replace(/\s+/g, "_")
         .replace(/[^\w\-]/g, "");
+    }
+
+    function escapeHtml(texto) {
+      return String(texto || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
 
     function normalizarNombreCampo(nombre) {
@@ -187,6 +194,29 @@
         }
       }
       return { campo: "", valor: "" };
+    }
+
+    function crearDocumentoWord(nombreArchivo, contenidoHTML) {
+      const header =
+        "<html xmlns:o='urn:schemas-microsoft-com:office:office' " +
+        "xmlns:w='urn:schemas-microsoft-com:office:word' " +
+        "xmlns='http://www.w3.org/TR/REC-html40'>" +
+        "<head><meta charset='utf-8'><title>Informe</title></head><body>";
+      const footer = "</body></html>";
+      const source = header + contenidoHTML + footer;
+
+      const blob = new Blob(["\ufeff", source], {
+        type: "application/msword"
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = nombreArchivo.endsWith(".doc") ? nombreArchivo : nombreArchivo + ".doc";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -252,7 +282,7 @@
             tablaAC282.download("xlsx", "base4_datos.xlsx", { sheetName: "Datos" });
           });
 
-          // Botón generar informe
+          // Botón generar informe (Word)
           document.getElementById("generate-report").addEventListener("click", function () {
             if (!tablaAC282) {
               alert("La tabla aún no está lista.");
@@ -268,33 +298,11 @@
             const registro = seleccionadas[0];
             console.log("Registro AC 282 seleccionado para el informe:", registro);
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
-            const margenIzq = 15;
-            const maxAnchoTexto = 180;
-            let y = 20;
-
-            function addParagraph(texto, saltoLinea = 6) {
-              const contenido = String(texto || "").trim();
-              if (!contenido) return;
-              const lineas = doc.splitTextToSize(contenido, maxAnchoTexto);
-              lineas.forEach((linea) => {
-                if (y > 280) {
-                  doc.addPage();
-                  y = 20;
-                }
-                doc.text(linea, margenIzq, y);
-                y += saltoLinea;
-              });
-              y += 2;
-            }
-
-            // Intentamos detectar campos clave típicos de reforestaciones por compromiso
+            // Campos clave típicos de reforestaciones por compromiso
             const { valor: beneficiario }     = buscarCampo(registro, ["beneficiario"]);
             const { valor: propietario }      = buscarCampo(registro, ["propietario"]);
             const { valor: titular }          = buscarCampo(registro, ["titular"]);
-            const { valor: tecnico }          = buscarCampo(registro, ["tecnico"]); // técnico responsable
+            const { valor: tecnico }          = buscarCampo(registro, ["tecnico"]);
             const { valor: proyecto }         = buscarCampo(registro, ["proyecto"]);
             const { valor: reforestacion }    = buscarCampo(registro, ["reforestacion"]);
             const { valor: compromiso }       = buscarCampo(registro, ["compromiso"]);
@@ -336,66 +344,15 @@
               compromiso ||
               "";
 
-            // ----- ENCABEZADO -----
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(16);
-            doc.text("Informe de asistencia técnica o monitoreo a reforestaciones", margenIzq, y);
-
-            y += 8;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-            doc.text("Formulario AC 282 - Compromiso de consumo forestal familiar", margenIzq, y);
-
-            y += 6;
-            doc.text("Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central", margenIzq, y);
-
-            y += 12;
-
-            // ===== 1. Datos básicos del registro =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("1. Datos básicos del registro", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-
-            addParagraph("Beneficiario / propietario: " + (nombreBeneficiario || "(sin beneficiario/propietario reportado)"));
-            addParagraph("Técnico responsable / persona que realiza la visita: " + (tecnico || "(sin técnico responsable reportado)"));
-            addParagraph("Fecha de la visita o monitoreo: " + (fechaReferencia || "(sin fecha de visita/monitoreo reportada)"));
-
-            let textoUbicacion = "Ubicación de la reforestación: ";
-            const partesUbicacion = [];
-            if (ubicacionLocal) partesUbicacion.push(ubicacionLocal);
-            if (municipio) partesUbicacion.push("municipio de " + municipio);
-            if (depto) partesUbicacion.push("departamento de " + depto);
-            textoUbicacion += partesUbicacion.length > 0 ? partesUbicacion.join(", ") : "(sin ubicación reportada)";
-            addParagraph(textoUbicacion);
-
-            if (descripcionProyecto) {
-              addParagraph("Proyecto / reforestación: " + descripcionProyecto);
+            let textoUbicacion = "";
+            if (ubicacionLocal || municipio || depto) {
+              textoUbicacion += " La reforestación se localiza en ";
+              const partes = [];
+              if (ubicacionLocal) partes.push(ubicacionLocal);
+              if (municipio) partes.push("municipio de " + municipio);
+              if (depto) partes.push("departamento de " + depto);
+              textoUbicacion += partes.join(", ") + ".";
             }
-
-            if (areaReforestada || superficie) {
-              const textoArea =
-                "Área reforestada o superficie en compromiso: " +
-                (areaReforestada || superficie);
-              addParagraph(textoArea);
-            }
-
-            y += 4;
-
-            // Separador
-            doc.setDrawColor(150);
-            doc.line(margenIzq, y, 195 - margenIzq, y);
-            y += 8;
-
-            // ===== 2. Descripción de la asistencia técnica / monitoreo =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("2. Descripción de la asistencia técnica / monitoreo", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
 
             let textoDescripcion =
               "Este informe corresponde a un registro del formulario AC 282, relativo a la asistencia técnica " +
@@ -411,14 +368,7 @@
                 ".";
             }
 
-            if (ubicacionLocal || municipio || depto) {
-              textoDescripcion += " La reforestación se localiza en ";
-              const partes = [];
-              if (ubicacionLocal) partes.push(ubicacionLocal);
-              if (municipio) partes.push("municipio de " + municipio);
-              if (depto) partes.push("departamento de " + depto);
-              textoDescripcion += partes.join(", ") + ".";
-            }
+            textoDescripcion += textoUbicacion;
 
             if (tecnico) {
               textoDescripcion +=
@@ -429,108 +379,72 @@
                 " La visita se realizó en el marco del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central de CONAP.";
             }
 
-            addParagraph(textoDescripcion);
-
-            y += 2;
-
-            // Si hay especie / densidad, podemos mencionar brevemente
+            let textoTecnico = "";
             if (especie || densidad) {
-              let textoAspectosTecnicos = "En cuanto a los aspectos técnicos de la reforestación, ";
+              textoTecnico = "En cuanto a los aspectos técnicos de la reforestación, ";
               const partesTecnicas = [];
               if (especie) partesTecnicas.push("se reportan las especies " + especie);
               if (densidad) partesTecnicas.push("con una densidad o arreglo de plantación indicado como " + densidad);
-              textoAspectosTecnicos += partesTecnicas.join(" y ") + ".";
-              addParagraph(textoAspectosTecnicos);
+              textoTecnico += partesTecnicas.join(" y ") + ".";
             }
 
-            // ===== 3. Observaciones de campo (si existen) =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("3. Observaciones de campo", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-
-            if (observaciones && String(observaciones).trim().length > 0) {
-              addParagraph("Observaciones registradas: " + observaciones);
-            } else {
-              addParagraph("No se registraron observaciones adicionales en este formulario.");
-            }
-
-            y += 2;
-
-            // ===== 4. Detalle de las variables registradas =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("4. Detalle de las variables registradas", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-
+            // Detalle de variables
             const entries = Object.entries(registro || {});
+            let detalleHtml = "<ul>";
             entries.forEach(([campo, valor]) => {
-              const textoCampo = campo + ": " + String(valor);
-              const lineas = doc.splitTextToSize(textoCampo, maxAnchoTexto);
-              lineas.forEach((linea) => {
-                if (y > 280) {
-                  doc.addPage();
-                  y = 20;
-                }
-                doc.text(linea, margenIzq, y);
-                y += 6;
-              });
-              y += 2;
+              detalleHtml +=
+                "<li><strong>" +
+                escapeHtml(campo) +
+                ":</strong> " +
+                escapeHtml(String(valor)) +
+                "</li>";
             });
+            detalleHtml += "</ul>";
 
-            y += 4;
+            const html =
+              "<h1 style='text-align:center;'>Informe de asistencia técnica o monitoreo a reforestaciones</h1>" +
+              "<p style='text-align:center;'>Formulario AC 282 - Compromiso de consumo forestal familiar</p>" +
+              "<p style='text-align:center;'>Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central</p>" +
+              "<hr />" +
 
-            if (y > 260) {
-              doc.addPage();
-              y = 20;
-            }
+              "<h2>1. Datos básicos del registro</h2>" +
+              "<p><strong>Beneficiario / propietario:</strong> " + escapeHtml(nombreBeneficiario || "(sin beneficiario/propietario reportado)") + "</p>" +
+              "<p><strong>Técnico responsable / persona que realiza la visita:</strong> " + escapeHtml(tecnico || "(sin técnico responsable reportado)") + "</p>" +
+              "<p><strong>Fecha de la visita o monitoreo:</strong> " + escapeHtml(fechaReferencia || "(sin fecha de visita/monitoreo reportada)") + "</p>" +
+              (descripcionProyecto
+                ? "<p><strong>Proyecto / reforestación:</strong> " + escapeHtml(descripcionProyecto) + "</p>"
+                : "") +
+              (areaReforestada || superficie
+                ? "<p><strong>Área reforestada o superficie en compromiso:</strong> " + escapeHtml(areaReforestada || superficie) + "</p>"
+                : "") +
 
-            // Separador
-            doc.setDrawColor(150);
-            doc.line(margenIzq, y, 195 - margenIzq, y);
-            y += 8;
+              "<h2>2. Descripción de la asistencia técnica / monitoreo</h2>" +
+              "<p>" + escapeHtml(textoDescripcion) + "</p>" +
+              (textoTecnico ? "<p>" + escapeHtml(textoTecnico) + "</p>" : "") +
 
-            // ===== 5. Metadatos del formulario =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("5. Metadatos del formulario", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
+              "<h2>3. Observaciones de campo</h2>" +
+              "<p>" +
+              (observaciones && String(observaciones).trim().length > 0
+                ? "Observaciones registradas: " + escapeHtml(observaciones)
+                : "No se registraron observaciones adicionales en este formulario.") +
+              "</p>" +
 
-            addParagraph("Fecha de creación del registro: " + (fechaCreacion || "(no especificada)"));
-            addParagraph("Fecha de última modificación del registro: " + (fechaModificacion || "(no especificada)"));
+              "<h2>4. Detalle de las variables registradas</h2>" +
+              detalleHtml +
 
-            y += 4;
+              "<h2>5. Metadatos del formulario</h2>" +
+              "<p><strong>Fecha de creación del registro:</strong> " + escapeHtml(fechaCreacion || "(no especificada)") + "</p>" +
+              "<p><strong>Fecha de última modificación del registro:</strong> " + escapeHtml(fechaModificacion || "(no especificada)") + "</p>" +
 
-            // Espacio para firmas
-            if (y > 240) {
-              doc.addPage();
-              y = 30;
-            }
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("6. Firmas (para uso institucional)", margenIzq, y);
-            y += 14;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
+              "<h2>6. Firmas (para uso institucional)</h2>" +
+              "<p>______________________________<br/>Responsable de la visita / técnico</p>" +
+              "<p>______________________________<br/>Revisión / Supervisión</p>";
 
-            doc.text("______________________________", margenIzq, y);
-            doc.text("Responsable de la visita / técnico", margenIzq, y + 6);
-
-            doc.text("______________________________", margenIzq + 90, y);
-            doc.text("Revisión / Supervisión", margenIzq + 90, y + 6);
-
-            // Nombre de archivo
             const slugBenef = slugify(nombreBeneficiario || "sin_beneficiario");
             const slugFecha = slugify(fechaReferencia || "sin_fecha");
-            const nombreArchivo = `informe_ac282_${slugBenef}_${slugFecha}.pdf`;
+            const nombreArchivo = "informe_ac282_" + slugBenef + "_" + slugFecha + ".doc";
 
-            doc.save(nombreArchivo);
+            crearDocumentoWord(nombreArchivo, html);
           });
         })
         .catch(function (error) {

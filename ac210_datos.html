@@ -152,8 +152,6 @@
   <script src="tabulator.min.js"></script>
   <script src="papaparse.min.js"></script>
   <script src="xlsx.full.min.js"></script>
-  <!-- Librería para generar PDFs en el navegador -->
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <script>
     // Referencia global a la tabla de Tabulator
@@ -166,6 +164,15 @@
         .trim()
         .replace(/\s+/g, "_")
         .replace(/[^\w\-]/g, "");
+    }
+
+    function escapeHtml(texto) {
+      return String(texto || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
 
     // Normalizar nombres de campos
@@ -194,6 +201,30 @@
         }
       }
       return { campo: "", valor: "" };
+    }
+
+    // Crear y descargar Word
+    function crearDocumentoWord(nombreArchivo, contenidoHTML) {
+      const header =
+        "<html xmlns:o='urn:schemas-microsoft-com:office:office' " +
+        "xmlns:w='urn:schemas-microsoft-com:office:word' " +
+        "xmlns='http://www.w3.org/TR/REC-html40'>" +
+        "<head><meta charset='utf-8'><title>Informe</title></head><body>";
+      const footer = "</body></html>";
+      const source = header + contenidoHTML + footer;
+
+      const blob = new Blob(["\ufeff", source], {
+        type: "application/msword"
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = nombreArchivo.endsWith(".doc") ? nombreArchivo : nombreArchivo + ".doc";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     }
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -260,7 +291,7 @@
             tablaAC210.download("xlsx", "ac210_asistencia_viveros.xlsx", { sheetName: "Datos" });
           });
 
-          // Botón generar informe
+          // Botón generar informe (Word)
           document.getElementById("generate-report").addEventListener("click", function () {
             if (!tablaAC210) {
               alert("La tabla aún no está lista.");
@@ -276,33 +307,9 @@
             const registro = seleccionadas[0];
             console.log("Registro AC210 seleccionado para el informe:", registro);
 
-            // ====== GENERAR PDF CON jsPDF ======
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
-            const margenIzq = 15;
-            const maxAnchoTexto = 180;
-            let y = 20;
-
-            // Helper para añadir párrafos
-            function addParagraph(texto, saltoLinea = 6) {
-              const contenido = String(texto || "").trim();
-              if (!contenido) return;
-              const lineas = doc.splitTextToSize(contenido, maxAnchoTexto);
-              lineas.forEach((linea) => {
-                if (y > 280) {
-                  doc.addPage();
-                  y = 20;
-                }
-                doc.text(linea, margenIzq, y);
-                y += saltoLinea;
-              });
-              y += 2;
-            }
-
             // Intentamos detectar campos clave según su nombre
             const { valor: nombreVivero } = buscarCampo(registro, ["vivero"]);
-            const { valor: tecnico }     = buscarCampo(registro, ["tecnico"]); // técnico
+            const { valor: tecnico }     = buscarCampo(registro, ["tecnico"]);
             const { valor: municipio }   = buscarCampo(registro, ["municipio"]);
             const { valor: fechaVisitaEspecifica } = buscarCampo(registro, ["fecha", "visita"]);
             const { valor: fechaGenerica }         = buscarCampo(registro, ["fecha"]);
@@ -311,47 +318,6 @@
             const { valor: fechaModificacion }  = buscarCampo(registro, ["modificacion"]);
 
             const fechaReferencia = fechaVisitaEspecifica || fechaGenerica || "";
-
-            // ----- ENCABEZADO -----
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(16);
-            doc.text("Informe de asistencia técnica a viveros (AC210)", margenIzq, y);
-
-            y += 8;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-            doc.text("Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central", margenIzq, y);
-
-            y += 12;
-
-            // ===== 1. Datos básicos del registro =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("1. Datos básicos del registro", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-
-            addParagraph("Nombre del vivero: " + (nombreVivero || "(sin nombre de vivero reportado)"));
-            addParagraph("Técnico responsable / persona que brinda la asistencia: " + (tecnico || "(sin técnico responsable reportado)"));
-            addParagraph("Fecha de la atención / visita: " + (fechaReferencia || "(sin fecha de visita reportada)"));
-            addParagraph("Departamento: " + (depto || "(sin departamento reportado)"));
-            addParagraph("Municipio: " + (municipio || "(sin municipio reportado)"));
-
-            y += 4;
-
-            // Separador
-            doc.setDrawColor(150);
-            doc.line(margenIzq, y, 195 - margenIzq, y);
-            y += 8;
-
-            // ===== 2. Descripción de la asistencia técnica (bloque narrativo) =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("2. Descripción de la asistencia técnica", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
 
             const textoDescripcion =
               "Este informe corresponde a un registro del formulario AC210 de asistencia técnica a viveros. " +
@@ -362,81 +328,50 @@
               ". La asistencia fue brindada por " + (tecnico || "(sin técnico responsable reportado)") +
               ", en el marco del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central de CONAP.";
 
-            addParagraph(textoDescripcion);
-
-            y += 2;
-
-            // ===== 3. Detalle de las variables registradas =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("3. Detalle de las variables registradas", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-
+            // Detalle de variables (listado campo: valor)
             const entries = Object.entries(registro || {});
+            let detalleHtml = "<ul>";
             entries.forEach(([campo, valor]) => {
-              const textoCampo = campo + ": " + String(valor);
-              const lineas = doc.splitTextToSize(textoCampo, maxAnchoTexto);
-              lineas.forEach((linea) => {
-                if (y > 280) {
-                  doc.addPage();
-                  y = 20;
-                }
-                doc.text(linea, margenIzq, y);
-                y += 6;
-              });
-              y += 2;
+              detalleHtml +=
+                "<li><strong>" +
+                escapeHtml(campo) +
+                ":</strong> " +
+                escapeHtml(String(valor)) +
+                "</li>";
             });
+            detalleHtml += "</ul>";
 
-            y += 4;
+            const html =
+              "<h1 style='text-align:center;'>Informe de asistencia técnica a viveros (AC210)</h1>" +
+              "<p style='text-align:center;'>Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central</p>" +
+              "<hr />" +
 
-            // Separador
-            if (y > 260) {
-              doc.addPage();
-              y = 20;
-            }
-            doc.setDrawColor(150);
-            doc.line(margenIzq, y, 195 - margenIzq, y);
-            y += 8;
+              "<h2>1. Datos básicos del registro</h2>" +
+              "<p><strong>Nombre del vivero:</strong> " + escapeHtml(nombreVivero || "(sin nombre de vivero reportado)") + "</p>" +
+              "<p><strong>Técnico responsable / persona que brinda la asistencia:</strong> " + escapeHtml(tecnico || "(sin técnico responsable reportado)") + "</p>" +
+              "<p><strong>Fecha de la atención / visita:</strong> " + escapeHtml(fechaReferencia || "(sin fecha de visita reportada)") + "</p>" +
+              "<p><strong>Departamento:</strong> " + escapeHtml(depto || "(sin departamento reportado)") + "</p>" +
+              "<p><strong>Municipio:</strong> " + escapeHtml(municipio || "(sin municipio reportado)") + "</p>" +
 
-            // ===== 4. Metadatos del formulario =====
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("4. Metadatos del formulario", margenIzq, y);
-            y += 7;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
+              "<h2>2. Descripción de la asistencia técnica</h2>" +
+              "<p>" + escapeHtml(textoDescripcion) + "</p>" +
 
-            addParagraph("Fecha de creación del registro: " + (fechaCreacion || "(no especificada)"));
-            addParagraph("Fecha de última modificación del registro: " + (fechaModificacion || "(no especificada)"));
+              "<h2>3. Detalle de las variables registradas</h2>" +
+              detalleHtml +
 
-            y += 4;
+              "<h2>4. Metadatos del formulario</h2>" +
+              "<p><strong>Fecha de creación del registro:</strong> " + escapeHtml(fechaCreacion || "(no especificada)") + "</p>" +
+              "<p><strong>Fecha de última modificación del registro:</strong> " + escapeHtml(fechaModificacion || "(no especificada)") + "</p>" +
 
-            // Espacio para firmas
-            if (y > 240) {
-              doc.addPage();
-              y = 30;
-            }
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(12);
-            doc.text("5. Firmas (para uso institucional)", margenIzq, y);
-            y += 14;
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
+              "<h2>5. Firmas (para uso institucional)</h2>" +
+              "<p>______________________________<br/>Responsable de la asistencia / técnico</p>" +
+              "<p>______________________________<br/>Revisión / Supervisión</p>";
 
-            doc.text("______________________________", margenIzq, y);
-            doc.text("Responsable de la asistencia / técnico", margenIzq, y + 6);
-
-            doc.text("______________________________", margenIzq + 90, y);
-            doc.text("Revisión / Supervisión", margenIzq + 90, y + 6);
-
-            // Nombre de archivo
             const slugVivero = slugify(nombreVivero || "sin_vivero");
             const slugFecha  = slugify(fechaReferencia || "sin_fecha");
-            const nombreArchivo = `informe_ac210_${slugVivero}_${slugFecha}.pdf`;
+            const nombreArchivo = "informe_ac210_" + slugVivero + "_" + slugFecha + ".doc";
 
-            doc.save(nombreArchivo);
+            crearDocumentoWord(nombreArchivo, html);
           });
         })
         .catch(function (error) {
