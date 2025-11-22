@@ -78,9 +78,14 @@
       background-color: #16a34a;
       color: white;
     }
-    /* Nuevo botón para informe */
+    /* Botón informe por registro */
     #generate-report {
       background-color: #f97316;
+      color: white;
+    }
+    /* Botón informe mensual */
+    #generate-monthly-report {
+      background-color: #0d9488;
       color: white;
     }
 
@@ -135,8 +140,10 @@
       <div class="buttons">
         <button id="download-csv">Descargar CSV</button>
         <button id="download-xlsx">Descargar Excel</button>
-        <!-- Nuevo botón para informe -->
+        <!-- Botón informe por registro -->
         <button id="generate-report">Generar informe del registro seleccionado</button>
+        <!-- Botón informe mensual -->
+        <button id="generate-monthly-report">Generar informe mensual</button>
       </div>
     </div>
 
@@ -154,8 +161,9 @@
   <script src="xlsx.full.min.js"></script>
 
   <script>
-    // Referencia global a la tabla de Tabulator
+    // Referencia global a la tabla de Tabulator y a los datos crudos
     let tablaAC210;
+    let datosAC210 = [];
 
     // Función para nombre de archivo "limpio"
     function slugify(texto) {
@@ -173,34 +181,6 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
-    }
-
-    // Normalizar nombres de campos
-    function normalizarNombreCampo(nombre) {
-      return nombre
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "");
-    }
-
-    // Buscar un campo que contenga todas las palabras clave
-    function buscarCampo(registro, palabrasClave) {
-      const keys = Object.keys(registro || {});
-      for (const key of keys) {
-        const normKey = normalizarNombreCampo(key);
-        let coincide = true;
-        for (const palabra of palabrasClave) {
-          const normPal = normalizarNombreCampo(palabra);
-          if (!normKey.includes(normPal)) {
-            coincide = false;
-            break;
-          }
-        }
-        if (coincide) {
-          return { campo: key, valor: registro[key] };
-        }
-      }
-      return { campo: "", valor: "" };
     }
 
     // Crear y descargar Word
@@ -225,6 +205,133 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+    }
+
+    // Extraer fecha completa (anio, mes, dia) desde CreationDate
+    function extraerFechaCompleta(fechaRaw) {
+      if (!fechaRaw) return null;
+      const str = String(fechaRaw).trim();
+      if (!str) return null;
+      const parteFecha = str.split(" ")[0]; // antes de la hora
+      let sep = null;
+      if (parteFecha.includes("/")) sep = "/";
+      else if (parteFecha.includes("-")) sep = "-";
+      if (!sep) return null;
+
+      const partes = parteFecha.split(sep);
+      if (partes.length < 3) return null;
+
+      const p1 = parseInt(partes[0], 10);
+      const p2 = parseInt(partes[1], 10);
+      const p3 = parseInt(partes[2], 10);
+      if (isNaN(p1) || isNaN(p2) || isNaN(p3)) return null;
+
+      let dia, mes, anio;
+      // si p1 > 12 y p2 <= 12: asumimos formato dd/mm/aaaa
+      if (p1 > 12 && p2 >= 1 && p2 <= 12) {
+        dia = p1;
+        mes = p2;
+        anio = p3;
+      } else {
+        // asumimos mm/dd/aaaa
+        mes = p1;
+        dia = p2;
+        anio = p3;
+      }
+
+      if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+      return { anio: anio, mes: mes, dia: dia };
+    }
+
+    function extraerAnioMes(fechaRaw) {
+      const f = extraerFechaCompleta(fechaRaw);
+      if (!f) return null;
+      return { anio: f.anio, mes: f.mes };
+    }
+
+    function nombreMesEspanol(mes) {
+      const nombres = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+      ];
+      return nombres[mes - 1] || "";
+    }
+
+    function porcentaje(parte, total) {
+      if (!total) return 0;
+      return Math.round((parte * 1000) / total) / 10; // 1 decimal
+    }
+
+    function formatearNumero(valor, decimales) {
+      if (typeof valor !== "number" || isNaN(valor)) return "";
+      return valor.toFixed(decimales);
+    }
+
+    function obtenerDiasEnMes(anio, mes) {
+      // mes: 1-12
+      return new Date(anio, mes, 0).getDate();
+    }
+
+    function formatearClaveDia(claveDia) {
+      // "YYYY-MM-DD" -> "D de mes"
+      if (!claveDia) return "";
+      const partes = claveDia.split("-");
+      if (partes.length !== 3) return claveDia;
+      const dia = parseInt(partes[2], 10);
+      const mes = parseInt(partes[1], 10);
+      const nombreMes = nombreMesEspanol(mes);
+      return (isNaN(dia) ? claveDia : dia + " de " + nombreMes);
+    }
+
+    function parseHora(valor) {
+      if (!valor) return null;
+      const str = String(valor).trim();
+      if (!str) return null;
+      const m = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (!m) return null;
+      const h = parseInt(m[1], 10);
+      const min = parseInt(m[2], 10);
+      const sec = m[3] ? parseInt(m[3], 10) : 0;
+      if (isNaN(h) || isNaN(min) || isNaN(sec)) return null;
+      return h * 60 + min + sec / 60; // minutos (con decimales)
+    }
+
+    function calcularEstadisticasHoras(listaHoras) {
+      if (!listaHoras || listaHoras.length === 0) {
+        return { promedio: null, desviacion: null, total: 0 };
+      }
+      let suma = 0;
+      for (let i = 0; i < listaHoras.length; i++) {
+        suma += listaHoras[i];
+      }
+      const promedio = suma / listaHoras.length;
+
+      let sumaCuadrados = 0;
+      for (let i = 0; i < listaHoras.length; i++) {
+        const diff = listaHoras[i] - promedio;
+        sumaCuadrados += diff * diff;
+      }
+      const desviacion = Math.sqrt(sumaCuadrados / listaHoras.length);
+      return { promedio: promedio, desviacion: desviacion, total: suma };
+    }
+
+    function etiquetaActividad(codigo) {
+      const map = {
+        "limpieza_areas_plantas": "Limpieza de áreas y plantas",
+        "limpieza_areas": "Limpieza de áreas",
+        "limpieza_plantas": "Limpieza de plantas",
+        "llenado_bolsas": "Llenado de bolsas",
+        "riego": "Riego",
+        "recoleccion_semillas": "Recolección de semillas",
+        "mantenimiento_infraestructura": "Mantenimiento de infraestructura",
+        "apoyo_tecnico_capacitacion": "Apoyo técnico o capacitación",
+        "germinacion": "Actividades de germinación",
+        "preparacion_sustrato": "Preparación de sustrato",
+        "otro": "Otras actividades"
+      };
+      if (map[codigo]) return map[codigo];
+      const limpio = codigo.replace(/_/g, " ");
+      return limpio.charAt(0).toUpperCase() + limpio.slice(1);
     }
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -261,6 +368,8 @@
             return;
           }
 
+          datosAC210 = data; // guardamos para el informe mensual
+
           // No se oculta ninguna columna: se usan todos los encabezados
           const columns = Object.keys(data[0]).map(function (field) {
             return {
@@ -291,7 +400,7 @@
             tablaAC210.download("xlsx", "ac210_asistencia_viveros.xlsx", { sheetName: "Datos" });
           });
 
-          // Botón generar informe (Word)
+          // Botón generar informe POR REGISTRO (Word)
           document.getElementById("generate-report").addEventListener("click", function () {
             if (!tablaAC210) {
               alert("La tabla aún no está lista.");
@@ -307,31 +416,103 @@
             const registro = seleccionadas[0];
             console.log("Registro AC210 seleccionado para el informe:", registro);
 
-            // Intentamos detectar campos clave según su nombre
-            const { valor: nombreVivero } = buscarCampo(registro, ["vivero"]);
-            const { valor: tecnico }     = buscarCampo(registro, ["tecnico"]);
-            const { valor: municipio }   = buscarCampo(registro, ["municipio"]);
-            const { valor: fechaVisitaEspecifica } = buscarCampo(registro, ["fecha", "visita"]);
-            const { valor: fechaGenerica }         = buscarCampo(registro, ["fecha"]);
-            const { valor: depto }       = buscarCampo(registro, ["departamento"]);
-            const { valor: fechaCreacion }      = buscarCampo(registro, ["creacion"]);
-            const { valor: fechaModificacion }  = buscarCampo(registro, ["modificacion"]);
+            // Campos reales según base2_datos.csv
+            const guarda = registro["Nombre del guarda recurso"] || "";
+            const municipio = registro["Municipio"] || "";
+            const apoyoFuera = (registro["Esta en apoyo a un vivero fuera de su municipio"] || "").toString().trim();
+            const municipioApoyo = registro["Especifique el municipio o lugar de apoyo"] || "";
+            const horaInicio = registro["Hora de inicio de actividades"] || "";
+            const horaFin = registro["Hora de finalizacion de actividades"] || "";
+            const region = registro["Region"] || "";
+            const areaProtegida = registro["Area protegida"] || "";
+            const areaFuera = registro["Especifique area (Fuera de RUMCLA)"] || "";
+            const nombreVivero = registro["Nombre del area y/o lugar del vivero establecido (Barrio, Caserio, Canton, Aldea, etc.)"] || "";
+            const actividades = registro["Actividades realizadas"] || "";
+            const otraActividad = registro["Especifique otra actividad"] || "";
+            const observaciones = registro["Observaciones"] || "";
+            const fechaCreacion = registro["CreationDate"] || "";
+            const fechaModificacion = registro["EditDate"] || "";
+            const coordX = registro["X"] || "";
+            const coordY = registro["Y"] || "";
 
-            const fechaReferencia = fechaVisitaEspecifica || fechaGenerica || "";
+            let fechaReferencia = "";
+            const fechaObj = extraerFechaCompleta(fechaCreacion);
+            if (fechaObj) {
+              const nombreMes = nombreMesEspanol(fechaObj.mes);
+              fechaReferencia = fechaObj.dia + " de " + nombreMes + " " + fechaObj.anio;
+            } else {
+              fechaReferencia = fechaCreacion;
+            }
+
+            let textoAmbito = "";
+            const areaUpper = (areaProtegida || "").toString().toUpperCase();
+            if (areaUpper.includes("RUMCLA")) {
+              textoAmbito = "dentro de la Reserva de Usos Múltiples de la Cuenca del Lago de Atitlán (RUMCLA)";
+            } else if (areaUpper.includes("FUERA")) {
+              textoAmbito = "en un vivero ubicado fuera de la RUMCLA";
+            } else if (areaFuera) {
+              textoAmbito = "en un vivero ubicado fuera de la RUMCLA (" + areaFuera + ")";
+            }
+
+            let textoApoyo = "";
+            if (apoyoFuera) {
+              const v = apoyoFuera.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+              if (v === "si" || v === "sí") {
+                textoApoyo =
+                  "La jornada se registró como apoyo a un vivero fuera de su municipio de base, " +
+                  (municipioApoyo ? "en el municipio o lugar de " + municipioApoyo + "." : "en un vivero de apoyo externo.");
+              } else {
+                textoApoyo =
+                  "La actividad se realizó dentro del municipio de asignación del guarda recurso.";
+              }
+            }
 
             const textoDescripcion =
               "Este informe corresponde a un registro del formulario AC210 de asistencia técnica a viveros. " +
-              "La atención se realizó el " + (fechaReferencia || "(sin fecha de visita reportada)") +
-              " en el vivero " + (nombreVivero || "(sin nombre de vivero reportado)") +
+              "La atención se realizó en torno a la fecha " + (fechaReferencia || "(sin fecha de visita reportada)") +
+              ", en el vivero o área denominada " + (nombreVivero || "(sin nombre de vivero reportado)") +
               ", ubicado en el municipio de " + (municipio || "(sin municipio reportado)") +
-              (depto ? ", departamento de " + depto : "") +
-              ". La asistencia fue brindada por " + (tecnico || "(sin técnico responsable reportado)") +
+              (region ? ", región " + region : "") +
+              (textoAmbito ? ", " + textoAmbito : "") +
+              ". La asistencia fue brindada por el guarda recurso " + (guarda || "(sin nombre reportado)") +
               ", en el marco del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central de CONAP.";
 
-            // Detalle de variables (listado campo: valor)
+            const textoHorario =
+              "De acuerdo con el registro, la jornada inició a las " +
+              (horaInicio || "(hora de inicio no registrada)") +
+              " y finalizó a las " +
+              (horaFin || "(hora de finalización no registrada)") +
+              ", dentro de la jornada laboral ordinaria.";
+
+            let textoActividades = "";
+            if (actividades) {
+              const partes = actividades.toString().split(/[,;]+/).map(function (p) {
+                return p.trim();
+              }).filter(Boolean);
+
+              const codigosUnicos = Array.from(new Set(partes));
+              const etiquetas = codigosUnicos.map(function (cod) {
+                return etiquetaActividad(cod);
+              });
+              if (etiquetas.length > 0) {
+                textoActividades =
+                  "Las actividades realizadas incluyeron principalmente: " +
+                  etiquetas.join(", ") + ".";
+              }
+            }
+
+            if (otraActividad) {
+              textoActividades +=
+                (textoActividades ? " Además, " : "En el registro se menciona que ") +
+                "se reportó la siguiente actividad adicional: " + otraActividad + ".";
+            }
+
+            // Detalle de variables como lista
             const entries = Object.entries(registro || {});
             let detalleHtml = "<ul>";
-            entries.forEach(([campo, valor]) => {
+            entries.forEach(function (par) {
+              const campo = par[0];
+              const valor = par[1];
               detalleHtml +=
                 "<li><strong>" +
                 escapeHtml(campo) +
@@ -347,32 +528,503 @@
               "<hr />" +
 
               "<h2>1. Datos básicos del registro</h2>" +
-              "<p><strong>Nombre del vivero:</strong> " + escapeHtml(nombreVivero || "(sin nombre de vivero reportado)") + "</p>" +
-              "<p><strong>Técnico responsable / persona que brinda la asistencia:</strong> " + escapeHtml(tecnico || "(sin técnico responsable reportado)") + "</p>" +
-              "<p><strong>Fecha de la atención / visita:</strong> " + escapeHtml(fechaReferencia || "(sin fecha de visita reportada)") + "</p>" +
-              "<p><strong>Departamento:</strong> " + escapeHtml(depto || "(sin departamento reportado)") + "</p>" +
+              "<p><strong>Nombre del guarda recurso:</strong> " + escapeHtml(guarda || "(sin nombre reportado)") + "</p>" +
+              "<p><strong>Nombre del vivero o área de trabajo:</strong> " + escapeHtml(nombreVivero || "(sin nombre de vivero reportado)") + "</p>" +
               "<p><strong>Municipio:</strong> " + escapeHtml(municipio || "(sin municipio reportado)") + "</p>" +
+              "<p><strong>Región:</strong> " + escapeHtml(region || "(sin región reportada)") + "</p>" +
+              "<p><strong>Área protegida / ámbito:</strong> " + escapeHtml(areaProtegida || areaFuera || "(sin área reportada)") + "</p>" +
+              (textoApoyo ? "<p><strong>Apoyo fuera de municipio:</strong> " + escapeHtml(textoApoyo) + "</p>" : "") +
 
               "<h2>2. Descripción de la asistencia técnica</h2>" +
               "<p>" + escapeHtml(textoDescripcion) + "</p>" +
+              "<p>" + escapeHtml(textoHorario) + "</p>" +
+              (textoActividades ? "<p>" + escapeHtml(textoActividades) + "</p>" : "") +
 
-              "<h2>3. Detalle de las variables registradas</h2>" +
+              "<h2>3. Observaciones de campo</h2>" +
+              (observaciones
+                ? "<p>" + escapeHtml(observaciones) + "</p>"
+                : "<p>No se registraron observaciones adicionales en este formulario.</p>") +
+
+              "<h2>4. Detalle de las variables registradas</h2>" +
               detalleHtml +
 
-              "<h2>4. Metadatos del formulario</h2>" +
+              "<h2>5. Metadatos del formulario</h2>" +
               "<p><strong>Fecha de creación del registro:</strong> " + escapeHtml(fechaCreacion || "(no especificada)") + "</p>" +
               "<p><strong>Fecha de última modificación del registro:</strong> " + escapeHtml(fechaModificacion || "(no especificada)") + "</p>" +
+              "<p><strong>Coordenadas (X, Y):</strong> " + escapeHtml(coordX || "-") + ", " + escapeHtml(coordY || "-") + "</p>" +
 
-              "<h2>5. Firmas (para uso institucional)</h2>" +
-              "<p>______________________________<br/>Responsable de la asistencia / técnico</p>" +
+              "<h2>6. Firmas (para uso institucional)</h2>" +
+              "<p>______________________________<br/>Responsable de la asistencia / guarda recurso</p>" +
               "<p>______________________________<br/>Revisión / Supervisión</p>";
 
-            const slugVivero = slugify(nombreVivero || "sin_vivero");
+            const slugVivero = slugify(nombreVivero || municipio || "sin_vivero");
             const slugFecha  = slugify(fechaReferencia || "sin_fecha");
             const nombreArchivo = "informe_ac210_" + slugVivero + "_" + slugFecha + ".doc";
 
             crearDocumentoWord(nombreArchivo, html);
           });
+
+          // Botón generar INFORME MENSUAL (Word)
+          document.getElementById("generate-monthly-report").addEventListener("click", function () {
+            if (!datosAC210 || datosAC210.length === 0) {
+              alert("No hay datos cargados para generar el informe mensual.");
+              return;
+            }
+
+            // Construir lista de meses disponibles (según CreationDate)
+            const mapaMeses = new Map(); // clave "YYYY-MM" -> { anio, mes }
+            datosAC210.forEach(function (reg) {
+              const infoFecha = extraerAnioMes(reg["CreationDate"]);
+              if (!infoFecha) return;
+              const clave = infoFecha.anio + "-" + String(infoFecha.mes).padStart(2, "0");
+              if (!mapaMeses.has(clave)) {
+                mapaMeses.set(clave, infoFecha);
+              }
+            });
+
+            const clavesOrdenadas = Array.from(mapaMeses.keys()).sort();
+            if (clavesOrdenadas.length === 0) {
+              alert("No se encontraron fechas válidas en CreationDate para generar un informe mensual.");
+              return;
+            }
+
+            let mensaje = "Seleccione el mes para el informe mensual (escriba el número de opción):\n\n";
+            clavesOrdenadas.forEach(function (clave, index) {
+              const info = mapaMeses.get(clave);
+              const nombreMes = nombreMesEspanol(info.mes);
+              mensaje += (index + 1) + ") " +
+                nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1) +
+                " " + info.anio + "\n";
+            });
+            mensaje += "\nEjemplo: para la primera opción, escriba 1.";
+
+            const opcionStr = prompt(mensaje);
+            if (opcionStr === null) {
+              return; // canceló
+            }
+
+            const opcion = parseInt(opcionStr, 10);
+            if (isNaN(opcion) || opcion < 1 || opcion > clavesOrdenadas.length) {
+              alert("Opción no válida. Intente de nuevo.");
+              return;
+            }
+
+            const claveSeleccionada = clavesOrdenadas[opcion - 1];
+            const infoSeleccionada = mapaMeses.get(claveSeleccionada);
+            const anioSel = infoSeleccionada.anio;
+            const mesSel = infoSeleccionada.mes;
+            const nombreMesSel = nombreMesEspanol(mesSel);
+            const etiquetaMes = nombreMesSel.charAt(0).toUpperCase() + nombreMesSel.slice(1) + " " + anioSel;
+
+            // Filtrar registros de ese mes
+            const registrosMes = datosAC210.filter(function (reg) {
+              const infoF = extraerAnioMes(reg["CreationDate"]);
+              return infoF && infoF.anio === anioSel && infoF.mes === mesSel;
+            });
+
+            if (!registrosMes || registrosMes.length === 0) {
+              alert("No se encontraron registros para " + etiquetaMes + ".");
+              return;
+            }
+
+            const total = registrosMes.length;
+
+            const municipiosSet = new Set();
+            const conteoMunicipios = {};
+            const guardasSet = new Set();
+            const conteoGuardas = {};
+            const conteoDias = {};
+
+            let dentroRUMCLA = 0;
+            let fueraRUMCLA = 0;
+            let sinArea = 0;
+
+            const duracionesHoras = [];
+            const duracionesDentro = [];
+            const duracionesFuera = [];
+            const horasPorGuarda = {};
+
+            const actividadesConteo = {};
+            const otrasActividadesTexto = [];
+
+            let apoyoSi = 0;
+            let apoyoNo = 0;
+            let apoyoSin = 0;
+            const ejemplosApoyo = [];
+
+            registrosMes.forEach(function (reg) {
+              const muni = (reg["Municipio"] || "").toString().trim();
+              if (muni) {
+                municipiosSet.add(muni);
+                conteoMunicipios[muni] = (conteoMunicipios[muni] || 0) + 1;
+              }
+
+              const guarda = (reg["Nombre del guarda recurso"] || "").toString().trim();
+              if (guarda) {
+                guardasSet.add(guarda);
+                conteoGuardas[guarda] = (conteoGuardas[guarda] || 0) + 1;
+              }
+
+              const fechaObj = extraerFechaCompleta(reg["CreationDate"]);
+              if (fechaObj) {
+                const claveDia =
+                  fechaObj.anio + "-" +
+                  String(fechaObj.mes).padStart(2, "0") + "-" +
+                  String(fechaObj.dia).padStart(2, "0");
+                conteoDias[claveDia] = (conteoDias[claveDia] || 0) + 1;
+              }
+
+              const areaRaw = (reg["Area protegida"] || "").toString().trim().toUpperCase();
+              const fueraRaw = (reg["Especifique area (Fuera de RUMCLA)"] || "").toString().trim();
+              if (!areaRaw && !fueraRaw) {
+                sinArea++;
+              } else if (areaRaw.includes("FUERA") || fueraRaw) {
+                fueraRUMCLA++;
+              } else if (areaRaw.includes("RUMCLA")) {
+                dentroRUMCLA++;
+              } else {
+                dentroRUMCLA++;
+              }
+
+              const hIni = parseHora(reg["Hora de inicio de actividades"]);
+              const hFin = parseHora(reg["Hora de finalizacion de actividades"]);
+              if (hIni !== null && hFin !== null) {
+                let durMin = hFin - hIni;
+                if (durMin < 0) {
+                  durMin += 24 * 60; // cruzó medianoche
+                }
+                const durHoras = durMin / 60.0;
+                duracionesHoras.push(durHoras);
+
+                const esDentro = areaRaw.includes("RUMCLA") && !areaRaw.includes("FUERA") && !fueraRaw;
+                if (esDentro) {
+                  duracionesDentro.push(durHoras);
+                } else {
+                  duracionesFuera.push(durHoras);
+                }
+
+                if (guarda) {
+                  if (!horasPorGuarda[guarda]) {
+                    horasPorGuarda[guarda] = { totalHoras: 0, numJornadas: 0 };
+                  }
+                  horasPorGuarda[guarda].totalHoras += durHoras;
+                  horasPorGuarda[guarda].numJornadas += 1;
+                }
+              }
+
+              // Actividades (conteo por registro)
+              const actStr = (reg["Actividades realizadas"] || "").toString().trim();
+              if (actStr) {
+                const partes = actStr.split(/[,;]+/).map(function (p) {
+                  return p.trim();
+                }).filter(Boolean);
+                const codigosUnicos = Array.from(new Set(partes));
+                codigosUnicos.forEach(function (cod) {
+                  actividadesConteo[cod] = (actividadesConteo[cod] || 0) + 1;
+                });
+              }
+
+              const otraAct = (reg["Especifique otra actividad"] || "").toString().trim();
+              if (otraAct) {
+                otrasActividadesTexto.push(otraAct);
+              }
+
+              const apoyoRaw = (reg["Esta en apoyo a un vivero fuera de su municipio"] || "").toString().trim().toLowerCase();
+              if (!apoyoRaw) {
+                apoyoSin++;
+              } else {
+                const norm = apoyoRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (norm === "si" || norm === "sí") {
+                  apoyoSi++;
+                  if (ejemplosApoyo.length < 3) {
+                    const muniBase = (reg["Municipio"] || "").toString().trim();
+                    const lugarApoyo = (reg["Especifique el municipio o lugar de apoyo"] || "").toString().trim();
+                    ejemplosApoyo.push({
+                      guarda: guarda,
+                      municipioBase: muniBase,
+                      lugarApoyo: lugarApoyo
+                    });
+                  }
+                } else {
+                  apoyoNo++;
+                }
+              }
+            });
+
+            const numMunicipios = municipiosSet.size;
+            const numGuardas = guardasSet.size;
+
+            const diasActivos = Object.keys(conteoDias).length;
+            const diasEnMes = obtenerDiasEnMes(anioSel, mesSel);
+            const coberturaTemporal = porcentaje(diasActivos, diasEnMes);
+            const promedioPorDiaActivo = diasActivos > 0 ? (total / diasActivos) : 0;
+
+            let primeraFechaClave = "";
+            let ultimaFechaClave = "";
+            let maxRegDia = 0;
+            let diasPico = [];
+
+            const clavesDias = Object.keys(conteoDias).sort();
+            if (clavesDias.length > 0) {
+              primeraFechaClave = clavesDias[0];
+              ultimaFechaClave = clavesDias[clavesDias.length - 1];
+            }
+
+            for (const claveDia in conteoDias) {
+              if (!Object.prototype.hasOwnProperty.call(conteoDias, claveDia)) continue;
+              const c = conteoDias[claveDia];
+              if (c > maxRegDia) {
+                maxRegDia = c;
+                diasPico = [claveDia];
+              } else if (c === maxRegDia) {
+                diasPico.push(claveDia);
+              }
+            }
+
+            const listaMunicipios = Object.keys(conteoMunicipios).map(function (muni) {
+              return { nombre: muni, conteo: conteoMunicipios[muni] };
+            }).sort(function (a, b) {
+              return b.conteo - a.conteo;
+            });
+
+            const listaGuardas = Object.keys(conteoGuardas).map(function (g) {
+              const info = horasPorGuarda[g] || { totalHoras: 0, numJornadas: 0 };
+              return {
+                nombre: g,
+                conteo: conteoGuardas[g],
+                totalHoras: info.totalHoras,
+                numJornadas: info.numJornadas
+              };
+            }).sort(function (a, b) {
+              return b.conteo - a.conteo;
+            });
+
+            const statsHoras = calcularEstadisticasHoras(duracionesHoras);
+            const statsDentro = calcularEstadisticasHoras(duracionesDentro);
+            const statsFuera = calcularEstadisticasHoras(duracionesFuera);
+
+            const totalDentroFuera = dentroRUMCLA + fueraRUMCLA;
+            const pctDentro = porcentaje(dentroRUMCLA, total);
+            const pctFuera = porcentaje(fueraRUMCLA, total);
+
+            // Actividades
+            const listaActividades = Object.keys(actividadesConteo).map(function (cod) {
+              return { codigo: cod, conteo: actividadesConteo[cod] };
+            }).sort(function (a, b) {
+              return b.conteo - a.conteo;
+            });
+
+            // Construir HTML del informe mensual (narrativo)
+            let html = "";
+            html += "<h1 style='text-align:center;'>Informe mensual de asistencia técnica a viveros (AC210)</h1>";
+            html += "<p style='text-align:center;'>Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central</p>";
+            html += "<p style='text-align:center;'><strong>Mes analizado: " + escapeHtml(etiquetaMes) + "</strong></p>";
+            html += "<hr />";
+
+            // 1. Cantidad total y distribución general
+            html += "<h2>1. Cantidad total y distribución general de actividades en viveros</h2>";
+            html += "<p>Durante el mes de " + escapeHtml(etiquetaMes) +
+                    ", el cuerpo operativo de guarda recursos del Altiplano Central registró un total de <strong>" +
+                    total + "</strong> actividades válidas de asistencia técnica a viveros forestales en el sistema de monitoreo.</p>";
+
+            if (numMunicipios > 0) {
+              html += "<p>Las acciones se distribuyeron en <strong>" + numMunicipios +
+                      "</strong> municipio(s): " +
+                      escapeHtml(Array.from(municipiosSet).join(", ")) + ".</p>";
+            }
+
+            if (totalDentroFuera > 0) {
+              html += "<p>De acuerdo con el campo de área protegida, aproximadamente <strong>" +
+                      formatearNumero(pctDentro, 1) + "%</strong> de las actividades (" + dentroRUMCLA +
+                      " registro(s)) se realizaron dentro de la RUMCLA u otras áreas asociadas, " +
+                      "mientras que alrededor de <strong>" + formatearNumero(pctFuera, 1) + "%</strong> (" +
+                      fueraRUMCLA + " registro(s)) corresponden a viveros ubicados fuera de la reserva. " +
+                      (sinArea > 0 ? "En " + sinArea + " registro(s) no se cuenta con información clara sobre el ámbito territorial." : "") +
+                      "</p>";
+            }
+
+            if (diasActivos > 0) {
+              html += "<p>Las fechas de registro se concentran entre el " +
+                      escapeHtml(formatearClaveDia(primeraFechaClave)) + " y el " +
+                      escapeHtml(formatearClaveDia(ultimaFechaClave)) +
+                      ", con presencia documentada en <strong>" + diasActivos +
+                      "</strong> días distintos del mes. Esto representa aproximadamente el " +
+                      formatearNumero(coberturaTemporal, 1) +
+                      "% del periodo analizado, con un promedio de " +
+                      formatearNumero(promedioPorDiaActivo, 1) +
+                      " actividades por día con registro.</p>";
+            }
+
+            // 2. Distribución temporal y ritmo operativo
+            html += "<h2>2. Distribución temporal y ritmo operativo</h2>";
+            if (diasActivos > 0) {
+              if (maxRegDia > 0) {
+                const ejemplosDias = diasPico.slice(0, 3).map(function (c) {
+                  return formatearClaveDia(c);
+                });
+                html += "<p>El ritmo operativo durante el mes fue constante, con variaciones moderadas en el número de jornadas por día. " +
+                        "Los picos de actividad se concentraron en fechas como " +
+                        escapeHtml(ejemplosDias.join("; ")) +
+                        ", con hasta <strong>" + maxRegDia +
+                        "</strong> registros en una misma jornada.</p>";
+              } else {
+                html += "<p>La distribución temporal de las actividades muestra un patrón estable a lo largo del mes, sin concentraciones extremas de trabajo en días específicos.</p>";
+              }
+            } else {
+              html += "<p>No se dispone de información suficiente sobre la distribución temporal de las actividades en este mes.</p>";
+            }
+
+            // 3. Desempeño por áreas operativas (municipios)
+            html += "<h2>3. Desempeño por áreas operativas</h2>";
+            if (listaMunicipios.length > 0) {
+              const topMuns = listaMunicipios.slice(0, 3);
+              const partesTop = topMuns.map(function (m) {
+                return escapeHtml(m.nombre) + " (" + m.conteo + " registro" + (m.conteo !== 1 ? "s" : "") + ")";
+              });
+              html += "<p>En términos de volumen operativo, los municipios con mayor número de actividades fueron: " +
+                      partesTop.join(", ") + ". " +
+                      "En estos casos, las labores se desarrollaron principalmente en viveros municipales y áreas adyacentes, " +
+                      "enfocándose en tareas de mantenimiento, producción de plantas y fortalecimiento de la infraestructura viverista.</p>";
+
+              if (listaMunicipios.length > 3) {
+                const minResto = listaMunicipios[listaMunicipios.length - 1].conteo;
+                const maxResto = listaMunicipios[3].conteo;
+                html += "<p>El resto de municipios registró entre " + minResto + " y " + maxResto +
+                        " actividades cada uno, manteniendo una presencia de trabajo regular en los viveros comunales y municipales del Altiplano Central.</p>";
+              }
+            } else {
+              html += "<p>No se cuenta con información detallada sobre la distribución por municipio para este mes.</p>";
+            }
+
+            // 4. Duración, frecuencia y eficiencia operativa
+            html += "<h2>4. Duración, frecuencia y eficiencia operativa</h2>";
+            if (duracionesHoras.length > 0) {
+              const pctConHoras = porcentaje(duracionesHoras.length, total);
+              html += "<p>El análisis de los registros de campo con horario válido (" +
+                      duracionesHoras.length + " registro(s), equivalente(s) al " +
+                      formatearNumero(pctConHoras, 1) +
+                      "% del total) indica que las jornadas de trabajo en viveros tuvieron una duración promedio de <strong>" +
+                      formatearNumero(statsHoras.promedio, 1) + " horas</strong>, con una desviación estándar de aproximadamente " +
+                      formatearNumero(statsHoras.desviacion, 1) +
+                      " horas. El total estimado de horas efectivas de trabajo acumuladas durante el mes asciende a alrededor de " +
+                      formatearNumero(statsHoras.total, 1) + " horas.</p>";
+
+              if (duracionesDentro.length > 0 && duracionesFuera.length > 0) {
+                html += "<p>Al comparar la duración de las jornadas según el ámbito territorial, se observa que los trabajos dentro de la RUMCLA presentan un promedio de " +
+                        formatearNumero(statsDentro.promedio, 1) +
+                        " horas por registro, mientras que las actividades realizadas en viveros fuera de la cuenca muestran un promedio de " +
+                        formatearNumero(statsFuera.promedio, 1) +
+                        " horas. Esta diferencia responde principalmente a los tiempos de desplazamiento y a la naturaleza de las tareas ejecutadas en cada ámbito.</p>";
+              }
+            } else {
+              html += "<p>En este mes no se dispone de información suficiente sobre las horas de inicio y finalización de las jornadas, " +
+                      "por lo que no es posible estimar de forma confiable la duración promedio del trabajo en viveros.</p>";
+            }
+
+            // 5. Variabilidad diaria y continuidad operativa
+            html += "<h2>5. Variabilidad diaria y continuidad operativa</h2>";
+            if (diasActivos > 0) {
+              html += "<p>En total se registraron actividades en <strong>" + diasActivos +
+                      "</strong> días distintos del mes de " + escapeHtml(etiquetaMes) +
+                      ", lo que representa una cobertura temporal de aproximadamente " +
+                      formatearNumero(coberturaTemporal, 1) +
+                      "% del periodo. Este comportamiento evidencia una presencia continua del personal técnico en campo " +
+                      "y un seguimiento regular a las tareas de mantenimiento y producción de plantas forestales.</p>";
+
+              html += "<p>El promedio general fue de " +
+                      formatearNumero(promedioPorDiaActivo, 1) +
+                      " jornadas por día con actividad registrada, sin concentraciones excesivas que indiquen sobrecarga operativa en fechas específicas.</p>";
+            } else {
+              html += "<p>No se registraron días con actividad en el conjunto de datos correspondiente a este mes.</p>";
+            }
+
+            // 6. Desempeño por guarda recurso
+            html += "<h2>6. Desempeño por guarda recurso y eficiencia operativa</h2>";
+            if (listaGuardas.length > 0) {
+              const topGuardas = listaGuardas.slice(0, 4);
+              const partesGuardas = topGuardas.map(function (g) {
+                let texto = escapeHtml(g.nombre) + " (" + g.conteo + " registro" + (g.conteo !== 1 ? "s" : "");
+                if (g.totalHoras && g.totalHoras > 0) {
+                  texto += ", ~" + formatearNumero(g.totalHoras, 1) + " horas acumuladas";
+                }
+                texto += ")";
+                return texto;
+              });
+
+              html += "<p>El conjunto de registros muestra la participación activa de varios guarda recursos en la ejecución de actividades en viveros forestales. " +
+                      "Destacan, por volumen de registros y horas de trabajo asociadas, los siguientes técnicos: " +
+                      partesGuardas.join("; ") +
+                      ". En conjunto, este grupo concentra una proporción importante del esfuerzo operativo mensual.</p>";
+
+              html += "<p>El resto del personal mantiene rangos intermedios de participación, lo que sugiere una distribución relativamente equilibrada del trabajo entre los distintos municipios y viveros atendidos.</p>";
+            } else {
+              html += "<p>No se dispone de información detallada por guarda recurso para este mes.</p>";
+            }
+
+            // 7. Distribución de actividades y tipos de labores
+            html += "<h2>7. Distribución de actividades y tipos de labores ejecutadas</h2>";
+            if (listaActividades.length > 0) {
+              const topActs = listaActividades.slice(0, 6);
+              html += "<p>Durante el periodo analizado, los guarda recursos desarrollaron un conjunto diverso de actividades orientadas al mantenimiento, " +
+                      "operación y fortalecimiento de los viveros forestales. La distribución de los principales tipos de labores se resume a continuación:</p>";
+              html += "<ul>";
+              topActs.forEach(function (a) {
+                const pct = porcentaje(a.conteo, total);
+                html += "<li>" + escapeHtml(etiquetaActividad(a.codigo)) +
+                        ": " + a.conteo + " registro(s), aproximadamente " +
+                        formatearNumero(pct, 1) + "% del total.</li>";
+              });
+              html += "</ul>";
+
+              if (otrasActividadesTexto.length > 0) {
+                const ejemplosOtras = Array.from(new Set(otrasActividadesTexto)).slice(0, 3);
+                html += "<p>Además, en los campos de descripción libre se reportaron otras actividades complementarias, tales como: " +
+                        escapeHtml(ejemplosOtras.join("; ")) +
+                        ", que refuerzan el carácter técnico y de apoyo comunitario del componente viveros.</p>";
+              }
+
+              html += "<p>En conjunto, la mayoría de las actividades se concentran en fases de mantenimiento y producción primaria, " +
+                      "asegurando la disponibilidad de plantas y la preparación de materiales para las jornadas de reforestación en la región.</p>";
+            } else {
+              html += "<p>En los registros de este mes no se cuenta con información estructurada sobre los tipos de actividades realizadas.</p>";
+            }
+
+            // 8. Participación interinstitucional y apoyo entre municipios
+            html += "<h2>8. Participación interinstitucional y apoyo entre municipios</h2>";
+            if ((apoyoSi + apoyoNo + apoyoSin) > 0) {
+              const pctApoyoSi = porcentaje(apoyoSi, total);
+              html += "<p>El programa de viveros del Altiplano Central registra una participación intermunicipal e interinstitucional que se refleja en los campos de apoyo fuera del municipio de origen. " +
+                      "En <strong>" + apoyoSi + "</strong> registro(s) (" +
+                      formatearNumero(pctApoyoSi, 1) +
+                      "% del total) se indica que las actividades se realizaron en apoyo a viveros de otros municipios, " +
+                      "mientras que el resto corresponde a acciones desarrolladas dentro del municipio de asignación del guarda recurso.</p>";
+
+              if (ejemplosApoyo.length > 0) {
+                const frasesEjemplos = ejemplosApoyo.map(function (e) {
+                  return escapeHtml(e.guarda || "(sin nombre)") +
+                         (e.municipioBase ? " (" + escapeHtml(e.municipioBase) + ")" : "") +
+                         (e.lugarApoyo ? " apoyó en " + escapeHtml(e.lugarApoyo) : "");
+                });
+                html += "<p>Entre los casos documentados de cooperación destacan ejemplos como: " +
+                        frasesEjemplos.join("; ") +
+                        ". Estos apoyos fortalecen la gestión compartida de los viveros municipales y comunitarios.</p>";
+              }
+            } else {
+              html += "<p>No se dispone de información suficiente para caracterizar la participación interinstitucional y el apoyo entre municipios en este mes.</p>";
+            }
+
+            // 9. Notas metodológicas
+            html += "<h2>9. Notas metodológicas</h2>";
+            html += "<p>El presente informe mensual se genera de forma automática a partir de los registros del formulario AC210 de asistencia técnica a viveros " +
+                    "del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central del CONAP. " +
+                    "Los totales y porcentajes se calculan únicamente con base en los registros correspondientes al mes seleccionado, " +
+                    "por lo que pueden variar conforme se incorporen nuevos datos o se actualicen los existentes.</p>";
+
+            const nombreArchivoMes = "informe_mensual_ac210_viveros_" +
+                                     anioSel + "_" + String(mesSel).padStart(2, "0") + ".doc";
+            crearDocumentoWord(nombreArchivoMes, html);
+          });
+
         })
         .catch(function (error) {
           console.error("Error cargando base2_datos.csv:", error);
