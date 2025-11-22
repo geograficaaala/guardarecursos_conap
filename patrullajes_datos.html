@@ -76,9 +76,14 @@
       background-color: #16a34a;
       color: white;
     }
-    /* Nuevo botón para informe */
+    /* Botón para informe por registro */
     #generate-report {
       background-color: #f97316;
+      color: white;
+    }
+    /* Botón para informe mensual */
+    #generate-monthly-report {
+      background-color: #0d9488;
       color: white;
     }
 
@@ -132,8 +137,10 @@
       <div class="buttons">
         <button id="download-csv">Descargar CSV</button>
         <button id="download-xlsx">Descargar Excel</button>
-        <!-- Nuevo botón para informe -->
+        <!-- Botón informe por registro -->
         <button id="generate-report">Generar informe del registro seleccionado</button>
+        <!-- Botón informe mensual -->
+        <button id="generate-monthly-report">Generar informe mensual</button>
       </div>
     </div>
 
@@ -150,8 +157,9 @@
   <script src="xlsx.full.min.js"></script>
 
   <script>
-    // Referencia global a la tabla de Tabulator
+    // Referencia global a la tabla de Tabulator y a los datos crudos
     let tablaPatrullajes;
+    let datosPatrullajes = [];
 
     // Pequeña función para crear nombres de archivo "limpios"
     function slugify(texto) {
@@ -196,6 +204,51 @@
       URL.revokeObjectURL(url);
     }
 
+    // Extraer año y mes de una fecha tipo "8/13/2025 18:00" o "13/8/2025 18:00"
+    function extraerAnioMes(fechaRaw) {
+      if (!fechaRaw) return null;
+      const str = fechaRaw.toString().trim();
+      if (!str) return null;
+      const parteFecha = str.split(" ")[0]; // antes de la hora
+      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
+      if (!sep) return null;
+      const partes = parteFecha.split(sep);
+      if (partes.length < 3) return null;
+
+      let p1 = parseInt(partes[0], 10);
+      let p2 = parseInt(partes[1], 10);
+      let anio = parseInt(partes[2], 10);
+
+      if (isNaN(p1) || isNaN(p2) || isNaN(anio)) return null;
+
+      let mes;
+      // Si el primer valor es >12 y el segundo <=12, asumimos formato dd/mm
+      if (p1 > 12 && p2 >= 1 && p2 <= 12) {
+        mes = p2;
+      } else {
+        // En caso contrario asumimos mm/dd
+        mes = p1;
+      }
+
+      if (mes < 1 || mes > 12) return null;
+
+      return { anio: anio, mes: mes };
+    }
+
+    // Nombre del mes en español
+    function nombreMesEspanol(mes) {
+      const nombres = [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+      ];
+      return nombres[mes - 1] || "";
+    }
+
+    function porcentaje(parte, total) {
+      if (!total) return 0;
+      return Math.round((parte * 1000) / total) / 10; // 1 decimal
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
       console.log("Página de datos de patrullajes cargada, intentando leer ./datos_patrullaje.csv ...");
 
@@ -231,6 +284,8 @@
             return;
           }
 
+          datosPatrullajes = data; // guardamos para el informe mensual
+
           const columns = Object.keys(data[0]).map(function (field) {
             return {
               title: field,
@@ -263,7 +318,7 @@
             tablaPatrullajes.download("xlsx", "patrullajes_control_vigilancia.xlsx", { sheetName: "Datos" });
           });
 
-          // Botón Generar informe (Word)
+          // Botón Generar informe POR REGISTRO (Word)
           document.getElementById("generate-report").addEventListener("click", function () {
             if (!tablaPatrullajes) {
               alert("La tabla aún no está lista.");
@@ -305,7 +360,7 @@
               fechaPatrullaje = fechaPatrullajeRaw.toString().split(" ")[0];
             }
 
-            // --- Texto narrativo (igual que el PDF) ---
+            // --- Texto narrativo ---
             const textoDescripcion =
               "En fecha " + (fechaPatrullaje || "(sin fecha reportada)") + ", el guarda recursos " +
               (guarda || "(sin nombre reportado)") +
@@ -354,7 +409,7 @@
               }
             }
 
-            // --- Construir HTML del informe ---
+            // --- Construir HTML del informe por registro ---
             const html =
               "<h1 style='text-align:center;'>Informe de patrullaje de control y vigilancia</h1>" +
               "<p style='text-align:center;'>Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central</p>" +
@@ -395,13 +450,209 @@
               "<p>______________________________<br/>Guarda recursos / Responsable del registro</p>" +
               "<p>______________________________<br/>Revisión / Supervisión</p>";
 
-            // Nombre de archivo amigable
             const slugGuarda = slugify(guarda || "sin_guardarecurso");
             const slugFecha = slugify(fechaPatrullaje || "sin_fecha");
             const nombreArchivo = "informe_patrullaje_" + slugGuarda + "_" + slugFecha + ".doc";
 
             crearDocumentoWord(nombreArchivo, html);
           });
+
+          // Botón Generar informe MENSUAL
+          document.getElementById("generate-monthly-report").addEventListener("click", function () {
+            if (!datosPatrullajes || datosPatrullajes.length === 0) {
+              alert("No hay datos cargados para generar el informe mensual.");
+              return;
+            }
+
+            // Construir lista de meses disponibles en la base
+            const mapaMeses = new Map(); // clave: "YYYY-MM" -> { anio, mes }
+            datosPatrullajes.forEach(function (reg) {
+              const infoFecha = extraerAnioMes(reg["Fecha de patrullaje"]);
+              if (!infoFecha) return;
+              const clave = infoFecha.anio + "-" + String(infoFecha.mes).padStart(2, "0");
+              if (!mapaMeses.has(clave)) {
+                mapaMeses.set(clave, infoFecha);
+              }
+            });
+
+            const clavesOrdenadas = Array.from(mapaMeses.keys()).sort();
+            if (clavesOrdenadas.length === 0) {
+              alert("No se encontraron fechas de patrullaje válidas para generar un informe mensual.");
+              return;
+            }
+
+            // Mostrar un prompt simple para elegir el mes
+            let mensaje = "Seleccione el mes para el informe mensual (escriba el número de opción):\n\n";
+            clavesOrdenadas.forEach(function (clave, index) {
+              const info = mapaMeses.get(clave);
+              const nombreMes = nombreMesEspanol(info.mes);
+              mensaje += (index + 1) + ") " +
+                nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1) +
+                " " + info.anio + "\n";
+            });
+            mensaje += "\nEjemplo: para la primera opción, escriba 1.";
+
+            const opcionStr = prompt(mensaje);
+            if (opcionStr === null) {
+              // Canceló
+              return;
+            }
+
+            const opcion = parseInt(opcionStr, 10);
+            if (isNaN(opcion) || opcion < 1 || opcion > clavesOrdenadas.length) {
+              alert("Opción no válida. Intente de nuevo.");
+              return;
+            }
+
+            const claveSeleccionada = clavesOrdenadas[opcion - 1];
+            const infoSeleccionada = mapaMeses.get(claveSeleccionada);
+            const anioSel = infoSeleccionada.anio;
+            const mesSel = infoSeleccionada.mes;
+            const nombreMesSel = nombreMesEspanol(mesSel);
+            const etiquetaMes = nombreMesSel.charAt(0).toUpperCase() + nombreMesSel.slice(1) + " " + anioSel;
+
+            // Filtrar registros de ese mes
+            const registrosMes = datosPatrullajes.filter(function (reg) {
+              const infoF = extraerAnioMes(reg["Fecha de patrullaje"]);
+              return infoF && infoF.anio === anioSel && infoF.mes === mesSel;
+            });
+
+            if (registrosMes.length === 0) {
+              alert("No se encontraron registros para " + etiquetaMes + ".");
+              return;
+            }
+
+            // Calcular estadísticas
+            const total = registrosMes.length;
+            const municipiosSet = new Set();
+            const guardasSet = new Set();
+            const conteoMunicipios = {};
+            const conteoGuardas = {};
+
+            let instSi = 0;
+            let instNo = 0;
+            let actIlegalSi = 0;
+            let actIlegalNo = 0;
+
+            registrosMes.forEach(function (reg) {
+              const muni = (reg["Municipio"] || "").toString().trim();
+              if (muni) {
+                municipiosSet.add(muni);
+                conteoMunicipios[muni] = (conteoMunicipios[muni] || 0) + 1;
+              }
+
+              const guarda = (reg["Guarda recursos responsable"] || "").toString().trim();
+              if (guarda) {
+                guardasSet.add(guarda);
+                conteoGuardas[guarda] = (conteoGuardas[guarda] || 0) + 1;
+              }
+
+              const masInstRaw = (reg["Hay mas instituciones involucradas en el patrullaje"] || "").toString().trim();
+              if (masInstRaw) {
+                const norm = masInstRaw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                if (norm === "si" || norm === "sí") {
+                  instSi++;
+                } else {
+                  instNo++;
+                }
+              }
+
+              const actRaw = (reg["Actividad ilegal observada"] || "").toString().trim();
+              if (!actRaw) return;
+              const actNorm = actRaw.toLowerCase();
+              if (actNorm === "no") {
+                actIlegalNo++;
+              } else {
+                actIlegalSi++;
+              }
+            });
+
+            const numMunicipios = municipiosSet.size;
+            const numGuardas = guardasSet.size;
+
+            // Construir HTML del informe mensual
+            let html = "";
+            html += "<h1 style='text-align:center;'>Informe mensual de patrullajes de control y vigilancia</h1>";
+            html += "<p style='text-align:center;'>Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central</p>";
+            html += "<p style='text-align:center;'><strong>Mes analizado: " + escapeHtml(etiquetaMes) + "</strong></p>";
+            html += "<hr />";
+
+            // 1. Resumen general
+            html += "<h2>1. Resumen general</h2>";
+            html += "<p>Durante el mes de " + escapeHtml(etiquetaMes) +
+                    " se registraron <strong>" + total + "</strong> patrullajes de control y vigilancia " +
+                    "en el sistema de monitoreo de la Dirección Regional Altiplano Central de CONAP.</p>";
+
+            if (numMunicipios > 0) {
+              html += "<p>Las actividades se distribuyeron en <strong>" + numMunicipios + "</strong> municipio(s): " +
+                      escapeHtml(Array.from(municipiosSet).join(", ")) + ".</p>";
+            }
+
+            if (numGuardas > 0) {
+              html += "<p>En estos patrullajes participaron <strong>" + numGuardas +
+                      "</strong> guarda recursos responsable(s): " +
+                      escapeHtml(Array.from(guardasSet).join(", ")) + ".</p>";
+            }
+
+            // 2. Distribución por municipio
+            html += "<h2>2. Distribución por municipio</h2>";
+            html += "<p>La siguiente lista muestra el número de patrullajes por municipio durante el mes analizado:</p>";
+            html += "<ul>";
+            Object.keys(conteoMunicipios).sort().forEach(function (muni) {
+              const count = conteoMunicipios[muni];
+              const pct = porcentaje(count, total);
+              html += "<li>" + escapeHtml(muni) + ": " + count + " patrullaje(s) (" + pct + "%)</li>";
+            });
+            html += "</ul>";
+
+            // 3. Distribución por guarda recursos
+            html += "<h2>3. Distribución por guarda recursos</h2>";
+            html += "<p>La siguiente lista muestra el número de patrullajes por guarda recursos responsable:</p>";
+            html += "<ul>";
+            Object.keys(conteoGuardas).sort().forEach(function (gr) {
+              const count = conteoGuardas[gr];
+              const pct = porcentaje(count, total);
+              html += "<li>" + escapeHtml(gr) + ": " + count + " patrullaje(s) (" + pct + "%)</li>";
+            });
+            html += "</ul>";
+
+            // 4. Actividad ilegal observada
+            html += "<h2>4. Actividad ilegal observada</h2>";
+            if (actIlegalSi === 0 && actIlegalNo === 0) {
+              html += "<p>No se cuenta con información suficiente para determinar la presencia de actividades ilegales en los patrullajes de este mes.</p>";
+            } else {
+              const pctIlegal = porcentaje(actIlegalSi, total);
+              const pctNoIlegal = porcentaje(actIlegalNo, total);
+              html += "<p>En <strong>" + actIlegalSi + "</strong> patrullaje(s) (" + pctIlegal +
+                      "%) se registró algún tipo de actividad ilegal observada, " +
+                      "mientras que en <strong>" + actIlegalNo + "</strong> (" + pctNoIlegal +
+                      "%) no se reportaron actividades ilegales.</p>";
+            }
+
+            // 5. Participación institucional
+            html += "<h2>5. Participación institucional</h2>";
+            if (instSi === 0 && instNo === 0) {
+              html += "<p>No se cuenta con información suficiente para determinar la participación de otras instituciones en los patrullajes de este mes.</p>";
+            } else {
+              const pctInstSi = porcentaje(instSi, total);
+              const pctInstNo = porcentaje(instNo, total);
+              html += "<p>En <strong>" + instSi + "</strong> patrullaje(s) (" + pctInstSi +
+                      "%) se registró la participación de otras instituciones, " +
+                      "mientras que en <strong>" + instNo + "</strong> (" + pctInstNo +
+                      "%) no se reportó la participación de instituciones adicionales.</p>";
+            }
+
+            // 6. Notas metodológicas
+            html += "<h2>6. Notas metodológicas</h2>";
+            html += "<p>El presente informe mensual se genera de forma automática a partir de los registros del formulario de patrullajes " +
+                    "de control y vigilancia del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central del CONAP. " +
+                    "Los totales y porcentajes se calculan únicamente con base en los registros correspondientes al mes seleccionado.</p>";
+
+            // Nombre de archivo
+            const nombreArchivoMes = "informe_mensual_patrullajes_" + anioSel + "_" + String(mesSel).padStart(2, "0") + ".doc";
+            crearDocumentoWord(nombreArchivoMes, html);
+          });
+
         })
         .catch(function (error) {
           console.error("Error cargando datos_patrullaje.csv:", error);
