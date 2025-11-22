@@ -76,9 +76,14 @@
       background-color: #16a34a;
       color: white;
     }
-    /* Botón para informe */
+    /* Botón informe por registro */
     #generate-report {
       background-color: #f97316;
+      color: white;
+    }
+    /* Botón informe mensual */
+    #generate-monthly-report {
+      background-color: #0d9488;
       color: white;
     }
 
@@ -91,9 +96,8 @@
       overflow-x: auto;
     }
 
-    /* Estilo visible para la fila seleccionada de Tabulator */
     .tabulator-row.tabulator-selected {
-      background-color: #bfdbfe !important; /* azul clarito */
+      background-color: #bfdbfe !important;
     }
 
     .back-container {
@@ -133,6 +137,7 @@
         <button id="download-csv">Descargar CSV</button>
         <button id="download-xlsx">Descargar Excel</button>
         <button id="generate-report">Generar informe del registro seleccionado</button>
+        <button id="generate-monthly-report">Generar informe mensual</button>
       </div>
     </div>
 
@@ -149,8 +154,9 @@
   <script src="xlsx.full.min.js"></script>
 
   <script>
-    // Referencia global a la tabla de Tabulator
+    // Referencia global a la tabla y a los datos crudos
     let tablaAC297;
+    let datosAC297 = [];
 
     function slugify(texto) {
       return String(texto || "")
@@ -169,33 +175,15 @@
         .replace(/'/g, "&#39;");
     }
 
+    // Para nombres "normalizados" por si hiciera falta
     function normalizarNombreCampo(nombre) {
-      return nombre
+      return String(nombre || "")
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
     }
 
-    // Buscar un campo cuyo nombre contenga todas las palabras clave
-    function buscarCampo(registro, palabrasClave) {
-      const keys = Object.keys(registro || {});
-      for (const key of keys) {
-        const normKey = normalizarNombreCampo(key);
-        let coincide = true;
-        for (const palabra of palabrasClave) {
-          const normPal = normalizarNombreCampo(palabra);
-          if (!normKey.includes(normPal)) {
-            coincide = false;
-            break;
-          }
-        }
-        if (coincide) {
-          return { campo: key, valor: registro[key] };
-        }
-      }
-      return { campo: "", valor: "" };
-    }
-
+    // Crear y descargar Word
     function crearDocumentoWord(nombreArchivo, contenidoHTML) {
       const header =
         "<html xmlns:o='urn:schemas-microsoft-com:office:office' " +
@@ -217,6 +205,87 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+    }
+
+    // Extraer año y mes de "Fecha"
+    function extraerAnioMes(fechaRaw) {
+      if (!fechaRaw) return null;
+      const str = fechaRaw.toString().trim();
+      if (!str) return null;
+      const parteFecha = str.split(" ")[0];
+      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
+      if (!sep) return null;
+      const partes = parteFecha.split(sep);
+      if (partes.length < 3) return null;
+
+      let p1 = parseInt(partes[0], 10);
+      let p2 = parseInt(partes[1], 10);
+      let anio = parseInt(partes[2], 10);
+      if (isNaN(p1) || isNaN(p2) || isNaN(anio)) return null;
+
+      let mes;
+      // si p1 > 12 y p2 <=12 -> dd/mm/yyyy
+      if (p1 > 12 && p2 >= 1 && p2 <= 12) {
+        mes = p2;
+      } else {
+        // por defecto mm/dd/yyyy
+        mes = p1;
+      }
+      if (mes < 1 || mes > 12) return null;
+      return { anio: anio, mes: mes };
+    }
+
+    // Parsear fecha completa a objeto Date
+    function parseFecha(fechaRaw) {
+      if (!fechaRaw) return null;
+      const str = fechaRaw.toString().trim();
+      if (!str) return null;
+      const parteFecha = str.split(" ")[0];
+      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
+      if (!sep) return null;
+      const partes = parteFecha.split(sep);
+      if (partes.length < 3) return null;
+
+      let p1 = parseInt(partes[0], 10);
+      let p2 = parseInt(partes[1], 10);
+      let p3 = parseInt(partes[2], 10);
+      if (isNaN(p1) || isNaN(p2) || isNaN(p3)) return null;
+
+      let anio = p3;
+      let mes, dia;
+      // si p1 > 12 y p2 <=12 -> dd/mm/yyyy
+      if (p1 > 12 && p2 >= 1 && p2 <= 12) {
+        dia = p1;
+        mes = p2;
+      } else {
+        mes = p1;
+        dia = p2;
+      }
+      if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+      return new Date(anio, mes - 1, dia);
+    }
+
+    function nombreMesEspanol(mes) {
+      const nombres = [
+        "enero","febrero","marzo","abril","mayo","junio",
+        "julio","agosto","septiembre","octubre","noviembre","diciembre"
+      ];
+      return nombres[mes - 1] || "";
+    }
+
+    function porcentaje(parte, total) {
+      if (!total) return 0;
+      return Math.round((parte * 1000) / total) / 10; // 1 decimal
+    }
+
+    function obtenerHoraEntera(horaRaw) {
+      if (!horaRaw) return null;
+      const str = horaRaw.toString().trim();
+      if (!str) return null;
+      const partes = str.split(":");
+      const h = parseInt(partes[0], 10);
+      if (isNaN(h)) return null;
+      return h;
     }
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -253,6 +322,8 @@
             return;
           }
 
+          datosAC297 = data; // guardar para informe mensual
+
           const columns = Object.keys(data[0]).map(function (field) {
             return {
               title: field,
@@ -271,18 +342,19 @@
             paginationSizeSelector: [10, 20, 50, 100],
             columns: columns,
             movableColumns: true,
-            selectableRows: 1 // solo una fila seleccionada
+            selectableRows: 1
           });
 
+          // Botones de descarga
           document.getElementById("download-csv").addEventListener("click", function () {
-            tablaAC297.download("csv", "base3_datos.csv");
+            tablaAC297.download("csv", "ac297_consumo_forestal_familiar.csv");
           });
 
           document.getElementById("download-xlsx").addEventListener("click", function () {
-            tablaAC297.download("xlsx", "base3_datos.xlsx", { sheetName: "Datos" });
+            tablaAC297.download("xlsx", "ac297_consumo_forestal_familiar.xlsx", { sheetName: "Datos" });
           });
 
-          // Botón generar informe (Word)
+          // INFORME POR REGISTRO
           document.getElementById("generate-report").addEventListener("click", function () {
             if (!tablaAC297) {
               alert("La tabla aún no está lista.");
@@ -298,54 +370,74 @@
             const registro = seleccionadas[0];
             console.log("Registro AC297 seleccionado para el informe:", registro);
 
-            // Campos clave
-            const { valor: nombreInformante } = buscarCampo(registro, ["nombre"]);
-            const { valor: hogar }           = buscarCampo(registro, ["hogar"]);
-            const { valor: familia }         = buscarCampo(registro, ["familia"]);
-            const { valor: comunidad }       = buscarCampo(registro, ["comunidad"]);
-            const { valor: aldea }           = buscarCampo(registro, ["aldea"]);
-            const { valor: municipio }       = buscarCampo(registro, ["municipio"]);
-            const { valor: depto }           = buscarCampo(registro, ["departamento"]);
-            const { valor: fechaEncuestaEsp }= buscarCampo(registro, ["fecha", "encuesta"]);
-            const { valor: fechaGenerica }   = buscarCampo(registro, ["fecha"]);
-            const { valor: fechaCreacion }   = buscarCampo(registro, ["creacion"]);
-            const { valor: fechaModificacion } = buscarCampo(registro, ["modificacion"]);
-            const { valor: productoConsumo } = buscarCampo(registro, ["producto"]);
-            const { valor: tipoConsumo }     = buscarCampo(registro, ["consumo"]);
+            // Campos clave basados en nombres reales de columnas
+            const nombreUsuario = registro["Nombre del usuario"] || "";
+            const nombreGuarda = registro["Nombre del guardarecursos"] || registro["Nombre del guardarecurso"] || "";
+            const comunidad = registro["Comunidad"] || "";
+            const aldea = registro["Aldea caserio barrio colonia"] || "";
+            const municipio = registro["Municipio"] || "";
+            const region = registro["Region"] || "";
+            const fecha = registro["Fecha"] || "";
+            const hora = registro["Hora"] || "";
+            const areaProtegida = registro["Area protegida"] || "";
+            const totalArboles = registro["Cantidad total de arboles a talar"] || "";
+            const especies = registro["Especies a talar"] || "";
+            const otrasEspecies = registro["Especifique otra especie"] || "";
+            const observaciones = registro["Observaciones del guardarecurso"] || "";
+            const fechaCreacion = registro["Fecha de creacion de registro"] || "";
+            const fechaModificacion = registro["Fecha de modificacion de registro"] || "";
+            const lon = registro["Longitud"];
+            const lat = registro["Latitud"];
 
-            const fechaReferencia = fechaEncuestaEsp || fechaGenerica || "";
-            const nombreHogarReferencia = hogar || familia || "";
-            const ubicacionLocal = comunidad || aldea || "";
-
-            let textoUbicacion = "Ubicación: ";
+            // Construir descripción narrativa
+            let ubicacionTexto = "";
             const partesUb = [];
-            if (ubicacionLocal) partesUb.push(ubicacionLocal);
+            if (comunidad) partesUb.push(comunidad);
+            if (aldea) partesUb.push(aldea);
             if (municipio) partesUb.push("municipio de " + municipio);
-            if (depto) partesUb.push("departamento de " + depto);
-            textoUbicacion += partesUb.length > 0 ? partesUb.join(", ") : "(sin ubicación reportada)";
+            if (region) partesUb.push("región " + region);
+            if (partesUb.length > 0) {
+              ubicacionTexto = partesUb.join(", ");
+            } else {
+              ubicacionTexto = "(sin ubicación detallada reportada)";
+            }
 
-            let textoDescripcion =
+            const textoDescripcion =
               "Este informe corresponde a un registro del formulario AC297 de consumo forestal familiar. " +
-              "La información fue recopilada el " + (fechaReferencia || "(sin fecha de encuesta reportada)") +
-              " mediante entrevista al hogar " + (nombreHogarReferencia || "(sin nombre de hogar/familia reportado)");
-
-            if (nombreInformante) {
-              textoDescripcion += ", a través del informante " + nombreInformante;
-            }
-            textoDescripcion +=
-              ". El registro describe las características del consumo de productos forestales en el hogar";
-
-            if (productoConsumo || tipoConsumo) {
-              textoDescripcion += ", haciendo énfasis en ";
-              const detallesConsumo = [];
-              if (productoConsumo) detallesConsumo.push("los productos reportados (" + productoConsumo + ")");
-              if (tipoConsumo) detallesConsumo.push("el tipo o volumen de consumo registrado (" + tipoConsumo + ")");
-              textoDescripcion += detallesConsumo.join(" y ");
-            }
-            textoDescripcion +=
+              "La verificación se realizó el " + (fecha || "(sin fecha reportada)") +
+              (hora ? " a las " + hora : "") +
+              " en un sitio ubicado en " + ubicacionTexto +
+              (areaProtegida ? ", dentro del área protegida " + areaProtegida : "") +
+              ". La solicitud fue atendida por el guardarecursos " +
+              (nombreGuarda || "(sin nombre de guardarecursos reportado)") +
               ", en el marco del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central de CONAP.";
 
-            // Detalle de variables
+            let textoEspecies = "";
+            if (totalArboles || especies || otrasEspecies) {
+              textoEspecies =
+                "En este expediente se autorizó la extracción de " +
+                (totalArboles || "(sin cantidad total reportada)") +
+                " árbol(es) para consumo familiar. ";
+              if (especies) {
+                textoEspecies +=
+                  "Las especies principales reportadas en el formulario son: " +
+                  especies + ". ";
+              }
+              if (otrasEspecies) {
+                textoEspecies +=
+                  "Adicionalmente se indicaron otras especies bajo la descripción: " +
+                  otrasEspecies + ".";
+              }
+            }
+
+            let textoObservaciones = "";
+            if (observaciones) {
+              textoObservaciones =
+                "En las observaciones operativas se consigna la siguiente información complementaria: " +
+                observaciones;
+            }
+
+            // Listado de variables campo: valor
             const entries = Object.entries(registro || {});
             let detalleHtml = "<ul>";
             entries.forEach(([campo, valor]) => {
@@ -364,13 +456,17 @@
               "<hr />" +
 
               "<h2>1. Datos básicos del registro</h2>" +
-              "<p><strong>Hogar / familia:</strong> " + escapeHtml(nombreHogarReferencia || "(sin nombre de hogar/familia reportado)") + "</p>" +
-              "<p><strong>Nombre del informante:</strong> " + escapeHtml(nombreInformante || "(sin nombre de informante reportado)") + "</p>" +
-              "<p><strong>Fecha de la encuesta:</strong> " + escapeHtml(fechaReferencia || "(sin fecha de encuesta reportada)") + "</p>" +
-              "<p><strong>" + escapeHtml(textoUbicacion) + "</strong></p>" +
+              "<p><strong>Nombre del usuario / hogar:</strong> " + escapeHtml(nombreUsuario || "(sin nombre de usuario reportado)") + "</p>" +
+              "<p><strong>Guardarecursos responsable:</strong> " + escapeHtml(nombreGuarda || "(sin nombre de guardarecursos reportado)") + "</p>" +
+              "<p><strong>Fecha de verificación:</strong> " + escapeHtml(fecha || "(sin fecha reportada)") + "</p>" +
+              (hora ? "<p><strong>Hora de verificación:</strong> " + escapeHtml(hora) + "</p>" : "") +
+              "<p><strong>Ubicación:</strong> " + escapeHtml(ubicacionTexto) + "</p>" +
+              (areaProtegida ? "<p><strong>Área protegida asociada:</strong> " + escapeHtml(areaProtegida) + "</p>" : "") +
 
               "<h2>2. Descripción del consumo forestal familiar</h2>" +
               "<p>" + escapeHtml(textoDescripcion) + "</p>" +
+              (textoEspecies ? "<p>" + escapeHtml(textoEspecies) + "</p>" : "") +
+              (textoObservaciones ? "<p>" + escapeHtml(textoObservaciones) + "</p>" : "") +
 
               "<h2>3. Detalle de las variables registradas</h2>" +
               detalleHtml +
@@ -378,17 +474,428 @@
               "<h2>4. Metadatos del formulario</h2>" +
               "<p><strong>Fecha de creación del registro:</strong> " + escapeHtml(fechaCreacion || "(no especificada)") + "</p>" +
               "<p><strong>Fecha de última modificación del registro:</strong> " + escapeHtml(fechaModificacion || "(no especificada)") + "</p>" +
+              "<p><strong>Coordenadas (longitud, latitud):</strong> " +
+                escapeHtml(lon !== undefined ? String(lon) : "-") + ", " +
+                escapeHtml(lat !== undefined ? String(lat) : "-") + "</p>" +
 
               "<h2>5. Firmas (para uso institucional)</h2>" +
               "<p>______________________________<br/>Responsable de la encuesta / técnico</p>" +
               "<p>______________________________<br/>Revisión / Supervisión</p>";
 
-            const slugHogar = slugify(nombreHogarReferencia || nombreInformante || "sin_hogar");
-            const slugFecha = slugify(fechaReferencia || "sin_fecha");
+            const slugHogar = slugify(nombreUsuario || "sin_hogar");
+            const slugFecha = slugify(fecha || "sin_fecha");
             const nombreArchivo = "informe_ac297_" + slugHogar + "_" + slugFecha + ".doc";
 
             crearDocumentoWord(nombreArchivo, html);
           });
+
+          // INFORME MENSUAL
+          document.getElementById("generate-monthly-report").addEventListener("click", function () {
+            if (!datosAC297 || datosAC297.length === 0) {
+              alert("No hay datos cargados para generar el informe mensual.");
+              return;
+            }
+
+            // Construir lista de meses disponibles en la base (columna "Fecha")
+            const mapaMeses = new Map(); // clave: "YYYY-MM" -> { anio, mes }
+            datosAC297.forEach(function (reg) {
+              const infoFecha = extraerAnioMes(reg["Fecha"]);
+              if (!infoFecha) return;
+              const clave = infoFecha.anio + "-" + String(infoFecha.mes).padStart(2, "0");
+              if (!mapaMeses.has(clave)) {
+                mapaMeses.set(clave, infoFecha);
+              }
+            });
+
+            const clavesOrdenadas = Array.from(mapaMeses.keys()).sort();
+            if (clavesOrdenadas.length === 0) {
+              alert("No se encontraron fechas válidas en la columna 'Fecha' para generar un informe mensual.");
+              return;
+            }
+
+            let mensaje = "Seleccione el mes para el informe mensual de consumos forestales familiares (AC297).\n";
+            mensaje += "Escriba el número de opción:\n\n";
+            clavesOrdenadas.forEach(function (clave, index) {
+              const info = mapaMeses.get(clave);
+              const nombreMes = nombreMesEspanol(info.mes);
+              mensaje += (index + 1) + ") " +
+                nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1) +
+                " " + info.anio + "\n";
+            });
+            mensaje += "\nEjemplo: para la primera opción, escriba 1.";
+
+            const opcionStr = prompt(mensaje);
+            if (opcionStr === null) {
+              return; // canceló
+            }
+
+            const opcion = parseInt(opcionStr, 10);
+            if (isNaN(opcion) || opcion < 1 || opcion > clavesOrdenadas.length) {
+              alert("Opción no válida. Intente de nuevo.");
+              return;
+            }
+
+            const claveSeleccionada = clavesOrdenadas[opcion - 1];
+            const infoSeleccionada = mapaMeses.get(claveSeleccionada);
+            const anioSel = infoSeleccionada.anio;
+            const mesSel = infoSeleccionada.mes;
+            const nombreMesSel = nombreMesEspanol(mesSel);
+            const etiquetaMes = nombreMesSel.charAt(0).toUpperCase() + nombreMesSel.slice(1) + " " + anioSel;
+
+            const registrosMes = datosAC297.filter(function (reg) {
+              const infoF = extraerAnioMes(reg["Fecha"]);
+              return infoF && infoF.anio === anioSel && infoF.mes === mesSel;
+            });
+
+            if (registrosMes.length === 0) {
+              alert("No se encontraron registros para " + etiquetaMes + ".");
+              return;
+            }
+
+            const total = registrosMes.length;
+
+            // Totales y distribuciones básicas
+            let totalArboles = 0;
+            let dentroRumcla = 0;
+            let fueraRumcla = 0;
+
+            const conteoMunicipios = {};
+            const conteoGuardas = {};
+            const diasOperativosSet = new Set();
+            const conteoPorFecha = {}; // "YYYY-MM-DD" -> count
+            const conteoDiaSemana = {}; // lunes, martes...
+
+            let conteoMañana = 0;
+            let conteoTarde = 0;
+            let conteoOtrasHoras = 0;
+            let registrosConHora = 0;
+
+            let casosIntermunicipalesSi = 0;
+            let casosIntermunicipalesNo = 0;
+
+            let fechaOk = 0;
+            let municipioOk = 0;
+            let guardaOk = 0;
+            let coordsOk = 0;
+            let obsOperativasOk = 0;
+
+            registrosMes.forEach(function (reg) {
+              const area = (reg["Area protegida"] || "").toString().trim().toLowerCase();
+              if (area.includes("rumcla")) {
+                dentroRumcla++;
+              } else if (area) {
+                fueraRumcla++;
+              }
+
+              const cant = parseFloat(reg["Cantidad total de arboles a talar"]);
+              if (!isNaN(cant)) totalArboles += cant;
+
+              const muni = (reg["Municipio"] || "").toString().trim();
+              if (muni) {
+                conteoMunicipios[muni] = (conteoMunicipios[muni] || 0) + 1;
+                municipioOk++;
+              }
+
+              const guarda = (reg["Nombre del guardarecursos"] || reg["Nombre del guardarecurso"] || "").toString().trim();
+              if (guarda) {
+                conteoGuardas[guarda] = (conteoGuardas[guarda] || 0) + 1;
+                guardaOk++;
+              }
+
+              const fRaw = reg["Fecha"];
+              if (fRaw) {
+                fechaOk++;
+                const d = parseFecha(fRaw);
+                if (d) {
+                  const y = d.getFullYear();
+                  const m = String(d.getMonth() + 1).padStart(2, "0");
+                  const day = String(d.getDate()).padStart(2, "0");
+                  const claveFecha = y + "-" + m + "-" + day;
+                  conteoPorFecha[claveFecha] = (conteoPorFecha[claveFecha] || 0) + 1;
+                  diasOperativosSet.add(claveFecha);
+                  const diaSemanaIdx = d.getDay(); // 0-domingo ... 6-sabado
+                  const nombresDias = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+                  const nombreDia = nombresDias[diaSemanaIdx];
+                  conteoDiaSemana[nombreDia] = (conteoDiaSemana[nombreDia] || 0) + 1;
+                }
+              }
+
+              const hora = reg["Hora"];
+              const h = obtenerHoraEntera(hora);
+              if (h !== null) {
+                registrosConHora++;
+                if (h >= 6 && h < 12) {
+                  conteoMañana++;
+                } else if (h >= 12 && h < 18) {
+                  conteoTarde++;
+                } else {
+                  conteoOtrasHoras++;
+                }
+              }
+
+              const inter = (reg["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"] || "").toString().trim().toLowerCase();
+              if (inter) {
+                if (inter === "si" || inter === "sí") {
+                  casosIntermunicipalesSi++;
+                } else {
+                  casosIntermunicipalesNo++;
+                }
+              }
+
+              const lon = reg["Longitud"];
+              const lat = reg["Latitud"];
+              const lonNum = parseFloat(lon);
+              const latNum = parseFloat(lat);
+              if (!isNaN(lonNum) && !isNaN(latNum) && lonNum !== 0 && latNum !== 0) {
+                coordsOk++;
+              }
+
+              const obsOper = (reg["Observaciones operativas"] || "").toString().trim();
+              if (obsOper) obsOperativasOk++;
+            });
+
+            const numDiasOperativos = diasOperativosSet.size;
+            const promedioPorDiaOperativo = numDiasOperativos > 0 ? (Math.round((total / numDiasOperativos) * 10) / 10) : 0;
+            const pctDentro = porcentaje(dentroRumcla, total);
+            const pctFuera = porcentaje(fueraRumcla, total);
+
+            // Ordenar municipios por número de casos
+            const municipiosOrdenados = Object.keys(conteoMunicipios).sort(function (a, b) {
+              return conteoMunicipios[b] - conteoMunicipios[a];
+            });
+            const guardasOrdenados = Object.keys(conteoGuardas).sort(function (a, b) {
+              return conteoGuardas[b] - conteoGuardas[a];
+            });
+
+            // Día(s) con más casos
+            const diasSemanaOrdenados = Object.keys(conteoDiaSemana).sort(function (a, b) {
+              return conteoDiaSemana[b] - conteoDiaSemana[a];
+            });
+
+            // Horario porcentajes
+            const pctMañana = porcentaje(conteoMañana, registrosConHora);
+            const pctTarde = porcentaje(conteoTarde, registrosConHora);
+            const pctOtrasHoras = porcentaje(conteoOtrasHoras, registrosConHora);
+
+            const pctFechaOk = porcentaje(fechaOk, total);
+            const pctMuniOk = porcentaje(municipioOk, total);
+            const pctGuardaOk = porcentaje(guardaOk, total);
+            const pctCoordsOk = porcentaje(coordsOk, total);
+            const pctObsOperOk = porcentaje(obsOperativasOk, total);
+
+            // Cálculo por especie (usando columnas "Cantidad total de ...")
+            const mapaEspeciesColumnas = {
+              "Cantidad total de EUCAP": "eucalipto",
+              "Cantidad total de ROB": "roble",
+              "Cantidad total de PALO BLANCO": "palo blanco",
+              "Cantidad total de ENCINO": "encino",
+              "Cantidad total de CIPRES": "ciprés",
+              "Cantidad total de OTRO": "otras especies",
+              "Cantidad total de ANG": "angiospermas/latifoliadas",
+              "Cantidad total de ALISO": "aliso",
+              "Cantidad total de SM": "SM",
+              "Cantidad total de PINO": "pino",
+              "Cantidad total de ER": "ER",
+              "Cantidad total de MATE": "mate"
+            };
+
+            const conteoEspecies = {};
+            registrosMes.forEach(function (reg) {
+              Object.keys(mapaEspeciesColumnas).forEach(function (col) {
+                const especieNombre = mapaEspeciesColumnas[col];
+                const valor = parseFloat(reg[col]);
+                if (!isNaN(valor) && valor > 0) {
+                  conteoEspecies[especieNombre] = (conteoEspecies[especieNombre] || 0) + valor;
+                }
+              });
+            });
+
+            const especiesOrdenadas = Object.keys(conteoEspecies).sort(function (a, b) {
+              return conteoEspecies[b] - conteoEspecies[a];
+            });
+
+            // ---- Construir HTML del informe mensual (narrativo) ----
+            let html = "";
+            html += "<h1 style='text-align:center;'>Informe mensual de consumos forestales familiares (AC297)</h1>";
+            html += "<p style='text-align:center;'>Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central</p>";
+            html += "<p style='text-align:center;'><strong>Mes analizado: " + escapeHtml(etiquetaMes) + "</strong></p>";
+            html += "<hr />";
+
+            // 1. Cantidad total y distribución general
+            html += "<h2>1. Cantidad total y distribución general de consumos</h2>";
+            html += "<p>Durante el mes de " + escapeHtml(etiquetaMes) +
+                    ", el sistema de registro operativo del cuerpo de guardarecursos de la región del Altiplano Central " +
+                    "documentó un total de <strong>" + total + "</strong> consumos forestales familiares (CFF) válidos, " +
+                    "asociados a solicitudes de aprovechamiento doméstico tramitadas conforme a los procedimientos normativos vigentes.</p>";
+
+            if (totalArboles > 0) {
+              html += "<p>En conjunto, estos expedientes registran una suma consolidada de <strong>" +
+                      totalArboles + "</strong> árbol(es) autorizados para extracción con fines estrictamente domésticos, " +
+                      "en el marco de un esquema de uso legal y supervisado orientado a satisfacer necesidades básicas de construcción, " +
+                      "mantenimiento de vivienda y fortalecimiento de infraestructura agropecuaria.</p>";
+            }
+
+            if (dentroRumcla + fueraRumcla > 0) {
+              if (fueraRumcla === 0) {
+                html += "<p>El <strong>" + pctDentro + "%</strong> de los consumos registrados se localizó dentro de los límites oficiales " +
+                        "de la Reserva de Usos Múltiples de la Cuenca del Lago de Atitlán (RUMCLA), sin registros de aprovechamientos " +
+                        "en áreas externas durante el periodo analizado.</p>";
+              } else {
+                html += "<p>De los casos registrados, el <strong>" + pctDentro +
+                        "%</strong> se localizó dentro de la RUMCLA y el <strong>" + pctFuera +
+                        "%</strong> fuera de sus límites oficiales, lo que refleja un esquema de gestión territorial mixto " +
+                        "entre zonas internas y áreas aledañas de influencia.</p>";
+              }
+            }
+
+            if (municipiosOrdenados.length > 0) {
+              const listaMunicipios = municipiosOrdenados.map(function (muni) {
+                const c = conteoMunicipios[muni];
+                const p = porcentaje(c, total);
+                return muni + " (" + c + " caso(s), " + p + "%)";
+              }).join("; ");
+              html += "<p>La distribución territorial de los consumos muestra que los casos se concentraron principalmente en los siguientes municipios: " +
+                      escapeHtml(listaMunicipios) + ".</p>";
+            }
+
+            // 2. Distribución temporal y ritmo operativo
+            html += "<h2>2. Distribución temporal y ritmo operativo</h2>";
+            if (numDiasOperativos > 0) {
+              html += "<p>Los consumos verificados durante " + escapeHtml(etiquetaMes) +
+                      " se distribuyeron en <strong>" + numDiasOperativos + "</strong> día(s) operativo(s) con registro, " +
+                      "lo que supone un promedio de <strong>" + promedioPorDiaOperativo +
+                      "</strong> consumos por día con actividad en campo.</p>";
+            } else {
+              html += "<p>La información disponible no permite reconstruir de forma completa la distribución temporal de las verificaciones realizadas en el mes.</p>";
+            }
+
+            if (Object.keys(conteoPorFecha).length > 0) {
+              const fechasOrdenadas = Object.keys(conteoPorFecha).sort(function (a, b) {
+                return conteoPorFecha[b] - conteoPorFecha[a];
+              });
+              const resumenFechas = fechasOrdenadas.map(function (f) {
+                return f + " (" + conteoPorFecha[f] + " caso[s])";
+              }).join("; ");
+              html += "<p>Los días con mayor concentración de verificaciones corresponden a las fechas: " +
+                      escapeHtml(resumenFechas) + ", lo que sugiere un esquema de trabajo por jornadas programadas " +
+                      "más que una distribución homogénea a lo largo del mes.</p>";
+            }
+
+            if (registrosConHora > 0) {
+              html += "<p>En cuanto al horario, el análisis de los registros con hora válida indica que aproximadamente el <strong>" +
+                      pctMañana + "%</strong> de las verificaciones se realizó en horario matutino, " +
+                      "el <strong>" + pctTarde + "%</strong> en horario vespertino y el <strong>" + pctOtrasHoras +
+                      "%</strong> en otros horarios. Este patrón es consistente con la práctica operativa de priorizar las visitas de campo " +
+                      "en franjas de mayor visibilidad y mejores condiciones de acceso.</p>";
+            }
+
+            if (diasSemanaOrdenados.length > 0) {
+              const resumenDias = diasSemanaOrdenados.map(function (d) {
+                return d + " (" + conteoDiaSemana[d] + " registro[s])";
+              }).join("; ");
+              html += "<p>Por día de la semana, los mayores niveles de actividad se registraron en: " +
+                      escapeHtml(resumenDias) + ", lo que refleja una planificación basada en ciclos semanales " +
+                      "y ventanas específicas para la atención de solicitudes y verificaciones.</p>";
+            }
+
+            // 3. Especies autorizadas y volúmenes de extracción
+            html += "<h2>3. Especies autorizadas y volúmenes de extracción</h2>";
+            if (especiesOrdenadas.length === 0) {
+              html += "<p>Los registros del mes no permiten desagregar de forma detallada los volúmenes por especie autorizada, " +
+                      "ya sea por ausencia de datos específicos o por uso limitado de los campos de desglose en el formulario.</p>";
+            } else {
+              const resumenEspecies = especiesOrdenadas.map(function (esp) {
+                const v = conteoEspecies[esp];
+                return esp + " (" + v + " árbol[es])";
+              }).join("; ");
+              html += "<p>La composición específica de los árboles autorizados para extracción durante el mes muestra la presencia de las siguientes especies principales: " +
+                      escapeHtml(resumenEspecies) + ".</p>";
+
+              const especieTop = especiesOrdenadas[0];
+              html += "<p>En términos de volumen, la especie con mayor número de individuos autorizados fue <strong>" +
+                      escapeHtml(especieTop) +
+                      "</strong>, lo que refleja su relevancia funcional y disponibilidad en los bosques de la región. " +
+                      "El resto de especies se mantiene en volúmenes compatibles con un esquema de aprovechamiento familiar selectivo y de baja intensidad.</p>";
+            }
+
+            // 4. Participación intermunicipal y coordinación técnica
+            html += "<h2>4. Participación intermunicipal y coordinación técnica</h2>";
+            if (casosIntermunicipalesSi === 0 && casosIntermunicipalesNo === 0) {
+              html += "<p>La base de datos del mes no permite identificar de forma explícita la participación intermunicipal, " +
+                      "debido al uso limitado o ausente del campo específico de registro de apoyos entre municipios.</p>";
+            } else if (casosIntermunicipalesSi === 0) {
+              html += "<p>El análisis de la variable operativa relacionada con la atención de consumos fuera del municipio de intervención " +
+                      "indica que durante " + escapeHtml(etiquetaMes) +
+                      " no se registraron casos de apoyo intermunicipal entre guardarecursos. " +
+                      "Cada consumo fue verificado dentro de la jurisdicción asignada al personal responsable, " +
+                      "lo que sugiere un funcionamiento descentralizado y estable, con carga de trabajo acorde a la capacidad operativa local.</p>";
+            } else {
+              const totalInter = casosIntermunicipalesSi + casosIntermunicipalesNo;
+              const pctSi = porcentaje(casosIntermunicipalesSi, totalInter);
+              html += "<p>La revisión del campo relativo a la atención de consumos fuera del municipio de intervención muestra que, " +
+                      "durante el mes analizado, se registraron <strong>" + casosIntermunicipalesSi +
+                      "</strong> caso(s) de apoyo intermunicipal (" + pctSi +
+                      "% de los registros con esta variable diligenciada). " +
+                      "Estos casos reflejan la capacidad del programa para redistribuir esfuerzo operativo en función de la demanda " +
+                      "y la disponibilidad de personal técnico.</p>";
+            }
+
+            // 5. Desempeño por municipios y guardarecursos
+            html += "<h2>5. Desempeño por municipios y guardarecursos</h2>";
+            if (municipiosOrdenados.length > 0) {
+              const partesMun = municipiosOrdenados.map(function (muni) {
+                const c = conteoMunicipios[muni];
+                const p = porcentaje(c, total);
+                return muni + " (" + c + " consumo[s], " + p + "%)";
+              }).join("; ");
+              html += "<p>La distribución operativa del programa de consumos forestales familiares muestra que los municipios más activos durante el mes fueron: " +
+                      escapeHtml(partesMun) + ", lo que guarda relación con la disponibilidad de cobertura boscosa remanente, " +
+                      "la tradición de aprovechamiento doméstico y la dinámica propia de la economía rural en la región.</p>";
+            }
+
+            if (guardasOrdenados.length > 0) {
+              const partesGuarda = guardasOrdenados.map(function (g) {
+                const c = conteoGuardas[g];
+                const p = porcentaje(c, total);
+                return g + " (" + c + " verificación[es], " + p + "%)";
+              }).join("; ");
+              html += "<p>En cuanto al personal operativo, la verificación de consumos se distribuyó entre los siguientes guardarecursos: " +
+                      escapeHtml(partesGuarda) + ". Esta distribución sugiere una carga de trabajo repartida, " +
+                      "sin evidencia de sobreasignación individual y con presencia institucional efectiva en los municipios de intervención.</p>";
+            }
+
+            // 6. Calidad y consistencia de los registros
+            html += "<h2>6. Calidad y consistencia de los registros</h2>";
+            html += "<p>La revisión de la calidad de los datos correspondientes al programa de consumos forestales familiares de " +
+                    escapeHtml(etiquetaMes) + " muestra un desempeño administrativo sólido. " +
+                    "En particular, el <strong>" + pctFechaOk +
+                    "%</strong> de los registros cuenta con fecha diligenciada, " +
+                    "el <strong>" + pctMuniOk + "%</strong> incluye municipio de intervención " +
+                    "y el <strong>" + pctGuardaOk +
+                    "%</strong> identifica al guardarecursos responsable, " +
+                    "lo que garantiza trazabilidad básica por territorio, tiempo y responsable técnico.</p>";
+
+            if (coordsOk > 0) {
+              html += "<p>En materia de georreferenciación, el <strong>" + pctCoordsOk +
+                      "%</strong> de los expedientes contiene coordenadas válidas de latitud y longitud, " +
+                      "lo que permite ubicar espacialmente los consumos, analizar patrones territoriales de extracción " +
+                      "y fortalecer el monitoreo institucional del territorio.</p>";
+            } else {
+              html += "<p>La información disponible sobre coordenadas geográficas es limitada para el mes analizado, " +
+                      "por lo que se recomienda reforzar el registro sistemático de latitud y longitud en futuras verificaciones.</p>";
+            }
+
+            html += "<p>El campo de observaciones operativas fue utilizado en aproximadamente <strong>" +
+                    pctObsOperOk + "%</strong> de los registros, aportando contexto cualitativo sobre el tipo de bosque intervenido, " +
+                    "las condiciones del sitio y particularidades del aprovechamiento. " +
+                    "No obstante, se sugiere fortalecer este apartado mediante lineamientos internos sobre el tipo de información mínima a consignar, " +
+                    "a fin de incrementar el valor analítico de los datos recopilados.</p>";
+
+            // Nombre del archivo
+            const nombreArchivoMes = "informe_mensual_ac297_" + anioSel + "_" + String(mesSel).padStart(2, "0") + ".doc";
+            crearDocumentoWord(nombreArchivoMes, html);
+          });
+
         })
         .catch(function (error) {
           console.error("Error cargando base3_datos.csv:", error);
