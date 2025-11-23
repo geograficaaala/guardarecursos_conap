@@ -2,39 +2,258 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Base 3 - Dashboard</title>
+  <title>AC297 Consumo forestal familiar - Dashboard</title>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f5f7fa;
-    }
-    h1 {
-      margin-bottom: 5px;
-    }
-    p {
-      margin-top: 0;
-      color: #555;
+    :root {
+      --verde-header: #0f766e;
+      --azul-boton: #1d9bf0;
+      --azul-boton-hover: #0f80cc;
+      --gris-fondo: #f5f7fa;
+      --texto-principal: #0f172a;
+      --texto-secundario: #6b7280;
+      --borde-suave: #e5e7eb;
+      --card-radius: 14px;
     }
 
-    /* Sección de dashboard */
-    #dashboard {
-      margin-top: 20px;
-      margin-bottom: 30px;
+    * {
+      box-sizing: border-box;
     }
-    #dashboard h2 {
-      margin-bottom: 10px;
+
+    html {
+      scroll-behavior: smooth;
     }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Helvetica, Arial, sans-serif;
+      color: var(--texto-principal);
+      background:
+        radial-gradient(circle at top left, #dbeafe 0, transparent 55%),
+        radial-gradient(circle at bottom right, #bbf7d0 0, transparent 55%),
+        linear-gradient(
+          180deg,
+          #e5f3f0 0%,
+          var(--gris-fondo) 35%,
+          #eef2ff 100%
+        );
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      animation: fadeInBody 0.4s ease-out forwards;
+    }
+
+    @keyframes fadeInBody {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+      body {
+        animation: none;
+        opacity: 1;
+      }
+      .btn,
+      .card {
+        transition: none !important;
+      }
+    }
+
+    /* HEADER institucional */
+    header {
+      background: linear-gradient(90deg, #0f766e, #0e7490);
+      color: #fff;
+      padding: 14px 20px 18px 20px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.25);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      background-color: rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(4px);
+    }
+
+    .logo-group img {
+      height: 40px;
+      max-width: 130px;
+      object-fit: contain;
+      background-color: #ffffff;
+      border-radius: 999px;
+      padding: 4px 8px;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+    }
+
+    .title-group {
+      text-align: right;
+      flex: 1 1 260px;
+    }
+
+    .title-group h1 {
+      margin: 0 0 2px 0;
+      font-size: 22px;
+      letter-spacing: 0.02em;
+    }
+
+    .title-group p {
+      margin: 0;
+      font-size: 13px;
+      opacity: 0.96;
+      line-height: 1.4;
+    }
+
+    .chip-version {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(248, 250, 252, 0.4);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background-color: rgba(15, 23, 42, 0.18);
+    }
+
+    .chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background-color: #bbf7d0;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+
+    /* CONTENIDO PRINCIPAL */
+    main {
+      max-width: 1100px;
+      width: 100%;
+      margin: 26px auto 0 auto;
+      padding: 0 20px 40px 20px;
+      flex: 1 0 auto;
+    }
+
+    .page-header {
+      margin-bottom: 18px;
+    }
+
+    .page-header h2 {
+      margin: 0 0 6px 0;
+      font-size: 20px;
+    }
+
+    .page-header p {
+      margin: 2px 0;
+      font-size: 14px;
+      color: var(--texto-secundario);
+    }
+
+    .pill {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 3px 10px;
+      font-size: 11px;
+      border-radius: 999px;
+      background-color: rgba(59, 130, 246, 0.08);
+      color: #1d4ed8;
+      border: 1px solid rgba(191, 219, 254, 0.9);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* Tarjeta del dashboard */
+    .card {
+      background-color: #ffffff;
+      border-radius: var(--card-radius);
+      border: 1px solid var(--borde-suave);
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.1);
+      padding: 18px 18px 20px 18px;
+      margin-bottom: 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      left: -40px;
+      top: -40px;
+      width: 120px;
+      height: 120px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.14), transparent 65%);
+      pointer-events: none;
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title span.emoji {
+      font-size: 18px;
+      filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.25));
+    }
+
+    .card-subtitle {
+      margin: 4px 0 10px 0;
+      font-size: 13px;
+      color: var(--texto-secundario);
+    }
+
     .embed-container {
       position: relative;
       padding-bottom: 65%;
       height: 0;
       overflow: hidden;
-      border-radius: 6px;
+      border-radius: 10px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
       background: #fff;
+      border: 1px solid #e5e7eb;
     }
+
     .embed-container iframe {
       position: absolute;
       top: 0;
@@ -44,52 +263,168 @@
       border: 0;
     }
 
-    /* Botón para ir a la página de datos */
-    .explore-container {
-      text-align: center;
-      margin-top: 25px;
+    /* Botones de navegación */
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+      justify-content: center;
     }
-    .explore-button {
-      display: inline-block;
-      padding: 10px 20px;
-      background-color: #1d9bf0;
-      color: #fff;
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 14px;
+      font-size: 14px;
+      border-radius: 999px;
       text-decoration: none;
-      border-radius: 4px;
-      font-size: 15px;
-      font-weight: bold;
       cursor: pointer;
+      border: 1px solid transparent;
+      font-weight: 600;
+      transition:
+        background-color 0.18s ease,
+        color 0.18s ease,
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease;
     }
-    .explore-button:hover {
-      background-color: #0f80cc;
+
+    .btn span.icon {
+      margin-right: 6px;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background-color: var(--azul-boton);
+      color: #fff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--azul-boton-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.28);
+    }
+
+    .btn-ghost {
+      background-color: rgba(255, 255, 255, 0.9);
+      color: #0f172a;
+      border-color: #cbd5f5;
+    }
+
+    .btn-ghost:hover {
+      background-color: #e5edff;
+      border-color: #93c5fd;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+    }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #6b7280;
+      padding: 10px 20px 18px 20px;
+      border-top: 1px solid #e5e7eb;
+      background-color: rgba(248, 250, 252, 0.9);
+      margin-top: auto;
+    }
+
+    footer p {
+      margin: 3px 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 720px) {
+      .header-inner {
+        justify-content: center;
+      }
+
+      .title-group {
+        text-align: center;
+      }
+
+      .title-group h1 {
+        font-size: 20px;
+      }
+
+      .logo-group {
+        justify-content: center;
+      }
+
+      .card {
+        padding: 14px 14px 16px 14px;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Base 3 - nueva base de datos</h1>
-    <p>
-      Panel geográfico (experiencia ArcGIS compartida) que integra esta tercera
-      base de datos dentro del sistema de monitoreo de actividades CONAP-DRAC-Altiplano Central.
-    </p>
+    <div class="header-inner">
+      <div class="logo-group">
+        <img src="conap_logo.jpg" alt="Logo CONAP">
+        <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
+      </div>
+      <div class="title-group">
+        <h1>Centro de consulta de datos</h1>
+        <p>Sistema de monitoreo de actividades</p>
+        <p>CONAP – Dirección Regional Altiplano Central</p>
+        <div class="chip-version">
+          <span class="chip-dot"></span>
+          <span>Módulo AC297 · Consumo familiar</span>
+        </div>
+      </div>
+    </div>
   </header>
 
-  <!-- Solo el dashboard aquí -->
-  <section id="dashboard">
-    <h2>Dashboard geográfico</h2>
-    <div class="embed-container">
-      <iframe
-        src="https://experience.arcgis.com/experience/f6fc7c0301a6408294ce81e2941a6f99/"
-        allowfullscreen
-      ></iframe>
-    </div>
-  </section>
+  <main>
+    <section class="page-header">
+      <h2>AC297 Consumo forestal familiar</h2>
+      <p>
+        Panel geográfico del programa de consumos forestales familiares (CFF),
+        integrado al sistema de monitoreo de actividades CONAP-DRAC-Altiplano Central.
+      </p>
+      <p>Utilice el visor para explorar espacialmente los consumos autorizados y sus características.</p>
+      <span class="pill">Dashboard geográfico · ArcGIS</span>
+    </section>
 
-  <!-- Botón que lleva a la página con la tabla de Base 3 -->
-  <div class="explore-container">
-    <a href="base3_datos.html" class="explore-button">
-      Explorar información (tabla)
-    </a>
-  </div>
+    <section id="dashboard">
+      <div class="card">
+        <div class="card-header-row">
+          <h3 class="card-title">
+            <span class="emoji">🏠</span>
+            Dashboard geográfico de consumo forestal familiar
+          </h3>
+        </div>
+        <p class="card-subtitle">
+          El visor muestra la ubicación de los consumos autorizados, junto con información detallada
+          de cada expediente. Puede activar capas, filtrar por municipio y revisar atributos específicos
+          asociados a cada punto.
+        </p>
+        <div class="embed-container">
+          <iframe
+            src="https://experience.arcgis.com/experience/f6fc7c0301a6408294ce81e2941a6f99/"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <a href="index.html" class="btn btn-ghost">
+        <span class="icon">←</span>
+        Volver al inicio
+      </a>
+      <a href="base3_datos.html" class="btn btn-primary">
+        <span class="icon">📊</span>
+        Ver tabla de datos AC297
+      </a>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
+  </footer>
 </body>
 </html>
