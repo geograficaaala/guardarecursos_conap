@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>Patrullajes de control y vigilancia - Datos detallados</title>
 
-  <!-- Estilos -->
+  <!-- Estilos de la página -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -134,7 +134,7 @@
 
     /* Estilo visible para la fila seleccionada de Tabulator */
     .tabulator-row.tabulator-selected {
-      background-color: #bfdbfe !important; /* azul clarito */
+      background-color: #bfdbfe !important;
     }
 
     .back-container {
@@ -318,6 +318,13 @@
 
     // Extraer año y mes de una fecha tipo "8/13/2025 18:00" o "13/8/2025 18:00"
     function extraerAnioMes(fechaRaw) {
+      const info = extraerFechaCompleta(fechaRaw);
+      if (!info) return null;
+      return { anio: info.anio, mes: info.mes };
+    }
+
+    // Extraer año, mes y día
+    function extraerFechaCompleta(fechaRaw) {
       if (!fechaRaw) return null;
       const str = fechaRaw.toString().trim();
       if (!str) return null;
@@ -333,18 +340,20 @@
 
       if (isNaN(p1) || isNaN(p2) || isNaN(anio)) return null;
 
-      let mes;
+      let mes, dia;
       // Si el primer valor es >12 y el segundo <=12, asumimos formato dd/mm
       if (p1 > 12 && p2 >= 1 && p2 <= 12) {
+        dia = p1;
         mes = p2;
       } else {
         // En caso contrario asumimos mm/dd
         mes = p1;
+        dia = p2;
       }
 
-      if (mes < 1 || mes > 12) return null;
+      if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
 
-      return { anio: anio, mes: mes };
+      return { anio: anio, mes: mes, dia: dia };
     }
 
     // Nombre del mes en español
@@ -361,6 +370,39 @@
       return Math.round((parte * 1000) / total) / 10; // 1 decimal
     }
 
+    // Redondeo simple
+    function redondear(num, dec) {
+      if (!isFinite(num)) return 0;
+      const factor = Math.pow(10, dec);
+      return Math.round(num * factor) / factor;
+    }
+
+    // Parsear hora "HH:MM" a minutos desde medianoche
+    function parseHora(horaRaw) {
+      if (!horaRaw) return null;
+      const str = horaRaw.toString().trim();
+      if (!str) return null;
+
+      // Reemplazar posibles separadores tipo "7.30" por ":"
+      const normalizada = str.replace(".", ":");
+      const match = normalizada.match(/(\d{1,2}):(\d{2})/);
+      if (!match) return null;
+
+      const h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      if (isNaN(h) || isNaN(m)) return null;
+      if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+
+      return h * 60 + m;
+    }
+
+    function formatearHoraDesdeMinutos(minutos) {
+      if (minutos === null || !isFinite(minutos)) return "-";
+      const h = Math.floor(minutos / 60);
+      const m = minutos % 60;
+      return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+    }
+
     // Combinar elementos en una frase: "A", "A y B", "A, B y C"
     function combinarFrases(items) {
       if (items.length === 0) return "";
@@ -369,6 +411,31 @@
       const todosMenosUltimo = items.slice(0, -1);
       const ultimo = items[items.length - 1];
       return todosMenosUltimo.join(", ") + " y " + ultimo;
+    }
+
+    // Determinar ámbito operativo (dentro / fuera de RUMCLA / sin clasificar)
+    function determinarAmbitoRUMCLA(reg) {
+      const posiblesCampos = [
+        "Ámbito RUMCLA", "Ambito RUMCLA", "Ámbito", "Ambito",
+        "Ubicación operativa", "Ubicacion operativa",
+        "Ubicación RUMCLA", "Ubicacion RUMCLA"
+      ];
+
+      let valor = "";
+      for (const campo of posiblesCampos) {
+        if (reg.hasOwnProperty(campo) && reg[campo]) {
+          valor = reg[campo].toString();
+          break;
+        }
+      }
+      if (!valor) return "sin_clasificar";
+
+      const norm = valor.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if (norm.includes("dentro") || norm === "rumcla") return "interno";
+      if (norm.includes("fuera") || norm.includes("externo")) return "externo";
+      if (norm.includes("rumcla")) return "interno";
+
+      return "sin_clasificar";
     }
 
     // Inicializar selector de meses para informe mensual
@@ -428,7 +495,7 @@
       });
     }
 
-    // Generar informe mensual (formato: "word" o "pdf")
+    // Generar informe mensual (formato: "word" o "pdf") con análisis más detallado
     function generarInformeMensual(formato) {
       if (!datosPatrullajes || datosPatrullajes.length === 0) {
         alert("No hay datos cargados para generar el informe mensual.");
@@ -464,15 +531,46 @@
       }
 
       const total = registrosMes.length;
+
+      // ----- Acumuladores principales -----
       const municipiosSet = new Set();
       const guardasSet = new Set();
       const conteoMunicipios = {};
       const conteoGuardas = {};
 
-      let instSi = 0;
-      let instNo = 0;
+      // incidencias ambientales
       let actIlegalSi = 0;
       let actIlegalNo = 0;
+      const incidenciasPorMunicipio = {};
+
+      // participación institucional
+      let instSi = 0;
+      let instNo = 0;
+      const conteoInstituciones = {};
+
+      // ámbito RUMCLA
+      let ambitoInterno = 0;
+      let ambitoExterno = 0;
+      let ambitoSinClasificar = 0;
+
+      // tiempos
+      const duracionesHoras = [];
+      const duracionesInternas = [];
+      const duracionesExternas = [];
+      let registrosConHorasCompletas = 0;
+      let registrosSinInicio = 0;
+      let registrosSinFin = 0;
+      let totalHorasValidas = 0;
+      let minHoraInicio = null;
+      let maxHoraFin = null;
+
+      // fechas
+      const conteoPorFecha = {}; // "YYYY-MM-DD" -> count
+      const semanas = [0, 0, 0, 0]; // 1..4
+
+      // coordenadas
+      let coordValidas = 0;
+      let coordInvalidas = 0;
 
       registrosMes.forEach(function (reg) {
         const muni = (reg["Municipio"] || "").toString().trim();
@@ -487,23 +585,105 @@
           conteoGuardas[guarda] = (conteoGuardas[guarda] || 0) + 1;
         }
 
+        // ámbito
+        const ambito = determinarAmbitoRUMCLA(reg);
+        if (ambito === "interno") ambitoInterno++;
+        else if (ambito === "externo") ambitoExterno++;
+        else ambitoSinClasificar++;
+
+        // actividad ilegal
+        const actRaw = (reg["Actividad ilegal observada"] || "").toString().trim();
+        if (!actRaw) {
+          // sin dato explícito
+        } else {
+          const actNorm = actRaw.toLowerCase();
+          if (actNorm === "no") {
+            actIlegalNo++;
+          } else {
+            actIlegalSi++;
+            if (muni) {
+              incidenciasPorMunicipio[muni] = (incidenciasPorMunicipio[muni] || 0) + 1;
+            }
+          }
+        }
+
+        // participación institucional
         const masInstRaw = (reg["Hay mas instituciones involucradas en el patrullaje"] || "").toString().trim();
         if (masInstRaw) {
           const norm = masInstRaw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
           if (norm === "si" || norm === "sí") {
             instSi++;
+            let institucionesInvolucradas = (reg["Instituciones involucradas"] || "").toString();
+            let otraInstitucion = (reg["Otra (especifique)"] || "").toString();
+
+            const todas = []
+              .concat(institucionesInvolucradas.split(/[,;]/))
+              .concat(otraInstitucion.split(/[,;]/))
+              .map(function (t) { return t.trim(); })
+              .filter(function (t) { return t.length > 0; });
+
+            todas.forEach(function (inst) {
+              conteoInstituciones[inst] = (conteoInstituciones[inst] || 0) + 1;
+            });
           } else {
             instNo++;
           }
         }
 
-        const actRaw = (reg["Actividad ilegal observada"] || "").toString().trim();
-        if (!actRaw) return;
-        const actNorm = actRaw.toLowerCase();
-        if (actNorm === "no") {
-          actIlegalNo++;
+        // fechas por día
+        const infoFecha = extraerFechaCompleta(reg["Fecha de patrullaje"]);
+        if (infoFecha) {
+          const dateKey = infoFecha.anio + "-" +
+                          String(infoFecha.mes).padStart(2, "0") + "-" +
+                          String(infoFecha.dia).padStart(2, "0");
+          conteoPorFecha[dateKey] = (conteoPorFecha[dateKey] || 0) + 1;
+
+          const d = infoFecha.dia;
+          let idxSemana;
+          if (d <= 7) idxSemana = 0;
+          else if (d <= 14) idxSemana = 1;
+          else if (d <= 21) idxSemana = 2;
+          else idxSemana = 3;
+          semanas[idxSemana] += 1;
+        }
+
+        // horas y duración
+        const horaInicioRaw = reg["Hora de Inicio del patrullaje"];
+        const horaFinRaw = reg["Hora de finalizacion de patrullaje"];
+
+        const hInicio = parseHora(horaInicioRaw);
+        const hFin = parseHora(horaFinRaw);
+
+        if (hInicio !== null && hFin !== null) {
+          registrosConHorasCompletas++;
+          let diffMin = hFin - hInicio;
+          if (diffMin < 0) diffMin += 24 * 60; // por si cruza medianoche
+          const horas = diffMin / 60;
+          duracionesHoras.push(horas);
+          totalHorasValidas += horas;
+
+          if (minHoraInicio === null || hInicio < minHoraInicio) minHoraInicio = hInicio;
+          if (maxHoraFin === null || hFin > maxHoraFin) maxHoraFin = hFin;
+
+          if (ambito === "interno") {
+            duracionesInternas.push(horas);
+          } else if (ambito === "externo") {
+            duracionesExternas.push(horas);
+          }
         } else {
-          actIlegalSi++;
+          if (hInicio === null && hFin !== null) registrosSinInicio++;
+          if (hInicio !== null && hFin === null) registrosSinFin++;
+        }
+
+        // coordenadas X, Y
+        const coordX = reg["X"];
+        const coordY = reg["Y"];
+        const xNum = coordX !== undefined && coordX !== null && coordX !== "" ? Number(coordX) : NaN;
+        const yNum = coordY !== undefined && coordY !== null && coordY !== "" ? Number(coordY) : NaN;
+        if (isFinite(xNum) && isFinite(yNum)) {
+          coordValidas++;
+        } else {
+          coordInvalidas++;
         }
       });
 
@@ -516,13 +696,77 @@
       const guardasOrdenados = Object.entries(conteoGuardas).sort(function (a, b) {
         return b[1] - a[1];
       });
-
-      const topMunis = municipiosOrdenados.slice(0, 3);
-      const otrosMunis = municipiosOrdenados.slice(3);
+      const topMunis = municipiosOrdenados.slice(0, 6);
+      const otrosMunis = municipiosOrdenados.slice(6);
       const topGuardas = guardasOrdenados.slice(0, 5);
-      const otrosGuardas = guardasOrdenados.slice(5);
 
-      // ----- Construir HTML del informe mensual (narrativo) -----
+      // estadísticas temporales
+      const diasActivos = Object.keys(conteoPorFecha).length;
+      const diasTotalesMes = new Date(anioSel, mesSel, 0).getDate();
+      const diasSinActividad = diasTotalesMes - diasActivos;
+
+      const promedioPorDiaCalendario = diasTotalesMes > 0 ? total / diasTotalesMes : 0;
+      const promedioPorDiaActivo = diasActivos > 0 ? total / diasActivos : 0;
+
+      const fechasOrdenadas = Object.entries(conteoPorFecha).sort(function (a, b) {
+        return b[1] - a[1];
+      });
+      const diaPico = fechasOrdenadas.length > 0 ? fechasOrdenadas[0][0] : null;
+      const valorDiaPico = fechasOrdenadas.length > 0 ? fechasOrdenadas[0][1] : 0;
+
+      function formatearFechaBonita(dateKey) {
+        if (!dateKey) return "-";
+        const partes = dateKey.split("-");
+        if (partes.length !== 3) return dateKey;
+        const a = partes[0];
+        const m = parseInt(partes[1], 10);
+        const d = parseInt(partes[2], 10);
+        const nombreMes = nombreMesEspanol(m);
+        return d + " de " + nombreMes + " de " + a;
+      }
+
+      // estadísticas de duración
+      let promedioHoras = 0;
+      let desviacionHoras = 0;
+      if (duracionesHoras.length > 0) {
+        const suma = duracionesHoras.reduce(function (acc, v) { return acc + v; }, 0);
+        promedioHoras = suma / duracionesHoras.length;
+        const varianza = duracionesHoras.reduce(function (acc, v) {
+          const dif = v - promedioHoras;
+          return acc + dif * dif;
+        }, 0) / duracionesHoras.length;
+        desviacionHoras = Math.sqrt(varianza);
+      }
+
+      function promedioArray(arr) {
+        if (!arr || arr.length === 0) return 0;
+        const suma = arr.reduce(function (acc, v) { return acc + v; }, 0);
+        return suma / arr.length;
+      }
+
+      const promedioInterno = promedioArray(duracionesInternas);
+      const promedioExterno = promedioArray(duracionesExternas);
+
+      const diasSemanaTexto = [
+        "primera semana del mes",
+        "segunda semana del mes",
+        "tercera semana del mes",
+        "cuarta semana del mes"
+      ];
+
+      // incidencias por municipio (ordenadas)
+      const incidenciasOrdenadas = Object.entries(incidenciasPorMunicipio).sort(function (a, b) {
+        return b[1] - a[1];
+      });
+      const topIncidencias = incidenciasOrdenadas.slice(0, 4);
+
+      // instituciones más frecuentes
+      const institucionesOrdenadas = Object.entries(conteoInstituciones).sort(function (a, b) {
+        return b[1] - a[1];
+      });
+      const topInstituciones = institucionesOrdenadas.slice(0, 5);
+
+      // ----- Construir HTML del informe mensual (narrativo y extendido) -----
       let html = "";
       html += "<div class='informe-contenido'>";
 
@@ -534,28 +778,79 @@
       html += "<hr />";
       html += "</div>";
 
-      // 1. Resumen general
+      // 1. Cantidad total y distribución general
       html += "<div class='informe-seccion'>";
-      html += "<h2>1. Resumen general</h2>";
+      html += "<h2>1. Cantidad total y distribución general de patrullajes</h2>";
       html += "<p>Durante el mes de <strong>" + escapeHtml(etiquetaMes) +
-              "</strong> se registraron en el sistema de monitoreo de la Dirección Regional Altiplano Central del CONAP un total de " +
-              "<strong>" + total + "</strong> patrullajes de control y vigilancia. " +
-              "Estos patrullajes forman parte de la estrategia institucional para el resguardo y supervisión de las áreas protegidas bajo la jurisdicción regional.</p>";
+              "</strong> el cuerpo operativo de guarda recursos registró un total de " +
+              "<strong>" + total + "</strong> patrullajes válidos en la región del Altiplano Central. " +
+              "Las actividades se desarrollaron tanto dentro de la Reserva de Usos Múltiples de la Cuenca del Lago de Atitlán (RUMCLA) " +
+              "como en áreas externas de influencia directa, manteniendo una cobertura sostenida a lo largo del periodo.</p>";
+
+      if (ambitoInterno + ambitoExterno + ambitoSinClasificar > 0) {
+        const pctInt = porcentaje(ambitoInterno, total);
+        const pctExt = porcentaje(ambitoExterno, total);
+        const pctSin = porcentaje(ambitoSinClasificar, total);
+
+        html += "<p>Del total de recorridos analizados, <strong>" + ambitoInterno + "</strong> patrullajes (" +
+                pctInt + "%) se realizaron dentro de la RUMCLA, mientras que " +
+                "<strong>" + ambitoExterno + "</strong> patrullajes (" + pctExt +
+                "%) se ejecutaron en sectores externos que actúan como zonas de amortiguamiento o áreas de presión sobre la cuenca. " +
+                (ambitoSinClasificar > 0
+                  ? "En <strong>" + ambitoSinClasificar + "</strong> patrullajes (" + pctSin +
+                    "%) no fue posible identificar de forma automática el ámbito operativo debido a omisiones en el registro de esta variable."
+                  : "La totalidad de los registros cuenta con una clasificación territorial explícita entre patrullajes internos y externos.") +
+                "</p>";
+      }
 
       if (numMunicipios > 0 && numGuardas > 0) {
-        html += "<p>Las actividades fueron realizadas en <strong>" + numMunicipios + "</strong> municipio(s) " +
+        html += "<p>Las operaciones se distribuyeron en <strong>" + numMunicipios + "</strong> municipio(s) " +
                 "y contaron con la participación de <strong>" + numGuardas +
-                "</strong> guarda recursos responsables, quienes distribuyeron sus esfuerzos " +
-                "en distintos puntos de la región, de acuerdo con las necesidades de control y vigilancia identificadas.</p>";
-      } else if (numMunicipios > 0) {
-        html += "<p>Las actividades se distribuyeron en <strong>" + numMunicipios +
-                "</strong> municipio(s) de la región, con diferentes niveles de intensidad según la demanda de patrullajes.</p>";
+                "</strong> guarda recursos responsables. " +
+                "Esta combinación refleja una presencia territorial amplia y una estructura operativa que permite cubrir simultáneamente " +
+                "rutas de montaña, bordes agroforestales y accesos estratégicos a zonas boscosas.</p>";
       }
       html += "</div>";
 
-      // 2. Distribución territorial
+      // 2. Distribución temporal y ritmo operativo
       html += "<div class='informe-seccion'>";
-      html += "<h2>2. Distribución territorial de los patrullajes</h2>";
+      html += "<h2>2. Distribución temporal y ritmo operativo</h2>";
+
+      html += "<p>La distribución cronológica de los patrullajes muestra que durante " +
+              "<strong>" + diasActivos + "</strong> día(s) del mes se registró actividad operativa, " +
+              "mientras que en <strong>" + diasSinActividad + "</strong> día(s) no se documentaron recorridos en el sistema. " +
+              "En promedio, esto equivale a <strong>" + redondear(promedioPorDiaCalendario, 2) +
+              "</strong> patrullajes por día calendario y aproximadamente <strong>" +
+              redondear(promedioPorDiaActivo, 2) +
+              "</strong> patrullajes por día con actividad efectiva.</p>";
+
+      html += "<p>Al analizar la distribución semanal, se observa que la " +
+              diasSemanaTexto.map(function (t, idx) {
+                return "<strong>" + t + "</strong> concentró " + semanas[idx] + " patrullaje(s)";
+              }).join(", ") +
+              ". Este patrón refleja un esquema de trabajo basado en ciclos semanales de despliegue, " +
+              "con mayor concentración de esfuerzos en las semanas intermedias y ligeras disminuciones hacia los extremos del mes.</p>";
+
+      if (diaPico) {
+        html += "<p>El día con mayor actividad operativa fue el <strong>" +
+                formatearFechaBonita(diaPico) + "</strong>, " +
+                "cuando se registraron <strong>" + valorDiaPico +
+                "</strong> patrullajes de forma simultánea en distintos puntos del territorio. " +
+                "Este tipo de picos suele corresponder a jornadas de refuerzo táctico, coordinación interinstitucional o respuesta ante alertas territoriales específicas.</p>";
+      }
+
+      if (minHoraInicio !== null && maxHoraFin !== null) {
+        html += "<p>En términos de horario, la mayoría de los patrullajes se desarrollaron dentro de la jornada diurna. " +
+                "Los registros válidos indican que las actividades iniciaron, en general, entre las " +
+                "<strong>" + formatearHoraDesdeMinutos(minHoraInicio) + "</strong> y las " +
+                "<strong>" + formatearHoraDesdeMinutos(maxHoraFin) +
+                "</strong>, respetando el rango operativo establecido para las labores de campo.</p>";
+      }
+      html += "</div>";
+
+      // 3. Municipios con mayor actividad operativa
+      html += "<div class='informe-seccion'>";
+      html += "<h2>3. Municipios con mayor actividad operativa</h2>";
 
       if (municipiosOrdenados.length > 0) {
         const descripcionesTopMunis = topMunis.map(function ([muni, count]) {
@@ -563,133 +858,167 @@
           return "<strong>" + escapeHtml(muni) + "</strong> (" + count + " patrullaje(s), " + pct + "%)";
         });
 
-        let parrafoMunis = "";
-
-        if (descripcionesTopMunis.length === 1) {
-          parrafoMunis =
-            "En términos territoriales, el municipio con mayor número de patrullajes fue " +
-            descripcionesTopMunis[0] +
-            ", concentrando la mayor parte del esfuerzo de control y supervisión durante el mes.";
-        } else {
-          const fraseTop = combinarFrases(descripcionesTopMunis);
-          parrafoMunis =
-            "En términos territoriales, los patrullajes se concentraron principalmente en " +
-            fraseTop +
-            ", que en conjunto concentran una proporción importante del total de recorridos realizados.";
-        }
-
-        html += "<p>" + parrafoMunis + "</p>";
+        html += "<p>La cobertura espacial de los patrullajes se concentró principalmente en los siguientes municipios: " +
+                combinarFrases(descripcionesTopMunis) +
+                ". En conjunto, estos territorios agrupan la mayor parte del esfuerzo operativo mensual " +
+                "y corresponden a áreas con alta relevancia ecológica, presión antrópica significativa o importancia estratégica para la conectividad de la cuenca.</p>";
 
         if (otrosMunis.length > 0) {
           const otrosNombres = otrosMunis.map(function ([muni]) {
-            return escapeHtml(muni);
+            return "<strong>" + escapeHtml(muni) + "</strong>";
           });
-          const fraseOtros = combinarFrases(otrosNombres);
-          html += "<p>Además, se registraron patrullajes en otros municipios como " +
-                  fraseOtros +
-                  ", donde si bien el número de recorridos es menor, contribuyen a una cobertura territorial más amplia y continua a lo largo del mes.</p>";
+          html += "<p>Adicionalmente, se mantuvo presencia en otros municipios como " +
+                  combinarFrases(otrosNombres) +
+                  ", donde el volumen de patrullajes es menor pero cumple una función clave " +
+                  "en el reforzamiento de la vigilancia perimetral y en el acompañamiento a las comunidades locales.</p>";
         }
       } else {
-        html += "<p>No se cuenta con información de municipios asociada a los patrullajes de este periodo.</p>";
+        html += "<p>No se cuenta con información desagregada por municipio para los patrullajes de este periodo.</p>";
       }
       html += "</div>";
 
-      // 3. Desempeño por guarda recursos
+      // 4. Duración, frecuencia y eficiencia operativa
       html += "<div class='informe-seccion'>";
-      html += "<h2>3. Desempeño por guarda recursos responsable</h2>";
+      html += "<h2>4. Duración, frecuencia y eficiencia operativa</h2>";
 
-      if (guardasOrdenados.length > 0) {
-        const descripcionesTopGuardas = topGuardas.map(function ([g, count]) {
-          const pct = porcentaje(count, total);
-          return "<strong>" + escapeHtml(g) + "</strong> (" + count + " patrullaje(s), " + pct + "%)";
-        });
+      html += "<p>Para evaluar la eficiencia del esfuerzo de campo se analizaron las horas de inicio y finalización de los patrullajes. " +
+              "En <strong>" + registrosConHorasCompletas + "</strong> registro(s) se dispone de información horaria completa, " +
+              "lo que permite calcular la duración efectiva de la jornada; en " +
+              "<strong>" + registrosSinInicio + "</strong> patrullaje(s) falta la hora de inicio " +
+              "y en <strong>" + registrosSinFin + "</strong> la hora de finalización, " +
+              "por lo que estos casos se consideran como registros con información incompleta.</p>";
 
-        let parrafoGuardas = "";
+      if (duracionesHoras.length > 0) {
+        html += "<p>Con base en los registros válidos, la duración promedio estimada de cada patrullaje fue de " +
+                "<strong>" + redondear(promedioHoras, 2) + "</strong> horas, " +
+                "con una desviación estándar aproximada de <strong>" + redondear(desviacionHoras, 2) +
+                "</strong> horas. Esta variabilidad es consistente con las diferencias en distancia, " +
+                "condiciones del terreno y logística de acceso entre los distintos puntos de patrullaje. " +
+                "El esfuerzo acumulado de patrullaje en el mes asciende a aproximadamente <strong>" +
+                redondear(totalHorasValidas, 1) +
+                "</strong> horas efectivas de trabajo en campo.</p>";
+      }
 
-        if (descripcionesTopGuardas.length === 1) {
-          parrafoGuardas =
-            "En cuanto al personal operativo, el guarda recursos con mayor número de patrullajes registrados fue " +
-            descripcionesTopGuardas[0] +
-            ", evidenciando una participación particularmente activa en las labores de control y vigilancia.";
-        } else {
-          const fraseTopG = combinarFrases(descripcionesTopGuardas);
-          parrafoGuardas =
-            "En cuanto al personal operativo, los guarda recursos con mayor número de patrullajes registrados fueron " +
-            fraseTopG +
-            ". Su participación destaca por la frecuencia de recorridos efectuados durante el periodo, " +
-            "contribuyendo de manera significativa a la presencia institucional en el territorio.";
-        }
-
-        html += "<p>" + parrafoGuardas + "</p>";
-
-        if (otrosGuardas.length > 0) {
-          const otrosNombresG = otrosGuardas.map(function ([g]) {
-            return escapeHtml(g);
-          });
-          const fraseOtrosG = combinarFrases(otrosNombresG);
-          html += "<p>De manera complementaria, otros guarda recursos como " +
-                  fraseOtrosG +
-                  " también realizaron patrullajes en diferentes puntos, " +
-                  "aportando a la continuidad de la vigilancia y al acompañamiento de las comunidades y usuarios del área.</p>";
-        }
-      } else {
-        html += "<p>No se cuenta con información de personas responsables asociada a los patrullajes de este periodo.</p>";
+      if (duracionesInternas.length > 0 || duracionesExternas.length > 0) {
+        html += "<p>Al comparar el tiempo dedicado a patrullajes internos y externos, se observa que " +
+                (duracionesInternas.length > 0
+                  ? "los recorridos dentro de la RUMCLA presentan una duración promedio de <strong>" +
+                    redondear(promedioInterno, 2) + "</strong> horas"
+                  : "no se cuenta con información suficiente para estimar la duración promedio de patrullajes internos") +
+                (duracionesExternas.length > 0
+                  ? ", mientras que los patrullajes realizados fuera de la reserva alcanzan en promedio <strong>" +
+                    redondear(promedioExterno, 2) +
+                    "</strong> horas, ligeramente superiores debido a tiempos de desplazamiento más prolongados hacia zonas de amortiguamiento y áreas de montaña."
+                  : ".") +
+                "</p>";
       }
       html += "</div>";
 
-      // 4. Actividad ilegal observada
+      // 5. Registro de incidencias ambientales
       html += "<div class='informe-seccion'>";
-      html += "<h2>4. Actividad ilegal observada</h2>";
+      html += "<h2>5. Registro de incidencias ambientales</h2>";
+
       if (actIlegalSi === 0 && actIlegalNo === 0) {
-        html += "<p>No se cuenta con información suficiente para determinar la presencia de actividades ilegales en los patrullajes de este mes.</p>";
+        html += "<p>En los registros revisados no se cuenta con información suficiente para determinar la presencia o ausencia de actividades ilegales durante los patrullajes del mes.</p>";
       } else {
         const pctIlegal = porcentaje(actIlegalSi, total);
         const pctNoIlegal = porcentaje(actIlegalNo, total);
 
-        if (actIlegalSi > 0) {
-          html += "<p>En materia de detección de posibles ilícitos, durante el periodo se documentó la presencia de algún tipo de actividad ilegal en " +
-                  "<strong>" + actIlegalSi + "</strong> patrullaje(s), lo que representa aproximadamente el " +
-                  pctIlegal + "% del total registrado. " +
-                  "En el resto de los recorridos, es decir en <strong>" + actIlegalNo + "</strong> patrullaje(s) (" +
-                  pctNoIlegal + "%), no se reportaron hallazgos de esta naturaleza.</p>";
-        } else {
-          html += "<p>En los patrullajes realizados durante este mes no se reportaron actividades ilegales, " +
-                  "lo que sugiere un contexto de relativa normalidad en las áreas recorridas o, en su caso, " +
-                  "la ausencia de indicios evidentes de ilícitos en los sitios monitoreados.</p>";
+        html += "<p>Del total de " + total + " patrullaje(s) analizado(s), " +
+                "<strong>" + actIlegalSi + "</strong> registro(s) (" + pctIlegal +
+                "%) incluyen la observación de alguna actividad ilegal o irregular en campo, " +
+                "mientras que en <strong>" + actIlegalNo + "</strong> patrullaje(s) (" +
+                pctNoIlegal +
+                "%) se consignó expresamente que no se observaron actividades ilegales.</p>";
+
+        if (topIncidencias.length > 0) {
+          const listaInc = topIncidencias.map(function ([muni, count]) {
+            return "<strong>" + escapeHtml(muni) + "</strong> (" + count + " registro(s))";
+          });
+          html += "<p>Las incidencias reportadas se concentran principalmente en municipios como " +
+                  combinarFrases(listaInc) +
+                  ", territorios donde confluyen acceso forestal, expansión agrícola y tránsito comunitario hacia áreas de montaña. " +
+                  "Este patrón confirma la importancia de mantener patrullajes mixtos que articulen rutas internas y externas a la RUMCLA.</p>";
         }
+
+        html += "<p>Aunque el porcentaje de patrullajes con incidencias es relativamente bajo, cada registro constituye una señal temprana " +
+                "de presión sobre bosques, suelos o cuerpos de agua, por lo que resulta fundamental asegurar el seguimiento oportuno de estos eventos " +
+                "y fortalecer los mecanismos de coordinación con autoridades municipales y comunitarias.</p>";
       }
       html += "</div>";
 
-      // 5. Participación institucional
+      // 6. Participación institucional en los patrullajes
       html += "<div class='informe-seccion'>";
-      html += "<h2>5. Participación institucional</h2>";
+      html += "<h2>6. Participación institucional en los patrullajes</h2>";
+
       if (instSi === 0 && instNo === 0) {
-        html += "<p>No se cuenta con información suficiente para determinar la participación de otras instituciones en los patrullajes de este mes.</p>";
+        html += "<p>Los registros del periodo no permiten determinar de forma sistemática la participación de otras instituciones en las jornadas de patrullaje.</p>";
       } else {
         const pctInstSi = porcentaje(instSi, total);
         const pctInstNo = porcentaje(instNo, total);
 
-        if (instSi > 0) {
-          html += "<p>En relación con la coordinación interinstitucional, en <strong>" + instSi + "</strong> patrullaje(s) (" +
-                  pctInstSi +
-                  "% del total) se reportó la participación de una o más instituciones adicionales al CONAP. " +
-                  "Esta articulación permite complementar capacidades, mejorar la presencia en campo y fortalecer las acciones de control. " +
-                  "En <strong>" + instNo + "</strong> patrullaje(s) (" + pctInstNo + "%) la ejecución se registró únicamente con personal de la institución.</p>";
-        } else {
-          html += "<p>Todos los patrullajes registrados durante el mes se realizaron sin participación adicional de otras instituciones, " +
-                  "lo que refleja que, para este periodo, las actividades de control y vigilancia fueron asumidas directamente por el personal del CONAP.</p>";
+        html += "<p>En <strong>" + instSi + "</strong> patrullaje(s) (" + pctInstSi +
+                "% del total) se reportó la participación de una o más instituciones adicionales al CONAP, " +
+                "mientras que en <strong>" + instNo + "</strong> patrullaje(s) (" + pctInstNo +
+                "%) la ejecución se desarrolló únicamente con personal de la institución. " +
+                "La presencia de aliados institucionales es particularmente relevante en zonas con alta conflictividad por uso del territorio " +
+                "o donde se requiere legitimidad comunitaria para el desarrollo de las actividades de control.</p>";
+
+        if (topInstituciones.length > 0) {
+          const descInst = topInstituciones.map(function ([inst, count]) {
+            return "<strong>" + escapeHtml(inst) + "</strong> (" + count + " registro(s))";
+          });
+          html += "<p>Entre las entidades que aparecen con mayor frecuencia en los registros se encuentran " +
+                  combinarFrases(descInst) +
+                  ", lo que evidencia un esquema de cooperación principalmente a nivel municipal y comunitario.</p>";
         }
       }
       html += "</div>";
 
-      // 6. Notas metodológicas
+      // 7. Calidad y consistencia de los registros
       html += "<div class='informe-seccion'>";
-      html += "<h2>6. Notas metodológicas</h2>";
+      html += "<h2>7. Calidad y consistencia de la información registrada</h2>";
+
+      html += "<p>En términos generales, la base de patrullajes del mes presenta un nivel de integridad adecuado para el análisis operativo. " +
+              "La totalidad de los registros utilizados en este informe cuentan con fecha válida y municipio de ejecución, " +
+              "lo que garantiza trazabilidad básica respecto a la ubicación y temporalidad de las jornadas.</p>";
+
+      if (registrosConHorasCompletas + registrosSinInicio + registrosSinFin > 0) {
+        html += "<p>No obstante, persisten brechas de información en el registro horario: " +
+                "<strong>" + registrosConHorasCompletas + "</strong> patrullaje(s) disponen de hora de inicio y finalización coherentes, " +
+                "mientras que en <strong>" + registrosSinInicio + "</strong> registro(s) falta la hora de inicio y en " +
+                "<strong>" + registrosSinFin + "</strong> falta la hora de cierre. " +
+                "Estas omisiones no invalidan la ejecución de la actividad, pero sí limitan la estimación precisa del esfuerzo operativo en horas efectivas.</p>";
+      }
+
+      if (coordValidas + coordInvalidas > 0) {
+        const pctCoordOk = porcentaje(coordValidas, coordValidas + coordInvalidas);
+        html += "<p>En materia de integridad geoespacial, <strong>" + coordValidas +
+                "</strong> patrullaje(s) cuentan con coordenadas válidas de ubicación, " +
+                "lo que representa aproximadamente el " + pctCoordOk +
+                "% de los registros analizados. Los casos sin coordenadas válidas se asocian a fallas puntuales de captura GPS " +
+                "o a omisiones de digitación en campo.</p>";
+      }
+
+      if (ambitoSinClasificar > 0) {
+        html += "<p>Adicionalmente, se identificó que en <strong>" + ambitoSinClasificar +
+                "</strong> patrullaje(s) no se consignó de forma clara si el recorrido se realizó dentro o fuera de la RUMCLA. " +
+                "Fortalecer la obligatoriedad de esta variable permitirá mejorar el análisis espacial mensual y la evaluación equilibrada " +
+                "entre rutas internas y externas.</p>";
+      }
+      html += "</div>";
+
+      // 8. Notas metodológicas
+      html += "<div class='informe-seccion'>";
+      html += "<h2>8. Notas metodológicas</h2>";
       html += "<p>El presente informe mensual se genera de forma automática a partir de los registros del formulario de patrullajes " +
               "de control y vigilancia del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central del CONAP. " +
-              "Los totales y porcentajes se calculan únicamente con base en los registros correspondientes al mes seleccionado. " +
-              "El documento está diseñado como un insumo ejecutivo para la toma de decisiones, la planificación operativa y " +
-              "la rendición de cuentas sobre las acciones de control y vigilancia realizadas.</p>";
+              "Los indicadores y porcentajes aquí presentados se calculan exclusivamente con base en los patrullajes correspondientes al mes seleccionado, " +
+              "una vez depurados los registros vacíos o inconsistentes.</p>";
+      html += "<p>La estructura del documento está diseñada como un insumo ejecutivo para apoyar la toma de decisiones, " +
+              "la planificación operativa y la rendición de cuentas sobre las acciones de control y vigilancia realizadas en el territorio. " +
+              "A medida que se fortalezca la disciplina de registro en campo, será posible profundizar aún más en el análisis espacial y temporal " +
+              "de los patrullajes, así como en la caracterización de incidencias ambientales y patrones de presión sobre los recursos naturales.</p>";
       html += "</div>";
 
       html += "</div>"; // cierre .informe-contenido
