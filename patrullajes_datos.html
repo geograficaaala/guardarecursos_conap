@@ -21,11 +21,13 @@
     .header-bar h1 {
       margin: 0 0 4px 0;
       font-size: 22px;
+      color: #ffffff;
     }
     .header-bar p {
       margin: 0;
       font-size: 13px;
-      opacity: 0.9;
+      color: #ffffff; /* blanco bien visible */
+      opacity: 1;    /* sin oscurecer */
     }
 
     .main-container {
@@ -151,6 +153,39 @@
     .back-link:hover {
       background-color: #e0f2ff;
     }
+
+    /* Overlay de “procesando informe” */
+    .processing-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(15, 23, 42, 0.35);
+      display: none;              /* se activa por JS */
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .processing-box {
+      background-color: #ffffff;
+      padding: 14px 18px;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: #111827;
+    }
+    .processing-spinner {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 2px solid #e5e7eb;
+      border-top-color: #0f766e;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 
   <!-- CSS de Tabulator LOCAL -->
@@ -161,6 +196,14 @@
     <h1>Centro de consulta de datos</h1>
     <p>Sistema de monitoreo de actividades CONAP-DIRECCIÓN REGIONAL ALTIPLANO CENTRAL</p>
   </header>
+
+  <!-- Overlay “procesando informe” -->
+  <div id="processing-overlay" class="processing-overlay" aria-hidden="true">
+    <div class="processing-box">
+      <div class="processing-spinner" aria-hidden="true"></div>
+      <div class="processing-text">Generando informe, por favor espere…</div>
+    </div>
+  </div>
 
   <main class="main-container">
     <div class="top-bar">
@@ -198,8 +241,7 @@
   <script src="tabulator.min.js"></script>
   <script src="papaparse.min.js"></script>
   <script src="xlsx.full.min.js"></script>
-  <!-- Librería para generar PDF (desde CDN). 
-       Si prefieres local, descárgala y cambia el src al archivo en tu repositorio. -->
+  <!-- Librería para generar PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <script>
@@ -207,6 +249,25 @@
     let tablaPatrullajes;
     let datosPatrullajes = [];
     let mapaMeses = new Map(); // "YYYY-MM" -> { anio, mes }
+
+    // Mostrar / ocultar overlay de procesamiento
+    function showProcessing(mensaje) {
+      const overlay = document.getElementById("processing-overlay");
+      if (!overlay) return;
+      const textNode = overlay.querySelector(".processing-text");
+      if (textNode && mensaje) {
+        textNode.textContent = mensaje;
+      } else if (textNode) {
+        textNode.textContent = "Generando informe, por favor espere…";
+      }
+      overlay.style.display = "flex";
+    }
+
+    function hideProcessing() {
+      const overlay = document.getElementById("processing-overlay");
+      if (!overlay) return;
+      overlay.style.display = "none";
+    }
 
     // Pequeña función para crear nombres de archivo "limpios"
     function slugify(texto) {
@@ -229,6 +290,8 @@
 
     // Crear y descargar un .doc que Word pueda abrir
     function crearDocumentoWord(nombreArchivo, contenidoHTML) {
+      showProcessing("Generando informe (Word), por favor espere…");
+
       const header =
         "<html xmlns:o='urn:schemas-microsoft-com:office:office' " +
         "xmlns:w='urn:schemas-microsoft-com:office:word' " +
@@ -249,6 +312,8 @@
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      hideProcessing();
     }
 
     // Crear y descargar PDF usando html2pdf
@@ -257,6 +322,8 @@
         alert("No se encontró la librería para exportar a PDF (html2pdf). Verifique que se haya cargado correctamente.");
         return;
       }
+
+      showProcessing("Generando informe (PDF), por favor espere…");
 
       const contenedor = document.createElement("div");
       contenedor.style.padding = "10px";
@@ -273,6 +340,10 @@
 
       html2pdf().set(opt).from(contenedor).save().then(function() {
         document.body.removeChild(contenedor);
+        hideProcessing();
+      }).catch(function() {
+        document.body.removeChild(contenedor);
+        hideProcessing();
       });
     }
 
