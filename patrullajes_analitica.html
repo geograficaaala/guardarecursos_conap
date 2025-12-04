@@ -5,39 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Patrullajes - Tablero analítico</title>
 
+  <!-- Librerías locales (como tu proyecto actual) -->
   <link rel="stylesheet" href="tabulator.min.css">
+
+  <!-- Plotly para gráficas -->
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
 
   <style>
     :root{
-      --verde-header:#0f766e;
-      --gris-fondo:#f5f7fa;
-      --texto:#0f172a;
-      --sub:#6b7280;
-      --borde:#e5e7eb;
-      --card-radius:14px;
+      --bg1:#e5f3f0;
+      --bg2:#f5f7fa;
+      --bg3:#eef2ff;
+      --ink:#0f172a;
+      --muted:#64748b;
+      --border:rgba(15,23,42,.10);
+      --card:rgba(255,255,255,.92);
+      --shadow:0 12px 26px rgba(15,23,42,.10);
+      --r:16px;
+      --brand1:#0f766e;
+      --brand2:#0e7490;
+      --blue1:#1d9bf0;
+      --blue2:#38bdf8;
     }
+
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      color:var(--texto);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color:var(--ink);
       background:
         radial-gradient(circle at top left, #dbeafe 0, transparent 55%),
         radial-gradient(circle at bottom right, #bbf7d0 0, transparent 55%),
-        linear-gradient(180deg,#e5f3f0 0%,var(--gris-fondo) 35%,#eef2ff 100%);
+        linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 35%,var(--bg3) 100%);
       min-height:100vh;
       display:flex;
       flex-direction:column;
     }
 
     header{
-      background: linear-gradient(90deg, #0f766e, #0e7490);
+      position:sticky; top:0; z-index:10;
+      background: linear-gradient(90deg, var(--brand1), var(--brand2));
       color:#fff;
-      padding:14px 20px 18px;
+      padding:14px 18px 16px;
       box-shadow:0 2px 10px rgba(15,23,42,.25);
-      position:sticky;
-      top:0;
-      z-index:10;
     }
     .header-inner{
       max-width:1100px;
@@ -45,133 +55,149 @@
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:16px;
+      gap:14px;
       flex-wrap:wrap;
     }
-    .logo-group{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      background-color: rgba(255,255,255,.12);
+    .logos{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.15);
       border-radius:999px;
       padding:6px 10px;
-      border:1px solid rgba(255,255,255,.15);
       backdrop-filter: blur(4px);
     }
-    .logo-group img{height:40px; width:auto; display:block;}
-    .title-group h1{margin:0; font-size:20px; letter-spacing:.2px;}
-    .title-group p{margin:4px 0 0; font-size:12px; opacity:.95;}
-    .chip-version{
+    .logos img{height:42px; width:auto; display:block; object-fit:contain;}
+    .headtxt{flex:1; min-width:240px; text-align:center}
+    .headtxt h1{margin:0; font-size:20px; letter-spacing:.2px;}
+    .headtxt p{margin:4px 0 0; font-size:12px; opacity:.95;}
+    .chip{
       margin-top:10px;
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
+      display:inline-flex; align-items:center; gap:8px;
       font-size:12px;
-      padding:4px 10px;
+      padding:5px 10px;
       border-radius:999px;
-      background: rgba(255,255,255,.14);
-      border: 1px solid rgba(255,255,255,.18);
+      background:rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.18);
     }
-    .chip-dot{width:8px;height:8px;border-radius:999px;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.22);}
+    .dot{width:8px;height:8px;border-radius:999px;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.22)}
 
-    main{max-width:1100px;margin:22px auto 40px;padding:0 16px; width:100%;}
-    .page-header{margin-bottom:14px;}
-    .page-header h2{margin:0 0 6px;font-size:22px;}
-    .page-header p{margin:0;color:var(--sub);}
+    main{
+      max-width:1100px;
+      width:100%;
+      margin:18px auto 38px;
+      padding:0 16px;
+    }
+    .page-title h2{margin:0 0 6px; font-size:22px;}
+    .page-title p{margin:0; color:var(--muted);}
     .pill{
-      display:inline-flex;margin-top:10px;
-      font-size:12px;padding:6px 10px;border-radius:999px;
-      background:#fff;border:1px solid var(--borde); color:#0f172a;
+      display:inline-flex;
+      margin-top:10px;
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.75);
+      border:1px solid rgba(148,163,184,.45);
       box-shadow:0 2px 10px rgba(15,23,42,.06);
     }
 
-    .grid{display:grid;gap:14px;}
-    .grid-2{grid-template-columns: repeat(2, minmax(0,1fr));}
-    .grid-3{grid-template-columns: repeat(3, minmax(0,1fr));}
-    @media (max-width: 980px){ .grid-3{grid-template-columns: 1fr;} }
-    @media (max-width: 860px){ .grid-2{grid-template-columns: 1fr;} }
-
-    .card{
-      background: rgba(255,255,255,.92);
-      border:1px solid rgba(226,232,240,.9);
-      border-radius: var(--card-radius);
-      box-shadow:0 12px 26px rgba(15,23,42,.10);
-      padding:14px;
-    }
-    .card h3{
-      margin:0 0 8px;
-      font-size:15px;
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-    .muted{color:var(--sub); font-size:12px; margin:0;}
-
-    .filters{
-      display:flex; flex-wrap:wrap; gap:10px;
-      align-items:end;
-    }
-    .field{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      min-width: 190px;
-    }
-    label{font-size:12px;color:#334155;font-weight:650;}
-    select, input[type="date"]{
-      padding:8px 10px;
-      border-radius:10px;
-      border:1px solid #cbd5f5;
-      background:#fff;
-      font-size:13px;
-      outline:none;
+    .actions{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top:14px;
     }
     .btn{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
+      display:inline-flex; align-items:center; gap:10px;
       padding:10px 14px;
       border-radius:999px;
-      font-weight:650;
-      border:1px solid #cbd5f5;
+      font-weight:700;
+      border:1px solid rgba(148,163,184,.55);
+      background:rgba(255,255,255,.9);
+      color:var(--ink);
       text-decoration:none;
       cursor:pointer;
-      background:#fff;
-      color:#0f172a;
-      transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
       user-select:none;
     }
-    .btn:hover{transform: translateY(-1px); box-shadow:0 2px 10px rgba(15,23,42,.14); background:#f8fafc;}
+    .btn:hover{transform:translateY(-1px); box-shadow:0 10px 20px rgba(15,23,42,.10); background:rgba(248,250,252,.95);}
     .btn-primary{
-      background:#1d9bf0; border-color:#1d9bf0; color:#fff;
+      background:linear-gradient(90deg,var(--blue1),var(--blue2));
+      border-color:rgba(59,130,246,.35);
+      color:#fff;
     }
-    .btn-primary:hover{background:#0f80cc;}
-    .btn-ghost{background: rgba(255,255,255,.9);}
-    .actions{margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;}
+    .btn-primary:hover{background:linear-gradient(90deg,#0f80cc,#0ea5e9);}
+    .btn-ghost{background:rgba(255,255,255,.85);}
 
+    .grid{display:grid; gap:14px; margin-top:14px;}
+    .grid-2{grid-template-columns: 1.2fr .8fr;}
+    .grid-3{grid-template-columns: repeat(3, minmax(0,1fr));}
+    .grid-2b{grid-template-columns: 1fr 1fr;}
+    @media (max-width: 980px){
+      .grid-2{grid-template-columns:1fr;}
+      .grid-2b{grid-template-columns:1fr;}
+      .grid-3{grid-template-columns:1fr;}
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      box-shadow:var(--shadow);
+      padding:14px;
+    }
+    .card h3{margin:0 0 8px; font-size:15px; display:flex; align-items:center; gap:8px;}
+    .sub{margin:0; color:var(--muted); font-size:12px;}
+
+    .filters{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns: repeat(6, minmax(0,1fr));
+      gap:10px;
+      align-items:end;
+    }
+    @media (max-width: 980px){ .filters{grid-template-columns: repeat(2, minmax(0,1fr));} }
+
+    label{display:block; font-size:12px; color:#334155; font-weight:750; margin:0 0 6px;}
+    select, input[type="date"]{
+      width:100%;
+      padding:9px 10px;
+      border-radius:10px;
+      border:1px solid rgba(148,163,184,.45);
+      background:rgba(255,255,255,.95);
+      outline:none;
+      font-size:13px;
+    }
+    select:focus, input[type="date"]:focus{
+      border-color:#60a5fa;
+      box-shadow:0 0 0 3px rgba(96,165,250,.18);
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(6, minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    @media (max-width: 980px){ .kpis{grid-template-columns: repeat(2, minmax(0,1fr));} }
     .kpi{
-      padding:12px;
-      border-radius:12px;
-      border:1px solid #e2e8f0;
-      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(248,250,252,.92));
+      border-radius:14px;
+      border:1px solid rgba(15,23,42,.08);
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.92));
+      padding:10px 12px;
     }
-    .kpi .name{font-size:12px;color:#475569;margin:0;}
-    .kpi .val{font-size:22px;font-weight:800;margin:6px 0 0;}
-    .kpi .hint{font-size:12px;color:#64748b;margin:4px 0 0;}
+    .kpi .klabel{font-size:12px; color:var(--muted); margin:0;}
+    .kpi .kval{font-size:20px; font-weight:900; margin:6px 0 0;}
 
-    .chart{height: 320px; width:100%;}
-    .tableWrap{overflow-x:auto;padding-top:6px;}
-    #pivotTable, #recordsTable{background:#fff;border-radius:12px;}
+    .chart{height:320px; width:100%;}
+    .tableWrap{overflow-x:auto; padding-top:6px;}
+    #pivotTable, #recordsTable{background:#fff; border-radius:12px;}
 
     footer{
+      margin-top:auto;
       text-align:center;
       font-size:12px;
       color:#6b7280;
-      padding:10px 20px 18px;
+      padding:12px 20px 18px;
       border-top:1px solid #e5e7eb;
-      background-color: rgba(248,250,252,.9);
-      margin-top:auto;
+      background:rgba(248,250,252,.9);
     }
   </style>
 </head>
@@ -179,52 +205,53 @@
 <body>
 <header>
   <div class="header-inner">
-    <div class="logo-group">
+    <div class="logos">
       <img src="conap_logo.jpg" alt="Logo CONAP">
       <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
     </div>
-    <div class="title-group">
+    <div class="headtxt">
       <h1>Centro de consulta de datos</h1>
       <p>Sistema de monitoreo de actividades · CONAP – Dirección Regional Altiplano Central</p>
-      <div class="chip-version">
-        <span class="chip-dot"></span>
-        <span>Módulo de patrullajes · Tablero analítico</span>
-      </div>
+      <div class="chip"><span class="dot"></span><span>Patrullajes · Tablero analítico</span></div>
     </div>
   </div>
 </header>
 
 <main>
-  <section class="page-header">
-    <h2>Tablero analítico: Patrullajes de control y vigilancia</h2>
-    <p>Filtros + indicadores + gráficas interactivas (basado en <code>datos_patrullaje.csv</code>).</p>
-    <span class="pill">Análisis dinámico · filtros por tiempo y por atributos</span>
+  <section class="page-title">
+    <h2>Tablero dinámico (CSV)</h2>
+    <p>Gráficas + tabla dinámica (pivote) + filtros por tiempo, guardarecurso y atributos.</p>
+    <span class="pill">Fuente: <code>datos_patrullaje.csv</code> · Análisis local en el navegador</span>
+
+    <!-- Botones en el orden pedido -->
+    <div class="actions">
+      <a class="btn btn-ghost" href="patrullajes_dashboard.html">← Volver al dashboard</a>
+      <a class="btn btn-primary" href="patrullajes_datos.html">📊 Ir a datos detallados (informes)</a>
+    </div>
   </section>
 
   <section class="card">
     <h3>🎛️ Filtros</h3>
-    <p class="muted">Tip: selecciona un mes rápido, o usa rango de fechas + “Agrupar por”.</p>
+    <p class="sub">Al cambiar un filtro, se actualizan KPIs, gráficas y tablas.</p>
 
     <div class="filters">
-      <div class="field">
+      <div>
         <label for="monthQuick">Mes (rápido)</label>
-        <select id="monthQuick">
-          <option value="">(Todos)</option>
-        </select>
+        <select id="monthQuick"><option value="">Todos</option></select>
       </div>
 
-      <div class="field">
+      <div>
         <label for="dateFrom">Desde</label>
         <input id="dateFrom" type="date">
       </div>
 
-      <div class="field">
+      <div>
         <label for="dateTo">Hasta</label>
         <input id="dateTo" type="date">
       </div>
 
-      <div class="field">
-        <label for="groupBy">Agrupar por</label>
+      <div>
+        <label for="groupBy">Agrupar tiempo</label>
         <select id="groupBy">
           <option value="mes">Mes</option>
           <option value="semana">Semana (ISO)</option>
@@ -232,84 +259,106 @@
         </select>
       </div>
 
-      <div class="field">
+      <div>
         <label for="fGuarda">Guarda recurso</label>
-        <select id="fGuarda">
-          <option value="">(Todos)</option>
-        </select>
+        <select id="fGuarda"><option value="">Todos</option></select>
       </div>
 
-      <div class="field">
+      <div>
         <label for="fMunicipio">Municipio</label>
-        <select id="fMunicipio">
-          <option value="">(Todos)</option>
-        </select>
+        <select id="fMunicipio"><option value="">Todos</option></select>
       </div>
 
-      <div class="field">
+      <div>
         <label for="fRegion">Región</label>
-        <select id="fRegion">
-          <option value="">(Todos)</option>
+        <select id="fRegion"><option value="">Todos</option></select>
+      </div>
+
+      <div>
+        <label for="fArea">Área protegida</label>
+        <select id="fArea"><option value="">Todos</option></select>
+      </div>
+
+      <div>
+        <label for="fTipo">Tipo de patrullaje</label>
+        <select id="fTipo"><option value="">Todos</option></select>
+      </div>
+
+      <div>
+        <label for="fIlegal">Actividad ilegal</label>
+        <select id="fIlegal">
+          <option value="">Todas</option>
+          <option value="si">Con registro</option>
+          <option value="no">Sin registro</option>
         </select>
       </div>
 
-      <button class="btn" id="btnReset" type="button">🧹 Limpiar</button>
-    </div>
-  </section>
+      <div>
+        <label for="fInst">Instituciones</label>
+        <select id="fInst">
+          <option value="">Todas</option>
+          <option value="si">Con instituciones</option>
+          <option value="no">Sin instituciones</option>
+        </select>
+      </div>
 
-  <section class="grid grid-3" style="margin-top:14px;">
-    <div class="kpi">
-      <p class="name">Patrullajes (filtrados)</p>
-      <p class="val" id="kpiTotal">—</p>
-      <p class="hint" id="kpiRango">—</p>
+      <div>
+        <label>&nbsp;</label>
+        <button class="btn" id="btnReset" type="button">🧹 Limpiar</button>
+      </div>
     </div>
-    <div class="kpi">
-      <p class="name">Horas estimadas (si hay hora inicio/fin)</p>
-      <p class="val" id="kpiHoras">—</p>
-      <p class="hint" id="kpiHorasHint">—</p>
-    </div>
-    <div class="kpi">
-      <p class="name">Registros con fecha válida</p>
-      <p class="val" id="kpiFechaOk">—</p>
-      <p class="hint">Para series temporales y agrupaciones</p>
+
+    <div class="kpis">
+      <div class="kpi"><p class="klabel">Registros filtrados</p><p class="kval" id="kTotal">—</p></div>
+      <div class="kpi"><p class="klabel">Guardas únicos</p><p class="kval" id="kGuardas">—</p></div>
+      <div class="kpi"><p class="klabel">Municipios únicos</p><p class="kval" id="kMunis">—</p></div>
+      <div class="kpi"><p class="klabel">Prom. duración (h)</p><p class="kval" id="kDur">—</p></div>
+      <div class="kpi"><p class="klabel">% con actividad ilegal</p><p class="kval" id="kPctIlegal">—</p></div>
+      <div class="kpi"><p class="klabel">% con instituciones</p><p class="kval" id="kPctInst">—</p></div>
     </div>
   </section>
 
   <section class="grid grid-2" style="margin-top:14px;">
     <div class="card">
-      <h3>📈 Patrullajes en el tiempo</h3>
-      <p class="muted">Conteo según “Agrupar por”.</p>
+      <h3>📈 Patrullajes por periodo</h3>
+      <p class="sub">Conteo según “Agrupar tiempo”.</p>
       <div id="chartTime" class="chart"></div>
     </div>
+
     <div class="card">
-      <h3>🧑‍✈️ Patrullajes por guarda recurso</h3>
-      <p class="muted">Top 15 (con filtros aplicados).</p>
+      <h3>⚖️ Actividad ilegal (proporción)</h3>
+      <p class="sub">Se calcula desde “Actividad ilegal observada”.</p>
+      <div id="chartIlegal" class="chart"></div>
+    </div>
+  </section>
+
+  <section class="grid grid-2b" style="margin-top:14px;">
+    <div class="card">
+      <h3>🧑‍✈️ Top Guardarecursos</h3>
+      <p class="sub">Top 15 por conteo.</p>
       <div id="chartGuarda" class="chart"></div>
     </div>
-  </section>
 
-  <section class="card" style="margin-top:14px;">
-    <h3>🏘️ Municipios con más patrullajes</h3>
-    <p class="muted">Top 15 (con filtros aplicados).</p>
-    <div id="chartMunicipio" class="chart"></div>
-  </section>
-
-  <section class="card" style="margin-top:14px;">
-    <h3>🧾 Tabla dinámica (pivote): Guarda × Tiempo</h3>
-    <p class="muted">Cruza “Guarda recurso” vs el agrupamiento temporal elegido (mes/semana/día).</p>
-    <div class="tableWrap">
-      <div id="pivotTable"></div>
+    <div class="card">
+      <h3>🏘️ Top Municipios</h3>
+      <p class="sub">Top 15 por conteo.</p>
+      <div id="chartMuni" class="chart"></div>
     </div>
   </section>
 
   <section class="card" style="margin-top:14px;">
-    <h3>🔎 Muestra de registros filtrados</h3>
-    <p class="muted">Solo para revisar rápidamente (la tabla completa con informes sigue en “Datos detallados”).</p>
-    <div class="tableWrap">
-      <div id="recordsTable"></div>
-    </div>
+    <h3>🧾 Tabla dinámica (pivote): Guarda × Periodo</h3>
+    <p class="sub">Filas: guarda recurso · Columnas: mes/semana/día · Valores: conteos.</p>
+    <div class="tableWrap"><div id="pivotTable"></div></div>
   </section>
 
+  <section class="card" style="margin-top:14px;">
+    <h3>📋 Registros filtrados (muestra)</h3>
+    <p class="sub">Muestra hasta 800 filas filtradas (para revisión). La tabla completa está en “Datos detallados”.</p>
+    <div class="tableWrap"><div id="recordsTable"></div></div>
+  </section>
+
+  <!-- Botones en el orden pedido (también al final) -->
   <div class="actions">
     <a class="btn btn-ghost" href="patrullajes_dashboard.html">← Volver al dashboard</a>
     <a class="btn btn-primary" href="patrullajes_datos.html">📊 Ir a datos detallados (informes)</a>
@@ -320,22 +369,33 @@
   <p>© 2025 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
 </footer>
 
+<!-- Librerías locales (como tu tabla actual) -->
 <script src="tabulator.min.js"></script>
 <script src="papaparse.min.js"></script>
 <script src="xlsx.full.min.js"></script>
-<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 
 <script>
-  // ====== Config de columnas del CSV (según tu patrullajes_datos.html) ======
-  const F_FECHA = "Fecha de patrullaje";
-  const F_GUARDA = "Guarda recursos responsable";
-  const F_MUNI = "Municipio";
-  const F_REGION = "Region";
-  const F_HI = "Hora de Inicio del patrullaje";
-  const F_HF = "Hora de finalizacion de patrullaje";
-  const F_UBI = "Ubicacion";
+  // ===== Config CSV =====
+  const CSV_URL = "./datos_patrullaje.csv";
+  const DELIM = ";";
 
-  // ====== Estado ======
+  // Columnas reales del CSV (según tu archivo)
+  const F = {
+    guarda: "Guarda recursos responsable",
+    municipio: "Municipio",
+    fecha: "Fecha de patrullaje",
+    hIni: "Hora de Inicio del patrullaje",
+    hFin: "Hora de finalizacion de patrullaje",
+    region: "Region",
+    ubic: "Ubicacion",
+    area: "Area protegida",
+    tipo: "Tipo de patrullaje",
+    hayInst: "Hay mas instituciones involucradas en el patrullaje",
+    inst: "Instituciones involucradas",
+    ilegal: "Actividad ilegal observada",
+  };
+
+  // ===== Estado =====
   const state = {
     monthQuick: "",
     dateFrom: "",
@@ -343,410 +403,460 @@
     groupBy: "mes",
     guarda: "",
     municipio: "",
-    region: ""
+    region: "",
+    area: "",
+    tipo: "",
+    ilegal: "", // "", "si", "no"
+    inst: ""    // "", "si", "no"
   };
 
   let raw = [];
-  let rows = []; // enriquecidas con __fecha, __mes, __semana, __dia, __durHoras
-  let pivotTable = null;
-  let recordsTable = null;
+  let rows = [];
+  let tPivot = null;
+  let tRecords = null;
 
-  // ====== Utilidades ======
+  // ===== Helpers =====
+  const $ = (id) => document.getElementById(id);
   const pad2 = (n) => String(n).padStart(2, "0");
 
-  function parseDateFlexible(s) {
-    if (!s) return null;
-    const str = String(s).trim();
-    if (!str) return null;
+  function parseDateFlexible(value){
+    if(!value) return null;
+    let s = String(value).trim();
+    if(!s) return null;
 
-    // ISO / DateTime
-    const dIso = new Date(str);
-    if (!isNaN(dIso.getTime())) return dIso;
+    // corta si viene con hora
+    if (s.includes("T")) s = s.split("T")[0];
+    if (s.includes(" ")) s = s.split(" ")[0];
 
-    // dd/mm/yyyy o mm/dd/yyyy
-    // Intentamos detectar: si primer bloque > 12 asumimos dd/mm
-    const m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-    if (m) {
-      let a = parseInt(m[1],10);
-      let b = parseInt(m[2],10);
-      let y = parseInt(m[3],10);
+    // YYYY-MM-DD
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if(m){
+      const y = +m[1], mo = +m[2], d = +m[3];
+      const dt = new Date(y, mo-1, d);
+      return isNaN(dt.getTime()) ? null : dt;
+    }
+
+    // dd/mm/yyyy o mm/dd/yyyy (heurística)
+    const parts = s.split(/[\/\-]/).map(x => parseInt(x, 10));
+    if(parts.length === 3 && parts.every(n => Number.isFinite(n))){
+      let [a,b,y] = parts;
       if (y < 100) y += 2000;
-
       let day, month;
-      if (a > 12) { day = a; month = b; }           // dd/mm
-      else if (b > 12) { day = b; month = a; }      // mm/dd
-      else { day = a; month = b; }                  // ambiguo: asumimos dd/mm (ajustable)
-      const d = new Date(y, month - 1, day);
-      if (!isNaN(d.getTime())) return d;
+      if (a > 12 && b <= 12) { day = a; month = b; }
+      else if (b > 12 && a <= 12) { day = b; month = a; }
+      else { day = a; month = b; } // default dd/mm
+      const dt = new Date(y, month-1, day);
+      return isNaN(dt.getTime()) ? null : dt;
     }
 
     return null;
   }
 
-  function dateKey(d) {
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-  }
-  function monthKey(d) {
-    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+  function ymd(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+  function monthKey(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`; }
+
+  function isoWeekKey(date){
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${pad2(weekNo)}`;
   }
 
-  // ISO week (YYYY-W##)
-  function isoWeekKey(d) {
-    const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    const dayNum = tmp.getUTCDay() || 7;
-    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(),0,1));
-    const weekNo = Math.ceil((((tmp - yearStart) / 86400000) + 1) / 7);
-    return `${tmp.getUTCFullYear()}-W${pad2(weekNo)}`;
-  }
-
-  function parseHourToMinutes(h) {
-    if (!h) return null;
-    const s = String(h).trim();
-    const m = s.match(/^(\d{1,2}):(\d{2})/);
-    if (!m) return null;
-    const hh = parseInt(m[1],10), mm = parseInt(m[2],10);
-    if (isNaN(hh) || isNaN(mm) || hh<0 || hh>23 || mm<0 || mm>59) return null;
+  function parseTimeToMin(s){
+    if(!s) return null;
+    const t = String(s).trim();
+    const m = t.match(/^(\d{1,2}):(\d{2})/);
+    if(!m) return null;
+    const hh = +m[1], mm = +m[2];
+    if(!Number.isFinite(hh)||!Number.isFinite(mm)||hh<0||hh>23||mm<0||mm>59) return null;
     return hh*60 + mm;
   }
 
-  function durationHours(row) {
-    const a = parseHourToMinutes(row[F_HI]);
-    const b = parseHourToMinutes(row[F_HF]);
-    if (a == null || b == null) return null;
+  function durHours(row){
+    const a = parseTimeToMin(row[F.hIni]);
+    const b = parseTimeToMin(row[F.hFin]);
+    if(a==null || b==null) return null;
     let diff = b - a;
-    if (diff < 0) diff += 24*60; // por si cruzó medianoche
-    return diff / 60;
+    if(diff < 0) diff += 24*60;
+    return diff/60;
   }
 
-  function uniqSorted(values) {
-    return Array.from(new Set(values.filter(v => v != null && String(v).trim() !== "").map(v => String(v).trim())))
-      .sort((a,b)=>a.localeCompare(b,"es"));
+  function norm(s){
+    return (s||"").toString().trim();
   }
 
-  function setOptions(selectEl, options, includeAll=true) {
-    const current = selectEl.value;
+  function isYesText(v){
+    const t = norm(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    return t === "si" || t === "sí";
+  }
+
+  function isIlegal(row){
+    const v = norm(row[F.ilegal]).toLowerCase();
+    if(!v) return false;
+    if(v === "no") return false;
+    return true;
+  }
+
+  function hasInstituciones(row){
+    if (isYesText(row[F.hayInst])) return true;
+    const inst = norm(row[F.inst]);
+    return inst.length > 0;
+  }
+
+  function uniqSorted(arr){
+    return Array.from(new Set(arr.map(norm).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
+  }
+
+  function setOptions(selectEl, values){
+    const curr = selectEl.value;
     selectEl.innerHTML = "";
-    if (includeAll) {
-      const opt = document.createElement("option");
-      opt.value = "";
-      opt.textContent = "(Todos)";
-      selectEl.appendChild(opt);
-    }
-    for (const v of options) {
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      selectEl.appendChild(opt);
-    }
-    // intenta conservar selección
-    if ([...selectEl.options].some(o => o.value === current)) selectEl.value = current;
+    const optAll = document.createElement("option");
+    optAll.value = "";
+    optAll.textContent = "Todos";
+    selectEl.appendChild(optAll);
+    values.forEach(v=>{
+      const o = document.createElement("option");
+      o.value = v; o.textContent = v;
+      selectEl.appendChild(o);
+    });
+    if ([...selectEl.options].some(o=>o.value===curr)) selectEl.value = curr;
   }
 
-  function setMonthQuickOptions(monthKeys) {
-    const el = document.getElementById("monthQuick");
-    const current = el.value;
-    el.innerHTML = "";
-    const all = document.createElement("option");
-    all.value = "";
-    all.textContent = "(Todos)";
-    el.appendChild(all);
-    for (const mk of monthKeys) {
-      const opt = document.createElement("option");
-      opt.value = mk;
-      opt.textContent = mk; // puedes cambiarlo a "Mes Año" si quieres
-      el.appendChild(opt);
-    }
-    if ([...el.options].some(o => o.value === current)) el.value = current;
-  }
-
-  function monthRange(mk) {
-    // mk: YYYY-MM
-    const [y, m] = mk.split("-").map(x=>parseInt(x,10));
+  function monthRange(mk){
+    const [y,m] = mk.split("-").map(x=>parseInt(x,10));
     const from = new Date(y, m-1, 1);
     const to = new Date(y, m, 0);
     to.setHours(23,59,59,999);
-    return {from, to};
+    return {from,to};
   }
 
-  function applyFilters(rowsIn) {
-    const g = state.guarda.trim();
-    const mu = state.municipio.trim();
-    const r = state.region.trim();
+  function groupLabel(row){
+    if(!row.__date) return "(sin fecha)";
+    if(state.groupBy === "dia") return row.__day;
+    if(state.groupBy === "semana") return row.__week;
+    return row.__month;
+  }
 
+  function applyFilters(){
     let from = state.dateFrom ? new Date(state.dateFrom + "T00:00:00") : null;
     let to = state.dateTo ? new Date(state.dateTo + "T23:59:59") : null;
 
-    // Mes rápido “manda”: ajusta rango si está elegido
-    if (state.monthQuick) {
+    if(state.monthQuick){
       const mr = monthRange(state.monthQuick);
       from = mr.from; to = mr.to;
     }
 
-    return rowsIn.filter(row => {
-      if (g && String(row[F_GUARDA]||"").trim() !== g) return false;
-      if (mu && String(row[F_MUNI]||"").trim() !== mu) return false;
-      if (r && String(row[F_REGION]||"").trim() !== r) return false;
+    return rows.filter(r=>{
+      if(state.guarda && norm(r[F.guarda]) !== state.guarda) return false;
+      if(state.municipio && norm(r[F.municipio]) !== state.municipio) return false;
+      if(state.region && norm(r[F.region]) !== state.region) return false;
+      if(state.area && norm(r[F.area]) !== state.area) return false;
+      if(state.tipo && norm(r[F.tipo]) !== state.tipo) return false;
 
-      const d = row.__fecha;
-      if (from || to) {
-        if (!d) return false;
-        if (from && d < from) return false;
-        if (to && d > to) return false;
+      if(state.ilegal === "si" && !isIlegal(r)) return false;
+      if(state.ilegal === "no" && isIlegal(r)) return false;
+
+      if(state.inst === "si" && !hasInstituciones(r)) return false;
+      if(state.inst === "no" && hasInstituciones(r)) return false;
+
+      if(from || to){
+        if(!r.__date) return false;
+        if(from && r.__date < from) return false;
+        if(to && r.__date > to) return false;
       }
       return true;
     });
   }
 
-  function groupKey(row) {
-    if (state.groupBy === "semana") return row.__semana || "(sin fecha)";
-    if (state.groupBy === "dia") return row.__dia || "(sin fecha)";
-    return row.__mes || "(sin fecha)";
-  }
-
-  function countBy(rowsIn, keyFn) {
+  function countBy(rowsIn, keyFn){
     const m = new Map();
-    for (const row of rowsIn) {
-      const k = keyFn(row);
-      m.set(k, (m.get(k) || 0) + 1);
-    }
+    rowsIn.forEach(r=>{
+      const k = keyFn(r);
+      m.set(k, (m.get(k)||0) + 1);
+    });
     const keys = Array.from(m.keys()).sort((a,b)=>a.localeCompare(b));
-    return { keys, values: keys.map(k => m.get(k)) };
+    return {x: keys, y: keys.map(k=>m.get(k))};
   }
 
-  function topBy(rowsIn, field, topN=15) {
+  function topBy(rowsIn, field, n=15){
     const m = new Map();
-    for (const row of rowsIn) {
-      const k = String(row[field] || "").trim() || "(vacío)";
-      m.set(k, (m.get(k) || 0) + 1);
-    }
-    return Array.from(m.entries())
-      .sort((a,b)=>b[1]-a[1])
-      .slice(0, topN);
+    rowsIn.forEach(r=>{
+      const k = norm(r[field]) || "(vacío)";
+      m.set(k, (m.get(k)||0) + 1);
+    });
+    return Array.from(m.entries()).sort((a,b)=>b[1]-a[1]).slice(0,n);
   }
 
-  function buildPivot(rowsIn) {
-    // Guarda x Tiempo
-    const rowKey = (row) => String(row[F_GUARDA]||"").trim() || "(vacío)";
-    const colKey = (row) => groupKey(row);
+  function fmt(x, d=0){
+    if(x==null || !isFinite(x)) return "—";
+    return Number(x).toLocaleString("es-GT",{maximumFractionDigits:d,minimumFractionDigits:d});
+  }
 
+  function updateKPIs(filtered){
+    const total = filtered.length;
+    const guardas = new Set(filtered.map(r=>norm(r[F.guarda])).filter(Boolean));
+    const munis = new Set(filtered.map(r=>norm(r[F.municipio])).filter(Boolean));
+
+    const durs = filtered.map(r=>r.__durH).filter(v => typeof v === "number" && isFinite(v));
+    const avgDur = durs.length ? durs.reduce((a,b)=>a+b,0)/durs.length : null;
+
+    const ileg = filtered.filter(isIlegal).length;
+    const inst = filtered.filter(hasInstituciones).length;
+
+    $("kTotal").textContent = fmt(total);
+    $("kGuardas").textContent = fmt(guardas.size);
+    $("kMunis").textContent = fmt(munis.size);
+    $("kDur").textContent = avgDur==null ? "—" : fmt(avgDur, 1);
+    $("kPctIlegal").textContent = total ? fmt((ileg*100)/total, 1) + "%" : "—";
+    $("kPctInst").textContent = total ? fmt((inst*100)/total, 1) + "%" : "—";
+  }
+
+  function drawCharts(filtered){
+    const withDate = filtered.filter(r=>r.__date);
+
+    // Time
+    const s = countBy(withDate, groupLabel);
+    Plotly.react("chartTime", [{
+      x: s.x, y: s.y, type:"bar",
+      hovertemplate: "%{x}<br><b>%{y}</b> registro(s)<extra></extra>"
+    }], {
+      margin:{l:50,r:10,t:10,b:70},
+      xaxis:{tickangle:-30, automargin:true},
+      yaxis:{title:"Conteo"}
+    }, {responsive:true, displayModeBar:false});
+
+    // Illegal pie
+    const y = filtered.filter(isIlegal).length;
+    const n = filtered.length - y;
+    Plotly.react("chartIlegal", [{
+      labels:["Con registro","Sin registro"],
+      values:[y,n],
+      type:"pie",
+      textinfo:"percent",
+      hovertemplate: "%{label}: <b>%{value}</b><extra></extra>"
+    }], {
+      margin:{l:10,r:10,t:10,b:10},
+      legend:{orientation:"h", y:-0.05}
+    }, {responsive:true, displayModeBar:false});
+
+    // Top guarda
+    const tg = topBy(filtered, F.guarda, 15);
+    Plotly.react("chartGuarda", [{
+      x: tg.map(e=>e[0]),
+      y: tg.map(e=>e[1]),
+      type:"bar",
+      hovertemplate: "%{x}<br><b>%{y}</b><extra></extra>"
+    }], {
+      margin:{l:50,r:10,t:10,b:120},
+      xaxis:{tickangle:-35, automargin:true},
+      yaxis:{title:"Conteo"}
+    }, {responsive:true, displayModeBar:false});
+
+    // Top muni
+    const tm = topBy(filtered, F.municipio, 15);
+    Plotly.react("chartMuni", [{
+      x: tm.map(e=>e[0]),
+      y: tm.map(e=>e[1]),
+      type:"bar",
+      hovertemplate: "%{x}<br><b>%{y}</b><extra></extra>"
+    }], {
+      margin:{l:50,r:10,t:10,b:120},
+      xaxis:{tickangle:-35, automargin:true},
+      yaxis:{title:"Conteo"}
+    }, {responsive:true, displayModeBar:false});
+  }
+
+  function buildPivot(filtered){
     const colSet = new Set();
-    const tableMap = new Map(); // guarda -> obj
+    const map = new Map(); // guarda -> obj
 
-    for (const row of rowsIn) {
-      const rk = rowKey(row);
-      const ck = colKey(row);
+    filtered.forEach(r=>{
+      const rk = norm(r[F.guarda]) || "(vacío)";
+      const ck = groupLabel(r);
       colSet.add(ck);
-      if (!tableMap.has(rk)) tableMap.set(rk, { guarda: rk });
-      const obj = tableMap.get(rk);
-      obj[ck] = (obj[ck] || 0) + 1;
-    }
+      if(!map.has(rk)) map.set(rk, {guarda: rk});
+      const obj = map.get(rk);
+      obj[ck] = (obj[ck]||0) + 1;
+    });
 
     const cols = Array.from(colSet).sort((a,b)=>a.localeCompare(b));
-    const data = Array.from(tableMap.values()).sort((a,b)=>a.guarda.localeCompare(b.guarda,"es"));
+    const data = Array.from(map.values()).sort((a,b)=>a.guarda.localeCompare(b.guarda,"es"));
 
     const tabCols = [
-      { title: "Guarda recurso", field: "guarda", frozen:true, headerFilter:"input", minWidth: 220 },
-      ...cols.map(c => ({ title: c, field: c, hozAlign:"right" }))
+      { title:"Guarda recurso", field:"guarda", frozen:true, headerFilter:"input", minWidth:220 },
+      ...cols.map(c=>({ title:c, field:c, hozAlign:"right" }))
     ];
-
-    return { tabCols, data };
+    return {tabCols, data};
   }
 
-  function fmtNum(x, digits=0) {
-    if (x == null || isNaN(x)) return "—";
-    return Number(x).toLocaleString("es-GT", { maximumFractionDigits: digits, minimumFractionDigits: digits });
-  }
-
-  function update() {
-    const filtered = applyFilters(rows);
-
-    // KPI
-    const total = filtered.length;
-    document.getElementById("kpiTotal").textContent = fmtNum(total);
-    const rangoTxt = state.monthQuick
-      ? `Mes: ${state.monthQuick}`
-      : ((state.dateFrom || state.dateTo) ? `Rango: ${state.dateFrom || "…"} → ${state.dateTo || "…"}`
-      : "Rango: (todo)");
-    document.getElementById("kpiRango").textContent = rangoTxt;
-
-    const hrs = filtered.map(r => r.__durHoras).filter(v => v != null && !isNaN(v));
-    const sumHrs = hrs.reduce((a,b)=>a+b,0);
-    document.getElementById("kpiHoras").textContent = hrs.length ? fmtNum(sumHrs,1) : "—";
-    document.getElementById("kpiHorasHint").textContent =
-      hrs.length ? `${fmtNum(hrs.length)} registro(s) con horas` : "No hay horas consistentes en el filtro";
-
-    const fechaOk = filtered.filter(r => r.__fecha).length;
-    document.getElementById("kpiFechaOk").textContent = fmtNum(fechaOk);
-
-    // Chart tiempo
-    const serie = countBy(filtered.filter(r => r.__fecha), (row)=>groupKey(row));
-    Plotly.react("chartTime", [{
-      x: serie.keys,
-      y: serie.values,
-      type: "bar",
-      hovertemplate: "%{x}<br>Patrullajes: %{y}<extra></extra>"
-    }], {
-      margin: {l: 50, r: 10, t: 16, b: 70},
-      xaxis: { tickangle: -30, automargin:true },
-      yaxis: { title: "Patrullajes" }
-    }, {responsive:true, displayModeBar:false});
-
-    // Chart guardas
-    const topG = topBy(filtered, F_GUARDA, 15);
-    Plotly.react("chartGuarda", [{
-      x: topG.map(x=>x[0]),
-      y: topG.map(x=>x[1]),
-      type: "bar",
-      hovertemplate: "%{x}<br>Patrullajes: %{y}<extra></extra>"
-    }], {
-      margin: {l: 50, r: 10, t: 16, b: 120},
-      xaxis: { tickangle: -35, automargin:true },
-      yaxis: { title: "Patrullajes" }
-    }, {responsive:true, displayModeBar:false});
-
-    // Chart municipios
-    const topM = topBy(filtered, F_MUNI, 15);
-    Plotly.react("chartMunicipio", [{
-      x: topM.map(x=>x[0]),
-      y: topM.map(x=>x[1]),
-      type: "bar",
-      hovertemplate: "%{x}<br>Patrullajes: %{y}<extra></extra>"
-    }], {
-      margin: {l: 50, r: 10, t: 16, b: 120},
-      xaxis: { tickangle: -35, automargin:true },
-      yaxis: { title: "Patrullajes" }
-    }, {responsive:true, displayModeBar:false});
-
-    // Pivot Tabulator
+  function updateTables(filtered){
+    // Pivot
     const piv = buildPivot(filtered);
-    if (!pivotTable) {
-      pivotTable = new Tabulator("#pivotTable", {
+    if(!tPivot){
+      tPivot = new Tabulator("#pivotTable", {
         data: piv.data,
         columns: piv.tabCols,
-        layout: "fitDataStretch",
-        pagination: "local",
-        paginationSize: 15,
-        paginationSizeSelector: [15, 30, 50, 100],
-        movableColumns: true
+        layout:"fitDataStretch",
+        pagination:"local",
+        paginationSize:15,
+        paginationSizeSelector:[15,30,50,100],
+        movableColumns:true
       });
-    } else {
-      pivotTable.setColumns(piv.tabCols);
-      pivotTable.setData(piv.data);
+    }else{
+      tPivot.setColumns(piv.tabCols);
+      tPivot.setData(piv.data);
     }
 
-    // Tabla muestra de registros
-    const sampleCols = [
-      { title: "Fecha", field: F_FECHA, headerFilter:"input", width: 140 },
-      { title: "Guarda", field: F_GUARDA, headerFilter:"input", minWidth: 220 },
-      { title: "Municipio", field: F_MUNI, headerFilter:"input", width: 160 },
-      { title: "Región", field: F_REGION, headerFilter:"input", width: 140 },
-      { title: "Ubicación", field: F_UBI, headerFilter:"input", minWidth: 220 },
-      { title: "Hora Inicio", field: F_HI, headerFilter:"input", width: 120 },
-      { title: "Hora Fin", field: F_HF, headerFilter:"input", width: 120 }
+    // Records sample
+    const cols = [
+      {title:"Fecha", field:F.fecha, headerFilter:"input", width:140},
+      {title:"Guarda", field:F.guarda, headerFilter:"input", minWidth:220},
+      {title:"Municipio", field:F.municipio, headerFilter:"input", width:160},
+      {title:"Región", field:F.region, headerFilter:"input", width:140},
+      {title:"Área", field:F.area, headerFilter:"input", width:160},
+      {title:"Tipo", field:F.tipo, headerFilter:"input", width:170},
+      {title:"Actividad ilegal", field:F.ilegal, headerFilter:"input", width:160},
+      {title:"Instituciones", field:F.inst, headerFilter:"input", minWidth:220},
+      {title:"Hora inicio", field:F.hIni, headerFilter:"input", width:120},
+      {title:"Hora fin", field:F.hFin, headerFilter:"input", width:120},
+      {title:"Ubicación", field:F.ubic, headerFilter:"input", minWidth:220},
     ];
 
-    if (!recordsTable) {
-      recordsTable = new Tabulator("#recordsTable", {
-        data: filtered.slice(0, 500),
-        columns: sampleCols,
-        layout: "fitDataStretch",
-        pagination: "local",
-        paginationSize: 20,
-        paginationSizeSelector: [20, 50, 100, 200],
-        movableColumns: true
+    const sample = filtered.slice(0, 800);
+    if(!tRecords){
+      tRecords = new Tabulator("#recordsTable", {
+        data: sample,
+        columns: cols,
+        layout:"fitDataStretch",
+        pagination:"local",
+        paginationSize:20,
+        paginationSizeSelector:[20,50,100,200],
+        movableColumns:true
       });
-    } else {
-      recordsTable.setColumns(sampleCols);
-      recordsTable.setData(filtered.slice(0, 500));
+    }else{
+      tRecords.setColumns(cols);
+      tRecords.setData(sample);
     }
   }
 
-  function wireControls() {
-    const monthQuick = document.getElementById("monthQuick");
-    const dateFrom = document.getElementById("dateFrom");
-    const dateTo = document.getElementById("dateTo");
-    const groupBy = document.getElementById("groupBy");
-    const fGuarda = document.getElementById("fGuarda");
-    const fMunicipio = document.getElementById("fMunicipio");
-    const fRegion = document.getElementById("fRegion");
-    const btnReset = document.getElementById("btnReset");
+  function updateAll(){
+    const filtered = applyFilters();
+    updateKPIs(filtered);
+    drawCharts(filtered);
+    updateTables(filtered);
+  }
 
-    monthQuick.addEventListener("change", () => { state.monthQuick = monthQuick.value; update(); });
-    dateFrom.addEventListener("change", () => { state.dateFrom = dateFrom.value; state.monthQuick=""; monthQuick.value=""; update(); });
-    dateTo.addEventListener("change", () => { state.dateTo = dateTo.value; state.monthQuick=""; monthQuick.value=""; update(); });
-    groupBy.addEventListener("change", () => { state.groupBy = groupBy.value; update(); });
+  function wire(){
+    const ids = ["monthQuick","dateFrom","dateTo","groupBy","fGuarda","fMunicipio","fRegion","fArea","fTipo","fIlegal","fInst"];
+    ids.forEach(id => $(id).addEventListener("change", () => {
+      if(id === "monthQuick" && $("monthQuick").value){
+        state.monthQuick = $("monthQuick").value;
+      }else if(id === "dateFrom" || id === "dateTo"){
+        // si tocan rango manual, se limpia el monthQuick
+        state.monthQuick = "";
+        $("monthQuick").value = "";
+        state.dateFrom = $("dateFrom").value;
+        state.dateTo = $("dateTo").value;
+      }else{
+        state[idMap(id)] = $(id).value;
+      }
+      // sincroniza los que no pasan por idMap
+      if(id === "groupBy") state.groupBy = $("groupBy").value;
+      if(id === "monthQuick") state.monthQuick = $("monthQuick").value;
 
-    fGuarda.addEventListener("change", () => { state.guarda = fGuarda.value; update(); });
-    fMunicipio.addEventListener("change", () => { state.municipio = fMunicipio.value; update(); });
-    fRegion.addEventListener("change", () => { state.region = fRegion.value; update(); });
+      updateAll();
+    }));
 
-    btnReset.addEventListener("click", () => {
-      state.monthQuick = "";
-      state.dateFrom = "";
-      state.dateTo = "";
-      state.groupBy = "mes";
-      state.guarda = "";
-      state.municipio = "";
-      state.region = "";
+    $("btnReset").addEventListener("click", ()=>{
+      Object.assign(state, {
+        monthQuick:"",
+        dateFrom:"",
+        dateTo:"",
+        groupBy:"mes",
+        guarda:"",
+        municipio:"",
+        region:"",
+        area:"",
+        tipo:"",
+        ilegal:"",
+        inst:""
+      });
 
-      monthQuick.value = "";
-      dateFrom.value = "";
-      dateTo.value = "";
-      groupBy.value = "mes";
-      fGuarda.value = "";
-      fMunicipio.value = "";
-      fRegion.value = "";
+      $("monthQuick").value = "";
+      $("dateFrom").value = "";
+      $("dateTo").value = "";
+      $("groupBy").value = "mes";
+      $("fGuarda").value = "";
+      $("fMunicipio").value = "";
+      $("fRegion").value = "";
+      $("fArea").value = "";
+      $("fTipo").value = "";
+      $("fIlegal").value = "";
+      $("fInst").value = "";
 
-      update();
+      updateAll();
     });
   }
 
-  // ====== Carga CSV ======
-  document.addEventListener("DOMContentLoaded", () => {
-    wireControls();
+  function idMap(id){
+    // mapea ids de selects al state
+    if(id==="fGuarda") return "guarda";
+    if(id==="fMunicipio") return "municipio";
+    if(id==="fRegion") return "region";
+    if(id==="fArea") return "area";
+    if(id==="fTipo") return "tipo";
+    if(id==="fIlegal") return "ilegal";
+    if(id==="fInst") return "inst";
+    return id;
+  }
 
-    fetch("./datos_patrullaje.csv", { cache: "no-store" })
-      .then(r => {
-        if (!r.ok) throw new Error("HTTP " + r.status + " " + r.statusText);
-        return r.text();
-      })
-      .then(csvText => {
-        const parsed = Papa.parse(csvText, { header:true, skipEmptyLines:true, delimiter:";" });
-        raw = parsed.data || [];
+  async function load(){
+    const res = await fetch(CSV_URL, {cache:"no-store"});
+    if(!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    const csv = await res.text();
 
-        rows = raw.map(r => {
-          const d = parseDateFlexible(r[F_FECHA]);
-          const out = Object.assign({}, r);
-          out.__fecha = d;
-          out.__mes = d ? monthKey(d) : null;
-          out.__semana = d ? isoWeekKey(d) : null;
-          out.__dia = d ? dateKey(d) : null;
-          out.__durHoras = durationHours(r);
-          return out;
-        });
+    const parsed = Papa.parse(csv, {header:true, skipEmptyLines:true, delimiter:DELIM});
+    raw = (parsed.data || []).filter(r => r && Object.keys(r).some(k => norm(r[k])));
 
-        // Opciones filtros
-        setOptions(document.getElementById("fGuarda"), uniqSorted(rows.map(r=>r[F_GUARDA])));
-        setOptions(document.getElementById("fMunicipio"), uniqSorted(rows.map(r=>r[F_MUNI])));
-        setOptions(document.getElementById("fRegion"), uniqSorted(rows.map(r=>r[F_REGION])));
+    rows = raw.map(r=>{
+      const d = parseDateFlexible(r[F.fecha]);
+      return {
+        ...r,
+        __date: d,
+        __day: d ? ymd(d) : null,
+        __month: d ? monthKey(d) : null,
+        __week: d ? isoWeekKey(d) : null,
+        __durH: durHours(r)
+      };
+    });
 
-        // Mes rápido (ordenado)
-        const months = uniqSorted(rows.map(r=>r.__mes).filter(Boolean));
-        setMonthQuickOptions(months);
+    // opciones filtros
+    setOptions($("fGuarda"), uniqSorted(rows.map(r=>r[F.guarda])));
+    setOptions($("fMunicipio"), uniqSorted(rows.map(r=>r[F.municipio])));
+    setOptions($("fRegion"), uniqSorted(rows.map(r=>r[F.region])));
+    setOptions($("fArea"), uniqSorted(rows.map(r=>r[F.area])));
+    setOptions($("fTipo"), uniqSorted(rows.map(r=>r[F.tipo])));
 
-        // Default: último mes si existe
-        if (months.length) {
-          state.monthQuick = months[months.length - 1];
-          document.getElementById("monthQuick").value = state.monthQuick;
-        }
+    // meses rápidos (último mes por defecto si existe)
+    const months = uniqSorted(rows.map(r=>r.__month).filter(Boolean));
+    const mq = $("monthQuick");
+    mq.innerHTML = `<option value="">Todos</option>` + months.map(m=>`<option value="${m}">${m}</option>`).join("");
+    if(months.length){
+      state.monthQuick = months[months.length-1];
+      mq.value = state.monthQuick;
+    }
 
-        update();
-      })
-      .catch(err => {
-        console.error(err);
-        alert("Error al cargar datos_patrullaje.csv: " + err.message);
-      });
+    updateAll();
+  }
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    wire();
+    load().catch(err=>{
+      console.error(err);
+      alert("No se pudo cargar datos_patrullaje.csv: " + err.message);
+    });
   });
 </script>
 </body>
