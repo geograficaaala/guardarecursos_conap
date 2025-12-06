@@ -5,37 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Patrullajes - Tablero dinámico (CSV)</title>
 
+  <!-- Tabulator local (ya lo tienes en tu repo) -->
+  <link rel="stylesheet" href="tabulator.min.css">
+
+  <!-- Chart.js (CDN) para gráficas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
   <style>
-    :root{
+    :root {
       --verde-header:#0f766e;
-      --azul:#1d9bf0;
-      --azul-hover:#0f80cc;
-      --gris:#f5f7fa;
-      --texto:#0f172a;
-      --texto2:#6b7280;
-      --borde:#e5e7eb;
-      --rad:14px;
+      --azul-boton:#1d9bf0;
+      --azul-boton-hover:#0f80cc;
+      --gris-fondo:#f5f7fa;
+      --texto-principal:#0f172a;
+      --texto-secundario:#6b7280;
+      --borde-suave:#e5e7eb;
+      --card-radius:14px;
     }
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-      color:var(--texto);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Helvetica, Arial, sans-serif;
+      color: var(--texto-principal);
       background:
         radial-gradient(circle at top left, #dbeafe 0, transparent 55%),
         radial-gradient(circle at bottom right, #bbf7d0 0, transparent 55%),
-        linear-gradient(180deg, #e5f3f0 0%, var(--gris) 35%, #eef2ff 100%);
+        linear-gradient(180deg, #e5f3f0 0%, var(--gris-fondo) 35%, #eef2ff 100%);
       min-height:100vh;
       display:flex;
       flex-direction:column;
     }
 
     header{
-      background:linear-gradient(90deg,#0f766e,#0e7490);
+      background: linear-gradient(90deg, #0f766e, #0e7490);
       color:#fff;
       padding:14px 20px 18px;
-      box-shadow:0 2px 10px rgba(15,23,42,.25);
-      position:sticky; top:0; z-index:10;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.25);
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
     .header-inner{
       max-width:1100px;
@@ -47,54 +56,50 @@
       flex-wrap:wrap;
     }
     .logo-group{
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-      background-color:rgba(255,255,255,.12);
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      background-color: rgba(255,255,255,0.12);
       border-radius:999px;
       padding:6px 10px;
-      border:1px solid rgba(255,255,255,.15);
-      backdrop-filter:blur(4px);
+      border:1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(4px);
     }
     .logo-group img{
-      height:40px; max-width:130px; object-fit:contain;
-      background:#fff;
+      height:40px;
+      max-width:130px;
+      object-fit:contain;
+      background-color:#fff;
       border-radius:999px;
       padding:4px 8px;
-      box-shadow:0 2px 6px rgba(15,23,42,.25);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
     }
-    .title-group{ text-align:right; flex:1 1 280px; }
-    .title-group h1{ margin:0 0 2px 0; font-size:22px; letter-spacing:.02em; }
-    .title-group p{ margin:0; font-size:13px; opacity:.96; line-height:1.4; }
-    .chip{
-      display:inline-flex; align-items:center; gap:6px; margin-top:6px;
-      padding:3px 9px; border-radius:999px;
-      border:1px solid rgba(248,250,252,.4);
-      font-size:11px; text-transform:uppercase; letter-spacing:.08em;
-      background-color:rgba(15,23,42,.18);
-    }
-    .chip-dot{
-      width:7px; height:7px; border-radius:999px;
-      background:#bbf7d0; box-shadow:0 0 0 4px rgba(34,197,94,.18);
-    }
+    .title-group{ text-align:right; flex: 1 1 260px; }
+    .title-group h1{ margin:0 0 2px 0; font-size:22px; letter-spacing:.02em;}
+    .title-group p{ margin:0; font-size:13px; opacity:.96; line-height:1.4;}
 
     main{
       max-width:1100px;
       width:100%;
-      margin:26px auto 0;
-      padding:0 20px 40px;
-      flex:1 0 auto;
+      margin: 18px auto 0;
+      padding: 0 20px 40px;
+      flex: 1 0 auto;
     }
-    .page-header{ margin-bottom:14px; }
-    .page-header h2{ margin:0 0 6px 0; font-size:20px; }
-    .page-header p{ margin:2px 0; font-size:14px; color:var(--texto2); }
+
+    .page-header{ margin-bottom: 10px; }
+    .page-header h2{ margin:0 0 6px; font-size:20px; }
+    .page-header p{ margin:2px 0; font-size:14px; color: var(--texto-secundario); }
+
     .pill{
       display:inline-block;
       margin-top:6px;
       padding:3px 10px;
       font-size:11px;
       border-radius:999px;
-      background-color:rgba(37,99,235,.08);
+      background-color: rgba(37,99,235,0.08);
       color:#1d4ed8;
-      border:1px solid rgba(191,219,254,.9);
+      border:1px solid rgba(191,219,254,0.9);
       text-transform:uppercase;
       letter-spacing:.08em;
     }
@@ -103,7 +108,7 @@
       display:flex;
       flex-wrap:wrap;
       gap:8px;
-      margin:14px 0 18px;
+      margin: 14px 0 16px;
       justify-content:center;
     }
     .tab{
@@ -111,37 +116,49 @@
       padding:8px 12px;
       border-radius:999px;
       border:1px solid #cbd5f5;
-      background:rgba(255,255,255,.9);
+      background: rgba(255,255,255,0.9);
       color:#0f172a;
       font-weight:650;
       font-size:13px;
     }
     .tab:hover{ background:#e5edff; border-color:#93c5fd; }
     .tab.active{
-      background:var(--azul);
-      border-color:transparent;
+      background: var(--azul-boton);
+      border-color: transparent;
       color:#fff;
-      box-shadow:0 1px 3px rgba(15,23,42,.2);
+      box-shadow: 0 1px 3px rgba(15,23,42,.2);
     }
 
     .card{
       background:#fff;
-      border-radius:var(--rad);
-      border:1px solid var(--borde);
-      box-shadow:0 2px 10px rgba(15,23,42,.1);
-      padding:16px;
-      margin-bottom:16px;
+      border-radius: var(--card-radius);
+      border:1px solid var(--borde-suave);
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.10);
+      padding: 16px;
+      margin-bottom: 14px;
+      overflow:hidden;
+      position:relative;
     }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+    }
+    .col-12{ grid-column: span 12; }
+    .col-6{ grid-column: span 6; }
+    .col-4{ grid-column: span 4; }
 
     .filters{
       display:grid;
       grid-template-columns: repeat(12, 1fr);
-      gap:12px;
+      gap: 10px;
       align-items:end;
+      margin-top: 10px;
     }
-    .field{ grid-column: span 3; min-width: 180px; }
+    .field{ grid-column: span 3; min-width: 160px; }
     .field.wide{ grid-column: span 4; }
-    label{ display:block; font-size:12px; color:var(--texto2); margin-bottom:6px; font-weight:700; }
+    label{ display:block; font-size:12px; color: var(--texto-secundario); font-weight:800; margin-bottom:6px; }
     select, input{
       width:100%;
       padding:8px 10px;
@@ -153,50 +170,64 @@
     }
     select:focus, input:focus{ border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
 
-    .btnrow{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:12px; }
+    .btnrow{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top: 12px; }
     .btn{
-      display:inline-flex; align-items:center; justify-content:center;
-      padding:8px 14px; font-size:14px; border-radius:999px;
-      text-decoration:none; cursor:pointer; border:1px solid transparent; font-weight:700;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:8px 14px;
+      font-size:14px;
+      border-radius:999px;
+      text-decoration:none;
+      cursor:pointer;
+      border:1px solid transparent;
+      font-weight:700;
+      transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
     }
-    .btn-primary{ background:var(--azul); color:#fff; }
-    .btn-primary:hover{ background:var(--azul-hover); }
-    .btn-ghost{ background:rgba(255,255,255,.9); color:#0f172a; border-color:#cbd5f5; }
-    .btn-ghost:hover{ background:#e5edff; border-color:#93c5fd; }
+    .btn span.icon{ margin-right:6px; font-size:14px; }
+    .btn-primary{
+      background-color: var(--azul-boton);
+      color:#fff;
+      box-shadow: 0 1px 3px rgba(15,23,42,.2);
+    }
+    .btn-primary:hover{
+      background-color: var(--azul-boton-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(15,23,42,.28);
+    }
+    .btn-ghost{
+      background-color: rgba(255,255,255,.9);
+      color:#0f172a;
+      border-color:#cbd5f5;
+    }
+    .btn-ghost:hover{
+      background:#e5edff;
+      border-color:#93c5fd;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(15,23,42,.15);
+    }
 
     .kpis{
       display:grid;
       grid-template-columns: repeat(12, 1fr);
-      gap:12px;
+      gap: 12px;
     }
     .kpi{
       grid-column: span 3;
-      border:1px solid var(--borde);
+      border:1px solid var(--borde-suave);
       border-radius:14px;
-      padding:12px 12px 10px;
-      background:linear-gradient(180deg,#ffffff, #f8fafc);
+      padding:12px;
+      background: linear-gradient(180deg,#fff,#f8fafc);
     }
-    .kpi .t{ font-size:12px; color:var(--texto2); font-weight:800; letter-spacing:.02em; }
+    .kpi .t{ font-size:12px; color: var(--texto-secundario); font-weight:900; letter-spacing:.02em; }
     .kpi .v{ font-size:22px; font-weight:900; margin-top:6px; }
-    .kpi .s{ font-size:12px; color:var(--texto2); margin-top:2px; }
+    .kpi .s{ font-size:12px; color: var(--texto-secundario); margin-top:2px; }
 
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap:12px;
-    }
-    .col-6{ grid-column: span 6; }
-    .col-12{ grid-column: span 12; }
-
-    .chartwrap{
-      height:340px;
-    }
+    .chartwrap{ height: 320px; }
     canvas{ width:100% !important; height:100% !important; }
 
-    .note{
-      font-size:13px; color:var(--texto2);
-      margin:0;
-    }
+    .tablewrap{ overflow-x:auto; }
+    .subnote{ margin:0; color: var(--texto-secundario); font-size:13px; }
 
     footer{
       text-align:center;
@@ -204,11 +235,11 @@
       color:#6b7280;
       padding:10px 20px 18px;
       border-top:1px solid #e5e7eb;
-      background-color:rgba(248,250,252,.9);
+      background-color: rgba(248,250,252,.9);
       margin-top:auto;
     }
 
-    @media (max-width: 820px){
+    @media (max-width: 900px){
       .field{ grid-column: span 12; min-width: unset; }
       .field.wide{ grid-column: span 12; }
       .kpi{ grid-column: span 6; }
@@ -217,10 +248,6 @@
       .header-inner{ justify-content:center; }
     }
   </style>
-
-  <!-- Librerías -->
-  <script src="papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -234,18 +261,14 @@
         <h1>Centro de consulta de datos</h1>
         <p>Sistema de monitoreo de actividades</p>
         <p>CONAP – Dirección Regional Altiplano Central</p>
-        <div class="chip">
-          <span class="chip-dot"></span>
-          <span>Módulo de patrullajes · Tablero (CSV)</span>
-        </div>
       </div>
     </div>
   </header>
 
   <main>
     <section class="page-header">
-      <h2>Patrullajes de control y vigilancia</h2>
-      <p>Tablero dinámico basado en <strong>datos_patrullaje.csv</strong>: filtra por mes/semana, guarda recursos, municipio y más.</p>
+      <h2>Patrullajes de control y vigilancia · Tablero dinámico</h2>
+      <p>Este tablero se genera automáticamente desde <strong>datos_patrullaje.csv</strong> (del repo) y permite filtrar y graficar.</p>
       <span class="pill">Tablero dinámico · CSV</span>
     </section>
 
@@ -256,9 +279,9 @@
     </nav>
 
     <section class="card">
-      <p class="note" id="estado">Cargando datos…</p>
+      <p class="subnote" id="estado">Cargando datos…</p>
 
-      <div class="filters" style="margin-top:12px;">
+      <div class="filters">
         <div class="field wide">
           <label for="f-temporal">Filtro temporal</label>
           <select id="f-temporal">
@@ -300,13 +323,18 @@
         </div>
 
         <div class="field">
-          <label for="f-ambito">Ámbito</label>
-          <select id="f-ambito">
-            <option value="todo">Todos</option>
-            <option value="interno">Dentro RUMCLA</option>
-            <option value="externo">Fuera RUMCLA</option>
-            <option value="sin_clasificar">Sin clasificar</option>
-          </select>
+          <label for="f-region">Región</label>
+          <select id="f-region"></select>
+        </div>
+
+        <div class="field">
+          <label for="f-area">Área protegida</label>
+          <select id="f-area"></select>
+        </div>
+
+        <div class="field">
+          <label for="f-tipo">Tipo patrullaje</label>
+          <select id="f-tipo"></select>
         </div>
 
         <div class="field">
@@ -315,6 +343,15 @@
             <option value="todo">Todas</option>
             <option value="si">Sí</option>
             <option value="no">No</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="f-inst">Instituciones</label>
+          <select id="f-inst">
+            <option value="todo">Todas</option>
+            <option value="si">Con instituciones</option>
+            <option value="no">Sin instituciones</option>
           </select>
         </div>
 
@@ -329,10 +366,12 @@
       </div>
 
       <div class="btnrow">
-        <button class="btn btn-ghost" id="btn-reset">🔄 Limpiar filtros</button>
-        <a class="btn btn-ghost" href="index.html">← Inicio</a>
-        <a class="btn btn-ghost" href="patrullajes_dashboard.html">🗺️ Experience Builder</a>
-        <a class="btn btn-primary" href="patrullajes_datos.html">📋 Ir a la tabla</a>
+        <button class="btn btn-ghost" id="btn-reset" type="button">
+          <span class="icon">🔄</span>Limpiar filtros
+        </button>
+        <a class="btn btn-ghost" href="index.html"><span class="icon">←</span>Inicio</a>
+        <a class="btn btn-ghost" href="patrullajes_dashboard.html"><span class="icon">🗺️</span>Experience Builder</a>
+        <a class="btn btn-primary" href="patrullajes_datos.html"><span class="icon">📋</span>Ir a Tabla</a>
       </div>
     </section>
 
@@ -344,40 +383,65 @@
           <div class="s" id="k-total-s">–</div>
         </div>
         <div class="kpi">
-          <div class="t">Municipios (filtrados)</div>
+          <div class="t">Municipios únicos</div>
           <div class="v" id="k-munis">–</div>
-          <div class="s">Conteo de municipios únicos</div>
+          <div class="s">en el filtro actual</div>
         </div>
         <div class="kpi">
-          <div class="t">Guardas (filtrados)</div>
+          <div class="t">Guardas únicos</div>
           <div class="v" id="k-guardas">–</div>
-          <div class="s">Conteo de responsables únicos</div>
+          <div class="s">en el filtro actual</div>
         </div>
         <div class="kpi">
-          <div class="t">Actividad ilegal (sí)</div>
-          <div class="v" id="k-ilegal">–</div>
-          <div class="s">Registros marcados como “sí”</div>
+          <div class="t">% Actividad ilegal</div>
+          <div class="v" id="k-pct-ilegal">–</div>
+          <div class="s">sobre filtrados</div>
         </div>
       </div>
     </section>
 
     <section class="grid">
       <div class="card col-12">
-        <h3 style="margin:0 0 8px 0;">Patrullajes en el tiempo</h3>
-        <p class="note" style="margin-bottom:12px;">Serie de conteos según el agrupamiento seleccionado.</p>
+        <h3 style="margin:0 0 8px;">Patrullajes en el tiempo</h3>
+        <p class="subnote" style="margin-bottom:12px;">Serie según el agrupamiento seleccionado.</p>
         <div class="chartwrap"><canvas id="c-tiempo"></canvas></div>
       </div>
 
       <div class="card col-6">
-        <h3 style="margin:0 0 8px 0;">Top municipios</h3>
-        <p class="note" style="margin-bottom:12px;">Municipios con más patrullajes en el filtro actual.</p>
+        <h3 style="margin:0 0 8px;">Top municipios</h3>
+        <p class="subnote" style="margin-bottom:12px;">Top 10 por registros (filtro actual).</p>
         <div class="chartwrap"><canvas id="c-muni"></canvas></div>
       </div>
 
       <div class="card col-6">
-        <h3 style="margin:0 0 8px 0;">Top guardarecursos</h3>
-        <p class="note" style="margin-bottom:12px;">Responsables con más registros en el filtro actual.</p>
+        <h3 style="margin:0 0 8px;">Top guardarecursos</h3>
+        <p class="subnote" style="margin-bottom:12px;">Top 10 por registros (filtro actual).</p>
         <div class="chartwrap"><canvas id="c-guarda"></canvas></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3 style="margin:0 0 8px;">Tabla pivote (Guarda × Periodo)</h3>
+      <p class="subnote">Filas: guarda · Columnas: periodo (día/semana/mes) · Valores: conteo.</p>
+      <div class="tablewrap" style="margin-top:10px;">
+        <div id="tabla-pivote"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;">
+        <div>
+          <h3 style="margin:0 0 6px;">Registros filtrados</h3>
+          <p class="subnote" style="margin:0;">Tabla completa filtrada (puedes exportar lo filtrado).</p>
+        </div>
+        <div class="btnrow" style="margin:0; justify-content:flex-end;">
+          <button class="btn btn-primary" id="btn-dl-csv" type="button"><span class="icon">⬇️</span>CSV filtrado</button>
+          <button class="btn btn-ghost" id="btn-dl-xlsx" type="button"><span class="icon">⬇️</span>Excel filtrado</button>
+        </div>
+      </div>
+
+      <div class="tablewrap" style="margin-top:12px;">
+        <div id="tabla-registros"></div>
       </div>
     </section>
   </main>
@@ -386,94 +450,44 @@
     <p>© 2025 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
   </footer>
 
+  <!-- Librerías locales (repo) -->
+  <script src="papaparse.min.js"></script>
+  <script src="tabulator.min.js"></script>
+  <script src="xlsx.full.min.js"></script>
+
   <script>
-    // -------- Helpers --------
-    function normalizar(t){
-      return String(t || "")
-        .toLowerCase()
-        .trim()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    }
+    // ===== CSV config =====
+    const CSV_URL = "./datos_patrullaje.csv";
+    const DELIM = ";";
 
-    function extraerFechaCompleta(fechaRaw){
-      if (!fechaRaw) return null;
-      const str = fechaRaw.toString().trim();
-      if (!str) return null;
-      const parteFecha = str.split(" ")[0]; // antes de la hora
-      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
-      if (!sep) return null;
-      const partes = parteFecha.split(sep);
-      if (partes.length < 3) return null;
+    // Campos esperados (como los usas en tu tabla actual)
+    const F = {
+      fecha: "Fecha de patrullaje",
+      guarda: "Guarda recursos responsable",
+      municipio: "Municipio",
+      region: "Region",
+      area: "Area protegida",
+      tipo: "Tipo de patrullaje",
+      ilegal: "Actividad ilegal observada",
+      hayInst: "Hay mas instituciones involucradas en el patrullaje",
+      inst: "Instituciones involucradas",
+      otraInst: "Otra (especifique)",
+      hIni: "Hora de Inicio del patrullaje",
+      hFin: "Hora de finalizacion de patrullaje",
+      ubic: "Ubicacion",
+      x: "X",
+      y: "Y",
+    };
 
-      let p1 = parseInt(partes[0], 10);
-      let p2 = parseInt(partes[1], 10);
-      let anio = parseInt(partes[2], 10);
-      if (isNaN(p1) || isNaN(p2) || isNaN(anio)) return null;
-
-      let mes, dia;
-      // Heurística: si p1>12 y p2<=12 => dd/mm, si no => mm/dd
-      if (p1 > 12 && p2 >= 1 && p2 <= 12) { dia = p1; mes = p2; }
-      else { mes = p1; dia = p2; }
-
-      if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
-      const d = new Date(anio, mes - 1, dia);
-      if (isNaN(d.getTime())) return null;
-      return { anio, mes, dia, date: d };
-    }
-
-    function isoWeek(date){
-      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-      return { year: d.getUTCFullYear(), week: weekNo };
-    }
-
-    function determinarAmbito(reg){
-      // Intentamos varios campos (tu CSV tiene "Ubicacion" con "RUMCLA")
-      const candidatos = ["Ámbito RUMCLA","Ambito RUMCLA","Ámbito","Ambito","Ubicación operativa","Ubicacion operativa","Ubicacion","Ubicación"];
-      let v = "";
-      for (const c of candidatos){
-        if (reg[c] && String(reg[c]).trim()){
-          v = String(reg[c]).trim();
-          break;
-        }
-      }
-      const n = normalizar(v);
-      if (!n) return "sin_clasificar";
-      if (n.includes("dentro") || n === "rumcla" || n.includes("rumcla")) return "interno";
-      if (n.includes("fuera") || n.includes("externo")) return "externo";
-      return "sin_clasificar";
-    }
-
-    function uniqueSorted(arr){
-      return Array.from(new Set(arr.filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
-    }
-
-    function countBy(arr, keyFn){
-      const m = new Map();
-      for (const it of arr){
-        const k = keyFn(it);
-        if (!k) continue;
-        m.set(k, (m.get(k)||0)+1);
-      }
-      return m;
-    }
-
-    function topN(map, n){
-      return Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0,n);
-    }
-
-    function fmt2(n){ return String(n).padStart(2,"0"); }
-
-    // -------- Estado --------
     let DATA = [];
     let chartTiempo = null, chartMuni = null, chartGuarda = null;
 
-    // -------- UI refs --------
-    const estado = document.getElementById("estado");
+    // Tablas
+    let tPivote = null;
+    let tRegistros = null;
 
+    // UI
+    const estado = document.getElementById("estado");
     const fTemporal = document.getElementById("f-temporal");
     const wrapMes = document.getElementById("wrap-mes");
     const wrapSemana = document.getElementById("wrap-semana");
@@ -487,15 +501,125 @@
 
     const fGuarda = document.getElementById("f-guarda");
     const fMuni = document.getElementById("f-muni");
-    const fAmbito = document.getElementById("f-ambito");
+    const fRegion = document.getElementById("f-region");
+    const fArea = document.getElementById("f-area");
+    const fTipo = document.getElementById("f-tipo");
     const fIlegal = document.getElementById("f-ilegal");
+    const fInst = document.getElementById("f-inst");
     const fAgrupar = document.getElementById("f-agrupar");
 
     const kTotal = document.getElementById("k-total");
     const kTotalS = document.getElementById("k-total-s");
     const kMunis = document.getElementById("k-munis");
     const kGuardas = document.getElementById("k-guardas");
-    const kIlegal = document.getElementById("k-ilegal");
+    const kPctIlegal = document.getElementById("k-pct-ilegal");
+
+    // Helpers
+    function norm(s){
+      return String(s || "").trim();
+    }
+    function normalizar(t){
+      return String(t || "").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    }
+    function pad2(n){ return String(n).padStart(2,"0"); }
+
+    // Fecha: soporta "8/13/2025 18:00" y "13/8/2025 18:00"
+    function extraerFechaCompleta(fechaRaw){
+      if (!fechaRaw) return null;
+      let str = String(fechaRaw).trim();
+      if (!str) return null;
+      if (str.includes(" ")) str = str.split(" ")[0];
+      if (str.includes("T")) str = str.split("T")[0];
+
+      // YYYY-MM-DD
+      const mIso = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (mIso){
+        const y = +mIso[1], mo = +mIso[2], d = +mIso[3];
+        const dt = new Date(y, mo-1, d);
+        if (isNaN(dt.getTime())) return null;
+        return { anio:y, mes:mo, dia:d, date: dt };
+      }
+
+      const sep = str.includes("/") ? "/" : (str.includes("-") ? "-" : null);
+      if (!sep) return null;
+      const partes = str.split(sep);
+      if (partes.length < 3) return null;
+
+      let p1 = parseInt(partes[0], 10);
+      let p2 = parseInt(partes[1], 10);
+      let anio = parseInt(partes[2], 10);
+      if (isNaN(p1) || isNaN(p2) || isNaN(anio)) return null;
+
+      let mes, dia;
+      if (p1 > 12 && p2 >= 1 && p2 <= 12) { dia = p1; mes = p2; } // dd/mm
+      else { mes = p1; dia = p2; } // mm/dd por defecto
+
+      if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+      const dt = new Date(anio, mes-1, dia);
+      if (isNaN(dt.getTime())) return null;
+      return { anio, mes, dia, date: dt };
+    }
+
+    function isoWeekKey(date){
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${pad2(weekNo)}`;
+    }
+
+    function parseHoraMin(h){
+      if(!h) return null;
+      const s = String(h).trim().replace(".", ":");
+      const m = s.match(/(\d{1,2}):(\d{2})/);
+      if(!m) return null;
+      const hh = parseInt(m[1],10), mm = parseInt(m[2],10);
+      if(!isFinite(hh)||!isFinite(mm)||hh<0||hh>23||mm<0||mm>59) return null;
+      return hh*60+mm;
+    }
+
+    function duracionHoras(reg){
+      const a = parseHoraMin(reg[F.hIni]);
+      const b = parseHoraMin(reg[F.hFin]);
+      if(a==null || b==null) return null;
+      let diff = b - a;
+      if(diff < 0) diff += 24*60;
+      return diff/60;
+    }
+
+    function tieneInstituciones(reg){
+      const hay = normalizar(reg[F.hayInst]);
+      if (hay === "si" || hay === "sí") return true;
+      if (norm(reg[F.inst]).length) return true;
+      if (norm(reg[F.otraInst]).length) return true;
+      return false;
+    }
+
+    function esIlegal(reg){
+      const v = normalizar(reg[F.ilegal]);
+      if (!v) return false;
+      if (v === "no") return false;
+      return true;
+    }
+
+    function uniqueSorted(arr){
+      return Array.from(new Set(arr.map(norm).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
+    }
+
+    function llenarSelect(select, valores, placeholder){
+      select.innerHTML = "";
+      const o0 = document.createElement("option");
+      o0.value = "todo";
+      o0.textContent = placeholder || "Todos";
+      select.appendChild(o0);
+      valores.forEach(v=>{
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = v;
+        select.appendChild(o);
+      });
+    }
 
     function setTemporalUI(){
       const v = fTemporal.value;
@@ -503,52 +627,6 @@
       wrapSemana.style.display = (v === "semana") ? "" : "none";
       wrapDesde.style.display = (v === "rango") ? "" : "none";
       wrapHasta.style.display = (v === "rango") ? "" : "none";
-    }
-
-    function llenarSelect(select, valores, placeholder){
-      select.innerHTML = "";
-      const opt0 = document.createElement("option");
-      opt0.value = "todo";
-      opt0.textContent = placeholder || "Todos";
-      select.appendChild(opt0);
-      for (const v of valores){
-        const o = document.createElement("option");
-        o.value = v;
-        o.textContent = v;
-        select.appendChild(o);
-      }
-    }
-
-    function llenarMeses(){
-      // lista "YYYY-MM"
-      const meses = uniqueSorted(DATA.map(r=>r.__ym)).filter(Boolean);
-      fMes.innerHTML = "";
-      const o0 = document.createElement("option");
-      o0.value = "todo";
-      o0.textContent = "Todos los meses";
-      fMes.appendChild(o0);
-      for(const m of meses){
-        const o = document.createElement("option");
-        o.value = m;
-        o.textContent = m;
-        fMes.appendChild(o);
-      }
-    }
-
-    function llenarSemanas(){
-      // lista "YYYY-W##"
-      const ws = uniqueSorted(DATA.map(r=>r.__yw)).filter(Boolean);
-      fSemana.innerHTML = "";
-      const o0 = document.createElement("option");
-      o0.value = "todo";
-      o0.textContent = "Todas las semanas";
-      fSemana.appendChild(o0);
-      for(const w of ws){
-        const o = document.createElement("option");
-        o.value = w;
-        o.textContent = w;
-        fSemana.appendChild(o);
-      }
     }
 
     function aplicarFiltros(){
@@ -563,7 +641,7 @@
       } else if (t === "rango"){
         const d1 = fDesde.value ? new Date(fDesde.value + "T00:00:00") : null;
         const d2 = fHasta.value ? new Date(fHasta.value + "T23:59:59") : null;
-        out = out.filter(r => {
+        out = out.filter(r=>{
           if (!r.__date) return false;
           if (d1 && r.__date < d1) return false;
           if (d2 && r.__date > d2) return false;
@@ -571,112 +649,189 @@
         });
       }
 
-      // Guarda
-      if (fGuarda.value !== "todo"){
-        out = out.filter(r => r.__guarda === fGuarda.value);
-      }
-
-      // Municipio
-      if (fMuni.value !== "todo"){
-        out = out.filter(r => r.__muni === fMuni.value);
-      }
-
-      // Ámbito
-      if (fAmbito.value !== "todo"){
-        out = out.filter(r => r.__ambito === fAmbito.value);
-      }
+      // Dimensiones
+      if (fGuarda.value !== "todo") out = out.filter(r => r.__guarda === fGuarda.value);
+      if (fMuni.value !== "todo") out = out.filter(r => r.__muni === fMuni.value);
+      if (fRegion.value !== "todo") out = out.filter(r => r.__region === fRegion.value);
+      if (fArea.value !== "todo") out = out.filter(r => r.__area === fArea.value);
+      if (fTipo.value !== "todo") out = out.filter(r => r.__tipo === fTipo.value);
 
       // Ilegal
-      if (fIlegal.value !== "todo"){
-        out = out.filter(r => r.__ilegal === fIlegal.value);
-      }
+      if (fIlegal.value === "si") out = out.filter(r => r.__ilegal === "si");
+      if (fIlegal.value === "no") out = out.filter(r => r.__ilegal === "no");
+
+      // Instituciones
+      if (fInst.value === "si") out = out.filter(r => r.__inst === "si");
+      if (fInst.value === "no") out = out.filter(r => r.__inst === "no");
 
       return out;
     }
 
     function actualizarKPIs(rows){
-      kTotal.textContent = rows.length.toLocaleString("es");
+      const total = rows.length;
+      kTotal.textContent = total.toLocaleString("es");
       kTotalS.textContent = `De ${DATA.length.toLocaleString("es")} registros totales`;
 
       const munis = new Set(rows.map(r=>r.__muni).filter(Boolean));
       const guardas = new Set(rows.map(r=>r.__guarda).filter(Boolean));
-      const ilegalSi = rows.filter(r=>r.__ilegal === "si").length;
-
       kMunis.textContent = munis.size.toLocaleString("es");
       kGuardas.textContent = guardas.size.toLocaleString("es");
-      kIlegal.textContent = ilegalSi.toLocaleString("es");
+
+      const ilegalSi = rows.filter(r=>r.__ilegal === "si").length;
+      const pct = total ? Math.round((ilegalSi*1000)/total)/10 : 0;
+      kPctIlegal.textContent = total ? (pct.toLocaleString("es") + "%") : "—";
     }
 
-    function renderChart(targetId, prevChart, config){
-      const ctx = document.getElementById(targetId).getContext("2d");
-      if (prevChart) prevChart.destroy();
-      return new Chart(ctx, config);
+    function countBy(rows, keyFn){
+      const m = new Map();
+      rows.forEach(r=>{
+        const k = keyFn(r);
+        if(!k) return;
+        m.set(k, (m.get(k)||0)+1);
+      });
+      return m;
+    }
+    function topN(map, n){
+      return Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0,n);
+    }
+
+    function renderChart(canvasId, prev, cfg){
+      const ctx = document.getElementById(canvasId).getContext("2d");
+      if(prev) prev.destroy();
+      return new Chart(ctx, cfg);
     }
 
     function actualizarCharts(rows){
-      // Serie tiempo
-      const g = fAgrupar.value; // dia/semana/mes
-      let keyFn;
-      if (g === "mes") keyFn = r => r.__ym;
-      else if (g === "semana") keyFn = r => r.__yw;
-      else keyFn = r => r.__yd; // YYYY-MM-DD
-
+      // Tiempo
+      const agr = fAgrupar.value; // dia/semana/mes
+      const keyFn = (agr === "mes") ? (r=>r.__ym) : (agr === "semana") ? (r=>r.__yw) : (r=>r.__yd);
       const mTiempo = countBy(rows, keyFn);
-      const labelsTiempo = Array.from(mTiempo.keys()).sort();
-      const dataTiempo = labelsTiempo.map(l=>mTiempo.get(l));
+      const labelsT = Array.from(mTiempo.keys()).sort();
+      const dataT = labelsT.map(k=>mTiempo.get(k));
 
       chartTiempo = renderChart("c-tiempo", chartTiempo, {
-        type: "bar",
-        data: { labels: labelsTiempo, datasets: [{ label: "Patrullajes", data: dataTiempo }] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: true } },
-          scales: { x: { ticks: { maxRotation: 0 } }, y: { beginAtZero: true } }
+        type:"bar",
+        data:{ labels: labelsT, datasets:[{ label:"Patrullajes", data: dataT }] },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{ legend:{ display:true } },
+          scales:{ y:{ beginAtZero:true } }
         }
       });
 
       // Top municipios
-      const mMuni = countBy(rows, r => r.__muni);
-      const topM = topN(mMuni, 10);
+      const mM = countBy(rows, r=>r.__muni || "(Sin municipio)");
+      const topM = topN(mM, 10);
       chartMuni = renderChart("c-muni", chartMuni, {
-        type: "bar",
-        data: {
-          labels: topM.map(x=>x[0]),
-          datasets: [{ label: "Registros", data: topM.map(x=>x[1]) }]
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: true } },
-          scales: { x: { beginAtZero: true } }
+        type:"bar",
+        data:{ labels: topM.map(x=>x[0]), datasets:[{ label:"Registros", data: topM.map(x=>x[1]) }] },
+        options:{
+          indexAxis:"y",
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{ legend:{ display:true } },
+          scales:{ x:{ beginAtZero:true } }
         }
       });
 
       // Top guardas
-      const mG = countBy(rows, r => r.__guarda);
+      const mG = countBy(rows, r=>r.__guarda || "(Sin guarda)");
       const topG = topN(mG, 10);
       chartGuarda = renderChart("c-guarda", chartGuarda, {
-        type: "bar",
-        data: {
-          labels: topG.map(x=>x[0]),
-          datasets: [{ label: "Registros", data: topG.map(x=>x[1]) }]
-        },
-        options: {
-          indexAxis: "y",
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: true } },
-          scales: { x: { beginAtZero: true } }
+        type:"bar",
+        data:{ labels: topG.map(x=>x[0]), datasets:[{ label:"Registros", data: topG.map(x=>x[1]) }] },
+        options:{
+          indexAxis:"y",
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{ legend:{ display:true } },
+          scales:{ x:{ beginAtZero:true } }
         }
       });
+    }
+
+    function construirPivote(rows){
+      const agr = fAgrupar.value; // usa el mismo agrupamiento del gráfico
+      const keyCol = (agr === "mes") ? "__ym" : (agr === "semana") ? "__yw" : "__yd";
+
+      const colSet = new Set();
+      const map = new Map();
+
+      rows.forEach(r=>{
+        const rowKey = r.__guarda || "(Sin guarda)";
+        const colKey = r[keyCol] || "(Sin fecha)";
+        colSet.add(colKey);
+
+        if(!map.has(rowKey)) map.set(rowKey, { guarda: rowKey });
+        const obj = map.get(rowKey);
+        obj[colKey] = (obj[colKey] || 0) + 1;
+      });
+
+      const cols = Array.from(colSet).sort((a,b)=>a.localeCompare(b));
+      const data = Array.from(map.values()).sort((a,b)=>a.guarda.localeCompare(b.guarda,"es"));
+
+      const tabCols = [
+        { title:"Guarda recurso", field:"guarda", frozen:true, headerFilter:"input", minWidth:220 },
+        ...cols.map(c=>({ title:c, field:c, hozAlign:"right" }))
+      ];
+
+      return { tabCols, data };
+    }
+
+    function actualizarTablas(rows){
+      // Pivote
+      const piv = construirPivote(rows);
+      if(!tPivote){
+        tPivote = new Tabulator("#tabla-pivote", {
+          data: piv.data,
+          columns: piv.tabCols,
+          layout:"fitDataStretch",
+          pagination:"local",
+          paginationSize: 15,
+          paginationSizeSelector: [15, 30, 50, 100],
+          movableColumns:true
+        });
+      } else {
+        tPivote.setColumns(piv.tabCols);
+        tPivote.setData(piv.data);
+      }
+
+      // Registros
+      const cols = [
+        {title:"Fecha", field:F.fecha, headerFilter:"input", width:160},
+        {title:"Guarda", field:F.guarda, headerFilter:"input", minWidth:220},
+        {title:"Municipio", field:F.municipio, headerFilter:"input", width:160},
+        {title:"Región", field:F.region, headerFilter:"input", width:140},
+        {title:"Área", field:F.area, headerFilter:"input", width:160},
+        {title:"Tipo", field:F.tipo, headerFilter:"input", width:170},
+        {title:"Ilegal", field:F.ilegal, headerFilter:"input", width:160},
+        {title:"Instituciones", field:F.inst, headerFilter:"input", minWidth:220},
+        {title:"Inicio", field:F.hIni, headerFilter:"input", width:120},
+        {title:"Fin", field:F.hFin, headerFilter:"input", width:120},
+        {title:"Ubicación", field:F.ubic, headerFilter:"input", minWidth:220},
+      ];
+
+      if(!tRegistros){
+        tRegistros = new Tabulator("#tabla-registros", {
+          data: rows,
+          columns: cols,
+          layout:"fitDataStretch",
+          pagination:"local",
+          paginationSize: 20,
+          paginationSizeSelector: [10, 20, 50, 100, 200],
+          movableColumns:true
+        });
+      } else {
+        tRegistros.setData(rows);
+      }
     }
 
     function refrescar(){
       const rows = aplicarFiltros();
       actualizarKPIs(rows);
       actualizarCharts(rows);
+      actualizarTablas(rows);
     }
 
     function limpiarFiltros(){
@@ -687,88 +842,118 @@
       fHasta.value = "";
       fGuarda.value = "todo";
       fMuni.value = "todo";
-      fAmbito.value = "todo";
+      fRegion.value = "todo";
+      fArea.value = "todo";
+      fTipo.value = "todo";
       fIlegal.value = "todo";
+      fInst.value = "todo";
       fAgrupar.value = "dia";
       setTemporalUI();
       refrescar();
     }
 
-    // -------- Carga CSV --------
-    document.addEventListener("DOMContentLoaded", function(){
+    function wire(){
       setTemporalUI();
 
-      // listeners
-      for (const el of [fTemporal, fMes, fSemana, fDesde, fHasta, fGuarda, fMuni, fAmbito, fIlegal, fAgrupar]){
+      const watchers = [fTemporal,fMes,fSemana,fDesde,fHasta,fGuarda,fMuni,fRegion,fArea,fTipo,fIlegal,fInst,fAgrupar];
+      watchers.forEach(el=>{
         el.addEventListener("change", ()=>{
-          if (el === fTemporal) setTemporalUI();
+          if(el === fTemporal) setTemporalUI();
           refrescar();
         });
-      }
+      });
+
       document.getElementById("btn-reset").addEventListener("click", limpiarFiltros);
 
-      if (typeof Papa === "undefined"){
-        estado.textContent = "No se cargó papaparse.min.js (revisa que esté en tu repo).";
+      document.getElementById("btn-dl-csv").addEventListener("click", ()=>{
+        if(tRegistros) tRegistros.download("csv", "patrullajes_filtrado.csv");
+      });
+
+      document.getElementById("btn-dl-xlsx").addEventListener("click", ()=>{
+        if(tRegistros) tRegistros.download("xlsx", "patrullajes_filtrado.xlsx", {sheetName:"Filtrado"});
+      });
+    }
+
+    async function load(){
+      if(typeof Papa === "undefined"){
+        estado.textContent = "No se cargó papaparse.min.js (debe existir en el repo).";
+        return;
+      }
+      if(typeof Tabulator === "undefined"){
+        estado.textContent = "No se cargó tabulator.min.js (debe existir en el repo).";
         return;
       }
 
       estado.textContent = "Leyendo datos_patrullaje.csv…";
-      fetch("./datos_patrullaje.csv", { cache: "no-store" })
-        .then(r => {
-          if (!r.ok) throw new Error("HTTP " + r.status + " " + r.statusText);
-          return r.text();
-        })
-        .then(csvText => {
-          const parsed = Papa.parse(csvText, { header:true, skipEmptyLines:true, delimiter:";" });
-          const rows = (parsed.data || []).filter(r => Object.keys(r || {}).length);
+      const res = await fetch(CSV_URL, { cache: "no-store" });
+      if(!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+      const csvText = await res.text();
 
-          // Precalcular campos
-          DATA = rows.map(r => {
-            const info = extraerFechaCompleta(r["Fecha de patrullaje"]);
-            const d = info ? info.date : null;
+      const parsed = Papa.parse(csvText, { header:true, skipEmptyLines:true, delimiter: DELIM });
+      const rows = (parsed.data || []).filter(r => r && Object.keys(r).some(k => norm(r[k])));
 
-            let ym = "", yd = "", yw = "";
-            if (info){
-              ym = info.anio + "-" + fmt2(info.mes);
-              yd = info.anio + "-" + fmt2(info.mes) + "-" + fmt2(info.dia);
-              const w = isoWeek(d);
-              yw = w.year + "-W" + fmt2(w.week);
-            }
+      DATA = rows.map(r=>{
+        const info = extraerFechaCompleta(r[F.fecha]);
+        const d = info ? info.date : null;
 
-            const guarda = (r["Guarda recursos responsable"] || "").toString().trim();
-            const muni = (r["Municipio"] || "").toString().trim();
+        const ym = info ? (info.anio + "-" + pad2(info.mes)) : "";
+        const yd = info ? (info.anio + "-" + pad2(info.mes) + "-" + pad2(info.dia)) : "";
+        const yw = d ? isoWeekKey(d) : "";
 
-            const ilegalRaw = (r["Actividad ilegal observada"] || "").toString().trim();
-            const ilegalNorm = normalizar(ilegalRaw);
-            const ilegal = (ilegalNorm === "no") ? "no" : (ilegalNorm ? "si" : ""); // si hay texto distinto a "no", cuenta como "si"
+        const guarda = norm(r[F.guarda]) || "(Sin guarda)";
+        const muni = norm(r[F.municipio]) || "(Sin municipio)";
+        const region = norm(r[F.region]) || "(Sin región)";
+        const area = norm(r[F.area]) || "(Sin área)";
+        const tipo = norm(r[F.tipo]) || "(Sin tipo)";
 
-            const ambito = determinarAmbito(r);
+        const ilegal = esIlegal(r) ? "si" : "no";
+        const inst = tieneInstituciones(r) ? "si" : "no";
 
-            r.__date = d;
-            r.__ym = ym;
-            r.__yd = yd;
-            r.__yw = yw;
-            r.__guarda = guarda || "(Sin guarda)";
-            r.__muni = muni || "(Sin municipio)";
-            r.__ilegal = ilegal || "no_dato";
-            r.__ambito = ambito;
+        r.__date = d;
+        r.__ym = ym;
+        r.__yd = yd;
+        r.__yw = yw;
+        r.__guarda = guarda;
+        r.__muni = muni;
+        r.__region = region;
+        r.__area = area;
+        r.__tipo = tipo;
+        r.__ilegal = ilegal;
+        r.__inst = inst;
+        r.__durH = duracionHoras(r);
 
-            return r;
-          });
+        return r;
+      });
 
-          // llenar filtros
-          llenarSelect(fGuarda, uniqueSorted(DATA.map(r=>r.__guarda)), "Todos los guardas");
-          llenarSelect(fMuni, uniqueSorted(DATA.map(r=>r.__muni)), "Todos los municipios");
-          llenarMeses();
-          llenarSemanas();
+      // llenar selects
+      llenarSelect(fGuarda, uniqueSorted(DATA.map(r=>r.__guarda)), "Todos los guardas");
+      llenarSelect(fMuni, uniqueSorted(DATA.map(r=>r.__muni)), "Todos los municipios");
+      llenarSelect(fRegion, uniqueSorted(DATA.map(r=>r.__region)), "Todas las regiones");
+      llenarSelect(fArea, uniqueSorted(DATA.map(r=>r.__area)), "Todas las áreas");
+      llenarSelect(fTipo, uniqueSorted(DATA.map(r=>r.__tipo)), "Todos los tipos");
 
-          estado.textContent = `Listo. ${DATA.length.toLocaleString("es")} registros cargados.`;
-          refrescar();
-        })
-        .catch(err => {
-          console.error(err);
-          estado.textContent = "Error cargando datos_patrullaje.csv: " + err;
-        });
+      // meses / semanas
+      const meses = uniqueSorted(DATA.map(r=>r.__ym).filter(Boolean));
+      fMes.innerHTML = "";
+      fMes.appendChild(new Option("Todos los meses","todo"));
+      meses.forEach(m=>fMes.appendChild(new Option(m,m)));
+
+      const semanas = uniqueSorted(DATA.map(r=>r.__yw).filter(Boolean));
+      fSemana.innerHTML = "";
+      fSemana.appendChild(new Option("Todas las semanas","todo"));
+      semanas.forEach(w=>fSemana.appendChild(new Option(w,w)));
+
+      estado.textContent = `Listo. ${DATA.length.toLocaleString("es")} registros cargados.`;
+      refrescar();
+    }
+
+    document.addEventListener("DOMContentLoaded", ()=>{
+      wire();
+      load().catch(err=>{
+        console.error(err);
+        estado.textContent = "Error cargando datos_patrullaje.csv: " + err.message;
+        alert("Error al cargar datos_patrullaje.csv: " + err.message);
+      });
     });
   </script>
 </body>
