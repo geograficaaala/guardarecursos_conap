@@ -8,8 +8,15 @@
   <!-- Tabulator local (ya lo tienes en tu repo) -->
   <link rel="stylesheet" href="tabulator.min.css">
 
+  <!-- Choices.js (CDN) para selects con búsqueda -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
   <!-- Chart.js (CDN) para gráficas -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- html2pdf (CDN) para reporte PDF resumen -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
     :root {
@@ -21,6 +28,8 @@
       --texto-secundario:#6b7280;
       --borde-suave:#e5e7eb;
       --card-radius:14px;
+      --shadow: 0 2px 10px rgba(15, 23, 42, 0.10);
+      --shadow-strong: 0 10px 30px rgba(15, 23, 42, 0.16);
     }
     *{box-sizing:border-box}
     body{
@@ -29,8 +38,8 @@
         Roboto, Helvetica, Arial, sans-serif;
       color: var(--texto-principal);
       background:
-        radial-gradient(circle at top left, #dbeafe 0, transparent 55%),
-        radial-gradient(circle at bottom right, #bbf7d0 0, transparent 55%),
+        radial-gradient(circle at top left, rgba(219,234,254,.95) 0, transparent 55%),
+        radial-gradient(circle at bottom right, rgba(187,247,208,.85) 0, transparent 55%),
         linear-gradient(180deg, #e5f3f0 0%, var(--gris-fondo) 35%, #eef2ff 100%);
       min-height:100vh;
       display:flex;
@@ -44,7 +53,7 @@
       box-shadow: 0 2px 10px rgba(15, 23, 42, 0.25);
       position: sticky;
       top: 0;
-      z-index: 10;
+      z-index: 30;
     }
     .header-inner{
       max-width:1100px;
@@ -133,21 +142,31 @@
       background:#fff;
       border-radius: var(--card-radius);
       border:1px solid var(--borde-suave);
-      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.10);
+      box-shadow: var(--shadow);
       padding: 16px;
       margin-bottom: 14px;
       overflow:hidden;
       position:relative;
     }
-
-    /* Acento visual (degradado) sin romper tu estilo */
     .card.accent::before{
       content:"";
       position:absolute;
       inset:0 0 auto 0;
-      height:4px;
-      background: linear-gradient(90deg, #0f766e, #0e7490, #1d9bf0);
-      opacity:.95;
+      height: 4px;
+      background: linear-gradient(90deg, rgba(29,155,240,.9), rgba(20,184,166,.9), rgba(34,197,94,.9));
+      opacity:.9;
+    }
+
+    .filter-card{
+      position: sticky;
+      top: 86px;
+      z-index: 20;
+      box-shadow: var(--shadow-strong);
+      border-color: rgba(203,213,245,.9);
+      background:
+        radial-gradient(circle at top right, rgba(29,155,240,.10), transparent 55%),
+        radial-gradient(circle at bottom left, rgba(20,184,166,.10), transparent 55%),
+        #ffffff;
     }
 
     .grid{
@@ -157,7 +176,6 @@
     }
     .col-12{ grid-column: span 12; }
     .col-6{ grid-column: span 6; }
-    .col-4{ grid-column: span 4; }
 
     .filters{
       display:grid;
@@ -168,6 +186,7 @@
     }
     .field{ grid-column: span 3; min-width: 160px; }
     .field.wide{ grid-column: span 4; }
+
     label{ display:block; font-size:12px; color: var(--texto-secundario); font-weight:800; margin-bottom:6px; }
     select, input{
       width:100%;
@@ -180,35 +199,24 @@
     }
     select:focus, input:focus{ border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
 
-    /* Combo input + clear (para Guardas) */
-    .combo{
-      position:relative;
-      display:flex;
-      align-items:center;
+    /* Choices: que combine con tu look */
+    .choices__inner{
+      border-radius: 12px !important;
+      border-color:#dbe2ef !important;
+      min-height: 40px !important;
+      padding: 4px 10px !important;
+      background: #fff !important;
     }
-    .combo input{
-      padding-right:40px;
+    .choices__list--dropdown{
+      border-radius: 12px !important;
+      border-color:#dbe2ef !important;
+      box-shadow: 0 8px 18px rgba(15,23,42,.12) !important;
+      overflow:hidden;
     }
-    .combo .clear{
-      position:absolute;
-      right:8px;
-      height:28px;
-      width:28px;
-      border-radius:999px;
-      border:1px solid #dbe2ef;
-      background: rgba(248,250,252,.95);
-      cursor:pointer;
-      display:grid;
-      place-items:center;
-      font-weight:900;
-      color:#64748b;
-      line-height:1;
+    .choices__item--selectable.is-highlighted{
+      background: rgba(29,155,240,.12) !important;
     }
-    .combo .clear:hover{
-      background:#eef2ff;
-      border-color:#93c5fd;
-      color:#0f172a;
-    }
+    .choices__placeholder{ opacity:.75; }
 
     .btnrow{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top: 12px; }
     .btn{
@@ -223,6 +231,7 @@
       border:1px solid transparent;
       font-weight:700;
       transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      user-select:none;
     }
     .btn span.icon{ margin-right:6px; font-size:14px; }
     .btn-primary{
@@ -236,7 +245,7 @@
       box-shadow: 0 4px 10px rgba(15,23,42,.28);
     }
     .btn-ghost{
-      background-color: rgba(255,255,255,.9);
+      background-color: rgba(255,255,255,.92);
       color:#0f172a;
       border-color:#cbd5f5;
     }
@@ -247,38 +256,38 @@
       box-shadow: 0 2px 8px rgba(15,23,42,.15);
     }
 
-    /* Chips de filtros activos */
     .chips{
       display:flex;
       flex-wrap:wrap;
       gap:8px;
-      margin-top:12px;
-      padding-top:12px;
-      border-top:1px dashed #e5e7eb;
+      margin-top: 12px;
+      justify-content:flex-start;
     }
     .chip{
       display:inline-flex;
       align-items:center;
       gap:8px;
       padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(191,219,254,.9);
-      background: rgba(37,99,235,0.08);
-      color:#1d4ed8;
-      font-size:12px;
-      font-weight:800;
-      letter-spacing:.01em;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid rgba(203,213,245,.95);
+      background: rgba(241,245,249,.85);
+      color: #0f172a;
+      box-shadow: 0 1px 2px rgba(15,23,42,.06);
     }
+    .chip b{ font-weight: 900; }
     .chip button{
-      border:none;
-      background:transparent;
+      border:0;
+      background: rgba(15,23,42,.06);
+      border-radius: 999px;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
       cursor:pointer;
-      font-weight:900;
-      color:#1d4ed8;
-      padding:0;
-      line-height:1;
+      font-weight: 900;
+      color:#0f172a;
     }
-    .chip button:hover{ filter:brightness(.9); }
+    .chip button:hover{ background: rgba(15,23,42,.12); }
 
     .kpis{
       display:grid;
@@ -286,11 +295,23 @@
       gap: 12px;
     }
     .kpi{
-      grid-column: span 3;
+      grid-column: span 2;
       border:1px solid var(--borde-suave);
       border-radius:14px;
       padding:12px;
       background: linear-gradient(180deg,#fff,#f8fafc);
+      position:relative;
+      overflow:hidden;
+    }
+    .kpi::after{
+      content:"";
+      position:absolute;
+      right:-24px;
+      top:-24px;
+      width:72px;
+      height:72px;
+      border-radius:999px;
+      background: radial-gradient(circle, rgba(29,155,240,.14), transparent 60%);
     }
     .kpi .t{ font-size:12px; color: var(--texto-secundario); font-weight:900; letter-spacing:.02em; }
     .kpi .v{ font-size:22px; font-weight:900; margin-top:6px; }
@@ -301,6 +322,21 @@
 
     .tablewrap{ overflow-x:auto; }
     .subnote{ margin:0; color: var(--texto-secundario); font-size:13px; }
+
+    .cardhead{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom: 10px;
+    }
+    .cardhead h3{ margin:0; }
+    .hint{
+      font-size:12px;
+      color: var(--texto-secundario);
+      margin: 0;
+    }
 
     footer{
       text-align:center;
@@ -319,6 +355,7 @@
       .col-6{ grid-column: span 12; }
       .title-group{ text-align:center; }
       .header-inner{ justify-content:center; }
+      .filter-card{ top: 110px; }
     }
   </style>
 </head>
@@ -351,7 +388,7 @@
       <a class="tab" href="patrullajes_datos.html">📋 Tabla</a>
     </nav>
 
-    <section class="card accent">
+    <section class="card accent filter-card">
       <p class="subnote" id="estado">Cargando datos…</p>
 
       <div class="filters">
@@ -385,33 +422,28 @@
           <input id="f-hasta" type="date" />
         </div>
 
-        <!-- ✅ CAMBIO: Guarda recursos ahora es buscable -->
         <div class="field">
-          <label for="f-guarda">Guarda recursos (buscar)</label>
-          <div class="combo">
-            <input id="f-guarda" type="search" placeholder="Escriba un nombre… (vacío = todos)" list="dl-guardas" autocomplete="off" />
-            <button class="clear" id="btn-clear-guarda" type="button" aria-label="Limpiar guarda">×</button>
-          </div>
-          <datalist id="dl-guardas"></datalist>
+          <label for="f-guarda">Guarda recursos (buscable)</label>
+          <select id="f-guarda"></select>
         </div>
 
         <div class="field">
-          <label for="f-muni">Municipio</label>
+          <label for="f-muni">Municipio (buscable)</label>
           <select id="f-muni"></select>
         </div>
 
         <div class="field">
-          <label for="f-region">Región</label>
+          <label for="f-region">Región (buscable)</label>
           <select id="f-region"></select>
         </div>
 
         <div class="field">
-          <label for="f-area">Área protegida</label>
+          <label for="f-area">Área protegida (buscable)</label>
           <select id="f-area"></select>
         </div>
 
         <div class="field">
-          <label for="f-tipo">Tipo patrullaje</label>
+          <label for="f-tipo">Tipo patrullaje (buscable)</label>
           <select id="f-tipo"></select>
         </div>
 
@@ -443,17 +475,26 @@
         </div>
       </div>
 
-      <!-- ✅ NUEVO: Chips de filtros activos -->
-      <div class="chips" id="chips" aria-label="Filtros activos" style="display:none;"></div>
-
       <div class="btnrow">
         <button class="btn btn-ghost" id="btn-reset" type="button">
           <span class="icon">🔄</span>Limpiar filtros
         </button>
+
+        <button class="btn btn-ghost" id="btn-copylink" type="button">
+          <span class="icon">🔗</span>Copiar enlace (filtros)
+        </button>
+
+        <button class="btn btn-ghost" id="btn-report-pdf" type="button">
+          <span class="icon">🧾</span>Reporte PDF (resumen)
+        </button>
+
         <a class="btn btn-ghost" href="index.html"><span class="icon">←</span>Inicio</a>
         <a class="btn btn-ghost" href="patrullajes_dashboard.html"><span class="icon">🗺️</span>Experience Builder</a>
         <a class="btn btn-primary" href="patrullajes_datos.html"><span class="icon">📋</span>Ir a Tabla</a>
       </div>
+
+      <div class="chips" id="chips" aria-label="Filtros activos"></div>
+      <p class="hint" style="margin-top:10px;">Tip: haz clic en una barra de las gráficas para filtrar (drill-down).</p>
     </section>
 
     <section class="card">
@@ -478,32 +519,71 @@
           <div class="v" id="k-pct-ilegal">–</div>
           <div class="s">sobre filtrados</div>
         </div>
+        <div class="kpi">
+          <div class="t">Horas (válidas)</div>
+          <div class="v" id="k-horas">–</div>
+          <div class="s">suma de duraciones</div>
+        </div>
+        <div class="kpi">
+          <div class="t">% Coord válidas</div>
+          <div class="v" id="k-coord">–</div>
+          <div class="s">X/Y numéricas</div>
+        </div>
       </div>
     </section>
 
     <section class="grid">
       <div class="card col-12">
-        <h3 style="margin:0 0 8px;">Patrullajes en el tiempo</h3>
-        <p class="subnote" style="margin-bottom:12px;">Serie según el agrupamiento seleccionado.</p>
+        <div class="cardhead">
+          <div>
+            <h3>Patrullajes en el tiempo</h3>
+            <p class="subnote" style="margin:6px 0 0;">Serie según el agrupamiento seleccionado.</p>
+          </div>
+          <div class="btnrow" style="margin:0; justify-content:flex-end;">
+            <button class="btn btn-ghost" id="btn-tiempo-png" type="button"><span class="icon">🖼️</span>PNG</button>
+          </div>
+        </div>
         <div class="chartwrap"><canvas id="c-tiempo"></canvas></div>
       </div>
 
       <div class="card col-6">
-        <h3 style="margin:0 0 8px;">Top municipios</h3>
-        <p class="subnote" style="margin-bottom:12px;">Top 10 por registros (filtro actual).</p>
+        <div class="cardhead">
+          <div>
+            <h3>Top municipios</h3>
+            <p class="subnote" style="margin:6px 0 0;">Top 10 por registros (filtro actual).</p>
+          </div>
+          <div class="btnrow" style="margin:0; justify-content:flex-end;">
+            <button class="btn btn-ghost" id="btn-muni-png" type="button"><span class="icon">🖼️</span>PNG</button>
+          </div>
+        </div>
         <div class="chartwrap"><canvas id="c-muni"></canvas></div>
       </div>
 
       <div class="card col-6">
-        <h3 style="margin:0 0 8px;">Top guardarecursos</h3>
-        <p class="subnote" style="margin-bottom:12px;">Top 10 por registros (filtro actual).</p>
+        <div class="cardhead">
+          <div>
+            <h3>Top guardarecursos</h3>
+            <p class="subnote" style="margin:6px 0 0;">Top 10 por registros (filtro actual).</p>
+          </div>
+          <div class="btnrow" style="margin:0; justify-content:flex-end;">
+            <button class="btn btn-ghost" id="btn-guarda-png" type="button"><span class="icon">🖼️</span>PNG</button>
+          </div>
+        </div>
         <div class="chartwrap"><canvas id="c-guarda"></canvas></div>
       </div>
     </section>
 
     <section class="card">
-      <h3 style="margin:0 0 8px;">Tabla pivote (Guarda × Periodo)</h3>
-      <p class="subnote">Filas: guarda · Columnas: periodo (día/semana/mes) · Valores: conteo.</p>
+      <div class="cardhead">
+        <div>
+          <h3>Tabla pivote (Guarda × Periodo)</h3>
+          <p class="subnote" style="margin:6px 0 0;">Filas: guarda · Columnas: periodo (día/semana/mes) · Valores: conteo.</p>
+        </div>
+        <div class="btnrow" style="margin:0; justify-content:flex-end;">
+          <button class="btn btn-ghost" id="btn-piv-csv" type="button"><span class="icon">⬇️</span>CSV</button>
+          <button class="btn btn-ghost" id="btn-piv-xlsx" type="button"><span class="icon">⬇️</span>Excel</button>
+        </div>
+      </div>
       <div class="tablewrap" style="margin-top:10px;">
         <div id="tabla-pivote"></div>
       </div>
@@ -518,6 +598,7 @@
         <div class="btnrow" style="margin:0; justify-content:flex-end;">
           <button class="btn btn-primary" id="btn-dl-csv" type="button"><span class="icon">⬇️</span>CSV filtrado</button>
           <button class="btn btn-ghost" id="btn-dl-xlsx" type="button"><span class="icon">⬇️</span>Excel filtrado</button>
+          <button class="btn btn-ghost" id="btn-dl-json" type="button"><span class="icon">⬇️</span>JSON</button>
         </div>
       </div>
 
@@ -561,13 +642,18 @@
     };
 
     let DATA = [];
+    let LAST_ROWS = [];
     let chartTiempo = null, chartMuni = null, chartGuarda = null;
 
     // Tablas
     let tPivote = null;
     let tRegistros = null;
 
-    // UI
+    // Choices instances
+    const CH = new Map(); // id -> Choices instance
+    let IS_READY = false;
+
+    // UI refs
     const estado = document.getElementById("estado");
     const fTemporal = document.getElementById("f-temporal");
     const wrapMes = document.getElementById("wrap-mes");
@@ -580,10 +666,7 @@
     const fDesde = document.getElementById("f-desde");
     const fHasta = document.getElementById("f-hasta");
 
-    // ✅ Guarda ahora es input buscable
     const fGuarda = document.getElementById("f-guarda");
-    const dlGuardas = document.getElementById("dl-guardas");
-
     const fMuni = document.getElementById("f-muni");
     const fRegion = document.getElementById("f-region");
     const fArea = document.getElementById("f-area");
@@ -592,18 +675,18 @@
     const fInst = document.getElementById("f-inst");
     const fAgrupar = document.getElementById("f-agrupar");
 
+    const chipsEl = document.getElementById("chips");
+
     const kTotal = document.getElementById("k-total");
     const kTotalS = document.getElementById("k-total-s");
     const kMunis = document.getElementById("k-munis");
     const kGuardas = document.getElementById("k-guardas");
     const kPctIlegal = document.getElementById("k-pct-ilegal");
-
-    const chips = document.getElementById("chips");
+    const kHoras = document.getElementById("k-horas");
+    const kCoord = document.getElementById("k-coord");
 
     // Helpers
-    function norm(s){
-      return String(s || "").trim();
-    }
+    function norm(s){ return String(s || "").trim(); }
     function normalizar(t){
       return String(t || "").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
     }
@@ -689,32 +772,80 @@
       return true;
     }
 
-    function uniqueSorted(arr){
-      return Array.from(new Set(arr.map(norm).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
+    function coordValida(r){
+      const x = r[F.x], y = r[F.y];
+      const xn = x !== undefined && x !== null && String(x).trim() !== "" ? Number(x) : NaN;
+      const yn = y !== undefined && y !== null && String(y).trim() !== "" ? Number(y) : NaN;
+      return isFinite(xn) && isFinite(yn);
     }
 
-    function llenarSelect(select, valores, placeholder){
+    function unique(arr){
+      return Array.from(new Set(arr.map(norm).filter(Boolean)));
+    }
+
+    function countMap(values){
+      const m = new Map();
+      values.forEach(v=>{
+        const k = norm(v);
+        if(!k) return;
+        m.set(k, (m.get(k)||0)+1);
+      });
+      return m;
+    }
+
+    function llenarSelectConConteo(select, valores, placeholder, counts){
       select.innerHTML = "";
       const o0 = document.createElement("option");
       o0.value = "todo";
       o0.textContent = placeholder || "Todos";
       select.appendChild(o0);
-      valores.forEach(v=>{
+
+      // ordenar por frecuencia desc, luego alfabético
+      const items = Array.from(valores).map(v=>({
+        v,
+        c: counts ? (counts.get(v)||0) : 0
+      })).sort((a,b)=>{
+        if (b.c !== a.c) return b.c - a.c;
+        return a.v.localeCompare(b.v, "es");
+      });
+
+      items.forEach(({v,c})=>{
         const o = document.createElement("option");
         o.value = v;
-        o.textContent = v;
+        o.textContent = c ? `${v} (${c})` : v;
         select.appendChild(o);
       });
     }
 
-    // ✅ datalist para guardas (buscable)
-    function llenarDatalist(datalist, valores){
-      datalist.innerHTML = "";
-      valores.forEach(v=>{
-        const o = document.createElement("option");
-        o.value = v;
-        datalist.appendChild(o);
+    function ensureChoices(el, placeholder){
+      if (typeof Choices === "undefined") return;
+      const id = el.id;
+      if (CH.has(id)){
+        try{ CH.get(id).destroy(); }catch(e){}
+        CH.delete(id);
+      }
+      const inst = new Choices(el, {
+        searchEnabled: true,
+        shouldSort: false,
+        itemSelectText: "",
+        placeholder: true,
+        placeholderValue: placeholder || "Buscar…",
+        searchPlaceholderValue: "Escribe para buscar…",
+        allowHTML: false,
+        classNames: {
+          containerOuter: "choices",
+        }
       });
+      CH.set(id, inst);
+    }
+
+    function setSelectValue(el, value){
+      el.value = value;
+      const inst = CH.get(el.id);
+      if (inst){
+        try{ inst.setChoiceByValue(value); }catch(e){}
+      }
+      el.dispatchEvent(new Event("change", { bubbles:true }));
     }
 
     function setTemporalUI(){
@@ -745,13 +876,8 @@
         });
       }
 
-      // ✅ Guardas: filtro por texto (contiene, sin tildes)
-      const qGuarda = normalizar(fGuarda.value);
-      if (qGuarda){
-        out = out.filter(r => normalizar(r.__guarda).includes(qGuarda));
-      }
-
-      // Dimensiones (selects)
+      // Dimensiones
+      if (fGuarda.value !== "todo") out = out.filter(r => r.__guarda === fGuarda.value);
       if (fMuni.value !== "todo") out = out.filter(r => r.__muni === fMuni.value);
       if (fRegion.value !== "todo") out = out.filter(r => r.__region === fRegion.value);
       if (fArea.value !== "todo") out = out.filter(r => r.__area === fArea.value);
@@ -781,6 +907,16 @@
       const ilegalSi = rows.filter(r=>r.__ilegal === "si").length;
       const pct = total ? Math.round((ilegalSi*1000)/total)/10 : 0;
       kPctIlegal.textContent = total ? (pct.toLocaleString("es") + "%") : "—";
+
+      // horas válidas
+      const horas = rows.map(r=>r.__durH).filter(v=>typeof v === "number" && isFinite(v));
+      const sumH = horas.reduce((a,b)=>a+b,0);
+      kHoras.textContent = horas.length ? (Math.round(sumH*10)/10).toLocaleString("es") : "—";
+
+      // coord
+      const coordOk = rows.filter(coordValida).length;
+      const pctCoord = total ? Math.round((coordOk*1000)/total)/10 : 0;
+      kCoord.textContent = total ? (pctCoord.toLocaleString("es") + "%") : "—";
     }
 
     function countBy(rows, keyFn){
@@ -796,10 +932,23 @@
       return Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0,n);
     }
 
-    function renderChart(canvasId, prev, cfg){
+    function renderChart(canvasId, prev, cfg, drillCb){
       const ctx = document.getElementById(canvasId).getContext("2d");
       if(prev) prev.destroy();
-      return new Chart(ctx, cfg);
+      const chart = new Chart(ctx, cfg);
+
+      if (drillCb){
+        chart.canvas.style.cursor = "pointer";
+        chart.canvas.onclick = (evt)=>{
+          const pts = chart.getElementsAtEventForMode(evt, "nearest", { intersect:true }, true);
+          if(!pts.length) return;
+          const idx = pts[0].index;
+          const label = chart.data.labels[idx];
+          drillCb(label, idx, chart);
+        };
+      }
+
+      return chart;
     }
 
     function actualizarCharts(rows){
@@ -819,6 +968,22 @@
           plugins:{ legend:{ display:true } },
           scales:{ y:{ beginAtZero:true } }
         }
+      }, (label)=>{
+        // Drill-down tiempo: según agrupación
+        if (agr === "mes"){
+          setSelectValue(fTemporal, "mes");
+          setSelectValue(fMes, label);
+        } else if (agr === "semana"){
+          setSelectValue(fTemporal, "semana");
+          setSelectValue(fSemana, label);
+        } else {
+          // día YYYY-MM-DD -> rango mismo día
+          setSelectValue(fTemporal, "rango");
+          fDesde.value = label;
+          fHasta.value = label;
+          setTemporalUI();
+          refrescar();
+        }
       });
 
       // Top municipios
@@ -834,6 +999,8 @@
           plugins:{ legend:{ display:true } },
           scales:{ x:{ beginAtZero:true } }
         }
+      }, (label)=>{
+        setSelectValue(fMuni, label);
       });
 
       // Top guardas
@@ -849,11 +1016,13 @@
           plugins:{ legend:{ display:true } },
           scales:{ x:{ beginAtZero:true } }
         }
+      }, (label)=>{
+        setSelectValue(fGuarda, label);
       });
     }
 
     function construirPivote(rows){
-      const agr = fAgrupar.value; // usa el mismo agrupamiento del gráfico
+      const agr = fAgrupar.value;
       const keyCol = (agr === "mes") ? "__ym" : (agr === "semana") ? "__yw" : "__yd";
 
       const colSet = new Set();
@@ -903,14 +1072,14 @@
         {title:"Fecha", field:F.fecha, headerFilter:"input", width:160},
         {title:"Guarda", field:F.guarda, headerFilter:"input", minWidth:220},
         {title:"Municipio", field:F.municipio, headerFilter:"input", width:160},
-        {title:"Región", field:F.region, headerFilter:"input", width:140},
-        {title:"Área", field:F.area, headerFilter:"input", width:160},
-        {title:"Tipo", field:F.tipo, headerFilter:"input", width:170},
-        {title:"Ilegal", field:F.ilegal, headerFilter:"input", width:160},
-        {title:"Instituciones", field:F.inst, headerFilter:"input", minWidth:220},
+        {title:"Región", field:F.region, headerFilter:"input", width:160},
+        {title:"Área", field:F.area, headerFilter:"input", width:180},
+        {title:"Tipo", field:F.tipo, headerFilter:"input", width:180},
+        {title:"Ilegal", field:F.ilegal, headerFilter:"input", width:170},
+        {title:"Instituciones", field:F.inst, headerFilter:"input", minWidth:240},
         {title:"Inicio", field:F.hIni, headerFilter:"input", width:120},
         {title:"Fin", field:F.hFin, headerFilter:"input", width:120},
-        {title:"Ubicación", field:F.ubic, headerFilter:"input", minWidth:220},
+        {title:"Ubicación", field:F.ubic, headerFilter:"input", minWidth:240},
       ];
 
       if(!tRegistros){
@@ -928,174 +1097,325 @@
       }
     }
 
-    // ===== Chips (filtros activos) =====
-    function addChip(text, onClear){
-      const el = document.createElement("span");
-      el.className = "chip";
-      el.innerHTML = `<span>${text}</span>`;
-      const b = document.createElement("button");
-      b.type = "button";
-      b.setAttribute("aria-label","Quitar filtro");
-      b.textContent = "×";
-      b.addEventListener("click", onClear);
-      el.appendChild(b);
-      chips.appendChild(el);
+    function filtroEstado(){
+      return {
+        t: fTemporal.value,
+        mes: fMes.value,
+        semana: fSemana.value,
+        desde: fDesde.value,
+        hasta: fHasta.value,
+        guarda: fGuarda.value,
+        muni: fMuni.value,
+        region: fRegion.value,
+        area: fArea.value,
+        tipo: fTipo.value,
+        ilegal: fIlegal.value,
+        inst: fInst.value,
+        agrupar: fAgrupar.value
+      };
+    }
+
+    function setEstado(state){
+      // ojo: algunos selects se llenan luego del load; esta función se usa post-load
+      setSelectValue(fTemporal, state.t || "todo");
+      setTemporalUI();
+
+      if ((state.t || "todo") === "mes" && state.mes) setSelectValue(fMes, state.mes);
+      if ((state.t || "todo") === "semana" && state.semana) setSelectValue(fSemana, state.semana);
+      if ((state.t || "todo") === "rango"){
+        fDesde.value = state.desde || "";
+        fHasta.value = state.hasta || "";
+      }
+
+      if (state.guarda) setSelectValue(fGuarda, state.guarda);
+      if (state.muni) setSelectValue(fMuni, state.muni);
+      if (state.region) setSelectValue(fRegion, state.region);
+      if (state.area) setSelectValue(fArea, state.area);
+      if (state.tipo) setSelectValue(fTipo, state.tipo);
+
+      if (state.ilegal) setSelectValue(fIlegal, state.ilegal);
+      if (state.inst) setSelectValue(fInst, state.inst);
+      if (state.agrupar) setSelectValue(fAgrupar, state.agrupar);
+    }
+
+    function encodeQS(obj){
+      const p = new URLSearchParams();
+      Object.keys(obj).forEach(k=>{
+        const v = obj[k];
+        if (v === undefined || v === null || v === "" || v === "todo") return;
+        p.set(k, v);
+      });
+      return p.toString();
+    }
+
+    function applyFromURL(){
+      const p = new URLSearchParams(location.search);
+      const s = {
+        t: p.get("t") || "todo",
+        mes: p.get("mes") || "todo",
+        semana: p.get("semana") || "todo",
+        desde: p.get("desde") || "",
+        hasta: p.get("hasta") || "",
+        guarda: p.get("guarda") || "todo",
+        muni: p.get("muni") || "todo",
+        region: p.get("region") || "todo",
+        area: p.get("area") || "todo",
+        tipo: p.get("tipo") || "todo",
+        ilegal: p.get("ilegal") || "todo",
+        inst: p.get("inst") || "todo",
+        agrupar: p.get("agrupar") || "dia"
+      };
+      setEstado(s);
+    }
+
+    function updateURL(){
+      if (!IS_READY) return;
+      const s = filtroEstado();
+      const qs = encodeQS(s);
+      const url = qs ? (location.pathname + "?" + qs) : location.pathname;
+      history.replaceState(null, "", url);
     }
 
     function renderChips(){
-      chips.innerHTML = "";
-      let any = false;
+      const s = filtroEstado();
+      chipsEl.innerHTML = "";
+
+      function addChip(text, onClear){
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.innerHTML = `<b>${text}</b>`;
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.title = "Quitar filtro";
+        btn.textContent = "×";
+        btn.addEventListener("click", onClear);
+        chip.appendChild(btn);
+        chipsEl.appendChild(chip);
+      }
 
       // Temporal
-      if (fTemporal.value === "mes" && fMes.value !== "todo"){
-        any = true;
-        addChip(`Mes: ${fMes.value}`, ()=>{ fMes.value="todo"; refrescar(true); });
-      } else if (fTemporal.value === "semana" && fSemana.value !== "todo"){
-        any = true;
-        addChip(`Semana: ${fSemana.value}`, ()=>{ fSemana.value="todo"; refrescar(true); });
-      } else if (fTemporal.value === "rango" && (fDesde.value || fHasta.value)){
-        any = true;
-        const d = fDesde.value || "…";
-        const h = fHasta.value || "…";
-        addChip(`Rango: ${d} → ${h}`, ()=>{ fDesde.value=""; fHasta.value=""; refrescar(true); });
+      if (s.t === "mes" && s.mes && s.mes !== "todo"){
+        addChip(`Mes: ${s.mes}`, ()=>{
+          setSelectValue(fTemporal, "todo");
+          setSelectValue(fMes, "todo");
+          setTemporalUI();
+          refrescar();
+        });
+      }
+      if (s.t === "semana" && s.semana && s.semana !== "todo"){
+        addChip(`Semana: ${s.semana}`, ()=>{
+          setSelectValue(fTemporal, "todo");
+          setSelectValue(fSemana, "todo");
+          setTemporalUI();
+          refrescar();
+        });
+      }
+      if (s.t === "rango" && (s.desde || s.hasta)){
+        addChip(`Rango: ${s.desde || "?"} → ${s.hasta || "?"}`, ()=>{
+          setSelectValue(fTemporal, "todo");
+          fDesde.value = "";
+          fHasta.value = "";
+          setTemporalUI();
+          refrescar();
+        });
       }
 
-      // Guarda (texto)
-      if (norm(fGuarda.value)){
-        any = true;
-        addChip(`Guarda: ${norm(fGuarda.value)}`, ()=>{ fGuarda.value=""; refrescar(true); });
-      }
+      // Dimensiones
+      if (s.guarda && s.guarda !== "todo") addChip(`Guarda: ${s.guarda}`, ()=>{ setSelectValue(fGuarda,"todo"); });
+      if (s.muni && s.muni !== "todo") addChip(`Municipio: ${s.muni}`, ()=>{ setSelectValue(fMuni,"todo"); });
+      if (s.region && s.region !== "todo") addChip(`Región: ${s.region}`, ()=>{ setSelectValue(fRegion,"todo"); });
+      if (s.area && s.area !== "todo") addChip(`Área: ${s.area}`, ()=>{ setSelectValue(fArea,"todo"); });
+      if (s.tipo && s.tipo !== "todo") addChip(`Tipo: ${s.tipo}`, ()=>{ setSelectValue(fTipo,"todo"); });
 
-      // Selects
-      if (fMuni.value !== "todo"){ any=true; addChip(`Municipio: ${fMuni.value}`, ()=>{ fMuni.value="todo"; refrescar(true); }); }
-      if (fRegion.value !== "todo"){ any=true; addChip(`Región: ${fRegion.value}`, ()=>{ fRegion.value="todo"; refrescar(true); }); }
-      if (fArea.value !== "todo"){ any=true; addChip(`Área: ${fArea.value}`, ()=>{ fArea.value="todo"; refrescar(true); }); }
-      if (fTipo.value !== "todo"){ any=true; addChip(`Tipo: ${fTipo.value}`, ()=>{ fTipo.value="todo"; refrescar(true); }); }
+      if (s.ilegal && s.ilegal !== "todo") addChip(`Ilegal: ${s.ilegal.toUpperCase()}`, ()=>{ setSelectValue(fIlegal,"todo"); });
+      if (s.inst && s.inst !== "todo") addChip(`Instituciones: ${s.inst === "si" ? "Con" : "Sin"}`, ()=>{ setSelectValue(fInst,"todo"); });
 
-      if (fIlegal.value !== "todo"){ any=true; addChip(`Ilegal: ${fIlegal.value.toUpperCase()}`, ()=>{ fIlegal.value="todo"; refrescar(true); }); }
-      if (fInst.value !== "todo"){ any=true; addChip(`Instituciones: ${fInst.value==="si"?"Con":"Sin"}`, ()=>{ fInst.value="todo"; refrescar(true); }); }
-
-      // Agrupar (opcional)
-      if (fAgrupar.value !== "dia"){
-        any = true;
-        addChip(`Serie: ${fAgrupar.value}`, ()=>{ fAgrupar.value="dia"; refrescar(true); });
-      }
-
-      chips.style.display = any ? "" : "none";
+      // Agrupar
+      if (s.agrupar && s.agrupar !== "dia") addChip(`Agrupar: ${s.agrupar}`, ()=>{ setSelectValue(fAgrupar,"dia"); });
     }
 
-    // ===== URL state (persistencia) =====
-    function syncUrl(){
-      const p = new URLSearchParams();
-
-      if (fTemporal.value !== "todo") p.set("temporal", fTemporal.value);
-      if (fMes.value !== "todo") p.set("mes", fMes.value);
-      if (fSemana.value !== "todo") p.set("semana", fSemana.value);
-      if (fDesde.value) p.set("desde", fDesde.value);
-      if (fHasta.value) p.set("hasta", fHasta.value);
-
-      if (norm(fGuarda.value)) p.set("guarda", norm(fGuarda.value));
-
-      if (fMuni.value !== "todo") p.set("muni", fMuni.value);
-      if (fRegion.value !== "todo") p.set("region", fRegion.value);
-      if (fArea.value !== "todo") p.set("area", fArea.value);
-      if (fTipo.value !== "todo") p.set("tipo", fTipo.value);
-
-      if (fIlegal.value !== "todo") p.set("ilegal", fIlegal.value);
-      if (fInst.value !== "todo") p.set("inst", fInst.value);
-
-      if (fAgrupar.value !== "dia") p.set("agrupar", fAgrupar.value);
-
-      const qs = p.toString();
-      const newUrl = qs ? (location.pathname + "?" + qs) : location.pathname;
-      history.replaceState(null, "", newUrl);
-    }
-
-    function applyUrlParamsAfterOptions(){
-      const p = new URLSearchParams(location.search);
-
-      const temporal = p.get("temporal");
-      if (temporal) fTemporal.value = temporal;
-
-      const mes = p.get("mes");
-      if (mes && Array.from(fMes.options).some(o=>o.value===mes)) fMes.value = mes;
-
-      const semana = p.get("semana");
-      if (semana && Array.from(fSemana.options).some(o=>o.value===semana)) fSemana.value = semana;
-
-      const desde = p.get("desde"); if (desde) fDesde.value = desde;
-      const hasta = p.get("hasta"); if (hasta) fHasta.value = hasta;
-
-      const guarda = p.get("guarda"); if (guarda) fGuarda.value = guarda;
-
-      const muni = p.get("muni"); if (muni && Array.from(fMuni.options).some(o=>o.value===muni)) fMuni.value = muni;
-      const region = p.get("region"); if (region && Array.from(fRegion.options).some(o=>o.value===region)) fRegion.value = region;
-      const area = p.get("area"); if (area && Array.from(fArea.options).some(o=>o.value===area)) fArea.value = area;
-      const tipo = p.get("tipo"); if (tipo && Array.from(fTipo.options).some(o=>o.value===tipo)) fTipo.value = tipo;
-
-      const ilegal = p.get("ilegal"); if (ilegal) fIlegal.value = ilegal;
-      const inst = p.get("inst"); if (inst) fInst.value = inst;
-
-      const agrupar = p.get("agrupar"); if (agrupar) fAgrupar.value = agrupar;
-
-      setTemporalUI();
-    }
-
-    // ===== Refresco =====
-    function refrescar(fromChip=false){
+    function refrescar(){
       const rows = aplicarFiltros();
+      LAST_ROWS = rows;
+
       actualizarKPIs(rows);
       actualizarCharts(rows);
       actualizarTablas(rows);
+
       renderChips();
-      syncUrl();
+      updateURL();
     }
 
     function limpiarFiltros(){
-      fTemporal.value = "todo";
-      fMes.value = "todo";
-      fSemana.value = "todo";
+      setSelectValue(fTemporal, "todo");
+      setSelectValue(fMes, "todo");
+      setSelectValue(fSemana, "todo");
       fDesde.value = "";
       fHasta.value = "";
-      fGuarda.value = ""; // ✅
-      fMuni.value = "todo";
-      fRegion.value = "todo";
-      fArea.value = "todo";
-      fTipo.value = "todo";
-      fIlegal.value = "todo";
-      fInst.value = "todo";
-      fAgrupar.value = "dia";
+      setSelectValue(fGuarda, "todo");
+      setSelectValue(fMuni, "todo");
+      setSelectValue(fRegion, "todo");
+      setSelectValue(fArea, "todo");
+      setSelectValue(fTipo, "todo");
+      setSelectValue(fIlegal, "todo");
+      setSelectValue(fInst, "todo");
+      setSelectValue(fAgrupar, "dia");
       setTemporalUI();
       refrescar();
     }
 
-    // Debounce simple (para input de guarda)
-    function debounce(fn, wait){
-      let t=null;
-      return (...args)=>{
-        clearTimeout(t);
-        t = setTimeout(()=>fn(...args), wait);
+    function downloadChartPNG(chart, filename){
+      if (!chart) return;
+      const a = document.createElement("a");
+      a.href = chart.toBase64Image("image/png", 1);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function resumenPDF(){
+      if (typeof html2pdf === "undefined"){
+        alert("No se encontró html2pdf (CDN).");
+        return;
+      }
+      const s = filtroEstado();
+      const now = new Date();
+      const stamp = now.toLocaleString("es-GT");
+
+      const total = LAST_ROWS.length;
+      const ilegalSi = LAST_ROWS.filter(r=>r.__ilegal==="si").length;
+      const pctIlegal = total ? Math.round((ilegalSi*1000)/total)/10 : 0;
+      const horas = LAST_ROWS.map(r=>r.__durH).filter(v=>typeof v==="number" && isFinite(v));
+      const sumH = horas.reduce((a,b)=>a+b,0);
+      const coordOk = LAST_ROWS.filter(coordValida).length;
+      const pctCoord = total ? Math.round((coordOk*1000)/total)/10 : 0;
+
+      const topM = topN(countBy(LAST_ROWS, r=>r.__muni || "(Sin municipio)"), 10);
+      const topG = topN(countBy(LAST_ROWS, r=>r.__guarda || "(Sin guarda)"), 10);
+
+      const imgT = chartTiempo ? chartTiempo.toBase64Image("image/png", 1) : "";
+      const imgM = chartMuni ? chartMuni.toBase64Image("image/png", 1) : "";
+      const imgG = chartGuarda ? chartGuarda.toBase64Image("image/png", 1) : "";
+
+      function liIf(label, value){
+        if (!value || value === "todo") return "";
+        return `<li><b>${label}:</b> ${String(value)}</li>`;
+      }
+
+      const html = `
+        <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; padding:16px;">
+          <div style="text-align:center;">
+            <h1 style="margin:0; font-size:18px;">Reporte resumen — Patrullajes</h1>
+            <div style="color:#6b7280; font-size:12px; margin-top:6px;">Generado: ${stamp}</div>
+            <div style="color:#6b7280; font-size:12px;">Fuente: datos_patrullaje.csv (GitHub Pages)</div>
+            <hr style="margin:14px 0; border:none; border-top:1px solid #e5e7eb;">
+          </div>
+
+          <h2 style="font-size:14px; margin:0 0 8px;">Filtros activos</h2>
+          <ul style="margin:0 0 12px 18px; font-size:12px; color:#0f172a;">
+            ${liIf("Temporal", s.t)}
+            ${s.t==="mes" ? liIf("Mes", s.mes) : ""}
+            ${s.t==="semana" ? liIf("Semana", s.semana) : ""}
+            ${s.t==="rango" ? liIf("Desde", s.desde) + liIf("Hasta", s.hasta) : ""}
+            ${liIf("Guarda", s.guarda)}
+            ${liIf("Municipio", s.muni)}
+            ${liIf("Región", s.region)}
+            ${liIf("Área", s.area)}
+            ${liIf("Tipo", s.tipo)}
+            ${liIf("Ilegal", s.ilegal)}
+            ${liIf("Instituciones", s.inst)}
+            ${liIf("Agrupar", s.agrupar)}
+            ${(!encodeQS(s)) ? "<li><b>Sin filtros</b> (vista completa)</li>" : ""}
+          </ul>
+
+          <h2 style="font-size:14px; margin:0 0 8px;">Indicadores</h2>
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <tr>
+              <td style="border:1px solid #e5e7eb; padding:8px;"><b>Registros</b></td>
+              <td style="border:1px solid #e5e7eb; padding:8px;">${total}</td>
+              <td style="border:1px solid #e5e7eb; padding:8px;"><b>% ilegal</b></td>
+              <td style="border:1px solid #e5e7eb; padding:8px;">${total ? pctIlegal + "%" : "—"}</td>
+            </tr>
+            <tr>
+              <td style="border:1px solid #e5e7eb; padding:8px;"><b>Horas (válidas)</b></td>
+              <td style="border:1px solid #e5e7eb; padding:8px;">${horas.length ? (Math.round(sumH*10)/10) : "—"}</td>
+              <td style="border:1px solid #e5e7eb; padding:8px;"><b>% coord válidas</b></td>
+              <td style="border:1px solid #e5e7eb; padding:8px;">${total ? pctCoord + "%" : "—"}</td>
+            </tr>
+          </table>
+
+          <h2 style="font-size:14px; margin:14px 0 8px;">Gráficas</h2>
+          ${imgT ? `<img src="${imgT}" style="width:100%; border:1px solid #e5e7eb; border-radius:10px; margin-bottom:10px;">` : ""}
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            ${imgM ? `<img src="${imgM}" style="flex:1 1 360px; max-width:100%; border:1px solid #e5e7eb; border-radius:10px;">` : ""}
+            ${imgG ? `<img src="${imgG}" style="flex:1 1 360px; max-width:100%; border:1px solid #e5e7eb; border-radius:10px;">` : ""}
+          </div>
+
+          <h2 style="font-size:14px; margin:14px 0 8px;">Top 10 (filtro actual)</h2>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <div style="flex:1 1 280px;">
+              <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Municipios</div>
+              <ol style="margin:0 0 0 18px; font-size:12px;">
+                ${topM.map(([k,v])=>`<li>${k} — <b>${v}</b></li>`).join("")}
+              </ol>
+            </div>
+            <div style="flex:1 1 280px;">
+              <div style="font-size:12px; color:#6b7280; margin-bottom:6px;">Guardarecursos</div>
+              <ol style="margin:0 0 0 18px; font-size:12px;">
+                ${topG.map(([k,v])=>`<li>${k} — <b>${v}</b></li>`).join("")}
+              </ol>
+            </div>
+          </div>
+
+          <hr style="margin:14px 0; border:none; border-top:1px solid #e5e7eb;">
+          <div style="text-align:center; color:#6b7280; font-size:11px;">
+            © 2025 Laboratorio SIG AALA — CONAP DRAC
+          </div>
+        </div>
+      `;
+
+      const cont = document.createElement("div");
+      cont.innerHTML = html;
+      document.body.appendChild(cont);
+
+      const opt = {
+        margin: 10,
+        filename: "reporte_resumen_patrullajes.pdf",
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
       };
+
+      html2pdf().set(opt).from(cont).save().then(()=>document.body.removeChild(cont)).catch(()=>document.body.removeChild(cont));
+    }
+
+    async function copyLink(){
+      const url = location.href;
+      try{
+        await navigator.clipboard.writeText(url);
+        alert("Enlace copiado al portapapeles ✅");
+      }catch(e){
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = url;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        alert("Enlace copiado al portapapeles ✅");
+      }
     }
 
     function wire(){
       setTemporalUI();
 
-      const watchers = [fTemporal,fMes,fSemana,fDesde,fHasta,fMuni,fRegion,fArea,fTipo,fIlegal,fInst,fAgrupar];
+      const watchers = [fTemporal,fMes,fSemana,fDesde,fHasta,fGuarda,fMuni,fRegion,fArea,fTipo,fIlegal,fInst,fAgrupar];
       watchers.forEach(el=>{
         el.addEventListener("change", ()=>{
           if(el === fTemporal) setTemporalUI();
           refrescar();
         });
-      });
-
-      // ✅ guarda: input con debounce (para que no “parpadee” con cada tecla)
-      fGuarda.addEventListener("input", debounce(()=>refrescar(), 150));
-      fGuarda.addEventListener("change", ()=>refrescar());
-
-      document.getElementById("btn-clear-guarda").addEventListener("click", ()=>{
-        fGuarda.value = "";
-        refrescar();
       });
 
       document.getElementById("btn-reset").addEventListener("click", limpiarFiltros);
@@ -1107,6 +1427,24 @@
       document.getElementById("btn-dl-xlsx").addEventListener("click", ()=>{
         if(tRegistros) tRegistros.download("xlsx", "patrullajes_filtrado.xlsx", {sheetName:"Filtrado"});
       });
+
+      document.getElementById("btn-dl-json").addEventListener("click", ()=>{
+        if(tRegistros) tRegistros.download("json", "patrullajes_filtrado.json");
+      });
+
+      document.getElementById("btn-piv-csv").addEventListener("click", ()=>{
+        if(tPivote) tPivote.download("csv", "pivote_guarda_periodo.csv");
+      });
+      document.getElementById("btn-piv-xlsx").addEventListener("click", ()=>{
+        if(tPivote) tPivote.download("xlsx", "pivote_guarda_periodo.xlsx", {sheetName:"Pivote"});
+      });
+
+      document.getElementById("btn-tiempo-png").addEventListener("click", ()=>downloadChartPNG(chartTiempo,"grafica_tiempo.png"));
+      document.getElementById("btn-muni-png").addEventListener("click", ()=>downloadChartPNG(chartMuni,"grafica_top_municipios.png"));
+      document.getElementById("btn-guarda-png").addEventListener("click", ()=>downloadChartPNG(chartGuarda,"grafica_top_guardas.png"));
+
+      document.getElementById("btn-copylink").addEventListener("click", copyLink);
+      document.getElementById("btn-report-pdf").addEventListener("click", resumenPDF);
     }
 
     async function load(){
@@ -1160,30 +1498,47 @@
         return r;
       });
 
-      // llenar selects
-      llenarSelect(fMuni, uniqueSorted(DATA.map(r=>r.__muni)), "Todos los municipios");
-      llenarSelect(fRegion, uniqueSorted(DATA.map(r=>r.__region)), "Todas las regiones");
-      llenarSelect(fArea, uniqueSorted(DATA.map(r=>r.__area)), "Todas las áreas");
-      llenarSelect(fTipo, uniqueSorted(DATA.map(r=>r.__tipo)), "Todos los tipos");
+      // Conteos globales para ordenar y mostrar (Guarda, Municipio, etc.)
+      const cGuarda = countMap(DATA.map(r=>r.__guarda));
+      const cMuni = countMap(DATA.map(r=>r.__muni));
+      const cRegion = countMap(DATA.map(r=>r.__region));
+      const cArea = countMap(DATA.map(r=>r.__area));
+      const cTipo = countMap(DATA.map(r=>r.__tipo));
 
-      // ✅ guardas -> datalist
-      llenarDatalist(dlGuardas, uniqueSorted(DATA.map(r=>r.__guarda)));
+      // llenar selects (con conteo)
+      llenarSelectConConteo(fGuarda, unique(DATA.map(r=>r.__guarda)), "Todos los guardas", cGuarda);
+      llenarSelectConConteo(fMuni, unique(DATA.map(r=>r.__muni)), "Todos los municipios", cMuni);
+      llenarSelectConConteo(fRegion, unique(DATA.map(r=>r.__region)), "Todas las regiones", cRegion);
+      llenarSelectConConteo(fArea, unique(DATA.map(r=>r.__area)), "Todas las áreas", cArea);
+      llenarSelectConConteo(fTipo, unique(DATA.map(r=>r.__tipo)), "Todos los tipos", cTipo);
 
       // meses / semanas
-      const meses = uniqueSorted(DATA.map(r=>r.__ym).filter(Boolean));
+      const meses = unique(DATA.map(r=>r.__ym).filter(Boolean)).sort((a,b)=>a.localeCompare(b));
       fMes.innerHTML = "";
       fMes.appendChild(new Option("Todos los meses","todo"));
       meses.forEach(m=>fMes.appendChild(new Option(m,m)));
 
-      const semanas = uniqueSorted(DATA.map(r=>r.__yw).filter(Boolean));
+      const semanas = unique(DATA.map(r=>r.__yw).filter(Boolean)).sort((a,b)=>a.localeCompare(b));
       fSemana.innerHTML = "";
       fSemana.appendChild(new Option("Todas las semanas","todo"));
       semanas.forEach(w=>fSemana.appendChild(new Option(w,w)));
 
-      // Aplicar filtros desde URL (ya con options listas)
-      applyUrlParamsAfterOptions();
+      // convertir a buscables con Choices (post-llenado)
+      ensureChoices(fGuarda, "Buscar guarda…");
+      ensureChoices(fMuni, "Buscar municipio…");
+      ensureChoices(fRegion, "Buscar región…");
+      ensureChoices(fArea, "Buscar área…");
+      ensureChoices(fTipo, "Buscar tipo…");
+      ensureChoices(fMes, "Buscar mes…");
+      ensureChoices(fSemana, "Buscar semana…");
 
       estado.textContent = `Listo. ${DATA.length.toLocaleString("es")} registros cargados.`;
+
+      // aplicar filtros desde URL (si existen)
+      IS_READY = true;
+      applyFromURL();
+
+      // primer render
       refrescar();
     }
 
