@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>AC210 - Tablero dinámico (CSV)</title>
+
+  <!-- Tabulator local (repo) -->
+  <link rel="stylesheet" href="tabulator.min.css">
+
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- html2pdf (CDN) para PDF multipágina -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    :root{
+      --verde-header:#0f766e;
+      --verde-header-2:#0e7490;
+      --azul-boton:#1d9bf0;
+      --azul-boton-hover:#0f80cc;
+      --gris-fondo:#f5f7fa;
+      --texto-principal:#0f172a;
+      --texto-secundario:#6b7280;
+      --borde-suave:#e5e7eb;
+      --card-radius:14px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      color:var(--texto-principal);
+      background:
+        radial-gradient(circle at top left, #dbeafe 0, transparent 55%),
+        radial-gradient(circle at bottom right, #bbf7d0 0, transparent 55%),
+        linear-gradient(180deg, #e5f3f0 0%, var(--gris-fondo) 35%, #eef2ff 100%);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    header{
+      background: linear-gradient(90deg, var(--verde-header), var(--verde-header-2));
+      color:#fff;
+      padding:14px 20px 18px;
+      box-shadow:0 2px 10px rgba(15,23,42,0.25);
+      position:sticky; top:0; z-index:10;
+    }
+    .header-inner{
+      max-width:1100px; margin:0 auto;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:16px; flex-wrap:wrap;
+    }
+    .logo-group{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      background-color: rgba(255,255,255,0.12);
+      border-radius:999px; padding:6px 10px;
+      border:1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(4px);
+    }
+    .logo-group img{
+      height:40px; max-width:130px; object-fit:contain;
+      background-color:#fff; border-radius:999px; padding:4px 8px;
+      box-shadow:0 2px 6px rgba(15,23,42,0.25);
+    }
+    .title-group{ text-align:right; flex:1 1 260px;}
+    .title-group h1{ margin:0 0 2px; font-size:22px;}
+    .title-group p{ margin:0; opacity:.95; font-size:13px; }
+    .chip-version{
+      margin-top:8px;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,0.14);
+      border:1px solid rgba(255,255,255,0.18);
+      font-size:12px;
+      font-weight:800;
+    }
+    .chip-dot{ width:9px; height:9px; border-radius:999px; background:#34d399; box-shadow:0 0 0 3px rgba(52,211,153,0.25); }
+
+    main{ max-width:1100px; margin:0 auto; width:100%; padding:18px 16px 34px; }
+
+    .page-header{
+      padding:16px 18px;
+      border-radius: var(--card-radius);
+      border:1px solid var(--borde-suave);
+      background: rgba(255,255,255,0.72);
+      box-shadow:0 8px 18px rgba(15,23,42,0.06);
+      margin-bottom:12px;
+    }
+    .page-header h2{ margin:0 0 6px; font-size:20px;}
+    .page-header p{ margin:0; color:var(--texto-secundario); }
+    .pill{
+      display:inline-flex; margin-top:10px;
+      padding:6px 10px; border-radius:999px;
+      background:#e0f2fe; border:1px solid #bae6fd;
+      color:#0f172a; font-size:12px; font-weight:800;
+    }
+
+    .tabs{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin:10px 0 14px;
+    }
+    .tab{
+      text-decoration:none;
+      color:var(--texto-principal);
+      font-weight:900;
+      font-size:13px;
+      padding:9px 12px;
+      border-radius:999px;
+      border:1px solid #cbd5f5;
+      background:rgba(255,255,255,0.75);
+      transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
+    }
+    .tab:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(15,23,42,0.10); }
+    .tab.active{
+      background: rgba(29,155,240,0.12);
+      border-color: rgba(29,155,240,0.45);
+    }
+
+    .card{
+      background: rgba(255,255,255,0.82);
+      border:1px solid var(--borde-suave);
+      border-radius: var(--card-radius);
+      box-shadow:0 10px 24px rgba(15,23,42,0.07);
+      padding:16px;
+      margin:14px 0;
+    }
+    .card.soft{
+      background: rgba(255,255,255,0.68);
+    }
+    .subnote{ color:var(--texto-secundario); font-size:13px; margin:0 0 10px; }
+
+    .filters{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:10px;
+      margin-top:10px;
+    }
+    .field{
+      grid-column: span 3;
+      min-width: 200px;
+    }
+    .field.wide{ grid-column: span 4; }
+    label{
+      display:block;
+      font-size:12px;
+      font-weight:900;
+      color:#0f172a;
+      margin-bottom:4px;
+    }
+    .hint{ font-weight:700; color:#64748b; font-size:11px; }
+    select, input[type="date"], input[type="search"]{
+      width:100%;
+      padding:9px 10px;
+      border-radius:10px;
+      border:1px solid #cbd5f5;
+      background:rgba(255,255,255,0.95);
+      font-size:13px;
+      outline:none;
+    }
+    input.small{
+      padding:7px 10px;
+      margin-bottom:6px;
+      border-radius:999px;
+    }
+
+    .actions-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:12px;
+    }
+    .btns{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+    .btn{
+      border:none;
+      cursor:pointer;
+      border-radius:999px;
+      padding:10px 14px;
+      font-weight:900;
+      font-size:13px;
+      box-shadow:0 8px 18px rgba(15,23,42,0.10);
+      transition:transform .12s ease, filter .12s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); filter:brightness(0.97); }
+    .btn.primary{ background: var(--azul-boton); color:#fff; }
+    .btn.primary:hover{ background: var(--azul-boton-hover); }
+    .btn.ghost{
+      background: rgba(255,255,255,0.9);
+      color:#0f172a;
+      border:1px solid #cbd5f5;
+      box-shadow:none;
+    }
+    .btn.ghost:hover{ background:#e5edff; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:12px;
+      margin-top:12px;
+    }
+    .kpi{
+      grid-column: span 2;
+      padding:14px;
+      border-radius: 16px;
+      border:1px solid #e5e7eb;
+      background: rgba(255,255,255,0.92);
+      box-shadow:0 6px 16px rgba(15,23,42,0.06);
+    }
+    .kpi .t{ font-size:12px; font-weight:900; color:#0f172a; }
+    .kpi .v{ font-size:26px; font-weight:950; margin-top:6px; }
+    .kpi .s{ font-size:12px; color:var(--texto-secundario); margin-top:2px; }
+
+    .col-6{ grid-column: span 6; }
+    .chartwrap{ height:340px; }
+    canvas{ width:100% !important; height:100% !important; }
+
+    .tablewrap{ overflow-x:auto; }
+    .cardhead{
+      display:flex; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .mini-actions{
+      display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
+    }
+    .mini-btn{
+      padding:7px 10px;
+      font-size:13px;
+      border-radius:999px;
+      border:1px solid #cbd5f5;
+      background: rgba(255,255,255,0.9);
+      cursor:pointer;
+      font-weight:900;
+    }
+    .mini-btn:hover{ background:#e5edff; border-color:#93c5fd; }
+
+    footer{
+      text-align:center;
+      font-size:12px;
+      color:#6b7280;
+      padding:10px 20px 18px;
+      border-top:1px solid #e5e7eb;
+      background-color:rgba(248,250,252,0.9);
+      margin-top:auto;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%; bottom:18px;
+      transform:translateX(-50%);
+      background:rgba(15,23,42,0.92);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:999px;
+      font-size:13px;
+      box-shadow:0 10px 25px rgba(15,23,42,0.35);
+      opacity:0; pointer-events:none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index:9999;
+    }
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(-4px);
+    }
+
+    @media (max-width: 980px){
+      .field{ grid-column: span 12; min-width:unset; }
+      .field.wide{ grid-column: span 12; }
+      .kpi{ grid-column: span 6; }
+      .col-6{ grid-column: span 12; }
+      .title-group{ text-align:center; }
+      .header-inner{ justify-content:center; }
+    }
+
+    /* Área que capturamos para PDF */
+    #pdf-area{ }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="logo-group">
+        <img src="conap_logo.jpg" alt="Logo CONAP">
+        <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
+      </div>
+      <div class="title-group">
+        <h1>Centro de consulta de datos</h1>
+        <p>Sistema de monitoreo de actividades</p>
+        <p>CONAP – Dirección Regional Altiplano Central</p>
+        <div class="chip-version">
+          <span class="chip-dot"></span>
+          <span>Módulo AC210 · Viveros</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="pdf-area">
+    <section class="page-header">
+      <h2>AC210 Asistencia técnica a viveros · Tablero dinámico</h2>
+      <p>Este tablero se genera automáticamente desde <strong>base2_datos.csv</strong> (del repo) y permite filtrar, graficar y exportar.</p>
+      <span class="pill">Tablero dinámico · CSV</span>
+    </section>
+
+    <nav class="tabs" aria-label="Navegación del módulo">
+      <a class="tab" href="ac210_dashboard.html">🗺️ Experience Builder</a>
+      <a class="tab active" href="ac210_tablero.html">📈 Tablero dinámico</a>
+      <a class="tab" href="ac210_datos.html">📋 Tabla</a>
+    </nav>
+
+    <section class="card soft">
+      <p class="subnote" id="estado">Cargando datos…</p>
+
+      <div class="filters">
+        <div class="field wide">
+          <label for="f-temporal">Filtro temporal</label>
+          <select id="f-temporal">
+            <option value="todo">Todo</option>
+            <option value="mes">Por mes</option>
+            <option value="semana">Por semana (ISO)</option>
+            <option value="rango">Rango de fechas</option>
+          </select>
+        </div>
+
+        <div class="field" id="wrap-mes" style="display:none;">
+          <label for="f-mes">Mes</label>
+          <select id="f-mes"></select>
+        </div>
+
+        <div class="field" id="wrap-semana" style="display:none;">
+          <label for="f-semana">Semana</label>
+          <select id="f-semana"></select>
+        </div>
+
+        <div class="field" id="wrap-desde" style="display:none;">
+          <label for="f-desde">Desde</label>
+          <input id="f-desde" type="date" />
+        </div>
+
+        <div class="field" id="wrap-hasta" style="display:none;">
+          <label for="f-hasta">Hasta</label>
+          <input id="f-hasta" type="date" />
+        </div>
+
+        <div class="field">
+          <label for="f-guarda">Guarda recurso <span class="hint">(buscable)</span></label>
+          <input id="s-guarda" class="small" type="search" placeholder="Buscar guarda…" autocomplete="off">
+          <select id="f-guarda"></select>
+        </div>
+
+        <div class="field">
+          <label for="f-muni">Municipio <span class="hint">(buscable)</span></label>
+          <input id="s-muni" class="small" type="search" placeholder="Buscar municipio…" autocomplete="off">
+          <select id="f-muni"></select>
+        </div>
+
+        <div class="field">
+          <label for="f-region">Región <span class="hint">(buscable)</span></label>
+          <input id="s-region" class="small" type="search" placeholder="Buscar región…" autocomplete="off">
+          <select id="f-region"></select>
+        </div>
+
+        <div class="field">
+          <label for="f-area">Área protegida <span class="hint">(buscable)</span></label>
+          <input id="s-area" class="small" type="search" placeholder="Buscar área…" autocomplete="off">
+          <select id="f-area"></select>
+        </div>
+
+        <div class="field">
+          <label for="f-apoyo">¿Apoyo fuera de su municipio?</label>
+          <select id="f-apoyo">
+            <option value="">(Todos)</option>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+            <option value="sin">Sin dato</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="f-actividad">Actividad (código) <span class="hint">(desde “Actividades realizadas”)</span></label>
+          <select id="f-actividad"></select>
+        </div>
+
+        <div class="field">
+          <label for="f-agrupar">Agrupar gráficos / pivote por</label>
+          <select id="f-agrupar">
+            <option value="mes">Mes</option>
+            <option value="semana">Semana</option>
+            <option value="dia">Día</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <div class="btns">
+          <button class="btn ghost" id="btn-reset" type="button">♻️ Limpiar filtros</button>
+          <button class="btn ghost" id="btn-copy" type="button">🔗 Copiar enlace con filtros</button>
+          <button class="btn primary" id="btn-pdf" type="button">🧾 PDF del tablero</button>
+        </div>
+        <div class="subnote" id="meta" style="margin:0;"></div>
+      </div>
+
+      <div class="grid">
+        <div class="kpi">
+          <div class="t">Registros</div>
+          <div class="v" id="k-total">—</div>
+          <div class="s" id="k-total-s">Total filtrado</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Municipios</div>
+          <div class="v" id="k-munis">—</div>
+          <div class="s">Únicos</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Guardarecursos</div>
+          <div class="v" id="k-guardas">—</div>
+          <div class="s">Únicos</div>
+        </div>
+        <div class="kpi">
+          <div class="t">% Apoyo fuera</div>
+          <div class="v" id="k-apoyo">—</div>
+          <div class="s">Entre “sí/no”</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Prom. horas</div>
+          <div class="v" id="k-horas">—</div>
+          <div class="s">Jornada (si hay horas)</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Coord. válidas</div>
+          <div class="v" id="k-coord">—</div>
+          <div class="s">% con X/Y</div>
+        </div>
+
+        <section class="card col-6">
+          <div class="cardhead">
+            <div>
+              <h3 style="margin:0 0 6px;">Registros por periodo</h3>
+              <p class="subnote" style="margin:0;">Conteo según agrupación (mes/semana/día). Click en barra para filtrar.</p>
+            </div>
+            <div class="mini-actions">
+              <button class="mini-btn" id="png-tiempo" type="button">PNG</button>
+            </div>
+          </div>
+          <div class="chartwrap"><canvas id="c-tiempo"></canvas></div>
+        </section>
+
+        <section class="card col-6">
+          <div class="cardhead">
+            <div>
+              <h3 style="margin:0 0 6px;">Top municipios</h3>
+              <p class="subnote" style="margin:0;">Top 10 por registros (filtro actual). Click en barra para filtrar.</p>
+            </div>
+            <div class="mini-actions">
+              <button class="mini-btn" id="png-muni" type="button">PNG</button>
+            </div>
+          </div>
+          <div class="chartwrap"><canvas id="c-muni"></canvas></div>
+        </section>
+
+        <section class="card col-6">
+          <div class="cardhead">
+            <div>
+              <h3 style="margin:0 0 6px;">Top guardarecursos</h3>
+              <p class="subnote" style="margin:0;">Top 10 por registros (filtro actual). Click en barra para filtrar.</p>
+            </div>
+            <div class="mini-actions">
+              <button class="mini-btn" id="png-guarda" type="button">PNG</button>
+            </div>
+          </div>
+          <div class="chartwrap"><canvas id="c-guarda"></canvas></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="cardhead">
+        <div>
+          <h3 style="margin:0 0 6px;">Tabla pivote (Guarda × Periodo)</h3>
+          <p class="subnote" style="margin:0;">Filas: guarda · Columnas: periodo (día/semana/mes) · Valores: conteo.</p>
+        </div>
+        <div class="mini-actions">
+          <button class="mini-btn" id="piv-csv" type="button">CSV</button>
+          <button class="mini-btn" id="piv-xlsx" type="button">Excel</button>
+        </div>
+      </div>
+      <div class="tablewrap">
+        <div id="tabla-pivote"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="cardhead">
+        <div>
+          <h3 style="margin:0 0 6px;">Registros filtrados</h3>
+          <p class="subnote" style="margin:0;">Tabla completa filtrada (puedes exportar lo filtrado).</p>
+        </div>
+        <div class="mini-actions">
+          <button class="mini-btn" id="btn-dl-csv" type="button">CSV</button>
+          <button class="mini-btn" id="btn-dl-xlsx" type="button">Excel</button>
+          <button class="mini-btn" id="btn-dl-json" type="button">JSON</button>
+        </div>
+      </div>
+      <div class="tablewrap" style="margin-top:12px;">
+        <div id="tabla-registros"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
+  </footer>
+
+  <div class="toast" id="toast">Listo</div>
+
+  <!-- Librerías locales (repo) -->
+  <script src="papaparse.min.js"></script>
+  <script src="tabulator.min.js"></script>
+  <script src="xlsx.full.min.js"></script>
+
+  <script>
+    // ===== CSV config =====
+    const CSV_URL = "./base2_datos.csv";
+    const DELIM = ";";
+
+    // Campos esperados (AC210)
+    const F = {
+      fecha: "CreationDate",
+      guarda: "Nombre del guarda recurso",
+      municipio: "Municipio",
+      region: "Region",
+      area: "Area protegida",
+      apoyo: "Esta en apoyo a un vivero fuera de su municipio",
+      municipioApoyo: "Especifique el municipio o lugar de apoyo",
+      areaFuera: "Especifique area (Fuera de RUMCLA)",
+      vivero: "Nombre del area y/o lugar del vivero establecido (Barrio, Caserio, Canton, Aldea, etc.)",
+      act: "Actividades realizadas",
+      otraAct: "Especifique otra actividad",
+      hIni: "Hora de inicio de actividades",
+      hFin: "Hora de finalizacion de actividades",
+      x: "X",
+      y: "Y",
+    };
+
+    let DATA = [];
+    let chartTiempo = null, chartMuni = null, chartGuarda = null;
+    let tPivote = null, tRegistros = null;
+
+    // ===== DOM =====
+    const $ = (id) => document.getElementById(id);
+
+    const estado = $("estado");
+    const meta = $("meta");
+
+    const fTemporal = $("f-temporal");
+    const wrapMes = $("wrap-mes");
+    const wrapSemana = $("wrap-semana");
+    const wrapDesde = $("wrap-desde");
+    const wrapHasta = $("wrap-hasta");
+
+    const fMes = $("f-mes");
+    const fSemana = $("f-semana");
+    const fDesde = $("f-desde");
+    const fHasta = $("f-hasta");
+
+    const fGuarda = $("f-guarda");
+    const fMuni = $("f-muni");
+    const fRegion = $("f-region");
+    const fArea = $("f-area");
+    const fApoyo = $("f-apoyo");
+    const fActividad = $("f-actividad");
+    const fAgrupar = $("f-agrupar");
+
+    // buscadores
+    const sGuarda = $("s-guarda");
+    const sMuni = $("s-muni");
+    const sRegion = $("s-region");
+    const sArea = $("s-area");
+
+    // KPIs
+    const kTotal = $("k-total");
+    const kTotalS = $("k-total-s");
+    const kMunis = $("k-munis");
+    const kGuardas = $("k-guardas");
+    const kApoyo = $("k-apoyo");
+    const kHoras = $("k-horas");
+    const kCoord = $("k-coord");
+
+    // Toast
+    const toast = $("toast");
+    let toastTimer = null;
+
+    function showToast(msg){
+      toast.textContent = msg || "Listo";
+      toast.classList.add("show");
+      if(toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=> toast.classList.remove("show"), 1600);
+    }
+
+    // ===== Helpers =====
+    function pad2(n){ return String(n).padStart(2,"0"); }
+
+    function norm(v){
+      if(v === undefined || v === null) return "";
+      return String(v).trim();
+    }
+    function normKey(v){
+      return norm(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+    function isNum(v){
+      const n = Number(v);
+      return isFinite(n);
+    }
+
+    function parseHora(h){
+      // soporta "HH:MM" o "HH:MM:SS"
+      const s = norm(h);
+      if(!s) return null;
+      const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if(!m) return null;
+      const hh = Number(m[1]);
+      const mm = Number(m[2]);
+      if(!isFinite(hh) || !isFinite(mm)) return null;
+      return hh*60 + mm;
+    }
+
+    function extraerFechaCompleta(valor){
+      // Devuelve {date, anio, mes, dia} o null
+      const s = norm(valor);
+      if(!s) return null;
+
+      // Caso YYYY-MM-DD (posiblemente con hora: "YYYY-MM-DD HH:MM:SS" o "YYYY-MM-DDTHH:MM:SS")
+      let iso = s;
+      if(iso.includes("T")) iso = iso.split("T")[0];
+      if(iso.includes(" ")) iso = iso.split(" ")[0];
+
+      let m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if(m){
+        const anio = Number(m[1]), mes = Number(m[2]), dia = Number(m[3]);
+        const d = new Date(anio, mes-1, dia);
+        if(isFinite(d.getTime())) return { date:d, anio, mes, dia };
+      }
+
+      // Caso DD/MM/YYYY
+      m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if(m){
+        const dia = Number(m[1]), mes = Number(m[2]), anio = Number(m[3]);
+        const d = new Date(anio, mes-1, dia);
+        if(isFinite(d.getTime())) return { date:d, anio, mes, dia };
+      }
+
+      // Intento final (Date.parse)
+      const d2 = new Date(s);
+      if(isFinite(d2.getTime())){
+        return { date:d2, anio:d2.getFullYear(), mes:d2.getMonth()+1, dia:d2.getDate() };
+      }
+
+      return null;
+    }
+
+    function isoWeekKey(date){
+      // ISO week (YYYY-Www)
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return d.getUTCFullYear() + "-W" + pad2(weekNo);
+    }
+
+    function countBy(rows, keyFn){
+      const m = new Map();
+      rows.forEach(r=>{
+        const k = keyFn(r);
+        m.set(k, (m.get(k)||0)+1);
+      });
+      return m;
+    }
+
+    function topN(map, n){
+      return Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0,n);
+    }
+
+    function uniqCount(rows, key){
+      const s = new Set();
+      rows.forEach(r=>{
+        const v = r[key];
+        if(v && v !== "(Sin dato)") s.add(v);
+      });
+      return s.size;
+    }
+
+    // ===== Select builders =====
+    function fillSelect(sel, values, includeAll=true, allLabel="(Todos)"){
+      const prev = sel.value;
+      sel.innerHTML = "";
+      if(includeAll){
+        const o = document.createElement("option");
+        o.value = "";
+        o.textContent = allLabel;
+        sel.appendChild(o);
+      }
+      values.forEach(v=>{
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = v;
+        sel.appendChild(o);
+      });
+      // intenta mantener selección
+      if(prev && Array.from(sel.options).some(o=>o.value===prev)) sel.value = prev;
+      else sel.value = "";
+    }
+
+    function filterSelect(sel, query){
+      const q = normKey(query);
+      Array.from(sel.options).forEach((opt, idx)=>{
+        if(idx===0 && opt.value===""){ opt.hidden = false; return; } // (Todos)
+        const t = normKey(opt.textContent);
+        opt.hidden = q ? !t.includes(q) : false;
+      });
+    }
+
+    // ===== URL state =====
+    function getStateFromURL(){
+      const p = new URLSearchParams(location.search);
+      return {
+        temporal: p.get("temporal") || "todo",
+        mes: p.get("mes") || "",
+        semana: p.get("semana") || "",
+        desde: p.get("desde") || "",
+        hasta: p.get("hasta") || "",
+        guarda: p.get("guarda") || "",
+        muni: p.get("muni") || "",
+        region: p.get("region") || "",
+        area: p.get("area") || "",
+        apoyo: p.get("apoyo") || "",
+        act: p.get("act") || "",
+        agrupar: p.get("agrupar") || "mes",
+      };
+    }
+
+    function setURLFromState(){
+      const p = new URLSearchParams();
+      p.set("temporal", fTemporal.value || "todo");
+      if(fMes.value) p.set("mes", fMes.value);
+      if(fSemana.value) p.set("semana", fSemana.value);
+      if(fDesde.value) p.set("desde", fDesde.value);
+      if(fHasta.value) p.set("hasta", fHasta.value);
+      if(fGuarda.value) p.set("guarda", fGuarda.value);
+      if(fMuni.value) p.set("muni", fMuni.value);
+      if(fRegion.value) p.set("region", fRegion.value);
+      if(fArea.value) p.set("area", fArea.value);
+      if(fApoyo.value) p.set("apoyo", fApoyo.value);
+      if(fActividad.value) p.set("act", fActividad.value);
+      if(fAgrupar.value) p.set("agrupar", fAgrupar.value);
+
+      const newUrl = location.pathname + "?" + p.toString();
+      history.replaceState({}, "", newUrl);
+    }
+
+    function applyStateToUI(st){
+      fTemporal.value = st.temporal;
+      setTemporalUI();
+
+      fMes.value = st.mes;
+      fSemana.value = st.semana;
+      fDesde.value = st.desde;
+      fHasta.value = st.hasta;
+
+      fGuarda.value = st.guarda;
+      fMuni.value = st.muni;
+      fRegion.value = st.region;
+      fArea.value = st.area;
+
+      fApoyo.value = st.apoyo;
+      fActividad.value = st.act;
+      fAgrupar.value = st.agrupar;
+    }
+
+    // ===== Temporal UI =====
+    function setTemporalUI(){
+      const v = fTemporal.value;
+      wrapMes.style.display = (v === "mes") ? "" : "none";
+      wrapSemana.style.display = (v === "semana") ? "" : "none";
+      wrapDesde.style.display = (v === "rango") ? "" : "none";
+      wrapHasta.style.display = (v === "rango") ? "" : "none";
+    }
+
+    function limpiarFiltros(){
+      fTemporal.value = "todo";
+      setTemporalUI();
+      fMes.value = "";
+      fSemana.value = "";
+      fDesde.value = "";
+      fHasta.value = "";
+      fGuarda.value = "";
+      fMuni.value = "";
+      fRegion.value = "";
+      fArea.value = "";
+      fApoyo.value = "";
+      fActividad.value = "";
+      fAgrupar.value = "mes";
+
+      sGuarda.value = "";
+      sMuni.value = "";
+      sRegion.value = "";
+      sArea.value = "";
+
+      // mostrar todas las opciones de selects filtrables
+      filterSelect(fGuarda, "");
+      filterSelect(fMuni, "");
+      filterSelect(fRegion, "");
+      filterSelect(fArea, "");
+
+      refrescar(true);
+      showToast("Filtros limpios");
+    }
+
+    // ===== Derived fields (AC210) =====
+    function apoyoNorm(r){
+      const v = normKey(r[F.apoyo]);
+      if(!v) return "sin";
+      if(v === "si" || v === "sí") return "si";
+      if(v === "no") return "no";
+      return "sin";
+    }
+
+    function actCodes(r){
+      const a = norm(r[F.act]);
+      if(!a) return [];
+      return a.split(/[,;]+/).map(x=>x.trim()).filter(Boolean);
+    }
+
+    // ===== Filtering =====
+    function filterRows(){
+      const temporal = fTemporal.value;
+      const mes = fMes.value;
+      const semana = fSemana.value;
+      const desde = fDesde.value;
+      const hasta = fHasta.value;
+
+      const g = fGuarda.value;
+      const m = fMuni.value;
+      const reg = fRegion.value;
+      const area = fArea.value;
+      const apoyo = fApoyo.value;
+      const act = fActividad.value;
+
+      let rows = DATA.slice();
+
+      // temporal
+      if(temporal === "mes" && mes){
+        rows = rows.filter(r=> r.__ym === mes);
+      }else if(temporal === "semana" && semana){
+        rows = rows.filter(r=> r.__yw === semana);
+      }else if(temporal === "rango" && (desde || hasta)){
+        const d1 = desde ? new Date(desde + "T00:00:00") : null;
+        const d2 = hasta ? new Date(hasta + "T23:59:59") : null;
+        rows = rows.filter(r=>{
+          if(!r.__date) return false;
+          if(d1 && r.__date < d1) return false;
+          if(d2 && r.__date > d2) return false;
+          return true;
+        });
+      }
+
+      // selects
+      if(g) rows = rows.filter(r=> r.__guarda === g);
+      if(m) rows = rows.filter(r=> r.__muni === m);
+      if(reg) rows = rows.filter(r=> r.__region === reg);
+      if(area) rows = rows.filter(r=> r.__area === area);
+
+      if(apoyo){
+        rows = rows.filter(r=> r.__apoyo === apoyo);
+      }
+
+      if(act){
+        rows = rows.filter(r=> (r.__actCodes || []).includes(act));
+      }
+
+      return rows;
+    }
+
+    // ===== Charts =====
+    const whiteBgPlugin = {
+      id: 'whiteBg',
+      beforeDraw: (chart, args, pluginOptions) => {
+        const {ctx, width, height} = chart;
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, width, height);
+        ctx.restore();
+      }
+    };
+
+    function renderChart(canvasId, existingChart, config){
+      const ctx = document.getElementById(canvasId).getContext("2d");
+      if(existingChart) existingChart.destroy();
+      return new Chart(ctx, config);
+    }
+
+    function exportChartPNG(chart, filename){
+      if(!chart) return;
+      const a = document.createElement("a");
+      a.href = chart.toBase64Image("image/png", 1);
+      a.download = filename || "chart.png";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast("PNG generado");
+    }
+
+    function actualizarCharts(rows){
+      const agr = fAgrupar.value;
+
+      const keyFn = (agr === "mes") ? (r=>r.__ym) : (agr === "semana") ? (r=>r.__yw) : (r=>r.__yd);
+      const mTiempo = countBy(rows, keyFn);
+      const labelsT = Array.from(mTiempo.keys()).filter(Boolean).sort();
+      const dataT = labelsT.map(k=>mTiempo.get(k));
+
+      chartTiempo = renderChart("c-tiempo", chartTiempo, {
+        type:"bar",
+        data:{ labels: labelsT, datasets:[{ label:"Registros AC210", data: dataT }] },
+        plugins:[whiteBgPlugin],
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          onClick:(evt, elements)=>{
+            if(!elements || !elements.length) return;
+            const idx = elements[0].index;
+            const label = labelsT[idx];
+
+            if(agr === "mes"){
+              fTemporal.value = "mes";
+              setTemporalUI();
+              fMes.value = label;
+            } else if(agr === "semana"){
+              fTemporal.value = "semana";
+              setTemporalUI();
+              fSemana.value = label;
+            } else {
+              fTemporal.value = "rango";
+              setTemporalUI();
+              fDesde.value = label;
+              fHasta.value = label;
+            }
+            refrescar(true);
+          },
+          plugins:{ legend:{ display:true } },
+          scales:{ y:{ beginAtZero:true } }
+        }
+      });
+
+      const mM = countBy(rows, r=>r.__muni || "(Sin municipio)");
+      const topM = topN(mM, 10);
+      const labelsM = topM.map(x=>x[0]);
+      chartMuni = renderChart("c-muni", chartMuni, {
+        type:"bar",
+        data:{ labels: labelsM, datasets:[{ label:"Registros", data: topM.map(x=>x[1]) }] },
+        plugins:[whiteBgPlugin],
+        options:{
+          indexAxis:"y",
+          responsive:true,
+          maintainAspectRatio:false,
+          onClick:(evt, elements)=>{
+            if(!elements || !elements.length) return;
+            const idx = elements[0].index;
+            const label = labelsM[idx];
+            fMuni.value = label;
+            refrescar(true);
+          },
+          plugins:{ legend:{ display:true } },
+          scales:{ x:{ beginAtZero:true } }
+        }
+      });
+
+      const mG = countBy(rows, r=>r.__guarda || "(Sin guarda)");
+      const topG = topN(mG, 10);
+      const labelsG = topG.map(x=>x[0]);
+      chartGuarda = renderChart("c-guarda", chartGuarda, {
+        type:"bar",
+        data:{ labels: labelsG, datasets:[{ label:"Registros", data: topG.map(x=>x[1]) }] },
+        plugins:[whiteBgPlugin],
+        options:{
+          indexAxis:"y",
+          responsive:true,
+          maintainAspectRatio:false,
+          onClick:(evt, elements)=>{
+            if(!elements || !elements.length) return;
+            const idx = elements[0].index;
+            const label = labelsG[idx];
+            fGuarda.value = label;
+            refrescar(true);
+          },
+          plugins:{ legend:{ display:true } },
+          scales:{ x:{ beginAtZero:true } }
+        }
+      });
+    }
+
+    // ===== Tables =====
+    function construirPivote(rows){
+      const agr = fAgrupar.value;
+      const keyCol = (agr === "mes") ? "__ym" : (agr === "semana") ? "__yw" : "__yd";
+
+      const colSet = new Set();
+      const map = new Map();
+
+      rows.forEach(r=>{
+        const rowKey = r.__guarda || "(Sin guarda)";
+        const colKey = r[keyCol] || "(Sin fecha)";
+        colSet.add(colKey);
+
+        if(!map.has(rowKey)) map.set(rowKey, { guarda: rowKey });
+        const obj = map.get(rowKey);
+        obj[colKey] = (obj[colKey] || 0) + 1;
+      });
+
+      const cols = Array.from(colSet).sort((a,b)=>a.localeCompare(b,"es"));
+      const data = Array.from(map.values()).sort((a,b)=>a.guarda.localeCompare(b.guarda,"es"));
+
+      const tabCols = [
+        { title:"Guarda recurso", field:"guarda", frozen:true, headerFilter:"input", minWidth:240 },
+        ...cols.map(c=>({ title:c, field:c, hozAlign:"right" }))
+      ];
+
+      return { tabCols, data };
+    }
+
+    function actualizarTablas(rows){
+      const piv = construirPivote(rows);
+
+      if(!tPivote){
+        tPivote = new Tabulator("#tabla-pivote", {
+          data: piv.data,
+          columns: piv.tabCols,
+          layout:"fitDataStretch",
+          pagination:"local",
+          paginationSize: 12,
+          paginationSizeSelector:[12, 25, 50, 100],
+          movableColumns:true
+        });
+      }else{
+        tPivote.setColumns(piv.tabCols);
+        tPivote.replaceData(piv.data);
+      }
+
+      // Tabla de registros (todas las columnas del CSV, sin las internas __)
+      const cols = rows.length ? Object.keys(rows[0]).filter(k=>!k.startsWith("__")).map(field=>({
+        title: field,
+        field: field,
+        headerFilter:"input",
+        minWidth: 140
+      })) : [];
+
+      if(!tRegistros){
+        tRegistros = new Tabulator("#tabla-registros", {
+          data: rows,
+          columns: cols,
+          layout:"fitDataStretch",
+          pagination:"local",
+          paginationSize: 20,
+          paginationSizeSelector:[10, 20, 50, 100],
+          movableColumns:true
+        });
+      }else{
+        tRegistros.setColumns(cols);
+        tRegistros.replaceData(rows);
+      }
+    }
+
+    // ===== KPI =====
+    function actualizarKPIs(rows){
+      const total = rows.length;
+      const munis = new Set(rows.map(r=>r.__muni).filter(Boolean));
+      const guardas = new Set(rows.map(r=>r.__guarda).filter(Boolean));
+
+      const si = rows.filter(r=>r.__apoyo==="si").length;
+      const no = rows.filter(r=>r.__apoyo==="no").length;
+      const denom = si + no;
+      const pctApoyo = denom ? Math.round((si/denom)*100) : 0;
+
+      const dur = rows.map(r=>r.__durHoras).filter(v=>typeof v==="number" && isFinite(v));
+      const avgHoras = dur.length ? (dur.reduce((a,b)=>a+b,0)/dur.length) : null;
+
+      const coordOk = rows.filter(r=>r.__coordOk).length;
+      const pctCoord = total ? Math.round((coordOk/total)*100) : 0;
+
+      kTotal.textContent = total.toLocaleString("es-GT");
+      kTotalS.textContent = "Filtrado (de " + DATA.length.toLocaleString("es-GT") + ")";
+
+      kMunis.textContent = munis.size.toLocaleString("es-GT");
+      kGuardas.textContent = guardas.size.toLocaleString("es-GT");
+
+      kApoyo.textContent = pctApoyo + "%";
+      kHoras.textContent = (avgHoras === null) ? "—" : (Math.round(avgHoras*10)/10).toString();
+      kCoord.textContent = pctCoord + "%";
+    }
+
+    // ===== Build filter lists =====
+    function buildFilterOptions(){
+      const meses = Array.from(new Set(DATA.map(r=>r.__ym).filter(Boolean))).sort();
+      const semanas = Array.from(new Set(DATA.map(r=>r.__yw).filter(Boolean))).sort();
+
+      fillSelect(fMes, meses, true, "(Todos)");
+      fillSelect(fSemana, semanas, true, "(Todos)");
+
+      const guardas = Array.from(new Set(DATA.map(r=>r.__guarda).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
+      const munis = Array.from(new Set(DATA.map(r=>r.__muni).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
+      const regiones = Array.from(new Set(DATA.map(r=>r.__region).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
+      const areas = Array.from(new Set(DATA.map(r=>r.__area).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
+
+      fillSelect(fGuarda, guardas, true, "(Todos)");
+      fillSelect(fMuni, munis, true, "(Todos)");
+      fillSelect(fRegion, regiones, true, "(Todos)");
+      fillSelect(fArea, areas, true, "(Todos)");
+
+      // Actividades: construir lista de códigos únicos a partir de todos los registros
+      const codesSet = new Set();
+      DATA.forEach(r=>{
+        (r.__actCodes || []).forEach(c=> codesSet.add(c));
+      });
+      const codes = Array.from(codesSet).sort((a,b)=>a.localeCompare(b,"es"));
+      fillSelect(fActividad, codes, true, "(Todas)");
+    }
+
+    // ===== Refresh =====
+    function refrescar(updateUrl){
+      const rows = filterRows();
+
+      actualizarKPIs(rows);
+      actualizarCharts(rows);
+      actualizarTablas(rows);
+
+      const txt = "Mostrando " + rows.length.toLocaleString("es-GT") + " registros.";
+      meta.textContent = txt;
+
+      if(updateUrl) setURLFromState();
+    }
+
+    // ===== PDF =====
+    function generarReportePDF(){
+      try{
+        setURLFromState();
+
+        const now = new Date();
+        const tag = now.getFullYear() + "-" + pad2(now.getMonth()+1) + "-" + pad2(now.getDate());
+        const filename = "ac210_tablero_" + tag + ".pdf";
+
+        const element = document.getElementById("pdf-area");
+
+        // Ajuste: mejor nitidez en capturas
+        const opt = {
+          margin:       [8, 8, 8, 8],
+          filename:     filename,
+          image:        { type: "jpeg", quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true },
+          jsPDF:        { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak:    { mode: ["css", "legacy"] }
+        };
+
+        showToast("Generando PDF…");
+        html2pdf().set(opt).from(element).save().then(()=> showToast("PDF listo"));
+      }catch(e){
+        console.error(e);
+        alert("Error generando PDF: " + e);
+      }
+    }
+
+    // ===== Wire =====
+    function wire(){
+      // watchers
+      const watchers = [
+        fTemporal,fMes,fSemana,fDesde,fHasta,
+        fGuarda,fMuni,fRegion,fArea,fApoyo,fActividad,
+        fAgrupar
+      ];
+
+      watchers.forEach(el=>{
+        el.addEventListener("change", ()=>{
+          if(el === fTemporal) setTemporalUI();
+          refrescar(true);
+        });
+      });
+
+      $("btn-reset").addEventListener("click", limpiarFiltros);
+
+      $("btn-dl-csv").addEventListener("click", ()=>{
+        if(tRegistros) tRegistros.download("csv", "ac210_filtrado.csv");
+      });
+      $("btn-dl-xlsx").addEventListener("click", ()=>{
+        if(tRegistros) tRegistros.download("xlsx", "ac210_filtrado.xlsx", {sheetName:"Filtrado"});
+      });
+      $("btn-dl-json").addEventListener("click", ()=>{
+        if(tRegistros) tRegistros.download("json", "ac210_filtrado.json");
+      });
+
+      $("piv-csv").addEventListener("click", ()=>{
+        if(tPivote) tPivote.download("csv", "pivote_guarda_periodo_ac210.csv");
+      });
+      $("piv-xlsx").addEventListener("click", ()=>{
+        if(tPivote) tPivote.download("xlsx", "pivote_guarda_periodo_ac210.xlsx", {sheetName:"Pivote"});
+      });
+
+      $("png-tiempo").addEventListener("click", ()=> exportChartPNG(chartTiempo, "ac210_tiempo.png"));
+      $("png-muni").addEventListener("click", ()=> exportChartPNG(chartMuni, "ac210_top_municipios.png"));
+      $("png-guarda").addEventListener("click", ()=> exportChartPNG(chartGuarda, "ac210_top_guardas.png"));
+
+      $("btn-copy").addEventListener("click", async ()=>{
+        setURLFromState();
+        const url = location.origin + location.pathname + location.search;
+        try{
+          await navigator.clipboard.writeText(url);
+          showToast("Enlace copiado");
+        }catch(e){
+          const ta = document.createElement("textarea");
+          ta.value = url;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          showToast("Enlace copiado");
+        }
+      });
+
+      $("btn-pdf").addEventListener("click", generarReportePDF);
+
+      // buscadores: filtran opciones sin romper la selección
+      sGuarda.addEventListener("input", ()=> filterSelect(fGuarda, sGuarda.value));
+      sMuni.addEventListener("input", ()=> filterSelect(fMuni, sMuni.value));
+      sRegion.addEventListener("input", ()=> filterSelect(fRegion, sRegion.value));
+      sArea.addEventListener("input", ()=> filterSelect(fArea, sArea.value));
+    }
+
+    // ===== Load =====
+    async function load(){
+      try{
+        if(typeof Papa === "undefined"){
+          estado.textContent = "No se cargó papaparse.min.js (debe existir en el repo).";
+          return;
+        }
+        if(typeof Tabulator === "undefined"){
+          estado.textContent = "No se cargó tabulator.min.js (debe existir en el repo).";
+          return;
+        }
+        if(typeof Chart === "undefined"){
+          estado.textContent = "No se cargó Chart.js (CDN).";
+          return;
+        }
+
+        // mejora de nitidez (para PNG/PDF)
+        Chart.defaults.devicePixelRatio = 2;
+
+        estado.textContent = "Leyendo base2_datos.csv…";
+        const res = await fetch(CSV_URL, { cache: "no-store" });
+        if(!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+        const csvText = await res.text();
+
+        const parsed = Papa.parse(csvText, { header:true, skipEmptyLines:true, delimiter: DELIM });
+        const rows = (parsed.data || []).filter(r => r && Object.keys(r).some(k => norm(r[k])));
+
+        DATA = rows.map(r=>{
+          const info = extraerFechaCompleta(r[F.fecha]);
+          const d = info ? info.date : null;
+
+          const ym = info ? (info.anio + "-" + pad2(info.mes)) : "";
+          const yd = info ? (info.anio + "-" + pad2(info.mes) + "-" + pad2(info.dia)) : "";
+          const yw = d ? isoWeekKey(d) : "";
+
+          const guarda = norm(r[F.guarda]) || "(Sin guarda)";
+          const muni = norm(r[F.municipio]) || "(Sin municipio)";
+          const region = norm(r[F.region]) || "(Sin región)";
+          const area = norm(r[F.area]) || "(Sin área)";
+
+          const ap = apoyoNorm(r); // si/no/sin
+
+          // coordenadas
+          const coordOk = isNum(r[F.x]) && isNum(r[F.y]);
+
+          // duración (si hay horas)
+          const hIni = parseHora(r[F.hIni]);
+          const hFin = parseHora(r[F.hFin]);
+          let durHoras = null;
+          if(hIni !== null && hFin !== null){
+            let diff = hFin - hIni;
+            if(diff < 0) diff += 24*60; // si cruzó medianoche
+            durHoras = diff / 60.0;
+          }
+
+          const codes = actCodes(r);
+
+          r.__date = d;
+          r.__ym = ym;
+          r.__yd = yd;
+          r.__yw = yw;
+
+          r.__guarda = guarda;
+          r.__muni = muni;
+          r.__region = region;
+          r.__area = area;
+
+          r.__apoyo = ap;
+          r.__coordOk = coordOk;
+          r.__durHoras = durHoras;
+
+          r.__actCodes = codes;
+
+          return r;
+        });
+
+        // construir filtros
+        buildFilterOptions();
+
+        // aplicar estado desde URL si existe
+        const st = getStateFromURL();
+        applyStateToUI(st);
+
+        // refrescar
+        refrescar(false);
+
+        estado.textContent = "Datos cargados: " + DATA.length.toLocaleString("es-GT") + " registros.";
+      }catch(e){
+        console.error(e);
+        estado.textContent = "Error cargando " + CSV_URL + ": " + e;
+      }
+    }
+
+    wire();
+    load();
+  </script>
+</body>
+</html>
