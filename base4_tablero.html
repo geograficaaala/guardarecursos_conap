@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>AC 282 - Tablero dinámico (CSV)</title>
+
+  <!-- Tabulator local (repo) -->
+  <link rel="stylesheet" href="tabulator.min.css">
+
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- html2pdf (CDN) para PDF multipágina -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    :root{
+      --verde-header:#0f766e;
+      --verde-header-2:#0e7490;
+      --azul-boton:#1d9bf0;
+      --azul-boton-hover:#0f80cc;
+      --gris-fondo:#f5f7fa;
+      --texto-principal:#0f172a;
+      --texto-secundario:#6b7280;
+      --borde-suave:#e5e7eb;
+      --card-radius:14px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      color:var(--texto-principal);
+      background:
+        radial-gradient(circle at top left, #dbeafe 0, transparent 55%),
+        radial-gradient(circle at bottom right, #bbf7d0 0, transparent 55%),
+        linear-gradient(180deg, #e5f3f0 0%, var(--gris-fondo) 35%, #eef2ff 100%);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    header{
+      background: linear-gradient(90deg, var(--verde-header), var(--verde-header-2));
+      color:#fff;
+      padding:14px 20px 18px;
+      box-shadow:0 2px 10px rgba(15,23,42,.25);
+      position:sticky; top:0; z-index:10;
+    }
+    .header-inner{
+      max-width:1100px; margin:0 auto;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:16px; flex-wrap:wrap;
+    }
+    .logo-group{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      background-color: rgba(255,255,255,0.12);
+      border-radius:999px; padding:6px 10px;
+      border:1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(4px);
+    }
+    .logo-group img{
+      height:40px; max-width:130px; object-fit:contain;
+      background-color:#fff; border-radius:999px; padding:4px 8px;
+      box-shadow:0 2px 6px rgba(15,23,42,.25);
+    }
+    .title-group{ text-align:right; flex:1 1 260px;}
+    .title-group h1{ margin:0 0 2px; font-size:22px; letter-spacing:.02em;}
+    .title-group p{ margin:0; font-size:13px; opacity:.96; line-height:1.4;}
+
+    main{
+      max-width:1100px; width:100%;
+      margin:18px auto 0;
+      padding:0 20px 40px;
+      flex:1 0 auto;
+    }
+
+    .page-header{ margin-bottom:10px; }
+    .page-header h2{ margin:0 0 6px; font-size:20px;}
+    .page-header p{ margin:2px 0; font-size:14px; color:var(--texto-secundario);}
+
+    .pill{
+      display:inline-block; margin-top:6px;
+      padding:3px 10px; font-size:11px; border-radius:999px;
+      background-color: rgba(37,99,235,0.08);
+      color:#1d4ed8;
+      border:1px solid rgba(191,219,254,0.9);
+      text-transform:uppercase; letter-spacing:.08em;
+    }
+
+    .tabs{
+      display:flex; flex-wrap:wrap; gap:8px;
+      margin:14px 0 16px; justify-content:center;
+    }
+    .tab{
+      text-decoration:none;
+      padding:8px 12px;
+      border-radius:999px;
+      border:1px solid #cbd5f5;
+      background:rgba(255,255,255,0.9);
+      color:#0f172a;
+      font-weight:650;
+      font-size:13px;
+    }
+    .tab:hover{ background:#e5edff; border-color:#93c5fd;}
+    .tab.active{
+      background:var(--azul-boton);
+      border-color:transparent;
+      color:#fff;
+      box-shadow:0 1px 3px rgba(15,23,42,.2);
+    }
+
+    .card{
+      background:#fff;
+      border-radius:var(--card-radius);
+      border:1px solid var(--borde-suave);
+      box-shadow:0 2px 10px rgba(15,23,42,.10);
+      padding:16px;
+      margin-bottom:14px;
+      overflow:hidden;
+      position:relative;
+    }
+    .card.soft{
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(248,250,252,.98));
+    }
+    .card::before{
+      content:"";
+      position:absolute; left:-50px; top:-60px;
+      width:160px; height:160px; border-radius:999px;
+      background: radial-gradient(circle, rgba(56,189,248,.12), transparent 65%);
+      pointer-events:none;
+    }
+
+    .subnote{ margin:0; color:var(--texto-secundario); font-size:13px; }
+
+    .grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:12px; }
+    .col-12{ grid-column:span 12; }
+    .col-6{ grid-column:span 6; }
+
+    .filters{
+      display:grid;
+      grid-template-columns:repeat(12, 1fr);
+      gap:10px;
+      align-items:end;
+      margin-top:10px;
+    }
+    .field{ grid-column: span 3; min-width:160px; }
+    .field.wide{ grid-column: span 4; }
+    label{
+      display:block; font-size:12px; color:var(--texto-secundario);
+      font-weight:900; margin-bottom:6px;
+    }
+    .hint{ font-weight:800; opacity:.8; }
+    select, input{
+      width:100%;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid #dbe2ef;
+      background:#fff;
+      font-size:14px;
+      outline:none;
+    }
+    input.small{
+      padding:7px 10px;
+      border-radius:12px;
+      background: rgba(241,245,249,.7);
+      margin-bottom:6px;
+    }
+    select:focus, input:focus{
+      border-color:#93c5fd;
+      box-shadow:0 0 0 3px rgba(59,130,246,.15);
+    }
+
+    .btnrow{
+      display:flex; flex-wrap:wrap; gap:10px;
+      justify-content:center; margin-top:12px;
+    }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:8px 14px; font-size:14px;
+      border-radius:999px; text-decoration:none;
+      cursor:pointer; border:1px solid transparent;
+      font-weight:800;
+      transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      user-select:none;
+    }
+    .btn span.icon{ margin-right:6px; font-size:14px; }
+    .btn-primary{
+      background-color:var(--azul-boton); color:#fff;
+      box-shadow:0 1px 3px rgba(15,23,42,.2);
+    }
+    .btn-primary:hover{
+      background-color:var(--azul-boton-hover);
+      transform:translateY(-1px);
+      box-shadow:0 4px 10px rgba(15,23,42,.28);
+    }
+    .btn-ghost{
+      background-color:rgba(255,255,255,.9);
+      color:#0f172a;
+      border-color:#cbd5f5;
+    }
+    .btn-ghost:hover{
+      background:#e5edff;
+      border-color:#93c5fd;
+      transform:translateY(-1px);
+      box-shadow:0 2px 8px rgba(15,23,42,.15);
+    }
+    .btn-warn{
+      background:#0d9488; color:#fff;
+      box-shadow:0 1px 3px rgba(15,23,42,.2);
+    }
+    .btn-warn:hover{
+      background:#0f766e;
+      transform:translateY(-1px);
+      box-shadow:0 4px 10px rgba(15,23,42,.22);
+    }
+
+    .kpis{
+      display:grid; grid-template-columns:repeat(12,1fr); gap:12px;
+    }
+    .kpi{
+      grid-column: span 3;
+      border:1px solid var(--borde-suave);
+      border-radius:14px;
+      padding:12px;
+      background: linear-gradient(180deg,#fff,#f8fafc);
+      min-height:88px;
+    }
+    .kpi .t{ font-size:12px; color:var(--texto-secundario); font-weight:950; letter-spacing:.02em;}
+    .kpi .v{ font-size:20px; font-weight:950; margin-top:6px; }
+    .kpi .s{ font-size:12px; color:var(--texto-secundario); margin-top:2px; }
+
+    .chartwrap{ height:340px; }
+    canvas{ width:100% !important; height:100% !important; }
+
+    .tablewrap{ overflow-x:auto; }
+    .cardhead{
+      display:flex; flex-wrap:wrap;
+      align-items:center; justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .cardhead h3{ margin:0; }
+    .mini-actions{
+      display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
+    }
+    .mini-btn{
+      padding:7px 10px;
+      font-size:13px;
+      border-radius:999px;
+      border:1px solid #cbd5f5;
+      background: rgba(255,255,255,.9);
+      cursor:pointer;
+      font-weight:800;
+    }
+    .mini-btn:hover{ background:#e5edff; border-color:#93c5fd; }
+
+    footer{
+      text-align:center;
+      font-size:12px;
+      color:#6b7280;
+      padding:10px 20px 18px;
+      border-top:1px solid #e5e7eb;
+      background-color:rgba(248,250,252,.9);
+      margin-top:auto;
+    }
+
+    .toast{
+      position:fixed;
+      left:50%; bottom:18px;
+      transform:translateX(-50%);
+      background:rgba(15,23,42,.92);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:999px;
+      font-size:13px;
+      box-shadow:0 10px 25px rgba(15,23,42,.35);
+      opacity:0; pointer-events:none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index:9999;
+    }
+    .toast.show{
+      opacity:1;
+      transform:translateX(-50%) translateY(-4px);
+    }
+
+    @media (max-width: 980px){
+      .field{ grid-column: span 12; min-width:unset; }
+      .field.wide{ grid-column: span 12; }
+      .kpi{ grid-column: span 6; }
+      .col-6{ grid-column: span 12; }
+      .title-group{ text-align:center; }
+      .header-inner{ justify-content:center; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="logo-group">
+        <img src="conap_logo.jpg" alt="Logo CONAP">
+        <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
+      </div>
+      <div class="title-group">
+        <h1>Centro de consulta de datos</h1>
+        <p>Sistema de monitoreo de actividades</p>
+        <p>CONAP – Dirección Regional Altiplano Central</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-header">
+      <h2>AC 282 · Asistencia técnica o monitoreo a reforestaciones · Tablero dinámico</h2>
+      <p>Este tablero se genera automáticamente desde <strong>base4_datos.csv</strong> (del repo) y permite filtrar y graficar.</p>
+      <span class="pill">Tablero dinámico · CSV</span>
+    </section>
+
+    <nav class="tabs" aria-label="Navegación del módulo">
+      <a class="tab" href="base4_dashboard.html">🗺️ Experience Builder</a>
+      <a class="tab active" href="base4_tablero.html">📈 Tablero dinámico</a>
+      <a class="tab" href="base4_datos.html">📋 Tabla</a>
+    </nav>
+
+    <section class="card soft">
+      <p class="subnote" id="estado">Cargando datos…</p>
+
+      <div class="filters">
+        <div class="field wide">
+          <label for="f-temporal">Filtro temporal</label>
+          <select id="f-temporal">
+            <option value="todo">Todo</option>
+            <option value="mes">Por mes</option>
+            <option value="semana">Por semana (ISO)</option>
+            <option value="rango">Rango de fechas</option>
+          </select>
+        </div>
+
+        <div class="field" id="wrap-mes" style="display:none;">
+          <label for="f-mes">Mes</label>
+          <select id="f-mes"></select>
+        </div>
+
+        <div class="field" id="wrap-semana" style="display:none;">
+          <label for="f-semana">Semana</label>
+          <select id="f-semana"></select>
+        </div>
+
+        <div class="field" id="wrap-desde" style="display:none;">
+          <label for="f-desde">Desde</label>
+          <input id="f-desde" type="date" />
+        </div>
+
+        <div class="field" id="wrap-hasta" style="display:none;">
+          <label for="f-hasta">Hasta</label>
+          <input id="f-hasta" type="date" />
+        </div>
+
+        <div class="field" id="wrap-tecnico">
+          <label for="f-tecnico">Técnico responsable <span class="hint">(buscable)</span></label>
+          <input id="s-tecnico" class="small" type="search" placeholder="Buscar técnico…" autocomplete="off">
+          <select id="f-tecnico"></select>
+        </div>
+
+        <div class="field" id="wrap-muni">
+          <label for="f-muni">Municipio <span class="hint">(buscable)</span></label>
+          <input id="s-muni" class="small" type="search" placeholder="Buscar municipio…" autocomplete="off">
+          <select id="f-muni"></select>
+        </div>
+
+        <div class="field" id="wrap-depto">
+          <label for="f-depto">Departamento <span class="hint">(buscable)</span></label>
+          <input id="s-depto" class="small" type="search" placeholder="Buscar departamento…" autocomplete="off">
+          <select id="f-depto"></select>
+        </div>
+
+        <div class="field" id="wrap-proyecto">
+          <label for="f-proyecto">Proyecto / Reforestación <span class="hint">(buscable)</span></label>
+          <input id="s-proyecto" class="small" type="search" placeholder="Buscar proyecto…" autocomplete="off">
+          <select id="f-proyecto"></select>
+        </div>
+
+        <div class="field" id="wrap-especie">
+          <label for="f-especie">Especie <span class="hint">(buscable)</span></label>
+          <input id="s-especie" class="small" type="search" placeholder="Buscar especie…" autocomplete="off">
+          <select id="f-especie"></select>
+        </div>
+
+        <div class="field">
+          <label for="f-agrupar">Agrupar serie</label>
+          <select id="f-agrupar">
+            <option value="dia">Día</option>
+            <option value="semana">Semana</option>
+            <option value="mes">Mes</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="btnrow">
+        <button class="btn btn-ghost" id="btn-reset" type="button"><span class="icon">🔄</span>Limpiar filtros</button>
+        <button class="btn btn-ghost" id="btn-copy" type="button"><span class="icon">🔗</span>Copiar enlace (filtros)</button>
+        <button class="btn btn-warn" id="btn-pdf" type="button"><span class="icon">🧾</span>Reporte PDF (resumen)</button>
+
+        <a class="btn btn-ghost" href="index.html"><span class="icon">←</span>Inicio</a>
+        <a class="btn btn-ghost" href="base4_dashboard.html"><span class="icon">🗺️</span>Experience Builder</a>
+        <a class="btn btn-primary" href="base4_datos.html"><span class="icon">📋</span>Ir a Tabla</a>
+      </div>
+
+      <p class="subnote" style="margin-top:10px; text-align:center;">
+        Tip: haz clic en una barra de “Top municipios / técnicos” para filtrar (drill-down).
+      </p>
+    </section>
+
+    <section class="card">
+      <div class="kpis">
+        <div class="kpi">
+          <div class="t">Registros (filtrados)</div>
+          <div class="v" id="k-total">–</div>
+          <div class="s" id="k-total-s">–</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Municipios únicos</div>
+          <div class="v" id="k-munis">–</div>
+          <div class="s">en el filtro actual</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Técnicos únicos</div>
+          <div class="v" id="k-tecnicos">–</div>
+          <div class="s">en el filtro actual</div>
+        </div>
+        <div class="kpi">
+          <div class="t">Área / superficie (suma)</div>
+          <div class="v" id="k-area">–</div>
+          <div class="s">si existe en CSV</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card col-12">
+        <div class="cardhead">
+          <div>
+            <h3 style="margin:0 0 6px;">Registros en el tiempo</h3>
+            <p class="subnote" style="margin:0;">Serie según el agrupamiento seleccionado.</p>
+          </div>
+          <div class="mini-actions">
+            <button class="mini-btn" id="png-tiempo" type="button">PNG</button>
+          </div>
+        </div>
+        <div class="chartwrap"><canvas id="c-tiempo"></canvas></div>
+      </div>
+
+      <div class="card col-6" id="card-top-muni">
+        <div class="cardhead">
+          <div>
+            <h3 style="margin:0 0 6px;">Top municipios</h3>
+            <p class="subnote" style="margin:0;">Top 10 por registros (filtro actual).</p>
+          </div>
+          <div class="mini-actions">
+            <button class="mini-btn" id="png-muni" type="button">PNG</button>
+          </div>
+        </div>
+        <div class="chartwrap"><canvas id="c-muni"></canvas></div>
+      </div>
+
+      <div class="card col-6" id="card-top-tecnico">
+        <div class="cardhead">
+          <div>
+            <h3 style="margin:0 0 6px;">Top técnicos</h3>
+            <p class="subnote" style="margin:0;">Top 10 por registros (filtro actual).</p>
+          </div>
+          <div class="mini-actions">
+            <button class="mini-btn" id="png-tecnico" type="button">PNG</button>
+          </div>
+        </div>
+        <div class="chartwrap"><canvas id="c-tecnico"></canvas></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="cardhead">
+        <div>
+          <h3 style="margin:0 0 6px;">Tabla pivote (Técnico × Periodo)</h3>
+          <p class="subnote" style="margin:0;">Filas: técnico · Columnas: periodo (día/semana/mes) · Valores: conteo.</p>
+        </div>
+        <div class="mini-actions">
+          <button class="mini-btn" id="piv-csv" type="button">CSV</button>
+          <button class="mini-btn" id="piv-xlsx" type="button">Excel</button>
+        </div>
+      </div>
+      <div class="tablewrap">
+        <div id="tabla-pivote"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="cardhead">
+        <div>
+          <h3 style="margin:0 0 6px;">Registros filtrados</h3>
+          <p class="subnote" style="margin:0;">Tabla completa filtrada (puedes exportar lo filtrado).</p>
+        </div>
+        <div class="mini-actions">
+          <button class="mini-btn" id="btn-dl-csv" type="button">CSV</button>
+          <button class="mini-btn" id="btn-dl-xlsx" type="button">Excel</button>
+          <button class="mini-btn" id="btn-dl-json" type="button">JSON</button>
+        </div>
+      </div>
+      <div class="tablewrap" style="margin-top:12px;">
+        <div id="tabla-registros"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
+  </footer>
+
+  <div class="toast" id="toast">Listo</div>
+
+  <!-- Librerías locales (repo) -->
+  <script src="papaparse.min.js"></script>
+  <script src="tabulator.min.js"></script>
+  <script src="xlsx.full.min.js"></script>
+
+  <script>
+    // ===== CSV config =====
+    const CSV_URL = "./base4_datos.csv";
+    const DELIM = ";";
+
+    // ===== State =====
+    let DATA = [];
+    let HEADERS = [];
+    let chartTiempo = null, chartMuni = null, chartTecnico = null;
+    let tPivote = null, tRegistros = null;
+
+    // ===== DOM =====
+    const $ = (id) => document.getElementById(id);
+
+    const estado = $("estado");
+
+    const fTemporal = $("f-temporal");
+    const wrapMes = $("wrap-mes");
+    const wrapSemana = $("wrap-semana");
+    const wrapDesde = $("wrap-desde");
+    const wrapHasta = $("wrap-hasta");
+
+    const fMes = $("f-mes");
+    const fSemana = $("f-semana");
+    const fDesde = $("f-desde");
+    const fHasta = $("f-hasta");
+
+    const wrapTecnico = $("wrap-tecnico");
+    const wrapMuni = $("wrap-muni");
+    const wrapDepto = $("wrap-depto");
+    const wrapProyecto = $("wrap-proyecto");
+    const wrapEspecie = $("wrap-especie");
+
+    const fTecnico = $("f-tecnico");
+    const fMuni = $("f-muni");
+    const fDepto = $("f-depto");
+    const fProyecto = $("f-proyecto");
+    const fEspecie = $("f-especie");
+    const fAgrupar = $("f-agrupar");
+
+    // buscadores
+    const sTecnico = $("s-tecnico");
+    const sMuni = $("s-muni");
+    const sDepto = $("s-depto");
+    const sProyecto = $("s-proyecto");
+    const sEspecie = $("s-especie");
+
+    // KPIs
+    const kTotal = $("k-total");
+    const kTotalS = $("k-total-s");
+    const kMunis = $("k-munis");
+    const kTecnicos = $("k-tecnicos");
+    const kArea = $("k-area");
+
+    // Toast
+    const toast = $("toast");
+    let toastTimer = null;
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=>toast.classList.remove("show"), 1600);
+    }
+
+    // ===== Helpers =====
+    function norm(s){ return String(s || "").trim(); }
+    function normalizar(t){
+      return String(t || "").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    }
+    function pad2(n){ return String(n).padStart(2,"0"); }
+    function isNum(v){ return v !== null && v !== "" && isFinite(Number(v)); }
+
+    // Busca una columna por keywords (flexible, tipo buscarCampo pero a nivel de header)
+    function findHeaderByKeywords(headers, keywords, avoid){
+      const kw = (keywords || []).map(normalizar);
+      const av = (avoid || []).map(normalizar);
+
+      // 1) preferimos que contenga TODOS los keywords
+      let best = null;
+      for (const h of headers){
+        const nh = normalizar(h);
+        if (av.some(a => a && nh.includes(a))) continue;
+        const ok = kw.every(k => nh.includes(k));
+        if (ok){ best = h; break; }
+      }
+      if (best) return best;
+
+      // 2) fallback: contenga AL MENOS el primero
+      if (kw.length){
+        for (const h of headers){
+          const nh = normalizar(h);
+          if (av.some(a => a && nh.includes(a))) continue;
+          if (nh.includes(kw[0])) return h;
+        }
+      }
+      return null;
+    }
+
+    // Fecha: soporta "8/13/2025 18:00" y "13/8/2025 18:00" y "YYYY-MM-DD"
+    function extraerFechaCompleta(fechaRaw){
+      if (!fechaRaw) return null;
+      let str = String(fechaRaw).trim();
+      if (!str) return null;
+      if (str.includes(" ")) str = str.split(" ")[0];
+      if (str.includes("T")) str = str.split("T")[0];
+
+      const mIso = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (mIso){
+        const y = +mIso[1], mo = +mIso[2], d = +mIso[3];
+        const dt = new Date(y, mo-1, d);
+        if (isNaN(dt.getTime())) return null;
+        return { anio:y, mes:mo, dia:d, date: dt };
+      }
+
+      const sep = str.includes("/") ? "/" : (str.includes("-") ? "-" : null);
+      if (!sep) return null;
+      const partes = str.split(sep);
+      if (partes.length < 3) return null;
+
+      let p1 = parseInt(partes[0], 10);
+      let p2 = parseInt(partes[1], 10);
+      let anio = parseInt(partes[2], 10);
+      if (isNaN(p1) || isNaN(p2) || isNaN(anio)) return null;
+
+      let mes, dia;
+      if (p1 > 12 && p2 >= 1 && p2 <= 12) { dia = p1; mes = p2; } // dd/mm
+      else { mes = p1; dia = p2; } // mm/dd por defecto
+
+      if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+      const dt = new Date(anio, mes-1, dia);
+      if (isNaN(dt.getTime())) return null;
+      return { anio, mes, dia, date: dt };
+    }
+
+    function isoWeekKey(date){
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${pad2(weekNo)}`;
+    }
+
+    function uniqueSorted(arr){
+      return Array.from(new Set(arr.map(norm).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
+    }
+
+    function llenarSelect(select, valores, placeholder){
+      if(!select) return;
+      select.innerHTML = "";
+      const o0 = document.createElement("option");
+      o0.value = "todo";
+      o0.textContent = placeholder || "Todos";
+      select.appendChild(o0);
+
+      valores.forEach(v=>{
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = v;
+        select.appendChild(o);
+      });
+    }
+
+    function setTemporalUI(){
+      const v = fTemporal.value;
+      wrapMes.style.display = (v === "mes") ? "" : "none";
+      wrapSemana.style.display = (v === "semana") ? "" : "none";
+      wrapDesde.style.display = (v === "rango") ? "" : "none";
+      wrapHasta.style.display = (v === "rango") ? "" : "none";
+    }
+
+    function countBy(rows, keyFn){
+      const m = new Map();
+      rows.forEach(r=>{
+        const k = keyFn(r);
+        if(!k) return;
+        m.set(k, (m.get(k)||0)+1);
+      });
+      return m;
+    }
+    function topN(map, n){
+      return Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0,n);
+    }
+
+    // Fondo blanco para exportar PNG/PDF
+    const whiteBgPlugin = {
+      id: "white-bg",
+      beforeDraw: (chart) => {
+        const {ctx, width, height} = chart;
+        ctx.save();
+        ctx.globalCompositeOperation = "destination-over";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, width, height);
+        ctx.restore();
+      }
+    };
+
+    function renderChart(canvasId, prev, cfg){
+      const el = $(canvasId);
+      if(!el) return prev;
+      const ctx = el.getContext("2d");
+      if(prev) prev.destroy();
+      return new Chart(ctx, cfg);
+    }
+
+    // ===== Dynamic field mapping (según headers reales del CSV) =====
+    const F = {
+      fecha: null,
+      tecnico: null,
+      municipio: null,
+      depto: null,
+      proyecto: null,
+      especie: null,
+      area: null,
+      x: null,
+      y: null
+    };
+
+    function mapFieldsFromHeaders(){
+      // Fechas: prioriza "fecha visita" o "fecha monitoreo", evitando creacion/modificacion
+      F.fecha = findHeaderByKeywords(HEADERS, ["fecha","visita"], ["creacion","modificacion"])
+            || findHeaderByKeywords(HEADERS, ["fecha","monitoreo"], ["creacion","modificacion"])
+            || findHeaderByKeywords(HEADERS, ["fecha"], ["creacion","modificacion"])
+            || null;
+
+      F.tecnico = findHeaderByKeywords(HEADERS, ["tecnico"], [])
+              || findHeaderByKeywords(HEADERS, ["responsable"], [])
+              || null;
+
+      F.municipio = findHeaderByKeywords(HEADERS, ["municipio"], []) || null;
+      F.depto = findHeaderByKeywords(HEADERS, ["departamento"], []) || null;
+
+      // proyecto / reforestacion
+      F.proyecto = findHeaderByKeywords(HEADERS, ["proyecto"], [])
+               || findHeaderByKeywords(HEADERS, ["reforestacion"], [])
+               || null;
+
+      F.especie = findHeaderByKeywords(HEADERS, ["especie"], []) || null;
+
+      // área/superficie reforestada
+      F.area = findHeaderByKeywords(HEADERS, ["area","reforest"], [])
+          || findHeaderByKeywords(HEADERS, ["superficie"], [])
+          || null;
+
+      // coords (si existen)
+      F.x = findHeaderByKeywords(HEADERS, ["x"], [])
+         || findHeaderByKeywords(HEADERS, ["long"], []) // por si trae longitud
+         || null;
+
+      F.y = findHeaderByKeywords(HEADERS, ["y"], [])
+         || findHeaderByKeywords(HEADERS, ["lat"], []) // por si trae latitud
+         || null;
+    }
+
+    // ===== Derivados por registro =====
+    function enrichRow(r){
+      // Fecha
+      let fechaRaw = F.fecha ? r[F.fecha] : null;
+      const f = extraerFechaCompleta(fechaRaw);
+      r.__date = f ? f.date : null;
+      r.__ym = f ? `${f.anio}-${pad2(f.mes)}` : "";
+      r.__yd = f ? `${f.anio}-${pad2(f.mes)}-${pad2(f.dia)}` : "";
+      r.__yw = (f && f.date) ? isoWeekKey(f.date) : "";
+
+      // Dimensiones (strings)
+      r.__tecnico = F.tecnico ? norm(r[F.tecnico]) : "";
+      r.__muni = F.municipio ? norm(r[F.municipio]) : "";
+      r.__depto = F.depto ? norm(r[F.depto]) : "";
+      r.__proyecto = F.proyecto ? norm(r[F.proyecto]) : "";
+      r.__especie = F.especie ? norm(r[F.especie]) : "";
+
+      // Área (número)
+      if (F.area && r[F.area] !== undefined && r[F.area] !== null){
+        const v = String(r[F.area]).replace(",", ".").trim();
+        const n = parseFloat(v);
+        r.__area = isFinite(n) ? n : null;
+      } else {
+        r.__area = null;
+      }
+
+      // Coord válidas
+      const xv = (F.x ? r[F.x] : null);
+      const yv = (F.y ? r[F.y] : null);
+      const xnum = parseFloat(String(xv ?? "").replace(",", "."));
+      const ynum = parseFloat(String(yv ?? "").replace(",", "."));
+      r.__coordOk = isFinite(xnum) && isFinite(ynum) && xnum !== 0 && ynum !== 0;
+
+      return r;
+    }
+
+    // ===== Filtros =====
+    function aplicarFiltros(){
+      let out = DATA.slice();
+
+      // Temporal
+      const t = fTemporal.value;
+      if (t === "mes" && fMes.value !== "todo"){
+        out = out.filter(r => r.__ym === fMes.value);
+      } else if (t === "semana" && fSemana.value !== "todo"){
+        out = out.filter(r => r.__yw === fSemana.value);
+      } else if (t === "rango"){
+        const d1 = fDesde.value ? new Date(fDesde.value + "T00:00:00") : null;
+        const d2 = fHasta.value ? new Date(fHasta.value + "T23:59:59") : null;
+        out = out.filter(r=>{
+          if (!r.__date) return false;
+          if (d1 && r.__date < d1) return false;
+          if (d2 && r.__date > d2) return false;
+          return true;
+        });
+      }
+
+      // Dimensiones
+      if (fTecnico.value !== "todo") out = out.filter(r => r.__tecnico === fTecnico.value);
+      if (fMuni.value !== "todo") out = out.filter(r => r.__muni === fMuni.value);
+      if (fDepto.value !== "todo") out = out.filter(r => r.__depto === fDepto.value);
+      if (fProyecto.value !== "todo") out = out.filter(r => r.__proyecto === fProyecto.value);
+      if (fEspecie.value !== "todo") out = out.filter(r => r.__especie === fEspecie.value);
+
+      return out;
+    }
+
+    function actualizarKPIs(rows){
+      const total = rows.length;
+      kTotal.textContent = total.toLocaleString("es");
+      kTotalS.textContent = `De ${DATA.length.toLocaleString("es")} registros totales`;
+
+      const munis = new Set(rows.map(r=>r.__muni).filter(Boolean));
+      const tecnicos = new Set(rows.map(r=>r.__tecnico).filter(Boolean));
+      kMunis.textContent = munis.size.toLocaleString("es");
+      kTecnicos.textContent = tecnicos.size.toLocaleString("es");
+
+      const areaSum = rows.map(r=>r.__area).filter(v=>v!=null && isFinite(v)).reduce((a,b)=>a+b, 0);
+      kArea.textContent = areaSum ? (Math.round(areaSum*10)/10).toLocaleString("es") : "—";
+    }
+
+    function actualizarCharts(rows){
+      const agr = fAgrupar.value; // dia/semana/mes
+      const keyFn = (agr === "mes") ? (r=>r.__ym) : (agr === "semana") ? (r=>r.__yw) : (r=>r.__yd);
+      const mTiempo = countBy(rows, keyFn);
+      const labelsT = Array.from(mTiempo.keys()).sort();
+      const dataT = labelsT.map(k=>mTiempo.get(k));
+
+      chartTiempo = renderChart("c-tiempo", chartTiempo, {
+        type:"bar",
+        data:{ labels: labelsT, datasets:[{ label:"Registros", data: dataT }] },
+        plugins:[whiteBgPlugin],
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          onClick:(evt, elements)=>{
+            if(!elements || !elements.length) return;
+            const idx = elements[0].index;
+            const label = labelsT[idx];
+
+            // drill-down temporal según agrupación
+            if(agr === "mes"){
+              fTemporal.value = "mes";
+              setTemporalUI();
+              fMes.value = label;
+            } else if(agr === "semana"){
+              fTemporal.value = "semana";
+              setTemporalUI();
+              fSemana.value = label;
+            } else {
+              fTemporal.value = "rango";
+              setTemporalUI();
+              fDesde.value = label;
+              fHasta.value = label;
+            }
+            refrescar(true);
+          },
+          plugins:{ legend:{ display:true } },
+          scales:{ y:{ beginAtZero:true } }
+        }
+      });
+
+      // Top municipios
+      const cardTopMuni = $("card-top-muni");
+      if (F.municipio){
+        cardTopMuni.style.display = "";
+        const mM = countBy(rows, r=>r.__muni || "(Sin municipio)");
+        const topM = topN(mM, 10);
+        const labelsM = topM.map(x=>x[0]);
+        chartMuni = renderChart("c-muni", chartMuni, {
+          type:"bar",
+          data:{ labels: labelsM, datasets:[{ label:"Registros", data: topM.map(x=>x[1]) }] },
+          plugins:[whiteBgPlugin],
+          options:{
+            indexAxis:"y",
+            responsive:true,
+            maintainAspectRatio:false,
+            onClick:(evt, elements)=>{
+              if(!elements || !elements.length) return;
+              const idx = elements[0].index;
+              const label = labelsM[idx];
+              fMuni.value = label;
+              refrescar(true);
+            },
+            plugins:{ legend:{ display:true } },
+            scales:{ x:{ beginAtZero:true } }
+          }
+        });
+      } else {
+        cardTopMuni.style.display = "none";
+      }
+
+      // Top técnicos
+      const cardTopTec = $("card-top-tecnico");
+      if (F.tecnico){
+        cardTopTec.style.display = "";
+        const mG = countBy(rows, r=>r.__tecnico || "(Sin técnico)");
+        const topG = topN(mG, 10);
+        const labelsG = topG.map(x=>x[0]);
+        chartTecnico = renderChart("c-tecnico", chartTecnico, {
+          type:"bar",
+          data:{ labels: labelsG, datasets:[{ label:"Registros", data: topG.map(x=>x[1]) }] },
+          plugins:[whiteBgPlugin],
+          options:{
+            indexAxis:"y",
+            responsive:true,
+            maintainAspectRatio:false,
+            onClick:(evt, elements)=>{
+              if(!elements || !elements.length) return;
+              const idx = elements[0].index;
+              const label = labelsG[idx];
+              fTecnico.value = label;
+              refrescar(true);
+            },
+            plugins:{ legend:{ display:true } },
+            scales:{ x:{ beginAtZero:true } }
+          }
+        });
+      } else {
+        cardTopTec.style.display = "none";
+      }
+    }
+
+    function construirPivote(rows){
+      const agr = fAgrupar.value;
+      const keyCol = (agr === "mes") ? "__ym" : (agr === "semana") ? "__yw" : "__yd";
+
+      const rowKeyField = F.tecnico ? "__tecnico" : (F.municipio ? "__muni" : "__proyecto");
+      const rowTitle = F.tecnico ? "Técnico" : (F.municipio ? "Municipio" : "Grupo");
+
+      const colSet = new Set();
+      const map = new Map();
+
+      rows.forEach(r=>{
+        const rowKey = r[rowKeyField] || "(Sin dato)";
+        const colKey = r[keyCol] || "(Sin fecha)";
+        colSet.add(colKey);
+
+        if(!map.has(rowKey)) map.set(rowKey, { grupo: rowKey });
+        const obj = map.get(rowKey);
+        obj[colKey] = (obj[colKey] || 0) + 1;
+      });
+
+      const cols = Array.from(colSet).sort((a,b)=>a.localeCompare(b));
+      const data = Array.from(map.values()).sort((a,b)=>a.grupo.localeCompare(b.grupo,"es"));
+
+      const tabCols = [
+        { title: rowTitle, field:"grupo", frozen:true, headerFilter:"input", minWidth:260 },
+        ...cols.map(c=>({ title:c, field:c, hozAlign:"right" }))
+      ];
+
+      return { tabCols, data };
+    }
+
+    function actualizarTablas(rows){
+      const piv = construirPivote(rows);
+      if(!tPivote){
+        tPivote = new Tabulator("#tabla-pivote", {
+          data: piv.data,
+          columns: piv.tabCols,
+          layout:"fitDataStretch",
+          pagination:"local",
+          paginationSize: 15,
+          paginationSizeSelector: [15, 30, 50, 100],
+          movableColumns:true
+        });
+      } else {
+        tPivote.setColumns(piv.tabCols);
+        tPivote.setData(piv.data);
+      }
+
+      // Registros: columnas dinámicas (todas las del CSV)
+      const cols = (HEADERS || []).map(h => ({
+        title: h,
+        field: h,
+        headerFilter: "input",
+        minWidth: 140
+      }));
+
+      if(!tRegistros){
+        tRegistros = new Tabulator("#tabla-registros", {
+          data: rows,
+          columns: cols,
+          layout:"fitDataStretch",
+          pagination:"local",
+          paginationSize: 20,
+          paginationSizeSelector: [10, 20, 50, 100, 200],
+          movableColumns:true
+        });
+      } else {
+        if (tRegistros.getColumns().length !== cols.length){
+          tRegistros.setColumns(cols);
+        }
+        tRegistros.setData(rows);
+      }
+    }
+
+    // ===== URL state =====
+    function getState(){
+      return {
+        temporal: fTemporal.value,
+        mes: fMes.value,
+        semana: fSemana.value,
+        desde: fDesde.value,
+        hasta: fHasta.value,
+        tecnico: fTecnico.value,
+        muni: fMuni.value,
+        depto: fDepto.value,
+        proyecto: fProyecto.value,
+        especie: fEspecie.value,
+        agrupar: fAgrupar.value
+      };
+    }
+
+    function setURLFromState(){
+      const s = getState();
+      const p = new URLSearchParams();
+
+      if(s.temporal !== "todo") p.set("temporal", s.temporal);
+      if(s.mes && s.mes !== "todo") p.set("mes", s.mes);
+      if(s.semana && s.semana !== "todo") p.set("semana", s.semana);
+      if(s.desde) p.set("desde", s.desde);
+      if(s.hasta) p.set("hasta", s.hasta);
+
+      if(s.tecnico !== "todo") p.set("tecnico", s.tecnico);
+      if(s.muni !== "todo") p.set("muni", s.muni);
+      if(s.depto !== "todo") p.set("depto", s.depto);
+      if(s.proyecto !== "todo") p.set("proyecto", s.proyecto);
+      if(s.especie !== "todo") p.set("especie", s.especie);
+
+      if(s.agrupar !== "dia") p.set("agrupar", s.agrupar);
+
+      const newUrl = location.pathname + (p.toString() ? ("?" + p.toString()) : "");
+      history.replaceState(null, "", newUrl);
+    }
+
+    function applyURLToControls(){
+      const p = new URLSearchParams(location.search);
+
+      const temporal = p.get("temporal");
+      if(temporal && ["todo","mes","semana","rango"].includes(temporal)) fTemporal.value = temporal;
+
+      setTemporalUI();
+
+      const agr = p.get("agrupar");
+      if(agr && ["dia","semana","mes"].includes(agr)) fAgrupar.value = agr;
+
+      const mes = p.get("mes");
+      if(mes) fMes.value = mes;
+
+      const semana = p.get("semana");
+      if(semana) fSemana.value = semana;
+
+      const desde = p.get("desde");
+      const hasta = p.get("hasta");
+      if(desde) fDesde.value = desde;
+      if(hasta) fHasta.value = hasta;
+
+      const setIfExists = (sel, val) => {
+        if(!val) return;
+        const opt = Array.from(sel.options).some(o=>o.value === val);
+        if(opt) sel.value = val;
+      };
+
+      setIfExists(fTecnico, p.get("tecnico"));
+      setIfExists(fMuni, p.get("muni"));
+      setIfExists(fDepto, p.get("depto"));
+      setIfExists(fProyecto, p.get("proyecto"));
+      setIfExists(fEspecie, p.get("especie"));
+    }
+
+    // ===== Searchable selects (filtra opciones) =====
+    const fullOptions = new Map(); // selectId -> {placeholder, values[]}
+
+    function cacheOptions(select, placeholder){
+      if(!select) return;
+      const values = Array.from(select.options)
+        .map(o=>o.value)
+        .filter(v=>v && v !== "todo");
+      fullOptions.set(select.id, { placeholder, values });
+    }
+
+    function filterSelect(select, q){
+      if(!select) return;
+      const info = fullOptions.get(select.id);
+      if(!info) return;
+
+      const cur = select.value;
+      const qq = normalizar(q);
+
+      const filtered = info.values.filter(v=>{
+        if(!qq) return true;
+        return normalizar(v).includes(qq);
+      });
+
+      llenarSelect(select, filtered, info.placeholder);
+
+      const still = Array.from(select.options).some(o=>o.value === cur);
+      if(still) select.value = cur;
+    }
+
+    // ===== Export helpers =====
+    function downloadDataUrl(dataUrl, filename){
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function exportChartPNG(chart, name){
+      if(!chart) return;
+      const url = chart.toBase64Image("image/png", 1);
+      downloadDataUrl(url, name);
+    }
+
+    function resumenFiltrosTexto(){
+      const parts = [];
+      const t = fTemporal.value;
+      if(t === "todo") parts.push("Temporal: Todo");
+      if(t === "mes") parts.push("Temporal: Mes " + (fMes.value || "—"));
+      if(t === "semana") parts.push("Temporal: Semana " + (fSemana.value || "—"));
+      if(t === "rango") parts.push("Temporal: " + (fDesde.value||"—") + " a " + (fHasta.value||"—"));
+
+      if(fTecnico.value !== "todo") parts.push("Técnico: " + fTecnico.value);
+      if(fMuni.value !== "todo") parts.push("Municipio: " + fMuni.value);
+      if(fDepto.value !== "todo") parts.push("Departamento: " + fDepto.value);
+      if(fProyecto.value !== "todo") parts.push("Proyecto: " + fProyecto.value);
+      if(fEspecie.value !== "todo") parts.push("Especie: " + fEspecie.value);
+
+      parts.push("Agrupar: " + fAgrupar.value);
+      return parts.join(" · ");
+    }
+
+    function topList(rows, key, n){
+      const m = countBy(rows, r=>r[key] || "(Sin dato)");
+      return topN(m, n);
+    }
+
+    async function generarReportePDF(){
+      if(typeof html2pdf === "undefined"){
+        showToast("No se cargó html2pdf.");
+        return;
+      }
+      const rows = aplicarFiltros();
+
+      const imgTiempo = chartTiempo ? chartTiempo.toBase64Image("image/png", 1) : "";
+      const imgMuni = chartMuni ? chartMuni.toBase64Image("image/png", 1) : "";
+      const imgTec = chartTecnico ? chartTecnico.toBase64Image("image/png", 1) : "";
+
+      const total = rows.length;
+      const areaSum = rows.map(r=>r.__area).filter(v=>v!=null && isFinite(v)).reduce((a,b)=>a+b, 0);
+
+      const topMun = topList(rows, "__muni", 10);
+      const topTec = topList(rows, "__tecnico", 10);
+
+      const now = new Date();
+      const stamp = now.toLocaleString("es");
+
+      const wrap = document.createElement("div");
+      wrap.style.padding = "14px";
+      wrap.style.background = "#ffffff";
+      wrap.style.color = "#0f172a";
+      wrap.style.fontFamily = "system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif";
+
+      wrap.innerHTML = `
+        <style>
+          .r-head{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+          .r-logos{display:flex; gap:8px; align-items:center;}
+          .r-logos img{height:34px; background:#fff; border-radius:999px; padding:3px 6px; border:1px solid #e5e7eb;}
+          h1{font-size:16pt; margin:10px 0 2px;}
+          .muted{color:#6b7280; font-size:10pt; margin:0;}
+          .chip{display:inline-block; padding:4px 10px; border-radius:999px; background:#e0f2fe; border:1px solid #bae6fd; font-size:9pt; font-weight:700; margin-top:8px;}
+          .box{border:1px solid #e5e7eb; border-radius:12px; padding:10px; margin-top:10px;}
+          .kgrid{display:grid; grid-template-columns: repeat(2, 1fr); gap:10px; margin-top:10px;}
+          .k{border:1px solid #e5e7eb; border-radius:12px; padding:10px;}
+          .k .t{font-size:9pt; color:#6b7280; font-weight:800;}
+          .k .v{font-size:14pt; font-weight:900; margin-top:4px;}
+          .pagebreak{page-break-after:always;}
+          .img{width:100%; border:1px solid #e5e7eb; border-radius:12px; margin-top:8px;}
+          table{width:100%; border-collapse:collapse; margin-top:8px;}
+          th,td{border:1px solid #e5e7eb; padding:6px 8px; font-size:10pt; text-align:left;}
+          th{background:#f8fafc;}
+        </style>
+
+        <div class="r-head">
+          <div class="r-logos">
+            <img src="conap_logo.jpg" alt="CONAP">
+            <img src="aala_logo.png" alt="AALA">
+          </div>
+          <p class="muted">Generado: ${stamp}</p>
+        </div>
+
+        <h1>Reporte resumen · AC 282 · Asistencia técnica / monitoreo a reforestaciones</h1>
+        <p class="muted">Fuente: base4_datos.csv (GitHub Pages)</p>
+        <div class="chip">${resumenFiltrosTexto()}</div>
+
+        <div class="kgrid">
+          <div class="k"><div class="t">Registros (filtrados)</div><div class="v">${total.toLocaleString("es")}</div></div>
+          <div class="k"><div class="t">Área / superficie (suma)</div><div class="v">${areaSum ? (Math.round(areaSum*10)/10).toLocaleString("es") : "—"}</div></div>
+          <div class="k"><div class="t">Municipios únicos</div><div class="v">${new Set(rows.map(r=>r.__muni).filter(Boolean)).size.toLocaleString("es")}</div></div>
+          <div class="k"><div class="t">Técnicos únicos</div><div class="v">${new Set(rows.map(r=>r.__tecnico).filter(Boolean)).size.toLocaleString("es")}</div></div>
+        </div>
+
+        <div class="pagebreak"></div>
+
+        <h2 style="margin:0 0 6px;">Gráficas</h2>
+        ${imgTiempo ? `<img class="img" src="${imgTiempo}" alt="Tiempo">` : `<p class="muted">Sin gráfica de tiempo.</p>`}
+        ${imgMuni ? `<img class="img" src="${imgMuni}" alt="Municipios">` : ``}
+        ${imgTec ? `<img class="img" src="${imgTec}" alt="Técnicos">` : ``}
+
+        <div class="pagebreak"></div>
+
+        <h2 style="margin:0 0 6px;">Top (filtrado)</h2>
+
+        <div class="box">
+          <h3 style="margin:0 0 6px; font-size:12pt;">Top municipios</h3>
+          <table>
+            <thead><tr><th>Municipio</th><th>Registros</th></tr></thead>
+            <tbody>
+              ${topMun.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="box">
+          <h3 style="margin:0 0 6px; font-size:12pt;">Top técnicos</h3>
+          <table>
+            <thead><tr><th>Técnico</th><th>Registros</th></tr></thead>
+            <tbody>
+              ${topTec.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+
+        <p class="muted" style="margin-top:10px;">
+          Nota: la tabla pivote completa y los registros filtrados se exportan desde el tablero (CSV/Excel).
+        </p>
+      `;
+
+      document.body.appendChild(wrap);
+
+      const opt = {
+        margin:       10,
+        filename:     "reporte_resumen_ac282.pdf",
+        image:        { type: "png", quality: 1.0 },
+        html2canvas:  { scale: 2.5, useCORS: true, backgroundColor: "#ffffff" },
+        jsPDF:        { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak:    { mode: ["css", "legacy"] }
+      };
+
+      try{
+        await html2pdf().set(opt).from(wrap).save();
+        showToast("PDF generado");
+      }catch(e){
+        console.error(e);
+        showToast("Error generando PDF");
+      }finally{
+        document.body.removeChild(wrap);
+      }
+    }
+
+    // ===== Refresh =====
+    function refrescar(updateURL){
+      const rows = aplicarFiltros();
+      actualizarKPIs(rows);
+      actualizarCharts(rows);
+      actualizarTablas(rows);
+      if(updateURL) setURLFromState();
+    }
+
+    function limpiarFiltros(){
+      fTemporal.value = "todo";
+      fMes.value = "todo";
+      fSemana.value = "todo";
+      fDesde.value = "";
+      fHasta.value = "";
+
+      fTecnico.value = "todo";
+      fMuni.value = "todo";
+      fDepto.value = "todo";
+      fProyecto.value = "todo";
+      fEspecie.value = "todo";
+
+      fAgrupar.value = "dia";
+
+      // limpia buscadores
+      sTecnico.value = ""; sMuni.value = ""; sDepto.value = ""; sProyecto.value = ""; sEspecie.value = "";
+
+      setTemporalUI();
+
+      // restaurar selects completos
+      filterSelect(fTecnico, "");
+      filterSelect(fMuni, "");
+      filterSelect(fDepto, "");
+      filterSelect(fProyecto, "");
+      filterSelect(fEspecie, "");
+
+      refrescar(true);
+    }
+
+    function copyLink(){
+      navigator.clipboard.writeText(location.href).then(()=>{
+        showToast("Enlace copiado");
+      }).catch(()=>{
+        showToast("No se pudo copiar");
+      });
+    }
+
+    function wire(){
+      setTemporalUI();
+
+      const watchers = [fTemporal,fMes,fSemana,fDesde,fHasta,fTecnico,fMuni,fDepto,fProyecto,fEspecie,fAgrupar];
+      watchers.forEach(el=>{
+        el.addEventListener("change", ()=>{
+          if(el === fTemporal) setTemporalUI();
+          refrescar(true);
+        });
+      });
+
+      $("btn-reset").addEventListener("click", limpiarFiltros);
+      $("btn-copy").addEventListener("click", copyLink);
+      $("btn-pdf").addEventListener("click", generarReportePDF);
+
+      $("btn-dl-csv").addEventListener("click", ()=>{
+        if(tRegistros) tRegistros.download("csv", "ac282_filtrado.csv", {delimiter: DELIM});
+      });
+      $("btn-dl-xlsx").addEventListener("click", ()=>{
+        if(tRegistros) tRegistros.download("xlsx", "ac282_filtrado.xlsx", {sheetName:"Filtrado"});
+      });
+      $("btn-dl-json").addEventListener("click", ()=>{
+        if(tRegistros) tRegistros.download("json", "ac282_filtrado.json");
+      });
+
+      $("piv-csv").addEventListener("click", ()=>{
+        if(tPivote) tPivote.download("csv", "ac282_pivote.csv", {delimiter: DELIM});
+      });
+      $("piv-xlsx").addEventListener("click", ()=>{
+        if(tPivote) tPivote.download("xlsx", "ac282_pivote.xlsx", {sheetName:"Pivote"});
+      });
+
+      $("png-tiempo").addEventListener("click", ()=>exportChartPNG(chartTiempo, "ac282_tiempo.png"));
+      $("png-muni").addEventListener("click", ()=>exportChartPNG(chartMuni, "ac282_top_municipios.png"));
+      $("png-tecnico").addEventListener("click", ()=>exportChartPNG(chartTecnico, "ac282_top_tecnicos.png"));
+
+      // buscadores: filtran opciones de selects
+      sTecnico.addEventListener("input", ()=>filterSelect(fTecnico, sTecnico.value));
+      sMuni.addEventListener("input", ()=>filterSelect(fMuni, sMuni.value));
+      sDepto.addEventListener("input", ()=>filterSelect(fDepto, sDepto.value));
+      sProyecto.addEventListener("input", ()=>filterSelect(fProyecto, sProyecto.value));
+      sEspecie.addEventListener("input", ()=>filterSelect(fEspecie, sEspecie.value));
+    }
+
+    function prepararFiltros(){
+      // Nota: si una columna no existe, ocultamos su filtro
+      if(!F.tecnico){
+        wrapTecnico.style.display = "none";
+        fTecnico.innerHTML = '<option value="todo">Todos</option>';
+      }
+      if(!F.municipio){
+        wrapMuni.style.display = "none";
+        fMuni.innerHTML = '<option value="todo">Todos</option>';
+      }
+      if(!F.depto){
+        wrapDepto.style.display = "none";
+        fDepto.innerHTML = '<option value="todo">Todos</option>';
+      }
+      if(!F.proyecto){
+        wrapProyecto.style.display = "none";
+        fProyecto.innerHTML = '<option value="todo">Todos</option>';
+      }
+      if(!F.especie){
+        wrapEspecie.style.display = "none";
+        fEspecie.innerHTML = '<option value="todo">Todos</option>';
+      }
+
+      // Fechas: si no hay campo de fecha, dejamos temporal fijo en "Todo"
+      if(!F.fecha){
+        estado.textContent = "⚠️ No se detectó una columna de FECHA en el CSV. El filtro temporal quedará desactivado.";
+        fTemporal.value = "todo";
+        fTemporal.disabled = true;
+        wrapMes.style.display = "none";
+        wrapSemana.style.display = "none";
+        wrapDesde.style.display = "none";
+        wrapHasta.style.display = "none";
+      }
+    }
+
+    // ===== Init =====
+    document.addEventListener("DOMContentLoaded", ()=>{
+      if (typeof Papa === "undefined" || typeof Tabulator === "undefined"){
+        alert("No se cargaron librerías locales (papaparse/tabulator). Verifica que estén en el repo.");
+        return;
+      }
+
+      fetch(CSV_URL, { cache: "no-store" })
+        .then(r=>{
+          if(!r.ok) throw new Error("HTTP " + r.status + " " + r.statusText);
+          return r.text();
+        })
+        .then(csvText=>{
+          const parsed = Papa.parse(csvText, { header:true, skipEmptyLines:true, delimiter: DELIM });
+          const data = parsed.data || [];
+          if(!data.length){
+            estado.textContent = "⚠️ El CSV no tiene datos (o el delimitador no coincide).";
+            return;
+          }
+
+          HEADERS = Object.keys(data[0] || {}).filter(Boolean);
+          mapFieldsFromHeaders();
+
+          // Enriquecer filas
+          DATA = data.map(r=>enrichRow(r));
+
+          // UI de estado
+          const fechaTxt = F.fecha ? ("Fecha detectada: “" + F.fecha + "”") : "Fecha: (no detectada)";
+          estado.textContent = "✅ Datos cargados: " + DATA.length.toLocaleString("es") + " registro(s). " + fechaTxt;
+
+          // Preparar filtros (ocultar si falta)
+          prepararFiltros();
+
+          // llenar selects
+          if(F.fecha){
+            const meses = uniqueSorted(DATA.map(r=>r.__ym).filter(Boolean));
+            const semanas = uniqueSorted(DATA.map(r=>r.__yw).filter(Boolean));
+            llenarSelect(fMes, meses, "Todos los meses");
+            llenarSelect(fSemana, semanas, "Todas las semanas");
+          } else {
+            llenarSelect(fMes, [], "Todos los meses");
+            llenarSelect(fSemana, [], "Todas las semanas");
+          }
+
+          if(F.tecnico){
+            const tecnicos = uniqueSorted(DATA.map(r=>r.__tecnico));
+            llenarSelect(fTecnico, tecnicos, "Todos los técnicos");
+            cacheOptions(fTecnico, "Todos los técnicos");
+          }
+          if(F.municipio){
+            const munis = uniqueSorted(DATA.map(r=>r.__muni));
+            llenarSelect(fMuni, munis, "Todos los municipios");
+            cacheOptions(fMuni, "Todos los municipios");
+          }
+          if(F.depto){
+            const deps = uniqueSorted(DATA.map(r=>r.__depto));
+            llenarSelect(fDepto, deps, "Todos los departamentos");
+            cacheOptions(fDepto, "Todos los departamentos");
+          }
+          if(F.proyecto){
+            const proys = uniqueSorted(DATA.map(r=>r.__proyecto));
+            llenarSelect(fProyecto, proys, "Todos los proyectos");
+            cacheOptions(fProyecto, "Todos los proyectos");
+          }
+          if(F.especie){
+            const esp = uniqueSorted(DATA.map(r=>r.__especie));
+            llenarSelect(fEspecie, esp, "Todas las especies");
+            cacheOptions(fEspecie, "Todas las especies");
+          }
+
+          // apply url state (después de tener options)
+          applyURLToControls();
+
+          // wire events
+          wire();
+
+          // first render
+          refrescar(false);
+          setURLFromState();
+
+          showToast("Tablero listo");
+        })
+        .catch(err=>{
+          console.error(err);
+          estado.textContent = "❌ Error cargando CSV: " + err;
+        });
+    });
+  </script>
+</body>
+</html>
