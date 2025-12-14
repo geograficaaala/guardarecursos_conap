@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AC297 Consumo forestal familiar - Tablero dinámico</title>
+
+  <!-- Tabulator CSS (LOCAL) -->
+  <link rel="stylesheet" href="tabulator.min.css">
+
+  <style>
+    :root{
+      --verde1:#0f766e;
+      --verde2:#0e7490;
+      --azul:#1d9bf0;
+      --azul2:#0f80cc;
+      --texto:#0f172a;
+      --muted:#6b7280;
+      --borde:#e5e7eb;
+      --bg:#f5f7fa;
+      --card:14px;
+    }
+
+    *{ box-sizing:border-box; }
+    html{ scroll-behavior:smooth; }
+
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      color:var(--texto);
+      background:
+        radial-gradient(circle at top left, #dbeafe 0, transparent 55%),
+        radial-gradient(circle at bottom right, #bbf7d0 0, transparent 55%),
+        linear-gradient(180deg, #e5f3f0 0%, var(--bg) 35%, #eef2ff 100%);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      opacity:0;
+      animation:fadeIn .35s ease-out forwards;
+    }
+    @keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+    @media (prefers-reduced-motion: reduce){
+      html{ scroll-behavior:auto; }
+      body{ animation:none; opacity:1; }
+      .btn, .card{ transition:none !important; }
+    }
+
+    /* Header institucional */
+    header{
+      background:linear-gradient(90deg,var(--verde1),var(--verde2));
+      color:#fff;
+      padding:14px 20px 18px;
+      box-shadow:0 2px 10px rgba(15,23,42,.25);
+      position:sticky;
+      top:0;
+      z-index:10;
+    }
+    .header-inner{
+      max-width:1100px;
+      margin:0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+    .logo-group{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      background-color:rgba(255,255,255,.12);
+      border-radius:999px;
+      padding:6px 10px;
+      border:1px solid rgba(255,255,255,.15);
+      backdrop-filter:blur(4px);
+    }
+    .logo-group img{
+      height:40px;
+      max-width:130px;
+      object-fit:contain;
+      background:#fff;
+      border-radius:999px;
+      padding:4px 8px;
+      box-shadow:0 2px 6px rgba(15,23,42,.25);
+    }
+    .title-group{
+      text-align:right;
+      flex:1 1 260px;
+    }
+    .title-group h1{
+      margin:0 0 2px 0;
+      font-size:22px;
+      letter-spacing:.02em;
+    }
+    .title-group p{
+      margin:0;
+      font-size:13px;
+      opacity:.96;
+      line-height:1.4;
+    }
+    .chip-version{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      margin-top:6px;
+      padding:3px 9px;
+      border-radius:999px;
+      border:1px solid rgba(248,250,252,.4);
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      background-color:rgba(15,23,42,.18);
+    }
+    .chip-dot{
+      width:7px;height:7px;border-radius:999px;
+      background:#bbf7d0;
+      box-shadow:0 0 0 4px rgba(34,197,94,.18);
+    }
+
+    main{
+      max-width:1100px;
+      width:100%;
+      margin:18px auto 0;
+      padding:0 20px 40px;
+      flex:1 0 auto;
+    }
+
+    /* Tabs */
+    .tabs{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+      margin:10px 0 16px;
+    }
+    .tab{
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 14px;
+      border-radius:999px;
+      border:1px solid #cbd5f5;
+      background:rgba(255,255,255,.9);
+      color:#0f172a;
+      font-weight:700;
+      font-size:13px;
+      box-shadow:0 1px 3px rgba(15,23,42,.12);
+    }
+    .tab:hover{ background:#e5edff; border-color:#93c5fd; }
+    .tab.active{
+      background:var(--azul);
+      border-color:var(--azul);
+      color:#fff;
+    }
+
+    .page-title{
+      margin:0 0 6px 0;
+      font-size:20px;
+    }
+    .page-sub{
+      margin:0 0 10px 0;
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.45;
+    }
+
+    .card{
+      background:#fff;
+      border-radius:var(--card);
+      border:1px solid var(--borde);
+      box-shadow:0 2px 10px rgba(15,23,42,.1);
+      padding:16px 16px 18px;
+      margin-bottom:16px;
+      position:relative;
+      overflow:hidden;
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      left:-40px; top:-40px;
+      width:120px; height:120px;
+      border-radius:999px;
+      background:radial-gradient(circle, rgba(59,130,246,.14), transparent 65%);
+      pointer-events:none;
+    }
+    .cardhead{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .cardhead h3{
+      margin:0 0 4px 0;
+      font-size:16px;
+    }
+    .subnote{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .mini-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .mini-btn{
+      border:1px solid #cbd5f5;
+      background:#fff;
+      color:#0f172a;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      cursor:pointer;
+      font-weight:700;
+    }
+    .mini-btn:hover{ background:#eef2ff; border-color:#93c5fd; }
+
+    /* Filtros */
+    .filters{
+      display:grid;
+      grid-template-columns:repeat(12,1fr);
+      gap:10px;
+      margin-top:8px;
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    }
+    .field label{
+      font-size:12px;
+      font-weight:800;
+      color:#0f172a;
+    }
+    select, input[type="date"], input[type="week"], input[type="text"]{
+      width:100%;
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid #cbd5f5;
+      font-size:13px;
+      outline:none;
+      background:#fff;
+    }
+    select:focus, input:focus{ border-color:#60a5fa; box-shadow:0 0 0 3px rgba(96,165,250,.18); }
+
+    .col-12{ grid-column:span 12; }
+    .col-6{ grid-column:span 6; }
+    .col-4{ grid-column:span 4; }
+    .col-3{ grid-column:span 3; }
+    .col-2{ grid-column:span 2; }
+
+    @media (max-width: 900px){
+      .col-6{ grid-column:span 12; }
+      .col-4{ grid-column:span 12; }
+      .col-3{ grid-column:span 6; }
+      .col-2{ grid-column:span 6; }
+    }
+    @media (max-width: 520px){
+      .col-3,.col-2{ grid-column:span 12; }
+      .title-group{ text-align:center; }
+      .header-inner{ justify-content:center; }
+    }
+
+    .row-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      justify-content:flex-end;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      padding:8px 14px;
+      border-radius:999px;
+      border:1px solid transparent;
+      cursor:pointer;
+      font-weight:800;
+      font-size:13px;
+      transition:background-color .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      text-decoration:none;
+    }
+    .btn-primary{ background:var(--azul); color:#fff; box-shadow:0 1px 3px rgba(15,23,42,.2); }
+    .btn-primary:hover{ background:var(--azul2); transform:translateY(-1px); box-shadow:0 4px 10px rgba(15,23,42,.28); }
+    .btn-ghost{ background:rgba(255,255,255,.95); color:#0f172a; border-color:#cbd5f5; }
+    .btn-ghost:hover{ background:#e5edff; border-color:#93c5fd; transform:translateY(-1px); box-shadow:0 2px 8px rgba(15,23,42,.15); }
+    .btn-danger{ background:#ef4444; color:#fff; }
+    .btn-danger:hover{ filter:brightness(.95); transform:translateY(-1px); }
+
+    /* KPIs */
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(12,1fr);
+      gap:10px;
+    }
+    .kpi{
+      grid-column:span 2;
+      background:#ffffff;
+      border:1px solid var(--borde);
+      border-radius:14px;
+      padding:12px 12px 10px;
+      box-shadow:0 1px 4px rgba(15,23,42,.1);
+    }
+    .kpi .k{ font-size:22px; font-weight:900; margin:0; }
+    .kpi .l{ font-size:12px; color:var(--muted); margin:4px 0 0 0; font-weight:700; }
+    .kpi .s{ font-size:11px; color:var(--muted); margin:2px 0 0 0; }
+    @media (max-width: 900px){ .kpi{ grid-column:span 4; } }
+    @media (max-width: 520px){ .kpi{ grid-column:span 6; } }
+
+    /* Charts */
+    .chartwrap{
+      width:100%;
+      height:320px;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:10px;
+      background:#fff;
+    }
+    .chartwrap canvas{ width:100% !important; height:100% !important; }
+
+    .tablewrap{
+      width:100%;
+      overflow:auto;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:10px;
+      background:#fff;
+    }
+
+    .status{
+      font-size:13px;
+      color:var(--muted);
+      margin:0;
+    }
+
+    .toast{
+      position:fixed;
+      right:16px;
+      bottom:16px;
+      background:rgba(15,23,42,.92);
+      color:#fff;
+      padding:10px 12px;
+      border-radius:12px;
+      font-size:13px;
+      font-weight:800;
+      opacity:0;
+      transform:translateY(8px);
+      pointer-events:none;
+      transition:opacity .2s ease, transform .2s ease;
+      z-index:999;
+    }
+    .toast.show{ opacity:1; transform:translateY(0); }
+
+    footer{
+      text-align:center;
+      font-size:12px;
+      color:#6b7280;
+      padding:10px 20px 18px;
+      border-top:1px solid #e5e7eb;
+      background:rgba(248,250,252,.9);
+      margin-top:auto;
+    }
+    footer p{ margin:3px 0; }
+
+    /* Area PDF */
+    #pdf-area{
+      background:#fff;
+      padding:16px;
+      border-radius:12px;
+    }
+    .pdf-grid{
+      display:grid;
+      grid-template-columns:repeat(12,1fr);
+      gap:10px;
+      margin-top:10px;
+    }
+    .pdf-box{
+      grid-column:span 4;
+      border:1px solid #e5e7eb;
+      border-radius:12px;
+      padding:10px;
+    }
+    .pdf-box h4{ margin:0 0 6px 0; font-size:13px; }
+    .pdf-box p{ margin:0; font-size:12px; color:#334155; }
+    @media (max-width: 700px){ .pdf-box{ grid-column:span 12; } }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="logo-group">
+        <img src="conap_logo.jpg" alt="Logo CONAP">
+        <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
+      </div>
+      <div class="title-group">
+        <h1>Centro de consulta de datos</h1>
+        <p>Sistema de monitoreo de actividades</p>
+        <p>CONAP – Dirección Regional Altiplano Central</p>
+        <div class="chip-version">
+          <span class="chip-dot"></span>
+          <span>Módulo AC297 · Consumo familiar</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <a class="tab" href="base3_dashboard.html">🗺️ Dashboard</a>
+      <a class="tab active" href="base3_tablero.html">📈 Tablero</a>
+      <a class="tab" href="base3_datos.html">📊 Tabla</a>
+    </div>
+
+    <h2 class="page-title">AC297 · Tablero dinámico (CSV)</h2>
+    <p class="page-sub">
+      Este tablero se alimenta de <strong>base3_datos.csv</strong> y permite filtrar, graficar, generar pivotes y exportar lo filtrado.
+      <br><span class="status" id="estado">Listo para cargar datos…</span>
+    </p>
+
+    <!-- Filtros -->
+    <section class="card">
+      <div class="cardhead">
+        <div>
+          <h3 style="margin:0 0 4px;">Filtros</h3>
+          <p class="subnote">Tip: usa los buscadores para encontrar rápido valores en listas largas.</p>
+        </div>
+        <div class="mini-actions">
+          <button class="mini-btn" id="btn-copy" type="button">Copiar enlace</button>
+          <button class="mini-btn" id="btn-pdf" type="button">Reporte PDF</button>
+          <button class="mini-btn" id="btn-reset" type="button">Limpiar</button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="field col-3">
+          <label for="f-temporal">Temporal</label>
+          <select id="f-temporal">
+            <option value="mes">Mes</option>
+            <option value="semana">Semana</option>
+            <option value="rango">Rango</option>
+          </select>
+        </div>
+
+        <div class="field col-3" id="wrap-mes">
+          <label for="f-mes">Mes</label>
+          <select id="f-mes"></select>
+        </div>
+
+        <div class="field col-3" id="wrap-semana" style="display:none;">
+          <label for="f-semana">Semana</label>
+          <input type="week" id="f-semana" />
+        </div>
+
+        <div class="field col-3" id="wrap-desde" style="display:none;">
+          <label for="f-desde">Desde</label>
+          <input type="date" id="f-desde" />
+        </div>
+
+        <div class="field col-3" id="wrap-hasta" style="display:none;">
+          <label for="f-hasta">Hasta</label>
+          <input type="date" id="f-hasta" />
+        </div>
+
+        <div class="field col-3">
+          <label for="s-guarda">Buscar guarda</label>
+          <input type="text" id="s-guarda" placeholder="Escribe para filtrar opciones…" />
+        </div>
+        <div class="field col-3">
+          <label for="f-guarda">Guardarecursos</label>
+          <select id="f-guarda"></select>
+        </div>
+
+        <div class="field col-3">
+          <label for="s-muni">Buscar municipio</label>
+          <input type="text" id="s-muni" placeholder="Escribe para filtrar opciones…" />
+        </div>
+        <div class="field col-3">
+          <label for="f-muni">Municipio</label>
+          <select id="f-muni"></select>
+        </div>
+
+        <div class="field col-3">
+          <label for="s-region">Buscar región</label>
+          <input type="text" id="s-region" placeholder="Escribe para filtrar opciones…" />
+        </div>
+        <div class="field col-3">
+          <label for="f-region">Región</label>
+          <select id="f-region"></select>
+        </div>
+
+        <div class="field col-3">
+          <label for="s-area">Buscar área protegida</label>
+          <input type="text" id="s-area" placeholder="Escribe para filtrar opciones…" />
+        </div>
+        <div class="field col-3">
+          <label for="f-area">Área protegida</label>
+          <select id="f-area"></select>
+        </div>
+
+        <div class="field col-3">
+          <label for="f-inter">Intermunicipal</label>
+          <select id="f-inter">
+            <option value="todo">Todos</option>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+            <option value="sin">Sin dato</option>
+          </select>
+        </div>
+
+        <div class="field col-3">
+          <label for="f-agrupar">Agrupar en gráficas</label>
+          <select id="f-agrupar">
+            <option value="dia">Día</option>
+            <option value="semana">Semana</option>
+            <option value="mes" selected>Mes</option>
+          </select>
+        </div>
+
+        <div class="field col-3">
+          <label for="f-pivby">Pivote por</label>
+          <select id="f-pivby">
+            <option value="guarda" selected>Guardarecursos</option>
+            <option value="muni">Municipio</option>
+          </select>
+        </div>
+
+        <div class="field col-12">
+          <div class="row-actions">
+            <a class="btn btn-ghost" href="base3_dashboard.html">← Dashboard</a>
+            <a class="btn btn-ghost" href="base3_datos.html">📊 Tabla</a>
+            <button class="btn btn-primary" id="btn-aplicar" type="button">Aplicar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPIs -->
+    <section class="card">
+      <div class="cardhead">
+        <div>
+          <h3 style="margin:0 0 4px;">Indicadores (según filtros)</h3>
+          <p class="subnote">Resumen rápido del subconjunto filtrado.</p>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <p class="k" id="k-total">—</p>
+          <p class="l">Registros</p>
+          <p class="s" id="k-total-s">—</p>
+        </div>
+        <div class="kpi">
+          <p class="k" id="k-munis">—</p>
+          <p class="l">Municipios</p>
+          <p class="s">únicos</p>
+        </div>
+        <div class="kpi">
+          <p class="k" id="k-guardas">—</p>
+          <p class="l">Guardas</p>
+          <p class="s">únicos</p>
+        </div>
+        <div class="kpi">
+          <p class="k" id="k-arboles">—</p>
+          <p class="l">Árboles</p>
+          <p class="s">suma total</p>
+        </div>
+        <div class="kpi">
+          <p class="k" id="k-inter">—</p>
+          <p class="l">Intermunicipal</p>
+          <p class="s">% “sí”</p>
+        </div>
+        <div class="kpi">
+          <p class="k" id="k-coord">—</p>
+          <p class="l">Coordenadas</p>
+          <p class="s">% válidas</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="grid">
+      <div class="card col-12">
+        <div class="cardhead">
+          <div>
+            <h3 style="margin:0 0 6px;">Consumos en el tiempo</h3>
+            <p class="subnote">Serie según el agrupamiento seleccionado.</p>
+          </div>
+          <div class="mini-actions">
+            <button class="mini-btn" id="png-tiempo" type="button">PNG</button>
+          </div>
+        </div>
+        <div class="chartwrap"><canvas id="c-tiempo"></canvas></div>
+      </div>
+
+      <div class="card col-6">
+        <div class="cardhead">
+          <div>
+            <h3 style="margin:0 0 6px;">Top municipios</h3>
+            <p class="subnote">Top 10 por registros (filtro actual).</p>
+          </div>
+          <div class="mini-actions">
+            <button class="mini-btn" id="png-muni" type="button">PNG</button>
+          </div>
+        </div>
+        <div class="chartwrap"><canvas id="c-muni"></canvas></div>
+      </div>
+
+      <div class="card col-6">
+        <div class="cardhead">
+          <div>
+            <h3 style="margin:0 0 6px;">Top guardarecursos</h3>
+            <p class="subnote">Top 10 por registros (filtro actual).</p>
+          </div>
+          <div class="mini-actions">
+            <button class="mini-btn" id="png-guarda" type="button">PNG</button>
+          </div>
+        </div>
+        <div class="chartwrap"><canvas id="c-guarda"></canvas></div>
+      </div>
+    </section>
+
+    <!-- Pivote -->
+    <section class="card">
+      <div class="cardhead">
+        <div>
+          <h3 style="margin:0 0 6px;">Tabla pivote</h3>
+          <p class="subnote">Filas: Guarda o Municipio · Columnas: periodo (día/semana/mes) · Valores: conteo.</p>
+        </div>
+        <div class="mini-actions">
+          <button class="mini-btn" id="piv-csv" type="button">CSV</button>
+          <button class="mini-btn" id="piv-xlsx" type="button">Excel</button>
+        </div>
+      </div>
+      <div class="tablewrap">
+        <div id="tabla-pivote"></div>
+      </div>
+    </section>
+
+    <!-- Registros filtrados -->
+    <section class="card">
+      <div class="cardhead">
+        <div>
+          <h3 style="margin:0 0 6px;">Registros filtrados</h3>
+          <p class="subnote">Tabla completa filtrada (puedes exportar lo filtrado).</p>
+        </div>
+        <div class="mini-actions">
+          <button class="mini-btn" id="btn-dl-csv" type="button">CSV</button>
+          <button class="mini-btn" id="btn-dl-xlsx" type="button">Excel</button>
+          <button class="mini-btn" id="btn-dl-json" type="button">JSON</button>
+        </div>
+      </div>
+      <div class="tablewrap" style="margin-top:12px;">
+        <div id="tabla-registros"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
+  </footer>
+
+  <div class="toast" id="toast">Listo</div>
+
+  <!-- Librerías locales (repo) -->
+  <script src="papaparse.min.js"></script>
+  <script src="tabulator.min.js"></script>
+  <script src="xlsx.full.min.js"></script>
+
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- html2pdf (CDN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <script>
+    // ===== CSV config =====
+    // (Coincide con base3_datos.html: fetch("./base3_datos.csv") + delimiter ";")
+    const CSV_URL = "./base3_datos.csv";
+    const DELIM = ";";
+
+    // Campos (según nombres usados en base3_datos.html)
+    const F = {
+      fecha: "Fecha",
+      hora: "Hora",
+      muni: "Municipio",
+      region: "Region",
+      area: "Area protegida",
+      guarda1: "Nombre del guardarecursos",
+      guarda2: "Nombre del guardarecurso",
+      totalArboles: "Cantidad total de arboles a talar",
+      lon: "Longitud",
+      lat: "Latitud",
+      inter: "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"
+    };
+
+    let DATA = [];
+    let chartTiempo = null, chartMuni = null, chartGuarda = null;
+    let tPivote = null, tRegistros = null;
+
+    // ===== DOM helpers =====
+    const $ = (id) => document.getElementById(id);
+
+    const estado = $("estado");
+
+    const fTemporal = $("f-temporal");
+    const wrapMes = $("wrap-mes");
+    const wrapSemana = $("wrap-semana");
+    const wrapDesde = $("wrap-desde");
+    const wrapHasta = $("wrap-hasta");
+
+    const fMes = $("f-mes");
+    const fSemana = $("f-semana");
+    const fDesde = $("f-desde");
+    const fHasta = $("f-hasta");
+
+    const fGuarda = $("f-guarda");
+    const fMuni = $("f-muni");
+    const fRegion = $("f-region");
+    const fArea = $("f-area");
+    const fInter = $("f-inter");
+    const fAgrupar = $("f-agrupar");
+    const fPivBy = $("f-pivby");
+
+    const sGuarda = $("s-guarda");
+    const sMuni = $("s-muni");
+    const sRegion = $("s-region");
+    const sArea = $("s-area");
+
+    // KPIs
+    const kTotal = $("k-total");
+    const kTotalS = $("k-total-s");
+    const kMunis = $("k-munis");
+    const kGuardas = $("k-guardas");
+    const kArboles = $("k-arboles");
+    const kInter = $("k-inter");
+    const kCoord = $("k-coord");
+
+    // Toast
+    const toast = $("toast");
+    let toastTimer = null;
+
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add("show");
+      if(toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=>toast.classList.remove("show"), 1600);
+    }
+
+    // ===== Utils =====
+    const norm = (v) => String(v ?? "").trim();
+    const isNum = (v) => {
+      const n = parseFloat(String(v).replace(",", "."));
+      return !isNaN(n) && isFinite(n);
+    };
+    const num = (v) => {
+      const n = parseFloat(String(v ?? "").replace(",", "."));
+      return isNaN(n) ? 0 : n;
+    };
+    const pad2 = (n) => String(n).padStart(2,"0");
+
+    function uniqueSorted(arr){
+      return Array.from(new Set(arr)).filter(Boolean).sort((a,b)=>a.localeCompare(b,"es"));
+    }
+
+    // Fecha (misma lógica que base3_datos.html)
+    function extraerFechaCompleta(fechaRaw){
+      if(!fechaRaw) return null;
+      const str = String(fechaRaw).trim();
+      if(!str) return null;
+
+      const parteFecha = str.split(" ")[0];
+      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
+      if(!sep) return null;
+
+      const partes = parteFecha.split(sep);
+      if(partes.length < 3) return null;
+
+      const p1 = parseInt(partes[0], 10);
+      const p2 = parseInt(partes[1], 10);
+      const p3 = parseInt(partes[2], 10);
+      if([p1,p2,p3].some(isNaN)) return null;
+
+      const anio = p3;
+      let mes, dia;
+
+      // si p1 > 12 y p2 <=12 -> dd/mm/yyyy, sino -> mm/dd/yyyy
+      if (p1 > 12 && p2 >= 1 && p2 <= 12) {
+        dia = p1; mes = p2;
+      } else {
+        mes = p1; dia = p2;
+      }
+
+      if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+
+      const d = new Date(anio, mes - 1, dia);
+      if (isNaN(d.getTime())) return null;
+
+      return { anio, mes, dia, date: d };
+    }
+
+    // ISO week key (YYYY-Www)
+    function isoWeekKey(d){
+      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const dayNum = date.getUTCDay() || 7;
+      date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+      const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+      return date.getUTCFullYear() + "-W" + String(weekNo).padStart(2,"0");
+    }
+
+    function pct(part, total){
+      if(!total) return 0;
+      return Math.round((part * 1000) / total) / 10;
+    }
+
+    function valorGuarda(r){
+      const g = norm(r[F.guarda1]) || norm(r[F.guarda2]);
+      return g || "(Sin guarda)";
+    }
+
+    function valorMuni(r){
+      return norm(r[F.muni]) || "(Sin municipio)";
+    }
+
+    function valorRegion(r){
+      return norm(r[F.region]) || "(Sin región)";
+    }
+
+    function valorArea(r){
+      return norm(r[F.area]) || "(Sin área)";
+    }
+
+    function valorInter(r){
+      const raw = norm(r[F.inter]).toLowerCase();
+      if(!raw) return "sin";
+      if(raw === "si" || raw === "sí") return "si";
+      if(raw === "no") return "no";
+      // si viene algo raro, lo dejamos como "no" o "sin"? Mejor "sin" para que se note
+      return "sin";
+    }
+
+    function coordOk(r){
+      const lon = num(r[F.lon]);
+      const lat = num(r[F.lat]);
+      return !!(lon && lat && isFinite(lon) && isFinite(lat));
+    }
+
+    function buildPeriodoKey(r, agrupar){
+      if(agrupar === "dia") return r.__yd || "";
+      if(agrupar === "semana") return r.__yw || "";
+      return r.__ym || ""; // mes
+    }
+
+    function llenarSelect(sel, values, labelAll){
+      sel.innerHTML = "";
+      sel.appendChild(new Option(labelAll, "todo"));
+      values.forEach(v => sel.appendChild(new Option(v, v)));
+    }
+
+    // buscadores: guarda copia original de opciones
+    const selectCache = new Map(); // selectId -> [{value,text}]
+    function cacheOptions(sel, labelAll){
+      const opts = Array.from(sel.options).map(o => ({value:o.value, text:o.textContent}));
+      selectCache.set(sel.id, {labelAll, opts});
+    }
+    function filterSelect(sel, query){
+      const data = selectCache.get(sel.id);
+      if(!data) return;
+
+      const q = (query || "").toLowerCase().trim();
+      const current = sel.value;
+
+      sel.innerHTML = "";
+      // siempre el "todo"
+      sel.appendChild(new Option(data.labelAll, "todo"));
+
+      data.opts.forEach(o=>{
+        if(o.value === "todo") return;
+        if(!q || o.text.toLowerCase().includes(q)){
+          sel.appendChild(new Option(o.text, o.value));
+        }
+      });
+
+      // reintentar conservar selección si existe
+      const exists = Array.from(sel.options).some(o => o.value === current);
+      sel.value = exists ? current : "todo";
+    }
+
+    // ===== URL state =====
+    function setURLFromState(){
+      const p = new URLSearchParams();
+
+      p.set("temporal", fTemporal.value);
+      p.set("mes", fMes.value);
+      p.set("semana", fSemana.value || "");
+      p.set("desde", fDesde.value || "");
+      p.set("hasta", fHasta.value || "");
+
+      p.set("guarda", fGuarda.value);
+      p.set("muni", fMuni.value);
+      p.set("region", fRegion.value);
+      p.set("area", fArea.value);
+      p.set("inter", fInter.value);
+
+      p.set("agrupar", fAgrupar.value);
+      p.set("pivby", fPivBy.value);
+
+      history.replaceState(null, "", location.pathname + "?" + p.toString());
+    }
+
+    function applyURLToState(){
+      const p = new URLSearchParams(location.search);
+
+      const temporal = p.get("temporal");
+      if(temporal) fTemporal.value = temporal;
+
+      const mes = p.get("mes");
+      const semana = p.get("semana");
+      const desde = p.get("desde");
+      const hasta = p.get("hasta");
+
+      if(mes) fMes.value = mes;
+      if(semana) fSemana.value = semana;
+      if(desde) fDesde.value = desde;
+      if(hasta) fHasta.value = hasta;
+
+      const guarda = p.get("guarda");
+      const muni = p.get("muni");
+      const region = p.get("region");
+      const area = p.get("area");
+      const inter = p.get("inter");
+      if(guarda) fGuarda.value = guarda;
+      if(muni) fMuni.value = muni;
+      if(region) fRegion.value = region;
+      if(area) fArea.value = area;
+      if(inter) fInter.value = inter;
+
+      const agrupar = p.get("agrupar");
+      const pivby = p.get("pivby");
+      if(agrupar) fAgrupar.value = agrupar;
+      if(pivby) fPivBy.value = pivby;
+    }
+
+    // ===== Filtrado principal =====
+    function currentFiltered(){
+      const temporal = fTemporal.value;
+      const mesSel = fMes.value;
+      const semanaSel = fSemana.value;
+      const desde = fDesde.value ? new Date(fDesde.value + "T00:00:00") : null;
+      const hasta = fHasta.value ? new Date(fHasta.value + "T23:59:59") : null;
+
+      const guardaSel = fGuarda.value;
+      const muniSel = fMuni.value;
+      const regionSel = fRegion.value;
+      const areaSel = fArea.value;
+      const interSel = fInter.value;
+
+      return DATA.filter(r=>{
+        // temporal
+        if(temporal === "mes"){
+          if(mesSel !== "todo" && r.__ym !== mesSel) return false;
+        }else if(temporal === "semana"){
+          if(semanaSel){
+            const wk = semanaSel.includes("-W") ? semanaSel : semanaSel.replace("W","-W");
+            if(r.__yw !== wk) return false;
+          }
+        }else if(temporal === "rango"){
+          if(desde && r.__date && r.__date < desde) return false;
+          if(hasta && r.__date && r.__date > hasta) return false;
+          // si no hay fecha parseable, fuera cuando se usa rango
+          if((desde || hasta) && !r.__date) return false;
+        }
+
+        // selects
+        if(guardaSel !== "todo" && r.__guarda !== guardaSel) return false;
+        if(muniSel !== "todo" && r.__muni !== muniSel) return false;
+        if(regionSel !== "todo" && r.__region !== regionSel) return false;
+        if(areaSel !== "todo" && r.__area !== areaSel) return false;
+
+        if(interSel !== "todo"){
+          if(interSel === "si" && r.__inter !== "si") return false;
+          if(interSel === "no" && r.__inter !== "no") return false;
+          if(interSel === "sin" && r.__inter !== "sin") return false;
+        }
+
+        return true;
+      });
+    }
+
+    function updateTemporalUI(){
+      const t = fTemporal.value;
+      wrapMes.style.display = (t === "mes") ? "" : "none";
+      wrapSemana.style.display = (t === "semana") ? "" : "none";
+      wrapDesde.style.display = (t === "rango") ? "" : "none";
+      wrapHasta.style.display = (t === "rango") ? "" : "none";
+    }
+
+    // ===== Charts =====
+    function destroyChart(c){
+      if(c){ try{ c.destroy(); }catch(e){} }
+      return null;
+    }
+
+    function exportChartPNG(chart, filename){
+      if(!chart) return;
+      const a = document.createElement("a");
+      a.href = chart.toBase64Image();
+      a.download = filename;
+      a.click();
+    }
+
+    function makeSeries(rows, agrupar){
+      const map = new Map();
+      rows.forEach(r=>{
+        const key = buildPeriodoKey(r, agrupar);
+        if(!key) return;
+        map.set(key, (map.get(key) || 0) + 1);
+      });
+      const labels = Array.from(map.keys()).sort((a,b)=>a.localeCompare(b));
+      const values = labels.map(l=>map.get(l));
+      return { labels, values };
+    }
+
+    function topCounts(rows, fieldKey, topN=10){
+      const map = new Map();
+      rows.forEach(r=>{
+        const k = r[fieldKey] || "";
+        map.set(k, (map.get(k) || 0) + 1);
+      });
+      const sorted = Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0, topN);
+      return { labels: sorted.map(x=>x[0]), values: sorted.map(x=>x[1]) };
+    }
+
+    function renderCharts(rows){
+      if(typeof Chart === "undefined"){
+        estado.textContent = "No se cargó Chart.js (CDN).";
+        return;
+      }
+
+      Chart.defaults.devicePixelRatio = 2;
+
+      const agrupar = fAgrupar.value;
+
+      // tiempo
+      const s = makeSeries(rows, agrupar);
+      chartTiempo = destroyChart(chartTiempo);
+      chartTiempo = new Chart($("c-tiempo"), {
+        type:"line",
+        data:{
+          labels:s.labels,
+          datasets:[{ label:"Registros", data:s.values, tension:0.2 }]
+        },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{ legend:{ display:false } },
+          scales:{
+            x:{ ticks:{ maxRotation:0, autoSkip:true } },
+            y:{ beginAtZero:true }
+          }
+        }
+      });
+
+      // muni
+      const tm = topCounts(rows, "__muni", 10);
+      chartMuni = destroyChart(chartMuni);
+      chartMuni = new Chart($("c-muni"), {
+        type:"bar",
+        data:{ labels:tm.labels, datasets:[{ label:"Registros", data:tm.values }] },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{ legend:{ display:false } },
+          scales:{ y:{ beginAtZero:true } }
+        }
+      });
+
+      // guarda
+      const tg = topCounts(rows, "__guarda", 10);
+      chartGuarda = destroyChart(chartGuarda);
+      chartGuarda = new Chart($("c-guarda"), {
+        type:"bar",
+        data:{ labels:tg.labels, datasets:[{ label:"Registros", data:tg.values }] },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          plugins:{ legend:{ display:false } },
+          scales:{ y:{ beginAtZero:true } }
+        }
+      });
+    }
+
+    // ===== KPIs =====
+    function renderKPIs(rows){
+      const total = rows.length;
+      const totalAll = DATA.length;
+
+      const munis = new Set(rows.map(r=>r.__muni)).size;
+      const guardas = new Set(rows.map(r=>r.__guarda)).size;
+
+      const sumArboles = rows.reduce((acc,r)=>acc + (r.__arboles || 0), 0);
+
+      const interSi = rows.filter(r=>r.__inter === "si").length;
+      const interValid = rows.filter(r=>r.__inter !== "sin").length;
+      const pctInter = interValid ? pct(interSi, interValid) : 0;
+
+      const coordOkN = rows.filter(r=>r.__coordOk).length;
+      const pctCoord = total ? pct(coordOkN, total) : 0;
+
+      kTotal.textContent = total.toLocaleString("es");
+      kTotalS.textContent = "de " + totalAll.toLocaleString("es") + " totales";
+      kMunis.textContent = munis.toLocaleString("es");
+      kGuardas.textContent = guardas.toLocaleString("es");
+      kArboles.textContent = Math.round(sumArboles).toLocaleString("es");
+      kInter.textContent = pctInter.toLocaleString("es") + "%";
+      kCoord.textContent = pctCoord.toLocaleString("es") + "%";
+    }
+
+    // ===== Pivote =====
+    function buildPivot(rows){
+      const agrupar = fAgrupar.value;
+      const pivby = fPivBy.value; // guarda | muni
+
+      const rowKey = (pivby === "muni") ? "__muni" : "__guarda";
+
+      // periodos
+      const periodos = uniqueSorted(rows.map(r=>buildPeriodoKey(r, agrupar)).filter(Boolean));
+
+      // filas
+      const filas = uniqueSorted(rows.map(r=>r[rowKey] || "(Sin)").filter(Boolean));
+
+      // matriz
+      const mapa = new Map(); // fila -> Map(periodo->count)
+      filas.forEach(f=>mapa.set(f, new Map()));
+
+      rows.forEach(r=>{
+        const f = r[rowKey] || "(Sin)";
+        const p = buildPeriodoKey(r, agrupar);
+        if(!p) return;
+        const m = mapa.get(f) || new Map();
+        m.set(p, (m.get(p) || 0) + 1);
+        mapa.set(f, m);
+      });
+
+      const data = filas.map(f=>{
+        const obj = { Fila: f, Total: 0 };
+        periodos.forEach(p=>{
+          const c = (mapa.get(f)?.get(p)) || 0;
+          obj[p] = c;
+          obj.Total += c;
+        });
+        return obj;
+      });
+
+      // columnas Tabulator
+      const cols = [
+        { title: (pivby === "muni" ? "Municipio" : "Guardarecursos"), field:"Fila", frozen:true, headerFilter:"input", width:260 },
+        { title:"Total", field:"Total", hozAlign:"right", width:90 }
+      ].concat(periodos.map(p=>({
+        title:p, field:p, hozAlign:"right", width:95
+      })));
+
+      if(tPivote){ try{ tPivote.destroy(); }catch(e){} }
+      tPivote = new Tabulator("#tabla-pivote", {
+        data,
+        columns: cols,
+        layout:"fitDataStretch",
+        height:"420px",
+        movableColumns:true
+      });
+    }
+
+    // ===== Tabla principal =====
+    function buildRegistros(rows){
+      // columnas desde el primer registro original (todas)
+      const keys = rows.length ? Object.keys(rows[0]).filter(k=>!k.startsWith("__")) : (DATA[0] ? Object.keys(DATA[0]).filter(k=>!k.startsWith("__")) : []);
+      const cols = keys.map(k=>({ title:k, field:k, headerFilter:"input" }));
+
+      if(tRegistros){ try{ tRegistros.destroy(); }catch(e){} }
+
+      tRegistros = new Tabulator("#tabla-registros", {
+        data: rows.map(r=>{
+          // ocultamos metadata, pero dejamos data original intacta
+          const o = {};
+          Object.keys(r).forEach(k=>{
+            if(!k.startsWith("__")) o[k] = r[k];
+          });
+          return o;
+        }),
+        columns: cols,
+        layout:"fitDataStretch",
+        height:"520px",
+        pagination:"local",
+        paginationSize:20,
+        paginationSizeSelector:[10,20,50,100],
+        movableColumns:true
+      });
+    }
+
+    // ===== Reporte PDF =====
+    function generarReportePDF(){
+      if(typeof html2pdf === "undefined"){
+        showToast("No se cargó html2pdf.js");
+        return;
+      }
+      const rows = currentFiltered();
+
+      const wrap = document.createElement("div");
+      wrap.id = "pdf-area";
+
+      const now = new Date();
+      const ts = now.toLocaleString("es-GT");
+
+      const filtrosTxt = [
+        "Temporal: " + fTemporal.value,
+        (fTemporal.value==="mes" ? ("Mes: " + fMes.value) : ""),
+        (fTemporal.value==="semana" ? ("Semana: " + (fSemana.value||"(todas)")) : ""),
+        (fTemporal.value==="rango" ? ("Rango: " + (fDesde.value||"—") + " a " + (fHasta.value||"—")) : ""),
+        "Guarda: " + fGuarda.value,
+        "Municipio: " + fMuni.value,
+        "Región: " + fRegion.value,
+        "Área: " + fArea.value,
+        "Intermunicipal: " + fInter.value,
+        "Agrupar: " + fAgrupar.value,
+        "Pivote: " + fPivBy.value
+      ].filter(Boolean).join(" · ");
+
+      wrap.innerHTML = `
+        <div style="text-align:center;">
+          <h2 style="margin:0 0 6px;">Informe de tablero AC297</h2>
+          <p style="margin:0; color:#475569; font-size:12px;">
+            Generado: <strong>${ts}</strong>
+          </p>
+          <p style="margin:8px 0 0; color:#334155; font-size:12px;">${filtrosTxt}</p>
+          <hr style="margin:10px 0; border:none; border-top:1px solid #e5e7eb;">
+        </div>
+
+        <div class="pdf-grid">
+          <div class="pdf-box">
+            <h4>Registros</h4>
+            <p><strong>${kTotal.textContent}</strong> (${kTotalS.textContent})</p>
+          </div>
+          <div class="pdf-box">
+            <h4>Municipios únicos</h4>
+            <p><strong>${kMunis.textContent}</strong></p>
+          </div>
+          <div class="pdf-box">
+            <h4>Guardarecursos únicos</h4>
+            <p><strong>${kGuardas.textContent}</strong></p>
+          </div>
+          <div class="pdf-box">
+            <h4>Árboles (suma)</h4>
+            <p><strong>${kArboles.textContent}</strong></p>
+          </div>
+          <div class="pdf-box">
+            <h4>Intermunicipal (% sí)</h4>
+            <p><strong>${kInter.textContent}</strong></p>
+          </div>
+          <div class="pdf-box">
+            <h4>Coordenadas válidas</h4>
+            <p><strong>${kCoord.textContent}</strong></p>
+          </div>
+        </div>
+
+        <p style="margin:12px 0 0; color:#475569; font-size:12px;">
+          Nota: este PDF resume KPIs del subconjunto filtrado. Para exportar datos completos filtrados usa los botones CSV/Excel/JSON.
+        </p>
+      `;
+
+      document.body.appendChild(wrap);
+
+      const opt = {
+        margin: 10,
+        filename: "ac297_tablero_reporte.pdf",
+        image: { type:"jpeg", quality:0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit:"mm", format:"a4", orientation:"portrait" }
+      };
+
+      html2pdf().set(opt).from(wrap).save().then(()=>{
+        document.body.removeChild(wrap);
+        showToast("PDF generado");
+      }).catch(()=>{
+        document.body.removeChild(wrap);
+        showToast("No se pudo generar PDF");
+      });
+    }
+
+    // ===== Apply pipeline =====
+    function aplicar(){
+      updateTemporalUI();
+
+      const rows = currentFiltered();
+      setURLFromState();
+
+      renderKPIs(rows);
+      renderCharts(rows);
+      buildPivot(rows);
+      buildRegistros(rows);
+
+      estado.textContent = "Mostrando " + rows.length.toLocaleString("es") + " registro(s) filtrados.";
+      showToast("Actualizado");
+    }
+
+    function reset(){
+      fTemporal.value = "mes";
+      fMes.value = "todo";
+      fSemana.value = "";
+      fDesde.value = "";
+      fHasta.value = "";
+
+      fGuarda.value = "todo";
+      fMuni.value = "todo";
+      fRegion.value = "todo";
+      fArea.value = "todo";
+      fInter.value = "todo";
+
+      fAgrupar.value = "mes";
+      fPivBy.value = "guarda";
+
+      sGuarda.value = "";
+      sMuni.value = "";
+      sRegion.value = "";
+      sArea.value = "";
+
+      // restaurar opciones completas
+      filterSelect(fGuarda, "");
+      filterSelect(fMuni, "");
+      filterSelect(fRegion, "");
+      filterSelect(fArea, "");
+
+      aplicar();
+    }
+
+    // ===== Load =====
+    async function load(){
+      if(typeof Papa === "undefined"){
+        estado.textContent = "No se cargó papaparse.min.js (debe existir en el repo).";
+        return;
+      }
+      if(typeof Tabulator === "undefined"){
+        estado.textContent = "No se cargó tabulator.min.js (debe existir en el repo).";
+        return;
+      }
+
+      estado.textContent = "Leyendo base3_datos.csv…";
+      const res = await fetch(CSV_URL, { cache: "no-store" });
+      if(!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+      const csvText = await res.text();
+
+      const parsed = Papa.parse(csvText, { header:true, skipEmptyLines:true, delimiter: DELIM });
+      const rows = (parsed.data || []).filter(r => r && Object.keys(r).some(k => norm(r[k])));
+
+      DATA = rows.map(r=>{
+        const info = extraerFechaCompleta(r[F.fecha]);
+        const d = info ? info.date : null;
+
+        const ym = info ? (info.anio + "-" + pad2(info.mes)) : "";
+        const yd = info ? (info.anio + "-" + pad2(info.mes) + "-" + pad2(info.dia)) : "";
+        const yw = d ? isoWeekKey(d) : "";
+
+        r.__date = d;
+        r.__ym = ym;
+        r.__yd = yd;
+        r.__yw = yw;
+
+        r.__guarda = valorGuarda(r);
+        r.__muni = valorMuni(r);
+        r.__region = valorRegion(r);
+        r.__area = valorArea(r);
+        r.__inter = valorInter(r);
+
+        r.__arboles = num(r[F.totalArboles]);
+        r.__coordOk = coordOk(r);
+
+        return r;
+      });
+
+      // llenar selects
+      llenarSelect(fGuarda, uniqueSorted(DATA.map(r=>r.__guarda)), "Todos los guardas");
+      llenarSelect(fMuni, uniqueSorted(DATA.map(r=>r.__muni)), "Todos los municipios");
+      llenarSelect(fRegion, uniqueSorted(DATA.map(r=>r.__region)), "Todas las regiones");
+      llenarSelect(fArea, uniqueSorted(DATA.map(r=>r.__area)), "Todas las áreas");
+
+      cacheOptions(fGuarda, "Todos los guardas");
+      cacheOptions(fMuni, "Todos los municipios");
+      cacheOptions(fRegion, "Todas las regiones");
+      cacheOptions(fArea, "Todas las áreas");
+
+      // meses
+      const meses = uniqueSorted(DATA.map(r=>r.__ym).filter(Boolean));
+      fMes.innerHTML = "";
+      fMes.appendChild(new Option("Todos los meses", "todo"));
+      meses.forEach(m=>fMes.appendChild(new Option(m, m)));
+
+      // aplicar URL si hay
+      applyURLToState();
+      updateTemporalUI();
+
+      aplicar();
+    }
+
+    // ===== Events =====
+    function wire(){
+      fTemporal.addEventListener("change", ()=>{ updateTemporalUI(); });
+      $("btn-aplicar").addEventListener("click", aplicar);
+      $("btn-reset").addEventListener("click", reset);
+
+      // buscadores
+      sGuarda.addEventListener("input", ()=> filterSelect(fGuarda, sGuarda.value));
+      sMuni.addEventListener("input", ()=> filterSelect(fMuni, sMuni.value));
+      sRegion.addEventListener("input", ()=> filterSelect(fRegion, sRegion.value));
+      sArea.addEventListener("input", ()=> filterSelect(fArea, sArea.value));
+
+      // exports tabla registros
+      $("btn-dl-csv").addEventListener("click", ()=>{
+        if(!tRegistros) return;
+        tRegistros.download("csv", "ac297_filtrado.csv");
+      });
+      $("btn-dl-xlsx").addEventListener("click", ()=>{
+        if(!tRegistros) return;
+        tRegistros.download("xlsx", "ac297_filtrado.xlsx", { sheetName:"Filtrado" });
+      });
+      $("btn-dl-json").addEventListener("click", ()=>{
+        if(!tRegistros) return;
+        tRegistros.download("json", "ac297_filtrado.json");
+      });
+
+      // exports pivote
+      $("piv-csv").addEventListener("click", ()=>{
+        if(!tPivote) return;
+        tPivote.download("csv", "ac297_pivote.csv");
+      });
+      $("piv-xlsx").addEventListener("click", ()=>{
+        if(!tPivote) return;
+        tPivote.download("xlsx", "ac297_pivote.xlsx", { sheetName:"Pivote" });
+      });
+
+      // PNG charts
+      $("png-tiempo").addEventListener("click", ()=> exportChartPNG(chartTiempo, "ac297_tiempo.png"));
+      $("png-muni").addEventListener("click", ()=> exportChartPNG(chartMuni, "ac297_top_municipios.png"));
+      $("png-guarda").addEventListener("click", ()=> exportChartPNG(chartGuarda, "ac297_top_guardas.png"));
+
+      // copiar enlace
+      $("btn-copy").addEventListener("click", async ()=>{
+        setURLFromState();
+        const url = location.origin + location.pathname + location.search;
+        try{
+          await navigator.clipboard.writeText(url);
+          showToast("Enlace copiado");
+        }catch(e){
+          const ta = document.createElement("textarea");
+          ta.value = url;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          showToast("Enlace copiado");
+        }
+      });
+
+      // PDF
+      $("btn-pdf").addEventListener("click", generarReportePDF);
+
+      // auto-actualizar con cambios de filtros clave (opcional)
+      [fMes, fSemana, fDesde, fHasta, fGuarda, fMuni, fRegion, fArea, fInter, fAgrupar, fPivBy].forEach(el=>{
+        el.addEventListener("change", ()=> aplicar());
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", async ()=>{
+      try{
+        wire();
+        await load();
+      }catch(err){
+        console.error(err);
+        estado.textContent = "Error al cargar: " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
