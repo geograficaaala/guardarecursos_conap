@@ -17,13 +17,9 @@
       --card-radius: 14px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    html {
-      scroll-behavior: smooth;
-    }
+    html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
@@ -48,28 +44,14 @@
     }
 
     @keyframes fadeInBody {
-      from {
-        opacity: 0;
-        transform: translateY(4px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      html {
-        scroll-behavior: auto;
-      }
-      body {
-        animation: none;
-        opacity: 1;
-      }
-      .card,
-      .card a {
-        transition: none !important;
-      }
+      html { scroll-behavior: auto; }
+      body { animation: none; opacity: 1; }
+      .card, .card a { transition: none !important; }
     }
 
     /* ENCABEZADO INSTITUCIONAL */
@@ -103,6 +85,13 @@
       padding: 6px 10px;
       border: 1px solid rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(4px);
+    }
+
+    .logo-group a {
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      border-radius: 999px;
     }
 
     .logo-group img {
@@ -251,9 +240,7 @@
       background-color: #f9fafb;
     }
 
-    .card:hover::after {
-      opacity: 1;
-    }
+    .card:hover::after { opacity: 1; }
 
     .card-header-row {
       display: flex;
@@ -336,9 +323,7 @@
       box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25);
     }
 
-    .card a:hover span {
-      transform: translateX(2px);
-    }
+    .card a:hover span { transform: translateX(2px); }
 
     /* Colores de borde por módulo */
     .card-patrullajes { border-top-color: #2563eb; }
@@ -356,36 +341,19 @@
       margin-top: auto;
     }
 
-    footer p {
-      margin: 3px 0;
-    }
+    footer p { margin: 3px 0; }
 
     /* Ajustes en pantallas pequeñas */
     @media (max-width: 720px) {
-      .header-inner {
-        justify-content: center;
-      }
-
-      .title-group {
-        text-align: center;
-      }
-
-      .title-group h1 {
-        font-size: 20px;
-      }
-
-      .logo-group {
-        justify-content: center;
-      }
+      .header-inner { justify-content: center; }
+      .title-group { text-align: center; }
+      .title-group h1 { font-size: 20px; }
+      .logo-group { justify-content: center; }
     }
 
     @media (max-width: 480px) {
-      .intro {
-        padding: 14px 12px;
-      }
-      .card {
-        padding: 14px 14px 16px 14px;
-      }
+      .intro { padding: 14px 12px; }
+      .card { padding: 14px 14px 16px 14px; }
     }
   </style>
 </head>
@@ -393,17 +361,23 @@
   <header>
     <div class="header-inner">
       <div class="logo-group">
-        <!-- Logos en la raíz del repositorio -->
-        <img src="conap_logo.jpg" alt="Logo CONAP">
-        <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
+        <!-- ✅ Logos con enlaces -->
+        <a href="https://conap.gob.gt/" target="_blank" rel="noopener noreferrer" aria-label="Ir a CONAP">
+          <img src="conap_logo.jpg" alt="Logo CONAP">
+        </a>
+        <a href="https://amigosdeatitlan.org/" target="_blank" rel="noopener noreferrer" aria-label="Ir a Amigos del Lago de Atitlán">
+          <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
+        </a>
       </div>
+
       <div class="title-group">
         <h1>Centro de consulta de datos</h1>
         <p>Sistema de monitoreo de actividades</p>
         <p>CONAP – Dirección Regional Altiplano Central</p>
         <div class="chip-version">
           <span class="chip-dot"></span>
-          <span>Versión preliminar · 2025</span>
+          <!-- ✅ Cambio solicitado -->
+          <span>Versión oficial · 2026</span>
         </div>
       </div>
     </div>
@@ -426,7 +400,8 @@
           <div class="card-icon">🛡️</div>
           <div>
             <div class="card-badge">Patrullajes</div>
-            <h2>Patrullajes de guardarecursos</h2>
+            <!-- ✅ Cambio solicitado -->
+            <h2>AC192 Patrullajes de control y vigilancia</h2>
           </div>
         </div>
         <p>
@@ -496,7 +471,8 @@
   </main>
 
   <footer>
-    <p>© 2025 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
+    <!-- ✅ Cambio de año -->
+    <p>© 2026 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
   </footer>
 </body>
 </html>
