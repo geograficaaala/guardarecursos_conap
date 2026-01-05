@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Patrullajes - Tablero dinámico (CSV)</title>
+  <title>AC192 · Patrullajes - Tablero dinámico (CSV)</title>
 
   <!-- Tabulator local (repo) -->
   <link rel="stylesheet" href="tabulator.min.css">
@@ -25,6 +25,11 @@
       --texto-secundario:#6b7280;
       --borde-suave:#e5e7eb;
       --card-radius:14px;
+
+      /* Charts: pastel + contorno negro */
+      --chart-outline:#111827;                 /* casi negro */
+      --chart-grid: rgba(17,24,39,0.14);       /* grilla suave */
+      --chart-tick:#111827;                    /* texto oscuro */
     }
     *{box-sizing:border-box}
     body{
@@ -45,7 +50,7 @@
       color:#fff;
       padding:14px 20px 18px;
       box-shadow:0 2px 10px rgba(15,23,42,.25);
-      position:sticky; top:0; z-index:10;
+      position:sticky; top:0; z-index:50;
     }
     .header-inner{
       max-width:1100px; margin:0 auto;
@@ -70,7 +75,7 @@
 
     main{
       max-width:1100px; width:100%;
-      margin:18px auto 0;
+      margin:16px auto 0;
       padding:0 20px 40px;
       flex:1 0 auto;
     }
@@ -88,18 +93,33 @@
       text-transform:uppercase; letter-spacing:.08em;
     }
 
+    /* ====== NAV (mejorado) ====== */
+    .topnav{
+      position: sticky;
+      top: 82px;              /* debajo del header sticky (ajusta si cambias el alto del header) */
+      z-index: 40;
+      margin: 12px 0 14px;
+      padding: 10px 10px;
+      border-radius: 16px;
+      border: 1px solid rgba(209,213,219,0.85);
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 10px 30px rgba(15,23,42,0.08);
+    }
+
     .tabs{
       display:flex; flex-wrap:wrap; gap:8px;
-      margin:14px 0 16px; justify-content:center;
+      justify-content:center;
+      margin:0;
     }
     .tab{
       text-decoration:none;
       padding:8px 12px;
       border-radius:999px;
       border:1px solid #cbd5f5;
-      background:rgba(255,255,255,0.9);
+      background:rgba(255,255,255,0.95);
       color:#0f172a;
-      font-weight:650;
+      font-weight:750;
       font-size:13px;
     }
     .tab:hover{ background:#e5edff; border-color:#93c5fd;}
@@ -110,6 +130,15 @@
       box-shadow:0 1px 3px rgba(15,23,42,.2);
     }
 
+    .nav-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:center;
+      margin-top:10px;
+    }
+
+    /* ====== Cards / Layout ====== */
     .card{
       background:#fff;
       border-radius:var(--card-radius);
@@ -136,6 +165,11 @@
     .grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:12px; }
     .col-12{ grid-column:span 12; }
     .col-6{ grid-column:span 6; }
+
+    /* Recomendación: altura ligeramente mayor para barras horizontales */
+    .chartwrap{ height:360px; }
+    .chartwrap.tall{ height:380px; }
+    canvas{ width:100% !important; height:100% !important; }
 
     .filters{
       display:grid;
@@ -171,10 +205,6 @@
       box-shadow:0 0 0 3px rgba(59,130,246,.15);
     }
 
-    .btnrow{
-      display:flex; flex-wrap:wrap; gap:10px;
-      justify-content:center; margin-top:12px;
-    }
     .btn{
       display:inline-flex; align-items:center; justify-content:center;
       padding:8px 14px; font-size:14px;
@@ -183,6 +213,7 @@
       font-weight:800;
       transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
       user-select:none;
+      white-space:nowrap;
     }
     .btn span.icon{ margin-right:6px; font-size:14px; }
     .btn-primary{
@@ -195,7 +226,7 @@
       box-shadow:0 4px 10px rgba(15,23,42,.28);
     }
     .btn-ghost{
-      background-color:rgba(255,255,255,.9);
+      background-color:rgba(255,255,255,.95);
       color:#0f172a;
       border-color:#cbd5f5;
     }
@@ -230,9 +261,6 @@
     .kpi .v{ font-size:20px; font-weight:950; margin-top:6px; }
     .kpi .s{ font-size:12px; color:var(--texto-secundario); margin-top:2px; }
 
-    .chartwrap{ height:340px; }
-    canvas{ width:100% !important; height:100% !important; }
-
     .tablewrap{ overflow-x:auto; }
     .cardhead{
       display:flex; flex-wrap:wrap;
@@ -249,11 +277,42 @@
       font-size:13px;
       border-radius:999px;
       border:1px solid #cbd5f5;
-      background: rgba(255,255,255,.9);
+      background: rgba(255,255,255,.95);
       cursor:pointer;
       font-weight:800;
     }
     .mini-btn:hover{ background:#e5edff; border-color:#93c5fd; }
+
+    /* Tip box para “cómo leer / estado de filtros” */
+    .infobox{
+      border:1px solid rgba(59,130,246,.25);
+      background: rgba(219,234,254,.45);
+      border-radius:14px;
+      padding:10px 12px;
+      color:#0f172a;
+      font-size:13px;
+      margin-top:10px;
+    }
+    .infobox b{ font-weight:900; }
+    .chips{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:8px;
+      justify-content:center;
+    }
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(17,24,39,.18);
+      background: rgba(255,255,255,.85);
+      font-size:12px;
+      font-weight:800;
+      color:#111827;
+    }
 
     footer{
       text-align:center;
@@ -291,6 +350,8 @@
       .col-6{ grid-column: span 12; }
       .title-group{ text-align:center; }
       .header-inner{ justify-content:center; }
+      .topnav{ top: 116px; } /* header suele ser más alto en móvil */
+      .chartwrap{ height: 340px; }
     }
   </style>
 </head>
@@ -312,20 +373,41 @@
 
   <main>
     <section class="page-header">
-      <h2>Patrullajes de control y vigilancia · Tablero dinámico</h2>
+      <h2>AC192 · Patrullajes de control y vigilancia · Tablero dinámico</h2>
       <p>Este tablero se genera automáticamente desde <strong>datos_patrullaje.csv</strong> (del repo) y permite filtrar y graficar.</p>
       <span class="pill">Tablero dinámico · CSV</span>
     </section>
 
-    <nav class="tabs" aria-label="Navegación del módulo">
-      <a class="tab" href="patrullajes_dashboard.html">🗺️ Experience Builder</a>
-      <a class="tab active" href="patrullajes_tablero.html">📈 Tablero dinámico</a>
-      <a class="tab" href="patrullajes_datos.html">📋 Tabla</a>
-    </nav>
+    <!-- ✅ NAV sticky consistente + acciones arriba -->
+    <section class="topnav" aria-label="Navegación y acciones del módulo">
+      <nav class="tabs" aria-label="Navegación del módulo">
+        <a class="tab" href="patrullajes_dashboard.html">🗺️ Dashboard geográfico</a>
+        <a class="tab active" href="patrullajes_tablero.html">📈 Tablero dinámico</a>
+        <a class="tab" href="patrullajes_datos.html">📋 Tabla (datos)</a>
+      </nav>
 
+      <div class="nav-actions">
+        <!-- navegación global -->
+        <a class="btn btn-ghost" href="index.html"><span class="icon">←</span>Inicio</a>
+        <a class="btn btn-ghost" href="patrullajes_dashboard.html"><span class="icon">🗺️</span>Dashboard</a>
+        <a class="btn btn-primary" href="patrullajes_datos.html"><span class="icon">📋</span>Ir a Tabla</a>
+
+        <!-- acciones -->
+        <button class="btn btn-ghost" id="btn-reset" type="button"><span class="icon">🔄</span>Limpiar filtros</button>
+        <button class="btn btn-ghost" id="btn-copy" type="button"><span class="icon">🔗</span>Copiar enlace</button>
+        <button class="btn btn-warn" id="btn-pdf" type="button"><span class="icon">🧾</span>Reporte PDF (resumen)</button>
+      </div>
+
+      <div class="infobox" style="text-align:center;">
+        <b>Tip:</b> haz clic en una barra de “Top municipios/guardas” o en “Patrullajes en el tiempo” para filtrar (drill-down).
+        <div class="chips" id="chips-filtros" aria-label="Resumen de filtros"></div>
+      </div>
+
+      <p class="subnote" id="estado" style="margin-top:10px; text-align:center;">Cargando datos…</p>
+    </section>
+
+    <!-- ✅ FILTROS (mantienen su estructura) -->
     <section class="card soft">
-      <p class="subnote" id="estado">Cargando datos…</p>
-
       <div class="filters">
         <div class="field wide">
           <label for="f-temporal">Filtro temporal</label>
@@ -414,22 +496,9 @@
           </select>
         </div>
       </div>
-
-      <div class="btnrow">
-        <button class="btn btn-ghost" id="btn-reset" type="button"><span class="icon">🔄</span>Limpiar filtros</button>
-        <button class="btn btn-ghost" id="btn-copy" type="button"><span class="icon">🔗</span>Copiar enlace (filtros)</button>
-        <button class="btn btn-warn" id="btn-pdf" type="button"><span class="icon">🧾</span>Reporte PDF (resumen)</button>
-
-        <a class="btn btn-ghost" href="index.html"><span class="icon">←</span>Inicio</a>
-        <a class="btn btn-ghost" href="patrullajes_dashboard.html"><span class="icon">🗺️</span>Experience Builder</a>
-        <a class="btn btn-primary" href="patrullajes_datos.html"><span class="icon">📋</span>Ir a Tabla</a>
-      </div>
-
-      <p class="subnote" style="margin-top:10px; text-align:center;">
-        Tip: haz clic en una barra de “Top municipios/guardas” para filtrar (drill-down).
-      </p>
     </section>
 
+    <!-- ✅ KPIs (primero) -->
     <section class="card">
       <div class="kpis">
         <div class="kpi">
@@ -465,6 +534,7 @@
       </div>
     </section>
 
+    <!-- ✅ GRÁFICOS ORDENADOS: principal (full) + 2 secundarios (2 col) -->
     <section class="grid">
       <div class="card col-12">
         <div class="cardhead">
@@ -476,7 +546,7 @@
             <button class="mini-btn" id="png-tiempo" type="button">PNG</button>
           </div>
         </div>
-        <div class="chartwrap"><canvas id="c-tiempo"></canvas></div>
+        <div class="chartwrap tall"><canvas id="c-tiempo"></canvas></div>
       </div>
 
       <div class="card col-6">
@@ -506,6 +576,7 @@
       </div>
     </section>
 
+    <!-- ✅ TABLA PIVOTE (antes de tabla completa) -->
     <section class="card">
       <div class="cardhead">
         <div>
@@ -522,6 +593,7 @@
       </div>
     </section>
 
+    <!-- ✅ TABLA COMPLETA (al final) -->
     <section class="card">
       <div class="cardhead">
         <div>
@@ -541,7 +613,7 @@
   </main>
 
   <footer>
-    <p>© 2025 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
+    <p>© 2026 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
   </footer>
 
   <div class="toast" id="toast">Listo</div>
@@ -619,6 +691,9 @@
     const kPctIlegal = $("k-pct-ilegal");
     const kHoras = $("k-horas");
     const kCoord = $("k-coord");
+
+    // Chips resumen filtros
+    const chipsFiltros = $("chips-filtros");
 
     // Toast
     const toast = $("toast");
@@ -722,9 +797,7 @@
     }
 
     function llenarSelect(select, valores, placeholder){
-      // Evita errores: si el elemento no existe, salimos sin romper todo.
       if(!select) return;
-
       select.innerHTML = "";
       const o0 = document.createElement("option");
       o0.value = "todo";
@@ -820,7 +893,7 @@
       return Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0,n);
     }
 
-    // Fondo blanco para exportar PNG/PDF (evita transparencia fea)
+    // Fondo blanco para exportar PNG/PDF
     const whiteBgPlugin = {
       id: "white-bg",
       beforeDraw: (chart) => {
@@ -833,11 +906,82 @@
       }
     };
 
+    // ✅ Paleta pastel + contorno negro
+    const PASTEL = ["#A7F3D0","#BFDBFE","#FDE68A","#FBCFE8","#DDD6FE","#FED7AA","#CFFAFE","#E9D5FF","#FFE4E6","#E5E7EB"];
+    const OUTLINE = getComputedStyle(document.documentElement).getPropertyValue("--chart-outline").trim() || "#111827";
+
+    function pastelArray(n){
+      const out = [];
+      for(let i=0;i<n;i++) out.push(PASTEL[i % PASTEL.length]);
+      return out;
+    }
+
+    function applyPastelOutlineToDatasets(cfg){
+      if(!cfg || !cfg.data || !cfg.data.datasets) return cfg;
+      cfg.data.datasets.forEach((ds, idx)=>{
+        const n = Array.isArray(ds.data) ? ds.data.length : 1;
+        const colors = pastelArray(n);
+
+        // Bar / horizontal bar
+        if(cfg.type === "bar"){
+          ds.backgroundColor = colors.map(c=>c);
+          ds.borderColor = colors.map(_=>OUTLINE);
+          ds.borderWidth = 2;
+          ds.borderSkipped = false;
+        } else {
+          // Line, etc.
+          ds.backgroundColor = colors[0];
+          ds.borderColor = OUTLINE;
+          ds.borderWidth = 2;
+          ds.pointBackgroundColor = colors[0];
+          ds.pointBorderColor = OUTLINE;
+          ds.pointBorderWidth = 2;
+          ds.pointRadius = 4;
+          ds.tension = 0.25;
+        }
+      });
+      return cfg;
+    }
+
+    function commonChartOptions(extra){
+      const base = {
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{
+          legend:{
+            display:true,
+            labels:{ color: getComputedStyle(document.documentElement).getPropertyValue("--chart-tick").trim() || "#111827" }
+          },
+          tooltip:{
+            borderColor: OUTLINE,
+            borderWidth: 1
+          }
+        },
+        scales:{
+          x:{
+            ticks:{ color: getComputedStyle(document.documentElement).getPropertyValue("--chart-tick").trim() || "#111827" },
+            grid:{ color: getComputedStyle(document.documentElement).getPropertyValue("--chart-grid").trim() || "rgba(17,24,39,0.14)" }
+          },
+          y:{
+            beginAtZero:true,
+            ticks:{ color: getComputedStyle(document.documentElement).getPropertyValue("--chart-tick").trim() || "#111827" },
+            grid:{ color: getComputedStyle(document.documentElement).getPropertyValue("--chart-grid").trim() || "rgba(17,24,39,0.14)" }
+          }
+        }
+      };
+      return Object.assign({}, base, extra || {});
+    }
+
     function renderChart(canvasId, prev, cfg){
       const el = $(canvasId);
       if(!el) return prev;
       const ctx = el.getContext("2d");
       if(prev) prev.destroy();
+
+      // ✅ aplica estilo pastel/contorno + opciones comunes
+      cfg = applyPastelOutlineToDatasets(cfg);
+      cfg.options = commonChartOptions(cfg.options);
+
       return new Chart(ctx, cfg);
     }
 
@@ -853,13 +997,11 @@
         data:{ labels: labelsT, datasets:[{ label:"Patrullajes", data: dataT }] },
         plugins:[whiteBgPlugin],
         options:{
-          responsive:true,
-          maintainAspectRatio:false,
           onClick:(evt, elements)=>{
             if(!elements || !elements.length) return;
             const idx = elements[0].index;
             const label = labelsT[idx];
-            // drill-down temporal según agrupación
+
             if(agr === "mes"){
               fTemporal.value = "mes";
               setTemporalUI();
@@ -869,16 +1011,13 @@
               setTemporalUI();
               fSemana.value = label;
             } else {
-              // si es día, lo ponemos como rango de ese día
               fTemporal.value = "rango";
               setTemporalUI();
               fDesde.value = label;
               fHasta.value = label;
             }
             refrescar(true);
-          },
-          plugins:{ legend:{ display:true } },
-          scales:{ y:{ beginAtZero:true } }
+          }
         }
       });
 
@@ -891,8 +1030,6 @@
         plugins:[whiteBgPlugin],
         options:{
           indexAxis:"y",
-          responsive:true,
-          maintainAspectRatio:false,
           onClick:(evt, elements)=>{
             if(!elements || !elements.length) return;
             const idx = elements[0].index;
@@ -900,8 +1037,9 @@
             fMuni.value = label;
             refrescar(true);
           },
-          plugins:{ legend:{ display:true } },
-          scales:{ x:{ beginAtZero:true } }
+          scales:{
+            x:{ beginAtZero:true }
+          }
         }
       });
 
@@ -914,8 +1052,6 @@
         plugins:[whiteBgPlugin],
         options:{
           indexAxis:"y",
-          responsive:true,
-          maintainAspectRatio:false,
           onClick:(evt, elements)=>{
             if(!elements || !elements.length) return;
             const idx = elements[0].index;
@@ -923,8 +1059,9 @@
             fGuarda.value = label;
             refrescar(true);
           },
-          plugins:{ legend:{ display:true } },
-          scales:{ x:{ beginAtZero:true } }
+          scales:{
+            x:{ beginAtZero:true }
+          }
         }
       });
     }
@@ -1026,7 +1163,6 @@
       const s = getState();
       const p = new URLSearchParams();
 
-      // solo agregamos si no es default (así queda limpio)
       if(s.temporal !== "todo") p.set("temporal", s.temporal);
       if(s.mes && s.mes !== "todo") p.set("mes", s.mes);
       if(s.semana && s.semana !== "todo") p.set("semana", s.semana);
@@ -1082,8 +1218,8 @@
       setIfExists(fInst, p.get("inst"));
     }
 
-    // ===== Searchable selects (filtra opciones) =====
-    const fullOptions = new Map(); // selectId -> {placeholder, values[]}
+    // ===== Searchable selects =====
+    const fullOptions = new Map();
 
     function cacheOptions(select, placeholder){
       if(!select) return;
@@ -1108,7 +1244,6 @@
 
       llenarSelect(select, filtered, info.placeholder);
 
-      // restaurar selección si aún existe
       const still = Array.from(select.options).some(o=>o.value === cur);
       if(still) select.value = cur;
     }
@@ -1148,9 +1283,41 @@
       return parts.join(" · ");
     }
 
+    function renderChipsResumen(){
+      if(!chipsFiltros) return;
+      const chips = [];
+
+      const t = fTemporal.value;
+      if(t === "todo") chips.push(["⏱️","Todo"]);
+      if(t === "mes") chips.push(["🗓️","Mes: " + (fMes.value || "—")]);
+      if(t === "semana") chips.push(["📅","Semana: " + (fSemana.value || "—")]);
+      if(t === "rango") chips.push(["📆","Rango: " + (fDesde.value||"—") + " → " + (fHasta.value||"—")]);
+
+      if(fMuni.value !== "todo") chips.push(["📍","Municipio: " + fMuni.value]);
+      if(fGuarda.value !== "todo") chips.push(["🛡️","Guarda: " + fGuarda.value]);
+      if(fRegion.value !== "todo") chips.push(["🧭","Región: " + fRegion.value]);
+      if(fArea.value !== "todo") chips.push(["🌿","Área: " + fArea.value]);
+      if(fTipo.value !== "todo") chips.push(["🧾","Tipo: " + fTipo.value]);
+      if(fIlegal.value !== "todo") chips.push(["⚠️","Ilegal: " + (fIlegal.value === "si" ? "Sí" : "No")]);
+      if(fInst.value !== "todo") chips.push(["🤝","Instituciones: " + (fInst.value === "si" ? "Con" : "Sin")]);
+
+      chips.push(["📊","Agrupar: " + fAgrupar.value]);
+
+      chipsFiltros.innerHTML = chips.map(([ic, txt]) => `<span class="chip">${ic} ${escapeHtml(txt)}</span>`).join("");
+    }
+
     function topList(rows, key, n){
       const m = countBy(rows, r=>r[key] || "(Sin dato)");
       return topN(m, n);
+    }
+
+    function escapeHtml(texto) {
+      return String(texto || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
 
     async function generarReportePDF(){
@@ -1160,7 +1327,6 @@
       }
       const rows = aplicarFiltros();
 
-      // imágenes de charts en alta calidad (se benefician del DPR configurado)
       const imgTiempo = chartTiempo ? chartTiempo.toBase64Image("image/png", 1) : "";
       const imgMuni = chartMuni ? chartMuni.toBase64Image("image/png", 1) : "";
       const imgGuarda = chartGuarda ? chartGuarda.toBase64Image("image/png", 1) : "";
@@ -1178,7 +1344,6 @@
       const now = new Date();
       const stamp = now.toLocaleString("es");
 
-      // contenedor temporal para PDF
       const wrap = document.createElement("div");
       wrap.style.padding = "14px";
       wrap.style.background = "#ffffff";
@@ -1199,7 +1364,7 @@
           .k .t{font-size:9pt; color:#6b7280; font-weight:800;}
           .k .v{font-size:14pt; font-weight:900; margin-top:4px;}
           .pagebreak{page-break-after:always;}
-          .img{width:100%; border:1px solid #e5e7eb; border-radius:12px; margin-top:8px;}
+          .img{width:100%; border:2px solid #111827; border-radius:12px; margin-top:8px;}
           table{width:100%; border-collapse:collapse; margin-top:8px;}
           th,td{border:1px solid #e5e7eb; padding:6px 8px; font-size:10pt; text-align:left;}
           th{background:#f8fafc;}
@@ -1213,9 +1378,9 @@
           <p class="muted">Generado: ${stamp}</p>
         </div>
 
-        <h1>Reporte resumen · Patrullajes de control y vigilancia</h1>
+        <h1>Reporte resumen · AC192 Patrullajes de control y vigilancia</h1>
         <p class="muted">Fuente: datos_patrullaje.csv (GitHub Pages)</p>
-        <div class="chip">${resumenFiltrosTexto()}</div>
+        <div class="chip">${escapeHtml(resumenFiltrosTexto())}</div>
 
         <div class="kgrid">
           <div class="k"><div class="t">Registros (filtrados)</div><div class="v">${total.toLocaleString("es")}</div></div>
@@ -1242,7 +1407,7 @@
           <table>
             <thead><tr><th>Municipio</th><th>Registros</th></tr></thead>
             <tbody>
-              ${topMun.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join("")}
+              ${topMun.map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${v}</td></tr>`).join("")}
             </tbody>
           </table>
         </div>
@@ -1252,7 +1417,7 @@
           <table>
             <thead><tr><th>Guarda recurso</th><th>Registros</th></tr></thead>
             <tbody>
-              ${topGua.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join("")}
+              ${topGua.map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${v}</td></tr>`).join("")}
             </tbody>
           </table>
         </div>
@@ -1290,6 +1455,7 @@
       actualizarKPIs(rows);
       actualizarCharts(rows);
       actualizarTablas(rows);
+      renderChipsResumen();
       if(updateURL) setURLFromState();
     }
 
@@ -1308,12 +1474,10 @@
       fInst.value = "todo";
       fAgrupar.value = "dia";
 
-      // limpia buscadores
       sGuarda.value = ""; sMuni.value = ""; sRegion.value = ""; sArea.value = ""; sTipo.value = "";
 
       setTemporalUI();
 
-      // restaurar selects completos
       filterSelect(fGuarda, "");
       filterSelect(fMuni, "");
       filterSelect(fRegion, "");
@@ -1364,7 +1528,6 @@
           await navigator.clipboard.writeText(url);
           showToast("Enlace copiado");
         }catch(e){
-          // fallback
           const ta = document.createElement("textarea");
           ta.value = url;
           document.body.appendChild(ta);
@@ -1377,7 +1540,6 @@
 
       $("btn-pdf").addEventListener("click", generarReportePDF);
 
-      // buscadores: filtran opciones sin romper la selección
       sGuarda.addEventListener("input", ()=> filterSelect(fGuarda, sGuarda.value));
       sMuni.addEventListener("input", ()=> filterSelect(fMuni, sMuni.value));
       sRegion.addEventListener("input", ()=> filterSelect(fRegion, sRegion.value));
@@ -1399,7 +1561,6 @@
         return;
       }
 
-      // mejora de nitidez (para PNG/PDF)
       Chart.defaults.devicePixelRatio = 2;
 
       estado.textContent = "Leyendo datos_patrullaje.csv…";
@@ -1446,21 +1607,18 @@
         return r;
       });
 
-      // llenar selects
       llenarSelect(fGuarda, uniqueSorted(DATA.map(r=>r.__guarda)), "Todos los guardas");
       llenarSelect(fMuni, uniqueSorted(DATA.map(r=>r.__muni)), "Todos los municipios");
       llenarSelect(fRegion, uniqueSorted(DATA.map(r=>r.__region)), "Todas las regiones");
       llenarSelect(fArea, uniqueSorted(DATA.map(r=>r.__area)), "Todas las áreas");
       llenarSelect(fTipo, uniqueSorted(DATA.map(r=>r.__tipo)), "Todos los tipos");
 
-      // cache para buscadores
       cacheOptions(fGuarda, "Todos los guardas");
       cacheOptions(fMuni, "Todos los municipios");
       cacheOptions(fRegion, "Todas las regiones");
       cacheOptions(fArea, "Todas las áreas");
       cacheOptions(fTipo, "Todos los tipos");
 
-      // meses / semanas
       const meses = uniqueSorted(DATA.map(r=>r.__ym).filter(Boolean));
       fMes.innerHTML = "";
       fMes.appendChild(new Option("Todos los meses","todo"));
@@ -1471,7 +1629,6 @@
       fSemana.appendChild(new Option("Todas las semanas","todo"));
       semanas.forEach(w=>fSemana.appendChild(new Option(w,w)));
 
-      // aplicar filtros desde URL (si existe)
       applyURLToControls();
 
       estado.textContent = `Listo. ${DATA.length.toLocaleString("es")} registros cargados.`;
@@ -1483,7 +1640,6 @@
         wire();
         load().catch(err=>{
           console.error(err);
-          // mensaje más honesto (no culpa al CSV si el error fue de UI)
           estado.textContent = "Error inicializando el tablero: " + err.message;
           showToast("Error: " + err.message);
         });
