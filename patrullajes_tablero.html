@@ -16,59 +16,70 @@
 
   <style>
     :root{
-      --verde-header:#0f766e;
-      --verde-header-2:#0e7490;
-      --azul-boton:#1d9bf0;
-      --azul-boton-hover:#0f80cc;
-      --gris-fondo:#f5f7fa;
-      --texto-principal:#0f172a;
-      --texto-secundario:#6b7280;
-      --borde-suave:#e5e7eb;
-      --card-radius:14px;
+      /* Pastel institucional verde/azul */
+      --verde-header:#34d399;
+      --verde-header-2:#60a5fa;
 
-      /* Charts: pastel + contorno negro */
-      --chart-outline:#111827;                 /* casi negro */
-      --chart-grid: rgba(17,24,39,0.14);       /* grilla suave */
-      --chart-tick:#111827;                    /* texto oscuro */
+      --azul-boton:#2563eb;
+      --azul-boton-hover:#1d4ed8;
+
+      --gris-fondo:#f4f7fb;
+      --texto-principal:#0f172a;
+      --texto-secundario:#475569;
+      --borde-suave: rgba(148,163,184,0.35);
+      --card-radius:16px;
+
+      /* Charts (sin bordes negros) */
+      --chart-grid: rgba(2,6,23,0.08);
+      --chart-tick: rgba(15,23,42,0.85);
     }
+
     *{box-sizing:border-box}
+
     body{
       margin:0;
       font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
       color:var(--texto-principal);
+
       background:
-        radial-gradient(circle at top left, #dbeafe 0, transparent 55%),
-        radial-gradient(circle at bottom right, #bbf7d0 0, transparent 55%),
-        linear-gradient(180deg, #e5f3f0 0%, var(--gris-fondo) 35%, #eef2ff 100%);
+        radial-gradient(circle at 10% 15%, rgba(52,211,153,0.28) 0, transparent 55%),
+        radial-gradient(circle at 90% 30%, rgba(96,165,250,0.25) 0, transparent 55%),
+        radial-gradient(circle at 40% 95%, rgba(14,165,233,0.12) 0, transparent 60%),
+        linear-gradient(180deg, #f7fbff 0%, var(--gris-fondo) 45%, #f2fbf7 100%);
+
       min-height:100vh;
       display:flex;
       flex-direction:column;
     }
 
     header{
-      background: linear-gradient(90deg, var(--verde-header), var(--verde-header-2));
+      background: linear-gradient(90deg, rgba(16,185,129,0.95), rgba(59,130,246,0.95));
       color:#fff;
       padding:14px 20px 18px;
-      box-shadow:0 2px 10px rgba(15,23,42,.25);
+      box-shadow:0 6px 24px rgba(15,23,42,.14);
       position:sticky; top:0; z-index:50;
     }
+
     .header-inner{
       max-width:1100px; margin:0 auto;
       display:flex; align-items:center; justify-content:space-between;
       gap:16px; flex-wrap:wrap;
     }
+
     .logo-group{
       display:flex; align-items:center; gap:10px; flex-wrap:wrap;
       background-color: rgba(255,255,255,0.12);
       border-radius:999px; padding:6px 10px;
       border:1px solid rgba(255,255,255,0.15);
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(6px);
     }
+
     .logo-group img{
       height:40px; max-width:130px; object-fit:contain;
       background-color:#fff; border-radius:999px; padding:4px 8px;
-      box-shadow:0 2px 6px rgba(15,23,42,.25);
+      box-shadow:0 2px 6px rgba(15,23,42,.18);
     }
+
     .title-group{ text-align:right; flex:1 1 260px;}
     .title-group h1{ margin:0 0 2px; font-size:22px; letter-spacing:.02em;}
     .title-group p{ margin:0; font-size:13px; opacity:.96; line-height:1.4;}
@@ -93,17 +104,16 @@
       text-transform:uppercase; letter-spacing:.08em;
     }
 
-    /* ====== NAV (mejorado) ====== */
     .topnav{
       position: sticky;
-      top: 82px;              /* debajo del header sticky (ajusta si cambias el alto del header) */
+      top: 82px;
       z-index: 40;
       margin: 12px 0 14px;
       padding: 10px 10px;
       border-radius: 16px;
-      border: 1px solid rgba(209,213,219,0.85);
+      border: 1px solid rgba(148,163,184,0.35);
       background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(6px);
+      backdrop-filter: blur(8px);
       box-shadow: 0 10px 30px rgba(15,23,42,0.08);
     }
 
@@ -112,22 +122,25 @@
       justify-content:center;
       margin:0;
     }
+
     .tab{
       text-decoration:none;
       padding:8px 12px;
       border-radius:999px;
-      border:1px solid #cbd5f5;
+      border:1px solid rgba(148,163,184,0.45);
       background:rgba(255,255,255,0.95);
       color:#0f172a;
       font-weight:750;
       font-size:13px;
     }
-    .tab:hover{ background:#e5edff; border-color:#93c5fd;}
+
+    .tab:hover{ background:#eef6ff; border-color:rgba(59,130,246,0.35); }
+
     .tab.active{
       background:var(--azul-boton);
       border-color:transparent;
       color:#fff;
-      box-shadow:0 1px 3px rgba(15,23,42,.2);
+      box-shadow:0 1px 3px rgba(15,23,42,.16);
     }
 
     .nav-actions{
@@ -138,25 +151,26 @@
       margin-top:10px;
     }
 
-    /* ====== Cards / Layout ====== */
     .card{
-      background:#fff;
+      background: rgba(255,255,255,0.92);
       border-radius:var(--card-radius);
       border:1px solid var(--borde-suave);
-      box-shadow:0 2px 10px rgba(15,23,42,.10);
+      box-shadow:0 10px 30px rgba(15,23,42,.08);
       padding:16px;
       margin-bottom:14px;
       overflow:hidden;
       position:relative;
     }
+
     .card.soft{
       background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(248,250,252,.98));
     }
+
     .card::before{
       content:"";
-      position:absolute; left:-50px; top:-60px;
-      width:160px; height:160px; border-radius:999px;
-      background: radial-gradient(circle, rgba(56,189,248,.12), transparent 65%);
+      position:absolute; left:-60px; top:-70px;
+      width:170px; height:170px; border-radius:999px;
+      background: radial-gradient(circle, rgba(56,189,248,.10), transparent 65%);
       pointer-events:none;
     }
 
@@ -166,7 +180,6 @@
     .col-12{ grid-column:span 12; }
     .col-6{ grid-column:span 6; }
 
-    /* Recomendación: altura ligeramente mayor para barras horizontales */
     .chartwrap{ height:360px; }
     .chartwrap.tall{ height:380px; }
     canvas{ width:100% !important; height:100% !important; }
@@ -178,31 +191,37 @@
       align-items:end;
       margin-top:10px;
     }
+
     .field{ grid-column: span 3; min-width:160px; }
     .field.wide{ grid-column: span 4; }
+
     label{
       display:block; font-size:12px; color:var(--texto-secundario);
       font-weight:900; margin-bottom:6px;
     }
+
     .hint{ font-weight:800; opacity:.8; }
+
     select, input{
       width:100%;
       padding:8px 10px;
       border-radius:12px;
-      border:1px solid #dbe2ef;
+      border:1px solid rgba(148,163,184,0.35);
       background:#fff;
       font-size:14px;
       outline:none;
     }
+
     input.small{
       padding:7px 10px;
       border-radius:12px;
       background: rgba(241,245,249,.7);
       margin-bottom:6px;
     }
+
     select:focus, input:focus{
-      border-color:#93c5fd;
-      box-shadow:0 0 0 3px rgba(59,130,246,.15);
+      border-color: rgba(59,130,246,0.55);
+      box-shadow:0 0 0 3px rgba(59,130,246,.12);
     }
 
     .btn{
@@ -215,85 +234,102 @@
       user-select:none;
       white-space:nowrap;
     }
-    .btn span.icon{ margin-right:6px; font-size:14px; }
+
     .btn-primary{
       background-color:var(--azul-boton); color:#fff;
-      box-shadow:0 1px 3px rgba(15,23,42,.2);
+      box-shadow:0 1px 3px rgba(15,23,42,.14);
     }
+
     .btn-primary:hover{
       background-color:var(--azul-boton-hover);
       transform:translateY(-1px);
-      box-shadow:0 4px 10px rgba(15,23,42,.28);
+      box-shadow:0 6px 18px rgba(15,23,42,.16);
     }
+
     .btn-ghost{
       background-color:rgba(255,255,255,.95);
       color:#0f172a;
-      border-color:#cbd5f5;
+      border-color: rgba(148,163,184,0.45);
     }
+
     .btn-ghost:hover{
-      background:#e5edff;
-      border-color:#93c5fd;
+      background:#eef6ff;
+      border-color: rgba(59,130,246,0.35);
       transform:translateY(-1px);
-      box-shadow:0 2px 8px rgba(15,23,42,.15);
+      box-shadow:0 4px 12px rgba(15,23,42,.10);
     }
+
     .btn-warn{
-      background:#0d9488; color:#fff;
-      box-shadow:0 1px 3px rgba(15,23,42,.2);
+      background: rgba(16,185,129,0.95); color:#fff;
+      box-shadow:0 1px 3px rgba(15,23,42,.14);
     }
+
     .btn-warn:hover{
-      background:#0f766e;
+      background: rgba(5,150,105,0.98);
       transform:translateY(-1px);
-      box-shadow:0 4px 10px rgba(15,23,42,.22);
+      box-shadow:0 6px 18px rgba(15,23,42,.14);
     }
 
     .kpis{
       display:grid; grid-template-columns:repeat(12,1fr); gap:12px;
     }
+
     .kpi{
       grid-column: span 2;
-      border:1px solid var(--borde-suave);
+      border:1px solid rgba(148,163,184,0.35);
       border-radius:14px;
       padding:12px;
-      background: linear-gradient(180deg,#fff,#f8fafc);
+      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(248,250,252,.98));
       min-height:88px;
     }
+
     .kpi .t{ font-size:12px; color:var(--texto-secundario); font-weight:950; letter-spacing:.02em;}
     .kpi .v{ font-size:20px; font-weight:950; margin-top:6px; }
     .kpi .s{ font-size:12px; color:var(--texto-secundario); margin-top:2px; }
 
     .tablewrap{ overflow-x:auto; }
+
     .cardhead{
       display:flex; flex-wrap:wrap;
       align-items:center; justify-content:space-between;
       gap:10px;
       margin-bottom:10px;
     }
+
     .cardhead h3{ margin:0; }
+
     .mini-actions{
       display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
     }
+
     .mini-btn{
       padding:7px 10px;
       font-size:13px;
       border-radius:999px;
-      border:1px solid #cbd5f5;
+      border:1px solid rgba(148,163,184,0.45);
       background: rgba(255,255,255,.95);
       cursor:pointer;
       font-weight:800;
     }
-    .mini-btn:hover{ background:#e5edff; border-color:#93c5fd; }
 
-    /* Tip box para “cómo leer / estado de filtros” */
+    .mini-btn:hover{
+      background:#eef6ff;
+      border-color: rgba(59,130,246,0.35);
+      box-shadow:0 3px 10px rgba(15,23,42,.10);
+    }
+
     .infobox{
-      border:1px solid rgba(59,130,246,.25);
-      background: rgba(219,234,254,.45);
+      border:1px solid rgba(59,130,246,.18);
+      background: rgba(219,234,254,.40);
       border-radius:14px;
       padding:10px 12px;
       color:#0f172a;
       font-size:13px;
       margin-top:10px;
     }
+
     .infobox b{ font-weight:900; }
+
     .chips{
       display:flex;
       flex-wrap:wrap;
@@ -301,25 +337,28 @@
       margin-top:8px;
       justify-content:center;
     }
+
     .chip{
       display:inline-flex;
       align-items:center;
       gap:6px;
       padding:6px 10px;
       border-radius:999px;
-      border:1px solid rgba(17,24,39,.18);
-      background: rgba(255,255,255,.85);
+      border:1px solid rgba(148,163,184,0.45);
+      background: rgba(255,255,255,0.85);
       font-size:12px;
-      font-weight:800;
-      color:#111827;
+      font-weight:700;
+      color:#0f172a;
     }
+
+    .chip b{ font-weight:800; }
 
     footer{
       text-align:center;
       font-size:12px;
-      color:#6b7280;
+      color:#64748b;
       padding:10px 20px 18px;
-      border-top:1px solid #e5e7eb;
+      border-top:1px solid rgba(148,163,184,0.25);
       background-color:rgba(248,250,252,.9);
       margin-top:auto;
     }
@@ -333,11 +372,12 @@
       padding:10px 12px;
       border-radius:999px;
       font-size:13px;
-      box-shadow:0 10px 25px rgba(15,23,42,.35);
+      box-shadow:0 10px 25px rgba(15,23,42,.30);
       opacity:0; pointer-events:none;
       transition: opacity .2s ease, transform .2s ease;
       z-index:9999;
     }
+
     .toast.show{
       opacity:1;
       transform:translateX(-50%) translateY(-4px);
@@ -350,7 +390,7 @@
       .col-6{ grid-column: span 12; }
       .title-group{ text-align:center; }
       .header-inner{ justify-content:center; }
-      .topnav{ top: 116px; } /* header suele ser más alto en móvil */
+      .topnav{ top: 116px; }
       .chartwrap{ height: 340px; }
     }
   </style>
@@ -374,39 +414,35 @@
   <main>
     <section class="page-header">
       <h2>AC192 · Patrullajes de control y vigilancia · Tablero dinámico</h2>
-      <p>Este tablero se genera automáticamente desde <strong>datos_patrullaje.csv</strong> (del repo) y permite filtrar y graficar.</p>
+      <p>Este tablero se genera automáticamente desde <strong>datos_patrullaje.csv</strong> y permite filtrar y graficar.</p>
       <span class="pill">Tablero dinámico · CSV</span>
     </section>
 
-    <!-- ✅ NAV sticky consistente + acciones arriba -->
     <section class="topnav" aria-label="Navegación y acciones del módulo">
       <nav class="tabs" aria-label="Navegación del módulo">
-        <a class="tab" href="patrullajes_dashboard.html">🗺️ Dashboard geográfico</a>
-        <a class="tab active" href="patrullajes_tablero.html">📈 Tablero dinámico</a>
-        <a class="tab" href="patrullajes_datos.html">📋 Tabla (datos)</a>
+        <a class="tab" href="patrullajes_dashboard.html">Dashboard geográfico</a>
+        <a class="tab active" href="patrullajes_tablero.html">Tablero dinámico</a>
+        <a class="tab" href="patrullajes_datos.html">Tabla de datos</a>
       </nav>
 
       <div class="nav-actions">
-        <!-- navegación global -->
-        <a class="btn btn-ghost" href="index.html"><span class="icon">←</span>Inicio</a>
-        <a class="btn btn-ghost" href="patrullajes_dashboard.html"><span class="icon">🗺️</span>Dashboard</a>
-        <a class="btn btn-primary" href="patrullajes_datos.html"><span class="icon">📋</span>Ir a Tabla</a>
+        <a class="btn btn-ghost" href="index.html">Inicio</a>
+        <a class="btn btn-ghost" href="patrullajes_dashboard.html">Dashboard</a>
+        <a class="btn btn-primary" href="patrullajes_datos.html">Ir a Tabla</a>
 
-        <!-- acciones -->
-        <button class="btn btn-ghost" id="btn-reset" type="button"><span class="icon">🔄</span>Limpiar filtros</button>
-        <button class="btn btn-ghost" id="btn-copy" type="button"><span class="icon">🔗</span>Copiar enlace</button>
-        <button class="btn btn-warn" id="btn-pdf" type="button"><span class="icon">🧾</span>Reporte PDF (resumen)</button>
+        <button class="btn btn-ghost" id="btn-reset" type="button">Limpiar filtros</button>
+        <button class="btn btn-ghost" id="btn-copy" type="button">Copiar enlace</button>
+        <button class="btn btn-warn" id="btn-pdf" type="button">Generar informe PDF</button>
       </div>
 
       <div class="infobox" style="text-align:center;">
-        <b>Tip:</b> haz clic en una barra de “Top municipios/guardas” o en “Patrullajes en el tiempo” para filtrar (drill-down).
+        <b>Sugerencia:</b> haga clic sobre una barra (Top municipios/guardas o serie temporal) para aplicar un filtro adicional.
         <div class="chips" id="chips-filtros" aria-label="Resumen de filtros"></div>
       </div>
 
       <p class="subnote" id="estado" style="margin-top:10px; text-align:center;">Cargando datos…</p>
     </section>
 
-    <!-- ✅ FILTROS (mantienen su estructura) -->
     <section class="card soft">
       <div class="filters">
         <div class="field wide">
@@ -441,31 +477,31 @@
 
         <div class="field">
           <label for="f-guarda">Guarda recursos <span class="hint">(buscable)</span></label>
-          <input id="s-guarda" class="small" type="search" placeholder="Buscar guarda…" autocomplete="off">
+          <input id="s-guarda" class="small" type="search" placeholder="Buscar..." autocomplete="off">
           <select id="f-guarda"></select>
         </div>
 
         <div class="field">
           <label for="f-muni">Municipio <span class="hint">(buscable)</span></label>
-          <input id="s-muni" class="small" type="search" placeholder="Buscar municipio…" autocomplete="off">
+          <input id="s-muni" class="small" type="search" placeholder="Buscar..." autocomplete="off">
           <select id="f-muni"></select>
         </div>
 
         <div class="field">
           <label for="f-region">Región <span class="hint">(buscable)</span></label>
-          <input id="s-region" class="small" type="search" placeholder="Buscar región…" autocomplete="off">
+          <input id="s-region" class="small" type="search" placeholder="Buscar..." autocomplete="off">
           <select id="f-region"></select>
         </div>
 
         <div class="field">
           <label for="f-area">Área protegida <span class="hint">(buscable)</span></label>
-          <input id="s-area" class="small" type="search" placeholder="Buscar área…" autocomplete="off">
+          <input id="s-area" class="small" type="search" placeholder="Buscar..." autocomplete="off">
           <select id="f-area"></select>
         </div>
 
         <div class="field">
           <label for="f-tipo">Tipo patrullaje <span class="hint">(buscable)</span></label>
-          <input id="s-tipo" class="small" type="search" placeholder="Buscar tipo…" autocomplete="off">
+          <input id="s-tipo" class="small" type="search" placeholder="Buscar..." autocomplete="off">
           <select id="f-tipo"></select>
         </div>
 
@@ -498,7 +534,6 @@
       </div>
     </section>
 
-    <!-- ✅ KPIs (primero) -->
     <section class="card">
       <div class="kpis">
         <div class="kpi">
@@ -527,14 +562,13 @@
           <div class="s">suma duraciones</div>
         </div>
         <div class="kpi">
-          <div class="t">% Coord válidas</div>
+          <div class="t">% Coordenadas válidas</div>
           <div class="v" id="k-coord">–</div>
-          <div class="s">X/Y numéricas</div>
+          <div class="s">Lat/Lon o X/Y</div>
         </div>
       </div>
     </section>
 
-    <!-- ✅ GRÁFICOS ORDENADOS: principal (full) + 2 secundarios (2 col) -->
     <section class="grid">
       <div class="card col-12">
         <div class="cardhead">
@@ -543,7 +577,7 @@
             <p class="subnote" style="margin:0;">Serie según el agrupamiento seleccionado.</p>
           </div>
           <div class="mini-actions">
-            <button class="mini-btn" id="png-tiempo" type="button">PNG</button>
+            <button class="mini-btn" id="png-tiempo" type="button">Exportar PNG</button>
           </div>
         </div>
         <div class="chartwrap tall"><canvas id="c-tiempo"></canvas></div>
@@ -556,7 +590,7 @@
             <p class="subnote" style="margin:0;">Top 10 por registros (filtro actual).</p>
           </div>
           <div class="mini-actions">
-            <button class="mini-btn" id="png-muni" type="button">PNG</button>
+            <button class="mini-btn" id="png-muni" type="button">Exportar PNG</button>
           </div>
         </div>
         <div class="chartwrap"><canvas id="c-muni"></canvas></div>
@@ -569,14 +603,13 @@
             <p class="subnote" style="margin:0;">Top 10 por registros (filtro actual).</p>
           </div>
           <div class="mini-actions">
-            <button class="mini-btn" id="png-guarda" type="button">PNG</button>
+            <button class="mini-btn" id="png-guarda" type="button">Exportar PNG</button>
           </div>
         </div>
         <div class="chartwrap"><canvas id="c-guarda"></canvas></div>
       </div>
     </section>
 
-    <!-- ✅ TABLA PIVOTE (antes de tabla completa) -->
     <section class="card">
       <div class="cardhead">
         <div>
@@ -593,12 +626,11 @@
       </div>
     </section>
 
-    <!-- ✅ TABLA COMPLETA (al final) -->
     <section class="card">
       <div class="cardhead">
         <div>
           <h3 style="margin:0 0 6px;">Registros filtrados</h3>
-          <p class="subnote" style="margin:0;">Tabla completa filtrada (puedes exportar lo filtrado).</p>
+          <p class="subnote" style="margin:0;">Tabla completa filtrada (exporta lo filtrado).</p>
         </div>
         <div class="mini-actions">
           <button class="mini-btn" id="btn-dl-csv" type="button">CSV</button>
@@ -643,6 +675,8 @@
       hIni: "Hora de Inicio del patrullaje",
       hFin: "Hora de finalizacion de patrullaje",
       ubic: "Ubicacion",
+      lon: "Longitud",
+      lat: "Latitud",
       x: "X",
       y: "Y",
     };
@@ -705,6 +739,34 @@
       toastTimer = setTimeout(()=>toast.classList.remove("show"), 1600);
     }
 
+    // ===== Sonido sutil (WebAudio) =====
+    const SFX = (() => {
+      let ctx = null;
+      function playClick(){
+        try{
+          ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+          const t0 = ctx.currentTime;
+          const o  = ctx.createOscillator();
+          const g  = ctx.createGain();
+
+          o.type = "sine";
+          o.frequency.setValueAtTime(520, t0);
+          o.frequency.exponentialRampToValueAtTime(420, t0 + 0.08);
+
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(0.03, t0 + 0.01);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.09);
+
+          o.connect(g);
+          g.connect(ctx.destination);
+
+          o.start(t0);
+          o.stop(t0 + 0.10);
+        }catch(e){}
+      }
+      return { playClick };
+    })();
+
     // ===== Helpers =====
     function norm(s){ return String(s || "").trim(); }
     function normalizar(t){
@@ -712,6 +774,13 @@
     }
     function pad2(n){ return String(n).padStart(2,"0"); }
     function isNum(v){ return v !== null && v !== "" && isFinite(Number(v)); }
+    function safeNum(v){
+      if (v === null || v === undefined) return null;
+      const s = String(v).trim().replace(",", ".");
+      if(!s) return null;
+      const n = Number(s);
+      return isFinite(n) ? n : null;
+    }
 
     // Fecha: soporta "8/13/2025 18:00" y "13/8/2025 18:00" y "YYYY-MM-DD"
     function extraerFechaCompleta(fechaRaw){
@@ -740,8 +809,8 @@
       if (isNaN(p1) || isNaN(p2) || isNaN(anio)) return null;
 
       let mes, dia;
-      if (p1 > 12 && p2 >= 1 && p2 <= 12) { dia = p1; mes = p2; } // dd/mm
-      else { mes = p1; dia = p2; } // mm/dd por defecto
+      if (p1 > 12 && p2 >= 1 && p2 <= 12) { dia = p1; mes = p2; }
+      else { mes = p1; dia = p2; }
 
       if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
       const dt = new Date(anio, mes-1, dia);
@@ -875,7 +944,10 @@
       const horas = rows.map(r=>r.__durH).filter(v=>v!=null && isFinite(v)).reduce((a,b)=>a+b, 0);
       kHoras.textContent = horas ? (Math.round(horas*10)/10).toLocaleString("es") : "—";
 
-      const valid = rows.filter(r=>r.__coordOk).length;
+      // Coordenadas válidas: Lat/Lon preferido, si no X/Y
+      const coordLatLon = rows.filter(r => safeNum(r[F.lat])!=null && safeNum(r[F.lon])!=null).length;
+      const coordXY     = rows.filter(r => isNum(r[F.x]) && isNum(r[F.y])).length;
+      const valid = Math.max(coordLatLon, coordXY);
       const pctCoord = total ? Math.round((valid*1000)/total)/10 : 0;
       kCoord.textContent = total ? (pctCoord.toLocaleString("es") + "%") : "—";
     }
@@ -889,6 +961,7 @@
       });
       return m;
     }
+
     function topN(map, n){
       return Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0,n);
     }
@@ -906,67 +979,58 @@
       }
     };
 
-    // ✅ Paleta pastel + contorno negro
+    // Paleta pastel
     const PASTEL = ["#A7F3D0","#BFDBFE","#FDE68A","#FBCFE8","#DDD6FE","#FED7AA","#CFFAFE","#E9D5FF","#FFE4E6","#E5E7EB"];
-    const OUTLINE = getComputedStyle(document.documentElement).getPropertyValue("--chart-outline").trim() || "#111827";
-
     function pastelArray(n){
       const out = [];
       for(let i=0;i<n;i++) out.push(PASTEL[i % PASTEL.length]);
       return out;
     }
 
-    function applyPastelOutlineToDatasets(cfg){
+    const STROKE = "rgba(15,23,42,0.35)";
+    const NO_STROKE = "rgba(15,23,42,0)";
+
+    function applyPastelToDatasets(cfg){
       if(!cfg || !cfg.data || !cfg.data.datasets) return cfg;
-      cfg.data.datasets.forEach((ds, idx)=>{
+
+      cfg.data.datasets.forEach((ds)=>{
         const n = Array.isArray(ds.data) ? ds.data.length : 1;
         const colors = pastelArray(n);
 
-        // Bar / horizontal bar
         if(cfg.type === "bar"){
-          ds.backgroundColor = colors.map(c=>c);
-          ds.borderColor = colors.map(_=>OUTLINE);
-          ds.borderWidth = 2;
+          ds.backgroundColor = colors;
+          ds.borderColor = NO_STROKE;
+          ds.borderWidth = 0;
           ds.borderSkipped = false;
         } else {
-          // Line, etc.
           ds.backgroundColor = colors[0];
-          ds.borderColor = OUTLINE;
-          ds.borderWidth = 2;
+          ds.borderColor = STROKE;
+          ds.borderWidth = 1.5;
           ds.pointBackgroundColor = colors[0];
-          ds.pointBorderColor = OUTLINE;
-          ds.pointBorderWidth = 2;
-          ds.pointRadius = 4;
+          ds.pointBorderColor = NO_STROKE;
+          ds.pointBorderWidth = 0;
+          ds.pointRadius = 3.5;
           ds.tension = 0.25;
         }
       });
+
       return cfg;
     }
 
     function commonChartOptions(extra){
+      const tick = getComputedStyle(document.documentElement).getPropertyValue("--chart-tick").trim() || "rgba(15,23,42,0.85)";
+      const grid = getComputedStyle(document.documentElement).getPropertyValue("--chart-grid").trim() || "rgba(2,6,23,0.08)";
+
       const base = {
         responsive:true,
         maintainAspectRatio:false,
         plugins:{
-          legend:{
-            display:true,
-            labels:{ color: getComputedStyle(document.documentElement).getPropertyValue("--chart-tick").trim() || "#111827" }
-          },
-          tooltip:{
-            borderColor: OUTLINE,
-            borderWidth: 1
-          }
+          legend:{ display:true, labels:{ color: tick } },
+          tooltip:{ borderWidth: 0 }
         },
         scales:{
-          x:{
-            ticks:{ color: getComputedStyle(document.documentElement).getPropertyValue("--chart-tick").trim() || "#111827" },
-            grid:{ color: getComputedStyle(document.documentElement).getPropertyValue("--chart-grid").trim() || "rgba(17,24,39,0.14)" }
-          },
-          y:{
-            beginAtZero:true,
-            ticks:{ color: getComputedStyle(document.documentElement).getPropertyValue("--chart-tick").trim() || "#111827" },
-            grid:{ color: getComputedStyle(document.documentElement).getPropertyValue("--chart-grid").trim() || "rgba(17,24,39,0.14)" }
-          }
+          x:{ ticks:{ color: tick }, grid:{ color: grid } },
+          y:{ beginAtZero:true, ticks:{ color: tick }, grid:{ color: grid } }
         }
       };
       return Object.assign({}, base, extra || {});
@@ -978,8 +1042,7 @@
       const ctx = el.getContext("2d");
       if(prev) prev.destroy();
 
-      // ✅ aplica estilo pastel/contorno + opciones comunes
-      cfg = applyPastelOutlineToDatasets(cfg);
+      cfg = applyPastelToDatasets(cfg);
       cfg.options = commonChartOptions(cfg.options);
 
       return new Chart(ctx, cfg);
@@ -999,6 +1062,8 @@
         options:{
           onClick:(evt, elements)=>{
             if(!elements || !elements.length) return;
+            SFX.playClick();
+
             const idx = elements[0].index;
             const label = labelsT[idx];
 
@@ -1024,6 +1089,7 @@
       const mM = countBy(rows, r=>r.__muni || "(Sin municipio)");
       const topM = topN(mM, 10);
       const labelsM = topM.map(x=>x[0]);
+
       chartMuni = renderChart("c-muni", chartMuni, {
         type:"bar",
         data:{ labels: labelsM, datasets:[{ label:"Registros", data: topM.map(x=>x[1]) }] },
@@ -1032,20 +1098,21 @@
           indexAxis:"y",
           onClick:(evt, elements)=>{
             if(!elements || !elements.length) return;
+            SFX.playClick();
+
             const idx = elements[0].index;
             const label = labelsM[idx];
             fMuni.value = label;
             refrescar(true);
           },
-          scales:{
-            x:{ beginAtZero:true }
-          }
+          scales:{ x:{ beginAtZero:true } }
         }
       });
 
       const mG = countBy(rows, r=>r.__guarda || "(Sin guarda)");
       const topG = topN(mG, 10);
       const labelsG = topG.map(x=>x[0]);
+
       chartGuarda = renderChart("c-guarda", chartGuarda, {
         type:"bar",
         data:{ labels: labelsG, datasets:[{ label:"Registros", data: topG.map(x=>x[1]) }] },
@@ -1054,14 +1121,14 @@
           indexAxis:"y",
           onClick:(evt, elements)=>{
             if(!elements || !elements.length) return;
+            SFX.playClick();
+
             const idx = elements[0].index;
             const label = labelsG[idx];
             fGuarda.value = label;
             refrescar(true);
           },
-          scales:{
-            x:{ beginAtZero:true }
-          }
+          scales:{ x:{ beginAtZero:true } }
         }
       });
     }
@@ -1283,34 +1350,6 @@
       return parts.join(" · ");
     }
 
-    function renderChipsResumen(){
-      if(!chipsFiltros) return;
-      const chips = [];
-
-      const t = fTemporal.value;
-      if(t === "todo") chips.push(["⏱️","Todo"]);
-      if(t === "mes") chips.push(["🗓️","Mes: " + (fMes.value || "—")]);
-      if(t === "semana") chips.push(["📅","Semana: " + (fSemana.value || "—")]);
-      if(t === "rango") chips.push(["📆","Rango: " + (fDesde.value||"—") + " → " + (fHasta.value||"—")]);
-
-      if(fMuni.value !== "todo") chips.push(["📍","Municipio: " + fMuni.value]);
-      if(fGuarda.value !== "todo") chips.push(["🛡️","Guarda: " + fGuarda.value]);
-      if(fRegion.value !== "todo") chips.push(["🧭","Región: " + fRegion.value]);
-      if(fArea.value !== "todo") chips.push(["🌿","Área: " + fArea.value]);
-      if(fTipo.value !== "todo") chips.push(["🧾","Tipo: " + fTipo.value]);
-      if(fIlegal.value !== "todo") chips.push(["⚠️","Ilegal: " + (fIlegal.value === "si" ? "Sí" : "No")]);
-      if(fInst.value !== "todo") chips.push(["🤝","Instituciones: " + (fInst.value === "si" ? "Con" : "Sin")]);
-
-      chips.push(["📊","Agrupar: " + fAgrupar.value]);
-
-      chipsFiltros.innerHTML = chips.map(([ic, txt]) => `<span class="chip">${ic} ${escapeHtml(txt)}</span>`).join("");
-    }
-
-    function topList(rows, key, n){
-      const m = countBy(rows, r=>r[key] || "(Sin dato)");
-      return topN(m, n);
-    }
-
     function escapeHtml(texto) {
       return String(texto || "")
         .replace(/&/g, "&amp;")
@@ -1320,127 +1359,493 @@
         .replace(/'/g, "&#39;");
     }
 
-    async function generarReportePDF(){
+    function renderChipsResumen(){
+      if(!chipsFiltros) return;
+
+      const chips = [];
+
+      const t = fTemporal.value;
+      if(t === "todo")   chips.push(["Temporal", "Todo"]);
+      if(t === "mes")    chips.push(["Temporal", "Mes: " + (fMes.value || "—")]);
+      if(t === "semana") chips.push(["Temporal", "Semana: " + (fSemana.value || "—")]);
+      if(t === "rango")  chips.push(["Temporal", "Rango: " + (fDesde.value||"—") + " a " + (fHasta.value||"—")]);
+
+      if(fMuni.value   !== "todo") chips.push(["Municipio", fMuni.value]);
+      if(fGuarda.value !== "todo") chips.push(["Guarda recurso", fGuarda.value]);
+      if(fRegion.value !== "todo") chips.push(["Región", fRegion.value]);
+      if(fArea.value   !== "todo") chips.push(["Área protegida", fArea.value]);
+      if(fTipo.value   !== "todo") chips.push(["Tipo patrullaje", fTipo.value]);
+      if(fIlegal.value !== "todo") chips.push(["Actividad ilegal", (fIlegal.value === "si" ? "Sí" : "No")]);
+      if(fInst.value   !== "todo") chips.push(["Instituciones", (fInst.value === "si" ? "Con" : "Sin")]);
+
+      chips.push(["Agrupar", fAgrupar.value]);
+
+      chipsFiltros.innerHTML = chips.map(([k, v]) =>
+        `<span class="chip"><b>${escapeHtml(k)}:</b> ${escapeHtml(v)}</span>`
+      ).join("");
+    }
+
+    function topList(rows, key, n){
+      const m = countBy(rows, r=>r[key] || "(Sin dato)");
+      return topN(m, n);
+    }
+
+    // ===== Informe textual + heatmap =====
+    function fmtNum(n){ return (n ?? 0).toLocaleString("es"); }
+    function fmtPct(num, den){
+      if(!den) return "—";
+      const pct = Math.round((num * 1000) / den) / 10;
+      return pct.toLocaleString("es") + "%";
+    }
+    function fmtDateES(d){
+      try{ return d.toLocaleDateString("es", {year:"numeric", month:"long", day:"2-digit"}); }
+      catch(e){ return String(d || ""); }
+    }
+
+    function topItemsText(rows, key, n=5){
+      const total = rows.length || 0;
+      const m = countBy(rows, r => r[key] || "(Sin dato)");
+      const top = topN(m, n);
+      if(!top.length) return "Sin datos suficientes para ranking.";
+      return top.map(([k,v], i)=>{
+        const p = total ? Math.round((v*1000)/total)/10 : 0;
+        return `${i+1}) ${k}: ${fmtNum(v)} (${p.toLocaleString("es")}%)`;
+      }).join("; ");
+    }
+
+    function computeStatsForReport(rows){
+      const total = rows.length;
+
+      const withDate = rows.filter(r => r.__date instanceof Date && !isNaN(r.__date.getTime()));
+      const dates = withDate.map(r => r.__date.getTime()).sort((a,b)=>a-b);
+      const minDate = dates.length ? new Date(dates[0]) : null;
+      const maxDate = dates.length ? new Date(dates[dates.length-1]) : null;
+
+      const ilegalSi = rows.filter(r=>r.__ilegal==="si").length;
+      const instSi   = rows.filter(r=>r.__inst==="si").length;
+
+      const horasArr = rows.map(r=>r.__durH).filter(v=>v!=null && isFinite(v));
+      const horasSum = horasArr.reduce((a,b)=>a+b, 0);
+      const horasAvg = horasArr.length ? (horasSum/horasArr.length) : null;
+
+      const coordLatLon = rows.filter(r => safeNum(r[F.lat])!=null && safeNum(r[F.lon])!=null).length;
+      const coordXY     = rows.filter(r => isNum(r[F.x]) && isNum(r[F.y])).length;
+
+      const munis = new Set(rows.map(r=>r.__muni).filter(Boolean)).size;
+      const guardas = new Set(rows.map(r=>r.__guarda).filter(Boolean)).size;
+
+      return {
+        total, minDate, maxDate, withDateCount: withDate.length,
+        ilegalSi, instSi,
+        horasSum, horasAvg, horasCount: horasArr.length,
+        coordLatLon, coordXY,
+        munis, guardas
+      };
+    }
+
+    function generarHeatmapDataUrl(rows){
+      let pts = rows.map(r=>{
+        const lat = safeNum(r[F.lat]);
+        const lon = safeNum(r[F.lon]);
+        if(lat==null || lon==null) return null;
+        return { lat, lon };
+      }).filter(Boolean);
+
+      let mode = "latlon";
+      if(pts.length < 3){
+        const ptsXY = rows.map(r=>{
+          const x = safeNum(r[F.x]);
+          const y = safeNum(r[F.y]);
+          if(x==null || y==null) return null;
+          return { x, y };
+        }).filter(Boolean);
+        if(ptsXY.length >= 3){
+          mode = "xy";
+          pts = ptsXY;
+        }
+      }
+
+      if(pts.length < 3){
+        return { dataUrl:"", mode:"none", count: pts.length };
+      }
+
+      const W = 1000, H = 550;
+      const pad = 18;
+
+      let minA=Infinity, maxA=-Infinity, minB=Infinity, maxB=-Infinity;
+      pts.forEach(p=>{
+        const a = (mode==="latlon") ? p.lon : p.x;
+        const b = (mode==="latlon") ? p.lat : p.y;
+        minA = Math.min(minA,a); maxA = Math.max(maxA,a);
+        minB = Math.min(minB,b); maxB = Math.max(maxB,b);
+      });
+      if(minA === maxA) { minA -= 1; maxA += 1; }
+      if(minB === maxB) { minB -= 1; maxB += 1; }
+
+      const c = document.createElement("canvas");
+      c.width = W; c.height = H;
+      const ctx = c.getContext("2d");
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0,0,W,H);
+
+      // grilla suave
+      ctx.strokeStyle = "rgba(15,23,42,0.06)";
+      ctx.lineWidth = 1;
+      for(let i=0;i<=10;i++){
+        const x = pad + i*(W-2*pad)/10;
+        ctx.beginPath(); ctx.moveTo(x,pad); ctx.lineTo(x,H-pad); ctx.stroke();
+      }
+      for(let i=0;i<=6;i++){
+        const y = pad + i*(H-2*pad)/6;
+        ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
+      }
+
+      const off = document.createElement("canvas");
+      off.width = W; off.height = H;
+      const octx = off.getContext("2d");
+      octx.clearRect(0,0,W,H);
+
+      const radius = 26;
+      const alphaPerPoint = Math.min(0.08, 10/Math.max(pts.length,10));
+
+      function toPx(p){
+        const a = (mode==="latlon") ? p.lon : p.x;
+        const b = (mode==="latlon") ? p.lat : p.y;
+        const x = pad + ((a - minA) / (maxA - minA)) * (W - 2*pad);
+        const y = pad + (1 - ((b - minB) / (maxB - minB))) * (H - 2*pad);
+        return {x,y};
+      }
+
+      pts.forEach(p=>{
+        const {x,y} = toPx(p);
+        const g = octx.createRadialGradient(x,y,0, x,y, radius);
+        g.addColorStop(0, `rgba(0,0,0,${alphaPerPoint})`);
+        g.addColorStop(1, "rgba(0,0,0,0)");
+        octx.fillStyle = g;
+        octx.fillRect(x-radius, y-radius, radius*2, radius*2);
+      });
+
+      const grad = document.createElement("canvas");
+      grad.width = 256; grad.height = 1;
+      const gctx = grad.getContext("2d");
+      const lg = gctx.createLinearGradient(0,0,256,0);
+      lg.addColorStop(0.00, "#1e3a8a");
+      lg.addColorStop(0.25, "#06b6d4");
+      lg.addColorStop(0.50, "#22c55e");
+      lg.addColorStop(0.75, "#f59e0b");
+      lg.addColorStop(1.00, "#ef4444");
+      gctx.fillStyle = lg;
+      gctx.fillRect(0,0,256,1);
+      const gradData = gctx.getImageData(0,0,256,1).data;
+
+      const img = octx.getImageData(0,0,W,H);
+      const d = img.data;
+      for(let i=0;i<d.length;i+=4){
+        const a = d[i+3];
+        if(a === 0) continue;
+        const idx = a; // 0..255
+        d[i]   = gradData[idx*4];
+        d[i+1] = gradData[idx*4+1];
+        d[i+2] = gradData[idx*4+2];
+        d[i+3] = 255;
+      }
+      ctx.putImageData(img,0,0);
+
+      ctx.strokeStyle = "rgba(148,163,184,0.55)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1,1,W-2,H-2);
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "600 11pt system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif";
+      ctx.fillText("Mapa de calor (densidad de patrullajes)", pad, 22);
+
+      const lx = W - pad - 240, ly = 18, lw = 220, lh = 12;
+      ctx.drawImage(grad, lx, ly, lw, lh);
+      ctx.strokeStyle = "rgba(148,163,184,0.65)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(lx, ly, lw, lh);
+      ctx.font = "10pt system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif";
+      ctx.fillText("Baja", lx, ly+28);
+      ctx.fillText("Alta", lx+lw-22, ly+28);
+
+      ctx.font = "10pt system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif";
+      const modeLabel = (mode==="latlon")
+        ? `Coordenadas: Latitud/Longitud (n=${pts.length})`
+        : `Coordenadas: X/Y (plano) (n=${pts.length})`;
+      ctx.fillText(modeLabel, pad, H - 10);
+
+      return { dataUrl: c.toDataURL("image/png", 1.0), mode, count: pts.length };
+    }
+
+    function construirInformeHTML({rows, imgs, heat, stats, stamp}){
+      const filtros = escapeHtml(resumenFiltrosTexto());
+
+      // Contexto dinámico según filtros (intersección AND)
+      const ctxParts = [];
+      if (fGuarda.value !== "todo") ctxParts.push(`El análisis se restringe al guarda recurso responsable: ${fGuarda.value}.`);
+      if (fMuni.value   !== "todo") ctxParts.push(`Municipio seleccionado: ${fMuni.value}.`);
+      if (fRegion.value !== "todo") ctxParts.push(`Región seleccionada: ${fRegion.value}.`);
+      if (fArea.value   !== "todo") ctxParts.push(`Área protegida seleccionada: ${fArea.value}.`);
+      if (fTipo.value   !== "todo") ctxParts.push(`Tipo de patrullaje seleccionado: ${fTipo.value}.`);
+      if (fIlegal.value !== "todo") ctxParts.push(`Actividad ilegal: ${fIlegal.value === "si" ? "Sí" : "No"}.`);
+      if (fInst.value   !== "todo") ctxParts.push(`Instituciones: ${fInst.value === "si" ? "Con" : "Sin"}.`);
+
+      const contextoTxt = ctxParts.length
+        ? ctxParts.join(" ")
+        : "No se aplicaron filtros por dimensiones; se consideran los registros del universo seleccionado por el filtro temporal/operativo vigente.";
+
+      // Rango temporal efectivo
+      const rango = (stats.minDate && stats.maxDate)
+        ? `El periodo analizado abarca del ${fmtDateES(stats.minDate)} al ${fmtDateES(stats.maxDate)} (n=${fmtNum(stats.withDateCount)} registros con fecha válida).`
+        : `No fue posible determinar el rango temporal por falta de fechas válidas (registros con fecha válida: n=${fmtNum(stats.withDateCount)}).`;
+
+      // Coordenadas
+      const coordTxt = (heat.mode==="latlon")
+        ? `Se identificaron ${fmtNum(stats.coordLatLon)} registros con coordenadas Latitud/Longitud válidas para el análisis espacial.`
+        : (heat.mode==="xy")
+          ? `No hubo suficientes Latitud/Longitud; se usaron coordenadas X/Y como plano. Registros con X/Y válidas: ${fmtNum(stats.coordXY)}.`
+          : `No hubo coordenadas suficientes para construir el mapa de calor. Lat/Lon válidas: ${fmtNum(stats.coordLatLon)}; X/Y válidas: ${fmtNum(stats.coordXY)}.`;
+
+      const horasTxt = stats.horasCount
+        ? `La duración total acumulada (solo registros con horas válidas) fue de ${Math.round(stats.horasSum*10)/10} horas, con un promedio de ${Math.round(stats.horasAvg*10)/10} horas por registro válido.`
+        : `No se calcularon duraciones por ausencia de horas válidas.`;
+
+      const ilegalTxt = `Se registró “actividad ilegal” en ${fmtNum(stats.ilegalSi)} de ${fmtNum(stats.total)} registros (${fmtPct(stats.ilegalSi, stats.total)}).`;
+      const instTxt   = `Participación de instituciones: ${fmtNum(stats.instSi)} de ${fmtNum(stats.total)} registros (${fmtPct(stats.instSi, stats.total)}).`;
+
+      const mostrarTopMuni   = (fMuni.value === "todo");
+      const mostrarTopGuarda = (fGuarda.value === "todo");
+
+      const topMuni = topItemsText(rows, "__muni", 5);
+      const topGua  = topItemsText(rows, "__guarda", 5);
+      const topArea = topItemsText(rows, "__area", 5);
+      const topTipo = topItemsText(rows, "__tipo", 5);
+
+      return `
+        <style>
+          .report{
+            font-family: "Times New Roman", Times, serif;
+            font-size: 10pt;
+            line-height: 1.0;
+            color: #000;
+            text-align: justify;
+            background: #fff;
+            padding: 14px;
+          }
+
+          .r-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
+          .r-logos{display:flex; gap:8px; align-items:center;}
+          .r-logos img{height:34px; background:#fff; border-radius:999px; padding:3px 6px; border:1px solid rgba(148,163,184,0.75);}
+          .muted{color:#111; opacity:.75; margin:0;}
+
+          .title{font-weight:700; font-size:12pt; margin:10px 0 2px; text-align:left;}
+          .chip{
+            display:inline-block; padding:4px 10px; border:1px solid rgba(148,163,184,0.85);
+            border-radius:999px; margin-top:6px; font-weight:700;
+          }
+
+          .sec{margin-top:10px;}
+          .h1{font-weight:700; margin:10px 0 4px;}
+          .h2{font-weight:700; margin:8px 0 4px;}
+          .p{margin:0 0 6px;}
+
+          .kgrid{display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-top:8px;}
+          .k{border:1px solid rgba(148,163,184,0.85); padding:8px; border-radius:8px;}
+          .k .t{font-weight:700; margin:0 0 2px;}
+          .k .v{margin:0;}
+
+          figure{margin:10px 0; page-break-inside:avoid;}
+          .figimg{width:100%; border:1px solid rgba(148,163,184,0.85); border-radius:10px; display:block;}
+          .figcap{margin-top:4px; font-weight:700; text-align:left;}
+
+          .pagebreak{page-break-after:always;}
+
+          .sigpage{
+            min-height: 260mm;
+            display:flex;
+            flex-direction:column;
+            justify-content:flex-end;
+            align-items:center;
+            text-align:center;
+          }
+          .sigline{
+            width: 70%;
+            border-top: 1px solid rgba(148,163,184,0.95);
+            margin: 40px auto 6px;
+          }
+          .sigsmall{margin:0;}
+        </style>
+
+        <div class="report">
+          <div class="r-head">
+            <div class="r-logos">
+              <img src="conap_logo.jpg" alt="CONAP">
+              <img src="aala_logo.png" alt="AALA">
+            </div>
+            <p class="muted">Generado: ${escapeHtml(stamp)}</p>
+          </div>
+
+          <div class="title">Informe técnico · Patrullajes de control y vigilancia (AC192)</div>
+          <p class="muted">Fuente: datos_patrullaje.csv · Módulo “Tablero dinámico”</p>
+          <div class="chip">${filtros}</div>
+
+          <div class="sec kgrid">
+            <div class="k"><p class="t">Registros (filtrados)</p><p class="v">${fmtNum(stats.total)}</p></div>
+            <div class="k"><p class="t">Municipios únicos</p><p class="v">${fmtNum(stats.munis)}</p></div>
+            <div class="k"><p class="t">Guardas únicos</p><p class="v">${fmtNum(stats.guardas)}</p></div>
+            <div class="k"><p class="t">% Actividad ilegal</p><p class="v">${fmtPct(stats.ilegalSi, stats.total)}</p></div>
+            <div class="k"><p class="t">% Con instituciones</p><p class="v">${fmtPct(stats.instSi, stats.total)}</p></div>
+            <div class="k"><p class="t">Horas válidas (suma)</p><p class="v">${stats.horasCount ? (Math.round(stats.horasSum*10)/10).toLocaleString("es") : "—"}</p></div>
+          </div>
+
+          <div class="sec">
+            <div class="h1"><b>1. Introducción</b></div>
+            <p class="p">
+              El presente informe técnico describe el comportamiento de los patrullajes registrados en el sistema,
+              con base en el subconjunto resultante de los filtros aplicados en el tablero. Se presenta un resumen cuantitativo,
+              tendencias temporales, distribución espacial (mapa de calor) y principales categorías operativas.
+            </p>
+          </div>
+
+          <div class="sec">
+            <div class="h1"><b>2. Metodología</b></div>
+
+            <div class="h2"><b>2.1 Fuente de datos</b></div>
+            <p class="p">
+              Se utilizó el archivo <i>datos_patrullaje.csv</i>, procesado localmente en el navegador. Los campos utilizados incluyen:
+              fecha de patrullaje, guarda responsable, municipio, región, área protegida, tipo de patrullaje, variables de ilegalidad,
+              instituciones y coordenadas.
+            </p>
+
+            <div class="h2"><b>2.2 Criterios de filtrado</b></div>
+            <p class="p">
+              Los resultados corresponden estrictamente al estado actual de filtros del tablero. ${escapeHtml(contextoTxt)} ${rango}
+            </p>
+
+            <div class="h2"><b>2.3 Tratamiento de coordenadas</b></div>
+            <p class="p">
+              ${coordTxt} Para la visualización espacial se construyó un mapa de calor (densidad) a partir de las coordenadas
+              asociadas a los registros filtrados.
+            </p>
+          </div>
+
+          <div class="pagebreak"></div>
+
+          <div class="sec">
+            <div class="h1"><b>3. Resultados</b></div>
+
+            <div class="h2"><b>3.1 Resumen técnico del subconjunto filtrado</b></div>
+            <p class="p">
+              Se analizaron ${fmtNum(stats.total)} registros filtrados, correspondientes a ${fmtNum(stats.munis)} municipios y
+              ${fmtNum(stats.guardas)} guardarecursos. ${ilegalTxt} ${instTxt} ${horasTxt}
+            </p>
+
+            ${mostrarTopMuni ? `<p class="p"><b>Municipios con mayor frecuencia (Top 5):</b> ${escapeHtml(topMuni)}.</p>` : ``}
+            ${mostrarTopGuarda ? `<p class="p"><b>Guardarecursos con mayor frecuencia (Top 5):</b> ${escapeHtml(topGua)}.</p>` : ``}
+            <p class="p"><b>Áreas protegidas con mayor frecuencia (Top 5):</b> ${escapeHtml(topArea)}.</p>
+            <p class="p"><b>Tipos de patrullaje con mayor frecuencia (Top 5):</b> ${escapeHtml(topTipo)}.</p>
+
+            <div class="h2"><b>3.2 Tendencia temporal</b></div>
+            ${imgs.tiempo ? `
+              <figure>
+                <img class="figimg" src="${imgs.tiempo}" alt="Tendencia temporal">
+                <div class="figcap"><b>Figura 1.</b> Patrullajes en el tiempo (según agrupamiento seleccionado).</div>
+              </figure>
+            ` : `<p class="p muted">No se dispone de la gráfica temporal.</p>`}
+          </div>
+
+          <div class="pagebreak"></div>
+
+          <div class="sec">
+            <div class="h2"><b>3.3 Distribución espacial (mapa de calor)</b></div>
+            ${heat.dataUrl ? `
+              <figure>
+                <img class="figimg" src="${heat.dataUrl}" alt="Mapa de calor">
+                <div class="figcap"><b>Figura 2.</b> Mapa de calor (densidad) de registros filtrados con coordenadas válidas.</div>
+              </figure>
+            ` : `<p class="p muted">No se generó el mapa de calor por falta de coordenadas suficientes.</p>`}
+
+            <div class="h2"><b>3.4 Principales categorías operativas</b></div>
+
+            ${imgs.muni && mostrarTopMuni ? `
+              <figure>
+                <img class="figimg" src="${imgs.muni}" alt="Top municipios">
+                <div class="figcap"><b>Figura 3.</b> Top municipios por registros (filtro actual).</div>
+              </figure>
+            ` : ``}
+
+            ${imgs.guarda && mostrarTopGuarda ? `
+              <figure>
+                <img class="figimg" src="${imgs.guarda}" alt="Top guardarecursos">
+                <div class="figcap"><b>Figura 4.</b> Top guardarecursos por registros (filtro actual).</div>
+              </figure>
+            ` : ``}
+          </div>
+
+          <div class="pagebreak"></div>
+
+          <div class="sec">
+            <div class="h1"><b>4. Observaciones y limitaciones</b></div>
+            <p class="p">
+              (a) Los porcentajes y agregados se calculan únicamente sobre el subconjunto filtrado. (b) El análisis de duración depende
+              de la consistencia de las horas de inicio y fin. (c) El componente espacial depende de la presencia y validez de coordenadas.
+            </p>
+
+            <div class="h1"><b>5. Conclusiones</b></div>
+            <p class="p">
+              Con base en los filtros aplicados, el comportamiento operativo se caracteriza por la distribución temporal observada, la
+              concentración relativa por dimensiones seleccionadas y la densidad espacial cuando existen coordenadas válidas.
+            </p>
+          </div>
+
+          <div class="pagebreak"></div>
+
+          <div class="sigpage">
+            <div class="h1" style="width:100%; text-align:left;"><b>6. Firmas</b></div>
+            <p class="sigsmall"><b>V.o.B.o.</b></p>
+            <div class="sigline"></div>
+            <p class="sigsmall"><b>Ing. Juan Carlos Bocel Chiroy</b></p>
+            <p class="sigsmall">Director de RUMCLA – Altiplano Central</p>
+          </div>
+        </div>
+      `;
+    }
+
+    async function generarInformePDFTextual(){
       if(typeof html2pdf === "undefined"){
         showToast("No se cargó html2pdf.");
         return;
       }
+
       const rows = aplicarFiltros();
 
-      const imgTiempo = chartTiempo ? chartTiempo.toBase64Image("image/png", 1) : "";
-      const imgMuni = chartMuni ? chartMuni.toBase64Image("image/png", 1) : "";
-      const imgGuarda = chartGuarda ? chartGuarda.toBase64Image("image/png", 1) : "";
+      const imgs = {
+        tiempo: chartTiempo ? chartTiempo.toBase64Image("image/png", 1) : "",
+        muni:   chartMuni   ? chartMuni.toBase64Image("image/png", 1) : "",
+        guarda: chartGuarda ? chartGuarda.toBase64Image("image/png", 1) : ""
+      };
 
-      const total = rows.length;
-      const ilegalSi = rows.filter(r=>r.__ilegal==="si").length;
-      const pctI = total ? Math.round((ilegalSi*1000)/total)/10 : 0;
-      const horas = rows.map(r=>r.__durH).filter(v=>v!=null && isFinite(v)).reduce((a,b)=>a+b, 0);
-      const coordOk = rows.filter(r=>r.__coordOk).length;
-      const pctC = total ? Math.round((coordOk*1000)/total)/10 : 0;
-
-      const topMun = topList(rows, "__muni", 10);
-      const topGua = topList(rows, "__guarda", 10);
-
-      const now = new Date();
-      const stamp = now.toLocaleString("es");
+      const heat = generarHeatmapDataUrl(rows);
+      const stats = computeStatsForReport(rows);
+      const stamp = new Date().toLocaleString("es");
 
       const wrap = document.createElement("div");
-      wrap.style.padding = "14px";
-      wrap.style.background = "#ffffff";
-      wrap.style.color = "#0f172a";
-      wrap.style.fontFamily = "system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif";
-
-      wrap.innerHTML = `
-        <style>
-          .r-head{display:flex; align-items:center; justify-content:space-between; gap:12px;}
-          .r-logos{display:flex; gap:8px; align-items:center;}
-          .r-logos img{height:34px; background:#fff; border-radius:999px; padding:3px 6px; border:1px solid #e5e7eb;}
-          h1{font-size:16pt; margin:10px 0 2px;}
-          .muted{color:#6b7280; font-size:10pt; margin:0;}
-          .chip{display:inline-block; padding:4px 10px; border-radius:999px; background:#e0f2fe; border:1px solid #bae6fd; font-size:9pt; font-weight:700; margin-top:8px;}
-          .box{border:1px solid #e5e7eb; border-radius:12px; padding:10px; margin-top:10px;}
-          .kgrid{display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:10px;}
-          .k{border:1px solid #e5e7eb; border-radius:12px; padding:10px;}
-          .k .t{font-size:9pt; color:#6b7280; font-weight:800;}
-          .k .v{font-size:14pt; font-weight:900; margin-top:4px;}
-          .pagebreak{page-break-after:always;}
-          .img{width:100%; border:2px solid #111827; border-radius:12px; margin-top:8px;}
-          table{width:100%; border-collapse:collapse; margin-top:8px;}
-          th,td{border:1px solid #e5e7eb; padding:6px 8px; font-size:10pt; text-align:left;}
-          th{background:#f8fafc;}
-        </style>
-
-        <div class="r-head">
-          <div class="r-logos">
-            <img src="conap_logo.jpg" alt="CONAP">
-            <img src="aala_logo.png" alt="AALA">
-          </div>
-          <p class="muted">Generado: ${stamp}</p>
-        </div>
-
-        <h1>Reporte resumen · AC192 Patrullajes de control y vigilancia</h1>
-        <p class="muted">Fuente: datos_patrullaje.csv (GitHub Pages)</p>
-        <div class="chip">${escapeHtml(resumenFiltrosTexto())}</div>
-
-        <div class="kgrid">
-          <div class="k"><div class="t">Registros (filtrados)</div><div class="v">${total.toLocaleString("es")}</div></div>
-          <div class="k"><div class="t">% Actividad ilegal</div><div class="v">${total ? (pctI.toLocaleString("es")+"%") : "—"}</div></div>
-          <div class="k"><div class="t">Horas válidas (suma)</div><div class="v">${horas ? (Math.round(horas*10)/10).toLocaleString("es") : "—"}</div></div>
-          <div class="k"><div class="t">% Coord válidas</div><div class="v">${total ? (pctC.toLocaleString("es")+"%") : "—"}</div></div>
-          <div class="k"><div class="t">Municipios únicos</div><div class="v">${new Set(rows.map(r=>r.__muni).filter(Boolean)).size.toLocaleString("es")}</div></div>
-          <div class="k"><div class="t">Guardas únicos</div><div class="v">${new Set(rows.map(r=>r.__guarda).filter(Boolean)).size.toLocaleString("es")}</div></div>
-        </div>
-
-        <div class="pagebreak"></div>
-
-        <h2 style="margin:0 0 6px;">Gráficas</h2>
-        ${imgTiempo ? `<img class="img" src="${imgTiempo}" alt="Tiempo">` : `<p class="muted">Sin gráfica de tiempo.</p>`}
-        ${imgMuni ? `<img class="img" src="${imgMuni}" alt="Municipios">` : ``}
-        ${imgGuarda ? `<img class="img" src="${imgGuarda}" alt="Guardas">` : ``}
-
-        <div class="pagebreak"></div>
-
-        <h2 style="margin:0 0 6px;">Top municipios y guardarecursos (filtrado)</h2>
-
-        <div class="box">
-          <h3 style="margin:0 0 6px; font-size:12pt;">Top municipios</h3>
-          <table>
-            <thead><tr><th>Municipio</th><th>Registros</th></tr></thead>
-            <tbody>
-              ${topMun.map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${v}</td></tr>`).join("")}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="box">
-          <h3 style="margin:0 0 6px; font-size:12pt;">Top guardarecursos</h3>
-          <table>
-            <thead><tr><th>Guarda recurso</th><th>Registros</th></tr></thead>
-            <tbody>
-              ${topGua.map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${v}</td></tr>`).join("")}
-            </tbody>
-          </table>
-        </div>
-
-        <p class="muted" style="margin-top:10px;">
-          Nota: La tabla pivote completa y los registros filtrados se exportan desde el tablero (CSV/Excel).
-        </p>
-      `;
-
+      wrap.innerHTML = construirInformeHTML({rows, imgs, heat, stats, stamp});
       document.body.appendChild(wrap);
 
       const opt = {
         margin:       10,
-        filename:     "reporte_resumen_patrullajes.pdf",
+        filename:     "informe_tecnico_patrullajes_AC192.pdf",
         image:        { type: "png", quality: 1.0 },
-        html2canvas:  { scale: 2.5, useCORS: true, backgroundColor: "#ffffff" },
+        html2canvas:  { scale: 2.6, useCORS: true, backgroundColor: "#ffffff" },
         jsPDF:        { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak:    { mode: ["css", "legacy"] }
       };
 
       try{
         await html2pdf().set(opt).from(wrap).save();
-        showToast("PDF generado");
+        showToast("Informe PDF generado");
       }catch(e){
         console.error(e);
         showToast("Error generando PDF");
@@ -1490,6 +1895,13 @@
     function wire(){
       setTemporalUI();
 
+      // Sonido sutil para clicks en acciones
+      document.addEventListener("click", (e) => {
+        const el = e.target.closest(".btn, .mini-btn, .tab");
+        if(!el) return;
+        SFX.playClick();
+      }, { passive:true });
+
       const watchers = [fTemporal,fMes,fSemana,fDesde,fHasta,fGuarda,fMuni,fRegion,fArea,fTipo,fIlegal,fInst,fAgrupar];
       watchers.forEach(el=>{
         el.addEventListener("change", ()=>{
@@ -1538,7 +1950,8 @@
         }
       });
 
-      $("btn-pdf").addEventListener("click", generarReportePDF);
+      // Informe PDF textual (dinámico según filtros)
+      $("btn-pdf").addEventListener("click", generarInformePDFTextual);
 
       sGuarda.addEventListener("input", ()=> filterSelect(fGuarda, sGuarda.value));
       sMuni.addEventListener("input", ()=> filterSelect(fMuni, sMuni.value));
@@ -1557,7 +1970,7 @@
         return;
       }
       if(typeof Chart === "undefined"){
-        estado.textContent = "No se cargó Chart.js (CDN).";
+        estado.textContent = "No se cargó Chart.js.";
         return;
       }
 
@@ -1588,7 +2001,9 @@
         const ilegal = esIlegal(r) ? "si" : "no";
         const inst = tieneInstituciones(r) ? "si" : "no";
 
-        const coordOk = isNum(r[F.x]) && isNum(r[F.y]);
+        const coordLatLon = (safeNum(r[F.lat]) != null) && (safeNum(r[F.lon]) != null);
+        const coordXY = isNum(r[F.x]) && isNum(r[F.y]);
+        const coordOk = coordLatLon || coordXY;
 
         r.__date = d;
         r.__ym = ym;
