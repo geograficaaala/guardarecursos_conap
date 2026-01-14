@@ -15,10 +15,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Leaflet.heat (densidad) -->
+  <!-- Leaflet.heat -->
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
-  <!-- html2pdf (CDN) -->
+  <!-- html2pdf (incluye html2canvas) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
@@ -156,15 +156,6 @@
       user-select:none;
       white-space:nowrap;
     }
-    .btn-primary{
-      background-color:var(--azul-boton); color:#fff;
-      box-shadow:0 1px 3px rgba(15,23,42,.14);
-    }
-    .btn-primary:hover{
-      background-color:var(--azul-boton-hover);
-      transform:translateY(-1px);
-      box-shadow:0 6px 18px rgba(15,23,42,.16);
-    }
     .btn-ghost{
       background-color:rgba(255,255,255,.95);
       color:#0f172a;
@@ -283,23 +274,13 @@
     .col-12{ grid-column:span 12; }
     .col-6{ grid-column:span 6; }
 
-    /* CHARTS */
     .chartwrap{ height:240px; }
     .chartwrap.tall{ height:260px; }
-    .chartwrap.rank{ height:440px; } /* Top 20: necesita más altura */
+    canvas{ width:100% !important; height:100% !important; }
 
-    /* ✅ IMPORTANTÍSIMO:
-       ANTES tenías: canvas { width:100% !important; height:100% !important; }
-       Eso rompe Leaflet (mapa), porque Leaflet usa canvas.
-       Ahora solo aplicamos a charts.
-    */
-    .chartwrap canvas{ width:100% !important; height:100% !important; }
-    #map canvas{ width:auto !important; height:auto !important; }
-
-    /* MAPA */
     #map{
       width:100%;
-      height:300px;
+      height:280px;
       border-radius:14px;
       border:1px solid rgba(148,163,184,0.35);
       overflow:hidden;
@@ -325,6 +306,11 @@
       background:#eef6ff;
       border-color: rgba(59,130,246,0.35);
       box-shadow:0 3px 10px rgba(15,23,42,.10);
+    }
+
+    /* Asegura que el heat no “mate” a los puntos visualmente */
+    .leaflet-heatmap-layer{
+      opacity: 0.78;
     }
 
     .tablewrap{ overflow-x:auto; }
@@ -365,8 +351,7 @@
       .title-group{ text-align:center; }
       .header-inner{ justify-content:center; }
       .topnav{ top: 116px; }
-      .chartwrap{ height: 230px; }
-      .chartwrap.rank{ height: 520px; }
+      .chartwrap{ height: 240px; }
       #map{ height: 260px; }
     }
   </style>
@@ -391,7 +376,7 @@
     <section class="page-header">
       <h2>AC192 · Patrullajes de control y vigilancia · Tablero dinámico</h2>
       <p>
-        Este tablero se genera automáticamente desde los datos extraídos de la boleta AC 192 y permite
+        Este tablero se genera automáticamente desde los datos extraídos de la boleta <strong>AC 192</strong> y permite
         filtrar, graficar y generar un informe PDF liviano.
       </p>
       <span class="pill">Tablero dinámico · CSV</span>
@@ -404,7 +389,7 @@
         <a class="tab" href="patrullajes_datos.html">Tabla de datos</a>
       </nav>
 
-      <!-- ✅ Sin duplicados -->
+      <!-- BOTONES (sin duplicados) -->
       <div class="nav-actions">
         <a class="btn btn-ghost" href="index.html">Inicio</a>
         <button class="btn btn-ghost" id="btn-reset" type="button">Limpiar filtros</button>
@@ -452,7 +437,7 @@
         </div>
 
         <div class="field">
-          <label for="f-guarda">Guarda recursos (buscable)</label>
+          <label for="f-guarda">Guarda recursos responsable (buscable)</label>
           <input id="s-guarda" class="small" type="search" placeholder="Buscar..." autocomplete="off">
           <select id="f-guarda"></select>
         </div>
@@ -540,7 +525,7 @@
         <div class="kpi">
           <div class="t">% Coord válidas</div>
           <div class="v" id="k-coord">–</div>
-          <div class="s">Lat/Lon o X/Y</div>
+          <div class="s">Lat/Lon</div>
         </div>
       </div>
     </section>
@@ -550,14 +535,14 @@
         <div class="maprow">
           <div>
             <h3 style="margin:0 0 4px;">Distribución espacial (mapa)</h3>
-            <p class="subnote" style="margin:0;">Puntos georreferenciados y densidad (heat) según filtros.</p>
+            <p class="subnote" style="margin:0;">Puntos georreferenciados + densidad (heat) según filtros. Los puntos NO cambian de tamaño al hacer zoom.</p>
           </div>
           <div class="mini-actions">
             <button class="mini-btn" id="png-map" type="button">Exportar PNG</button>
             <button class="mini-btn" id="toggle-heat" type="button">Densidad: ON</button>
           </div>
         </div>
-        <div id="map" aria-label="Mapa"></div>
+        <div id="map" aria-label="Mapa base"></div>
         <p class="subnote" id="map-note" style="margin-top:8px;">—</p>
       </div>
 
@@ -584,7 +569,7 @@
             <button class="mini-btn" id="png-muni" type="button">Exportar PNG</button>
           </div>
         </div>
-        <div class="chartwrap rank"><canvas id="c-muni"></canvas></div>
+        <div class="chartwrap"><canvas id="c-muni"></canvas></div>
       </div>
 
       <div class="card col-6">
@@ -597,7 +582,7 @@
             <button class="mini-btn" id="png-guarda" type="button">Exportar PNG</button>
           </div>
         </div>
-        <div class="chartwrap rank"><canvas id="c-guarda"></canvas></div>
+        <div class="chartwrap"><canvas id="c-guarda"></canvas></div>
       </div>
     </section>
 
@@ -679,7 +664,9 @@
     // ===== MAPA =====
     let map=null, layerPoints=null, layerHeat=null;
     let heatEnabled = true;
-    let pointsRenderer = null;
+
+    // Control de "fit" (para no romper zoom cuando solo enciendes/apagas densidad)
+    let lastFitKey = "";
 
     // ===== DOM =====
     const $ = (id) => document.getElementById(id);
@@ -890,7 +877,7 @@
     function actualizarKPIs(rows){
       const total = rows.length;
       kTotal.textContent = total.toLocaleString("es");
-      kTotalS.textContent = `Subconjunto filtrado (sin referencias al total)`;
+      kTotalS.textContent = `De ${DATA.length.toLocaleString("es")} registros totales`;
 
       const munis = new Set(rows.map(r=>r.__muni).filter(Boolean));
       const guardas = new Set(rows.map(r=>r.__guarda).filter(Boolean));
@@ -901,13 +888,13 @@
       const pct = total ? Math.round((ilegalSi*1000)/total)/10 : 0;
       kPctIlegal.textContent = total ? (pct.toLocaleString("es") + "%") : "—";
 
-      const horas = rows.map(r=>r.__durH).filter(v=>v!=null && isFinite(v)).reduce((a,b)=>a+b, 0);
-      kHoras.textContent = horas ? (Math.round(horas*10)/10).toLocaleString("es") : "—";
+      const horasArr = rows.map(r=>r.__durH).filter(v=>v!=null && isFinite(v));
+      const horas = horasArr.reduce((a,b)=>a+b, 0);
+      kHoras.textContent = horasArr.length ? (Math.round(horas*10)/10).toLocaleString("es") : "—";
 
-      const coordLatLon = rows.filter(r => safeNum(r[F.lat])!=null && safeNum(r[F.lon])!=null).length;
-      const coordXY     = rows.filter(r => isNum(r[F.x]) && isNum(r[F.y])).length;
-      const valid = Math.max(coordLatLon, coordXY);
-      const pctCoord = total ? Math.round((valid*1000)/total)/10 : 0;
+      // SOLO Lat/Lon (prioridad como pediste)
+      const coordValid = rows.filter(r => r.__lat != null && r.__lon != null).length;
+      const pctCoord = total ? Math.round((coordValid*1000)/total)/10 : 0;
       kCoord.textContent = total ? (pctCoord.toLocaleString("es") + "%") : "—";
     }
 
@@ -920,14 +907,9 @@
       });
       return m;
     }
+
     function topN(map, n){
       return Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0,n);
-    }
-
-    function shortLabel(s, max=34){
-      const t = String(s || "");
-      if(t.length <= max) return t;
-      return t.slice(0, max-1) + "…";
     }
 
     // ===== CHARTS =====
@@ -943,22 +925,10 @@
       }
     };
 
-    function deepMerge(a, b){
-      const out = Array.isArray(a) ? a.slice() : Object.assign({}, a);
-      for(const k in b){
-        if(b[k] && typeof b[k] === "object" && !Array.isArray(b[k]) && a && typeof a[k] === "object"){
-          out[k] = deepMerge(a[k], b[k]);
-        } else {
-          out[k] = b[k];
-        }
-      }
-      return out;
-    }
-
-    function commonChartOptions(){
+    function commonChartOptions(extra){
       const tick = getComputedStyle(document.documentElement).getPropertyValue("--chart-tick").trim() || "rgba(15,23,42,0.85)";
       const grid = getComputedStyle(document.documentElement).getPropertyValue("--chart-grid").trim() || "rgba(2,6,23,0.08)";
-      return {
+      const base = {
         responsive:true,
         maintainAspectRatio:false,
         plugins:{
@@ -974,6 +944,7 @@
           y:{ beginAtZero:true, ticks:{ color: tick }, grid:{ color: grid } }
         }
       };
+      return Object.assign({}, base, extra || {});
     }
 
     function renderChart(canvasId, prev, cfg){
@@ -982,15 +953,16 @@
       const ctx = el.getContext("2d");
       if(prev) prev.destroy();
       cfg.plugins = (cfg.plugins || []).concat([whiteBgPlugin]);
-      cfg.options = deepMerge(commonChartOptions(), cfg.options || {});
+      cfg.options = commonChartOptions(cfg.options);
       return new Chart(ctx, cfg);
     }
 
+    // Top 20 en barras horizontales + colores pastel (verde y celeste)
     function actualizarCharts(rows){
       const agr = fAgrupar.value; // dia/semana/mes
       const keyFn = (agr === "mes") ? (r=>r.__ym) : (agr === "semana") ? (r=>r.__yw) : (r=>r.__yd);
 
-      // ===== Serie temporal (línea) =====
+      // Serie temporal (línea)
       const mTiempo = countBy(rows, keyFn);
       const labelsT = Array.from(mTiempo.keys()).sort();
       const dataT = labelsT.map(k=>mTiempo.get(k));
@@ -1006,8 +978,7 @@
             backgroundColor: "rgba(59,130,246,0.10)",
             fill: true,
             pointBackgroundColor: "rgba(59,130,246,0.85)",
-            pointBorderColor: "rgba(0,0,0,0)",
-            pointBorderWidth: 0
+            pointBorderColor: "rgba(0,0,0,0)"
           }]
         },
         options:{
@@ -1023,12 +994,12 @@
             } else {
               fTemporal.value = "rango"; setTemporalUI(); fDesde.value = label; fHasta.value = label;
             }
-            refrescar(true);
+            refrescar(true, true);
           }
         }
       });
 
-      // ===== Top Municipios (Top 20) - barras horizontales pastel verde =====
+      // Top Municipios (Top 20) - barras horizontales pastel verde
       const mM = countBy(rows, r=>r.__muni || "(Sin municipio)");
       const topM = topN(mM, 20);
       const labelsM = topM.map(x=>x[0]);
@@ -1041,7 +1012,7 @@
           datasets:[{
             label:"Registros",
             data: dataM,
-            backgroundColor: "rgba(167, 243, 208, 0.95)",
+            backgroundColor: "rgba(167, 243, 208, 0.95)", // verde pastel
             borderWidth: 0
           }]
         },
@@ -1052,16 +1023,16 @@
             if(!elements || !elements.length) return;
             const idx = elements[0].index;
             fMuni.value = labelsM[idx];
-            refrescar(true);
+            refrescar(true, true);
           },
           scales:{
             x:{ beginAtZero:true },
-            y:{ ticks:{ autoSkip:false, callback:(v, i)=> shortLabel(labelsM[i], 34) } }
+            y:{ ticks:{ autoSkip:false } }
           }
         }
       });
 
-      // ===== Top Guardas (Top 20) - barras horizontales pastel celeste =====
+      // Top Guardas (Top 20) - barras horizontales pastel celeste
       const mG = countBy(rows, r=>r.__guarda || "(Sin guarda)");
       const topG = topN(mG, 20);
       const labelsG = topG.map(x=>x[0]);
@@ -1074,7 +1045,7 @@
           datasets:[{
             label:"Registros",
             data: dataG,
-            backgroundColor: "rgba(191, 219, 254, 0.95)",
+            backgroundColor: "rgba(191, 219, 254, 0.95)", // celeste pastel
             borderWidth: 0
           }]
         },
@@ -1085,77 +1056,54 @@
             if(!elements || !elements.length) return;
             const idx = elements[0].index;
             fGuarda.value = labelsG[idx];
-            refrescar(true);
+            refrescar(true, true);
           },
           scales:{
             x:{ beginAtZero:true },
-            y:{ ticks:{ autoSkip:false, callback:(v, i)=> shortLabel(labelsG[i], 34) } }
+            y:{ ticks:{ autoSkip:false } }
           }
         }
       });
     }
 
-    // ===== MAPA (PUNTOS + HEAT VISIBLES) =====
+    // ===== MAPA =====
     function initMap(){
       if(map) return;
 
       map = L.map("map", {
         zoomControl:true,
         attributionControl:true,
-        preferCanvas:true
+        preferCanvas:false // mejor para captura html2canvas y no afecta tamaño de circleMarker
       });
 
+      // Panes (para asegurar orden: heat abajo, puntos arriba)
       map.createPane("heatPane");
-      map.getPane("heatPane").style.zIndex = 420;
+      map.getPane("heatPane").style.zIndex = 250;
 
       map.createPane("pointsPane");
-      map.getPane("pointsPane").style.zIndex = 650;
+      map.getPane("pointsPane").style.zIndex = 420;
 
-      pointsRenderer = L.canvas({ padding: 0.5 });
-
-      // Base light (CARTO) — se ve perfecto con puntos/heat
+      // CARTO (CORS OK para export / PDF)
       L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-        maxZoom: 19,
         subdomains: "abcd",
+        maxZoom: 19,
         crossOrigin: true,
         attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
       }).addTo(map);
 
-      layerPoints = L.layerGroup().addTo(map);
+      layerPoints = L.layerGroup([], { pane: "pointsPane" }).addTo(map);
       layerHeat = null;
 
       map.setView([14.7, -91.2], 9);
 
-      // zoom sensible para heat + tamaño de puntos
+      // Heat sensible al zoom (los puntos NO cambian)
       map.on("zoomend", ()=>{
+        if(!layerHeat || !heatEnabled) return;
         const z = map.getZoom() || 10;
-
-        if(layerHeat && heatEnabled){
-          const radius = Math.max(14, Math.min(42, z * 2.4));
-          const blur   = Math.max(12, Math.min(32, z * 1.7));
-          layerHeat.setOptions({ radius, blur });
-        }
-
-        const dotR = Math.max(5, Math.min(10, 1.25 * z - 4));
-        layerPoints.eachLayer(l=>{
-          if(l && typeof l.setRadius === "function"){
-            if(l._isHalo) l.setRadius(dotR + 3);
-            else l.setRadius(dotR);
-          }
-        });
+        const radius = Math.max(12, Math.min(42, z * 2.2));
+        const blur   = Math.max(10, Math.min(30, z * 1.6));
+        layerHeat.setOptions({ radius, blur });
       });
-    }
-
-    function getLatLonRows(rows){
-      const pts = [];
-      rows.forEach(r=>{
-        const lat = safeNum(r[F.lat]);
-        const lon = safeNum(r[F.lon]);
-        if(lat==null || lon==null) return;
-        if(lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
-        pts.push({lat, lon, r});
-      });
-      return pts;
     }
 
     function escapeHtml(texto) {
@@ -1167,7 +1115,28 @@
         .replace(/'/g, "&#39;");
     }
 
-    function updateMap(rows){
+    function getLatLonRows(rows){
+      const pts = [];
+      rows.forEach(r=>{
+        const lat = r.__lat;
+        const lon = r.__lon;
+        if(lat==null || lon==null) return;
+        if(lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
+        pts.push({lat, lon, r});
+      });
+      return pts;
+    }
+
+    // Heat palette: rojo -> amarillo -> violeta
+    function heatGradient(){
+      return {
+        0.10: "#ff0000", // rojo (baja)
+        0.55: "#ffff00", // amarillo (medio)
+        1.00: "#7f00ff"  // violeta (alto)
+      };
+    }
+
+    function updateMap(rows, doFit=true){
       initMap();
 
       layerPoints.clearLayers();
@@ -1179,72 +1148,84 @@
       const pts = getLatLonRows(rows);
 
       if(!pts.length){
-        mapNote.textContent = "No hay Latitud/Longitud válidas en el subconjunto filtrado.";
+        mapNote.textContent = "No hay Latitud/Longitud válidas en el subconjunto filtrado. Verifique captura de coordenadas (Lat/Lon).";
         return;
       }
 
-      // Heat abajo
+      // Heat primero (abajo)
       if(heatEnabled && typeof L.heatLayer === "function" && pts.length >= 3){
-        const heatPts = pts.map(p=>[p.lat, p.lon, 0.8]);
+        const heatPts = pts.map(p=>[p.lat, p.lon, 0.7]);
         const z = map.getZoom() || 10;
-        const radius = Math.max(14, Math.min(42, z * 2.4));
-        const blur   = Math.max(12, Math.min(32, z * 1.7));
+        const radius = Math.max(12, Math.min(42, z * 2.2));
+        const blur   = Math.max(10, Math.min(30, z * 1.6));
 
         layerHeat = L.heatLayer(heatPts, {
           pane: "heatPane",
           radius,
           blur,
-          maxZoom: 18
+          maxZoom: 18,
+          minOpacity: 0.35,
+          gradient: heatGradient()
         }).addTo(map);
       }
 
-      // Puntos arriba: halo blanco + punto azul fuerte (alta visibilidad)
-      const zNow = map.getZoom() || 10;
-      const dotR = Math.max(5, Math.min(10, 1.25 * zNow - 4));
-
+      // Puntos arriba: MUY visibles y radio fijo (NO crecen en zoom)
       pts.forEach(p=>{
-        const halo = L.circleMarker([p.lat, p.lon], {
+        const m = L.circleMarker([p.lat, p.lon], {
           pane: "pointsPane",
-          radius: dotR + 3,
-          stroke: true,
-          color: "rgba(255,255,255,0.95)",
-          weight: 4,
-          opacity: 1,
-          fill: false,
-          renderer: pointsRenderer
+          radius: 4.6,          // fijo (pixels) -> no se “gigantea”
+          weight: 1.6,
+          color: "rgba(255,255,255,0.95)",   // borde blanco para resaltar
+          fillColor: "rgba(15,23,42,0.80)",  // punto oscuro, se ve en base claro
+          fillOpacity: 0.95
         });
-        halo._isHalo = true;
-
-        const dot = L.circleMarker([p.lat, p.lon], {
-          pane: "pointsPane",
-          radius: dotR,
-          stroke: true,
-          color: "rgba(15,23,42,0.55)",
-          weight: 1.5,
-          opacity: 1,
-          fill: true,
-          fillColor: "#2563eb",
-          fillOpacity: 0.92,
-          renderer: pointsRenderer
-        });
-
-        dot.bindPopup(
+        m.bindPopup(
           `<b>Guarda:</b> ${escapeHtml(p.r.__guarda)}<br>`+
           `<b>Municipio:</b> ${escapeHtml(p.r.__muni)}<br>`+
           `<b>Área:</b> ${escapeHtml(p.r.__area)}<br>`+
           `<b>Fecha:</b> ${escapeHtml(norm(p.r[F.fecha]))}`
         );
-
-        layerPoints.addLayer(halo);
-        layerPoints.addLayer(dot);
+        layerPoints.addLayer(m);
       });
 
       const bounds = L.latLngBounds(pts.map(p=>[p.lat, p.lon]));
-      map.fitBounds(bounds.pad(0.25));
+      const fitKey = `${pts.length}|${bounds.getSouthWest().lat.toFixed(4)},${bounds.getSouthWest().lng.toFixed(4)}|${bounds.getNorthEast().lat.toFixed(4)},${bounds.getNorthEast().lng.toFixed(4)}`;
+
+      if(doFit && fitKey !== lastFitKey){
+        lastFitKey = fitKey;
+        map.fitBounds(bounds.pad(0.25));
+      }
 
       mapNote.textContent = `Mapa generado con ${pts.length} puntos (Lat/Lon) ${heatEnabled ? "con densidad" : "sin densidad"}.`;
 
       setTimeout(()=> map.invalidateSize(true), 250);
+    }
+
+    // Export del mapa (PNG)
+    async function exportMapPNG(){
+      const el = $("map");
+      if(!el) return;
+
+      if(typeof html2canvas === "undefined"){
+        showToast("No se encontró html2canvas.");
+        return;
+      }
+
+      // Pequeña espera para tiles
+      await new Promise(r=>setTimeout(r, 550));
+
+      try{
+        const canvas = await html2canvas(el, {
+          scale: 1.35,
+          useCORS: true,
+          backgroundColor: "#ffffff"
+        });
+        const url = canvas.toDataURL("image/png", 0.92);
+        downloadDataUrl(url, "mapa_patrullajes.png");
+      }catch(e){
+        console.error(e);
+        showToast("No se pudo exportar el mapa (CORS/tiles).");
+      }
     }
 
     // ===== Tablas =====
@@ -1253,20 +1234,20 @@
       const keyCol = (agr === "mes") ? "__ym" : (agr === "semana") ? "__yw" : "__yd";
 
       const colSet = new Set();
-      const map = new Map();
+      const mapx = new Map();
 
       rows.forEach(r=>{
         const rowKey = r.__guarda || "(Sin guarda)";
         const colKey = r[keyCol] || "(Sin fecha)";
         colSet.add(colKey);
 
-        if(!map.has(rowKey)) map.set(rowKey, { guarda: rowKey });
-        const obj = map.get(rowKey);
+        if(!mapx.has(rowKey)) mapx.set(rowKey, { guarda: rowKey });
+        const obj = mapx.get(rowKey);
         obj[colKey] = (obj[colKey] || 0) + 1;
       });
 
       const cols = Array.from(colSet).sort((a,b)=>a.localeCompare(b));
-      const data = Array.from(map.values()).sort((a,b)=>a.guarda.localeCompare(b.guarda,"es"));
+      const data = Array.from(mapx.values()).sort((a,b)=>a.guarda.localeCompare(b.guarda,"es"));
 
       const tabCols = [
         { title:"Guarda recurso", field:"guarda", frozen:true, headerFilter:"input", minWidth:220 },
@@ -1298,10 +1279,10 @@
         {title:"Guarda", field:F.guarda, headerFilter:"input", minWidth:220},
         {title:"Municipio", field:F.municipio, headerFilter:"input", width:160},
         {title:"Región", field:F.region, headerFilter:"input", width:140},
-        {title:"Área", field:F.area, headerFilter:"input", width:200},
-        {title:"Tipo", field:F.tipo, headerFilter:"input", width:210},
-        {title:"Ilegal", field:F.ilegal, headerFilter:"input", width:170},
-        {title:"Instituciones", field:F.inst, headerFilter:"input", minWidth:240},
+        {title:"Área", field:F.area, headerFilter:"input", width:160},
+        {title:"Tipo", field:F.tipo, headerFilter:"input", width:170},
+        {title:"Ilegal", field:F.ilegal, headerFilter:"input", width:160},
+        {title:"Instituciones", field:F.inst, headerFilter:"input", minWidth:220},
         {title:"Inicio", field:F.hIni, headerFilter:"input", width:120},
         {title:"Fin", field:F.hFin, headerFilter:"input", width:120},
         {title:"Ubicación", field:F.ubic, headerFilter:"input", minWidth:220},
@@ -1441,23 +1422,51 @@
       downloadDataUrl(url, name);
     }
 
-    async function exportMapPNG(){
-      const el = $("map");
-      if(!el) return;
-      if(typeof html2canvas === "undefined"){
-        showToast("No se encontró html2canvas.");
-        return;
-      }
-      const canvas = await html2canvas(el, {
-        scale: 1.2,
-        useCORS: true,
-        backgroundColor: "#ffffff"
-      });
-      const url = canvas.toDataURL("image/png", 0.92);
-      downloadDataUrl(url, "mapa.png");
+    function resumenFiltrosTexto(){
+      const parts = [];
+      const t = fTemporal.value;
+      if(t === "todo") parts.push("Temporal: Todo");
+      if(t === "mes") parts.push("Temporal: Mes " + (fMes.value || "—"));
+      if(t === "semana") parts.push("Temporal: Semana " + (fSemana.value || "—"));
+      if(t === "rango") parts.push("Temporal: " + (fDesde.value||"—") + " a " + (fHasta.value||"—"));
+
+      if(fGuarda.value !== "todo") parts.push("Guarda: " + fGuarda.value);
+      if(fMuni.value !== "todo") parts.push("Municipio: " + fMuni.value);
+      if(fRegion.value !== "todo") parts.push("Región: " + fRegion.value);
+      if(fArea.value !== "todo") parts.push("Área: " + fArea.value);
+      if(fTipo.value !== "todo") parts.push("Tipo: " + fTipo.value);
+      if(fIlegal.value !== "todo") parts.push("Ilegal: " + (fIlegal.value === "si" ? "Sí" : "No"));
+      if(fInst.value !== "todo") parts.push("Instituciones: " + (fInst.value === "si" ? "Con" : "Sin"));
+      parts.push("Agrupar: " + fAgrupar.value);
+      return parts.join(" · ");
     }
 
-    // ===== Informe PDF (más ejecutivo, 100% según filtros + firma Vo.Bo.) =====
+    function renderChipsResumen(){
+      if(!chipsFiltros) return;
+
+      const chips = [];
+      const t = fTemporal.value;
+      if(t === "todo")   chips.push(["Temporal", "Todo"]);
+      if(t === "mes")    chips.push(["Temporal", "Mes: " + (fMes.value || "—")]);
+      if(t === "semana") chips.push(["Temporal", "Semana: " + (fSemana.value || "—")]);
+      if(t === "rango")  chips.push(["Temporal", "Rango: " + (fDesde.value||"—") + " a " + (fHasta.value||"—")]);
+
+      if(fMuni.value   !== "todo") chips.push(["Municipio", fMuni.value]);
+      if(fGuarda.value !== "todo") chips.push(["Guarda", fGuarda.value]);
+      if(fRegion.value !== "todo") chips.push(["Región", fRegion.value]);
+      if(fArea.value   !== "todo") chips.push(["Área", fArea.value]);
+      if(fTipo.value   !== "todo") chips.push(["Tipo", fTipo.value]);
+      if(fIlegal.value !== "todo") chips.push(["Ilegal", (fIlegal.value === "si" ? "Sí" : "No")]);
+      if(fInst.value   !== "todo") chips.push(["Instituciones", (fInst.value === "si" ? "Con" : "Sin")]);
+
+      chips.push(["Agrupar", fAgrupar.value]);
+
+      chipsFiltros.innerHTML = chips.map(([k, v]) =>
+        `<span class="chip"><b>${escapeHtml(k)}:</b> ${escapeHtml(v)}</span>`
+      ).join("");
+    }
+
+    // ===== INFORME PDF (nuevo: textual, ejecutivo, con mapa y firma) =====
     function fmtNum(n){ return (n ?? 0).toLocaleString("es"); }
     function fmtPct(num, den){
       if(!den) return "—";
@@ -1484,161 +1493,160 @@
       const horasSum = horasArr.reduce((a,b)=>a+b, 0);
       const horasAvg = horasArr.length ? (horasSum/horasArr.length) : null;
 
-      const coordLatLon = rows.filter(r => safeNum(r[F.lat])!=null && safeNum(r[F.lon])!=null).length;
-      const coordXY     = rows.filter(r => isNum(r[F.x]) && isNum(r[F.y])).length;
-      const coordValidas = Math.max(coordLatLon, coordXY);
+      // SOLO Lat/Lon
+      const coordValidas = rows.filter(r => r.__lat != null && r.__lon != null).length;
 
-      const munis = new Set(rows.map(r=>r.__muni).filter(Boolean)).size;
-      const guardas = new Set(rows.map(r=>r.__guarda).filter(Boolean)).size;
+      const munisSet = new Set(rows.map(r=>r.__muni).filter(Boolean));
+      const guardSet = new Set(rows.map(r=>r.__guarda).filter(Boolean));
 
       return {
         total, withDateCount: withDate.length, minDate, maxDate,
         ilegalSi, instSi,
         horasSum, horasAvg, horasCount: horasArr.length,
         coordValidas,
-        munis, guardas
+        munis: munisSet.size, guardas: guardSet.size,
+        munisSet, guardSet
       };
     }
 
-    function topItems(rows, key, n=3){
-      const total = rows.length || 0;
+    function topItems(rows, key, n=5){
       const m = countBy(rows, r => r[key] || "(Sin dato)");
-      const top = topN(m, n);
-      return top.map(([name, count])=>{
-        const pct = total ? Math.round((count*1000)/total)/10 : 0;
-        return { name, count, pct };
-      });
+      return topN(m, n);
     }
 
-    function topCompact(rows, key, n=5){
-      const items = topItems(rows, key, n);
-      if(!items.length) return "—";
-      return items.map(x=>`${x.name} (${fmtNum(x.count)}, ${String(x.pct).replace(".",",")}%)`).join("; ");
+    function topItemsInline(rows, key, n=5){
+      const total = rows.length || 0;
+      const top = topItems(rows, key, n);
+      if(!top.length) return "Sin datos suficientes.";
+      return top.map(([k,v])=>{
+        const p = total ? Math.round((v*1000)/total)/10 : 0;
+        return `${k} (${fmtNum(v)}, ${p.toLocaleString("es")}%)`;
+      }).join("; ");
     }
 
-    function detectarContexto(rows){
-      const muniSel = (fMuni.value !== "todo") ? fMuni.value : "";
-      const guardaSel = (fGuarda.value !== "todo") ? fGuarda.value : "";
+    function contextoFiltro(stats, rows){
+      const muniUnico = (stats.munisSet.size === 1) ? Array.from(stats.munisSet)[0] : null;
+      const guardaUnico = (stats.guardSet.size === 1) ? Array.from(stats.guardSet)[0] : null;
 
-      const munis = Array.from(new Set(rows.map(r=>r.__muni).filter(Boolean)));
-      const guardas = Array.from(new Set(rows.map(r=>r.__guarda).filter(Boolean)));
+      let muniTxt = "";
+      if(muniUnico) muniTxt = `Municipio: ${muniUnico}`;
+      else muniTxt = `Municipios: ${fmtNum(stats.munis)} (Top 3: ${topItemsInline(rows, "__muni", 3)})`;
 
-      let municipio;
-      if(muniSel) municipio = muniSel;
-      else if(munis.length === 1) municipio = munis[0];
-      else {
-        const top = topItems(rows, "__muni", 1)[0];
-        municipio = `${fmtNum(munis.length)} municipios (predomina: ${top ? top.name : "—"})`;
-      }
+      let guardaTxt = "";
+      if(guardaUnico) guardaTxt = `Guarda recursos: ${guardaUnico}`;
+      else guardaTxt = `Guardarecursos: ${fmtNum(stats.guardas)} (Top 3: ${topItemsInline(rows, "__guarda", 3)})`;
 
-      let guarda;
-      if(guardaSel) guarda = guardaSel;
-      else if(guardas.length === 1) guarda = guardas[0];
-      else {
-        const top = topItems(rows, "__guarda", 1)[0];
-        guarda = `${fmtNum(guardas.length)} guardarecursos (predomina: ${top ? top.name : "—"})`;
-      }
-
-      return { municipio, guarda };
+      return { muniUnico, guardaUnico, muniTxt, guardaTxt };
     }
 
     async function captureMapForPdf(){
       const el = $("map");
       if(!el || typeof html2canvas === "undefined") return "";
-      const canvas = await html2canvas(el, { scale: 1.2, useCORS:true, backgroundColor:"#ffffff" });
-      return canvas.toDataURL("image/jpeg", 0.78);
+
+      // Espera a tiles/puntos
+      await new Promise(r=>setTimeout(r, 650));
+
+      try{
+        const canvas = await html2canvas(el, { scale: 1.35, useCORS:true, backgroundColor:"#ffffff" });
+        return canvas.toDataURL("image/jpeg", 0.76);
+      }catch(e){
+        console.error(e);
+        return "";
+      }
     }
 
-    function resumenFiltrosTexto(){
-      const parts = [];
-      const t = fTemporal.value;
-      if(t === "todo") parts.push("Temporal: Todo");
-      if(t === "mes") parts.push("Temporal: Mes " + (fMes.value || "—"));
-      if(t === "semana") parts.push("Temporal: Semana " + (fSemana.value || "—"));
-      if(t === "rango") parts.push("Temporal: " + (fDesde.value||"—") + " a " + (fHasta.value||"—"));
-
-      if(fGuarda.value !== "todo") parts.push("Guarda: " + fGuarda.value);
-      if(fMuni.value !== "todo") parts.push("Municipio: " + fMuni.value);
-      if(fRegion.value !== "todo") parts.push("Región: " + fRegion.value);
-      if(fArea.value !== "todo") parts.push("Área: " + fArea.value);
-      if(fTipo.value !== "todo") parts.push("Tipo: " + fTipo.value);
-      if(fIlegal.value !== "todo") parts.push("Ilegal: " + (fIlegal.value === "si" ? "Sí" : "No"));
-      if(fInst.value !== "todo") parts.push("Instituciones: " + (fInst.value === "si" ? "Con" : "Sin"));
-      parts.push("Agrupar: " + fAgrupar.value);
-      return parts.join(" · ");
-    }
-
-    function buildReportHTML({rows, imgs, mapImg, stats, stamp, ctxAuto}){
+    function buildReportHTML({rows, imgs, mapImg, stats, stamp}){
       const filtros = escapeHtml(resumenFiltrosTexto());
       const fechaInicio = stats.minDate ? fmtDateShort(stats.minDate) : "—";
       const fechaFin    = stats.maxDate ? fmtDateShort(stats.maxDate) : "—";
+
+      const ctx = contextoFiltro(stats, rows);
+
       const horasSum = stats.horasCount ? (Math.round(stats.horasSum*10)/10).toLocaleString("es") : "—";
       const horasAvg = stats.horasCount ? (Math.round(stats.horasAvg*10)/10).toLocaleString("es") : "—";
 
-      const mostrarTopMuni   = (fMuni.value === "todo");
-      const mostrarTopGuarda = (fGuarda.value === "todo");
+      const coberturaEsp = `${fmtNum(stats.coordValidas)} de ${fmtNum(stats.total)} registros (${fmtPct(stats.coordValidas, stats.total)}) con Latitud/Longitud válida.`;
 
-      // Texto “para jefes”: directo, controlado por filtros (subconjunto filtrado)
-      const p1 =
-        `Este informe resume exclusivamente el subconjunto de registros resultante de los filtros activos en el tablero. `+
-        `En el estado actual del filtrado se analizan ${fmtNum(stats.total)} registros. `+
-        `Contexto operativo del filtro: Municipio = ${ctxAuto.municipio}; Guarda recursos = ${ctxAuto.guarda}.`;
+      // Texto ejecutivo (sin repetir KPIs en “botones”)
+      const pA = `Este informe resume exclusivamente el subconjunto de registros resultante de los filtros activos en el tablero. En el estado actual del filtrado se analizan ${fmtNum(stats.total)} registros. Contexto del filtro: ${ctx.muniTxt}; ${ctx.guardaTxt}.`;
 
-      const p2 =
-        `Cobertura temporal del subconjunto: ${fechaInicio} a ${fechaFin} (registros con fecha válida: n=${fmtNum(stats.withDateCount)}). `+
-        `La tasa de registros con actividad ilegal observada es ${fmtPct(stats.ilegalSi, stats.total)} (n=${fmtNum(stats.ilegalSi)}), `+
-        `y la participación de instituciones aparece en ${fmtPct(stats.instSi, stats.total)} (n=${fmtNum(stats.instSi)}).`;
+      const pB = `Cobertura temporal del subconjunto: ${fechaInicio} a ${fechaFin} (registros con fecha válida: n=${fmtNum(stats.withDateCount)}). En el periodo filtrado se observan ${fmtNum(stats.ilegalSi)} registros con actividad ilegal (${fmtPct(stats.ilegalSi, stats.total)}) y ${fmtNum(stats.instSi)} con participación de instituciones (${fmtPct(stats.instSi, stats.total)}).`;
 
-      const p3 =
-        `Esfuerzo operativo reportado: ${horasSum} horas acumuladas (solo registros con horas válidas) y un promedio de ${horasAvg} horas por registro con duración calculable. `+
-        `Cobertura espacial: ${fmtNum(stats.coordValidas)} registros con coordenadas válidas (${fmtPct(stats.coordValidas, stats.total)}). `+
-        `La cartografía utiliza base OpenStreetMap/CARTO y representa puntos (y densidad cuando aplica) del subconjunto filtrado.`;
+      const pC = `Esfuerzo operativo (solo registros con horas consistentes): ${stats.horasCount ? `${horasSum} horas acumuladas y un promedio de ${horasAvg} horas por registro con duración calculable.` : `no se calcula duración por ausencia o inconsistencia de horas de inicio/fin en el subconjunto.`} Cobertura espacial: ${coberturaEsp}`;
 
-      const topAreas = topCompact(rows, "__area", 5);
-      const topTipos = topCompact(rows, "__tipo", 5);
-      const topMunis = topCompact(rows, "__muni", 5);
-      const topGuard = topCompact(rows, "__guarda", 5);
+      const pD = `Lectura temporal (agrupamiento: ${escapeHtml(fAgrupar.value)}): la serie permite identificar concentraciones de registros en periodos específicos y sirve como control operativo (dispersión vs. concentración en ventanas cortas).`;
+
+      const pE = `Lectura espacial: el mapa presenta puntos georreferenciados y densidad (heat) para visualizar concentraciones. La interpretación se limita a registros con Lat/Lon válida; si la cobertura espacial es parcial, las conclusiones se restringen a esa fracción del subconjunto.`;
+
+      const compArea = topItemsInline(rows, "__area", 5);
+      const compTipo = topItemsInline(rows, "__tipo", 5);
+
+      let compMuni = "";
+      if(ctx.muniUnico){
+        compMuni = `El subconjunto corresponde a un único municipio: ${escapeHtml(ctx.muniUnico)} (100% de los registros).`;
+      }else{
+        compMuni = `Municipios con mayor frecuencia (Top 5): ${escapeHtml(topItemsInline(rows, "__muni", 5))}.`;
+      }
+
+      let compGuarda = "";
+      if(ctx.guardaUnico){
+        compGuarda = `El subconjunto corresponde a un único guardarecurso responsable: ${escapeHtml(ctx.guardaUnico)} (100% de los registros).`;
+      }else{
+        compGuarda = `Guardarecursos con mayor frecuencia (Top 5): ${escapeHtml(topItemsInline(rows, "__guarda", 5))}.`;
+      }
+
+      const calidad = `Calidad del dato: los registros sin fecha válida no aportan a la cobertura temporal; las horas sin formato consistente no permiten calcular duración; y las coordenadas fuera de rango o ausentes limitan la lectura espacial. Recomendación práctica: estandarizar captura de Latitud/Longitud, validar horas al momento del registro y unificar catálogos (municipio/área/tipo) para evitar duplicaciones por variaciones de escritura.`;
 
       return `
         <style>
           .report{
             font-family: "Times New Roman", Times, serif;
-            font-size: 11pt;
-            line-height: 1.25;
+            font-size: 10.8pt;
+            line-height: 1.28;
             color: #000;
             text-align: justify;
             background: #fff;
-            padding: 14px;
+            padding: 14px 16px;
           }
           .r-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
           .r-logos{display:flex; gap:8px; align-items:center;}
-          .r-logos img{height:34px; background:#fff; border-radius:999px; padding:3px 6px; border:1px solid rgba(148,163,184,0.75);}
+          .r-logos img{height:32px; background:#fff; border-radius:999px; padding:3px 6px; border:1px solid rgba(148,163,184,0.75);}
           .muted{color:#111; opacity:.75; margin:0;}
-          .title{font-weight:700; font-size:13pt; margin:10px 0 2px; text-align:left;}
+          .title{font-weight:700; font-size:13.5pt; margin:10px 0 2px; text-align:left;}
+          .sub{margin:0 0 6px; text-align:left;}
           .chip{
             display:inline-block; padding:4px 10px; border:1px solid rgba(148,163,184,0.85);
             border-radius:999px; margin-top:6px; font-weight:700;
           }
-          .kgrid{display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-top:10px;}
-          .k{border:1px solid rgba(148,163,184,0.85); padding:8px; border-radius:8px;}
-          .k .t{font-weight:700; margin:0 0 2px;}
-          .k .v{margin:0;}
+          .h2{font-weight:700; margin:12px 0 6px; text-align:left;}
+          .p{margin:0 0 9px;}
+          .bul{margin:0 0 9px; padding-left:18px;}
+          .bul li{margin:0 0 4px;}
           figure{margin:10px 0; page-break-inside:avoid;}
           .figimg{width:100%; border:1px solid rgba(148,163,184,0.85); border-radius:10px; display:block;}
           .figcap{margin-top:4px; font-weight:700; text-align:left;}
-          .h1{font-weight:700; margin:12px 0 6px; text-align:left;}
-          .p{margin:0 0 10px;}
-          .pagebreak{page-break-before:always;}
-          .firma{
-            margin-top: 60px;
+          .sig{
+            margin-top:16px;
+            page-break-inside:avoid;
+          }
+          .sig-row{
+            display:flex;
+            justify-content:space-between;
+            gap:12px;
+            margin-top:14px;
+          }
+          .line{
+            flex:1;
+            border-top:1px solid #111;
+            margin-top:26px;
+          }
+          .sig-txt{
+            font-size:10.5pt;
+            margin-top:6px;
             text-align:left;
           }
-          .linea{
-            width: 70%;
-            border-top: 1px solid #000;
-            margin-top: 50px;
-            margin-bottom: 8px;
-          }
+          .right{ text-align:right; }
+          .small{ font-size:10.2pt; }
         </style>
 
         <div class="report">
@@ -1651,63 +1659,67 @@
           </div>
 
           <div class="title">Informe técnico · Patrullajes AC192 (control y vigilancia)</div>
-          <p class="muted">Fuente: datos_patrullaje.csv · Tablero dinámico</p>
+          <p class="sub muted">Fuente: datos_patrullaje.csv · Tablero dinámico</p>
           <div class="chip">Filtros aplicados: ${filtros}</div>
 
-          <div class="kgrid" style="margin-top:12px;">
-            <div class="k"><p class="t">Registros (filtrados)</p><p class="v">${fmtNum(stats.total)}</p></div>
-            <div class="k"><p class="t">Municipios únicos</p><p class="v">${fmtNum(stats.munis)}</p></div>
-            <div class="k"><p class="t">Guardas únicos</p><p class="v">${fmtNum(stats.guardas)}</p></div>
-            <div class="k"><p class="t">% Actividad ilegal</p><p class="v">${fmtPct(stats.ilegalSi, stats.total)}</p></div>
-            <div class="k"><p class="t">% Con instituciones</p><p class="v">${fmtPct(stats.instSi, stats.total)}</p></div>
-            <div class="k"><p class="t">Horas válidas (suma)</p><p class="v">${horasSum}</p></div>
-          </div>
+          <div class="h2">1. Alcance del informe</div>
+          <p class="p">${escapeHtml(pA)}</p>
 
-          <div class="h1">Síntesis operativa (subconjunto filtrado)</div>
-          <p class="p">${escapeHtml(p1)}</p>
-          <p class="p">${escapeHtml(p2)}</p>
-          <p class="p">${escapeHtml(p3)}</p>
+          <div class="h2">2. Síntesis operativa del subconjunto filtrado</div>
+          <p class="p">${escapeHtml(pB)}</p>
+          <p class="p">${escapeHtml(pC)}</p>
 
-          <div class="h1">Composición del subconjunto (según filtros)</div>
-          ${mostrarTopMuni ? `<p class="p"><b>Municipios (Top 5):</b> ${escapeHtml(topMunis)}.</p>` : ``}
-          ${mostrarTopGuarda ? `<p class="p"><b>Guardarecursos (Top 5):</b> ${escapeHtml(topGuard)}.</p>` : ``}
-          <p class="p"><b>Áreas protegidas (Top 5):</b> ${escapeHtml(topAreas)}.</p>
-          <p class="p"><b>Tipos de patrullaje (Top 5):</b> ${escapeHtml(topTipos)}.</p>
+          <div class="h2">3. Lectura temporal</div>
+          <p class="p">${escapeHtml(pD)}</p>
 
-          <figure>
-            ${imgs.tiempo ? `<img class="figimg" src="${imgs.tiempo}" alt="Serie temporal">` : ""}
-            <div class="figcap"><b>Figura 1.</b> Serie temporal de patrullajes (agrupamiento: ${escapeHtml(fAgrupar.value)}).</div>
-          </figure>
+          ${imgs.tiempo ? `
+            <figure>
+              <img class="figimg" src="${imgs.tiempo}" alt="Serie temporal">
+              <div class="figcap"><b>Figura 1.</b> Serie temporal de patrullajes (agrupamiento: ${escapeHtml(fAgrupar.value)}).</div>
+            </figure>
+          ` : ``}
+
+          <div class="h2">4. Lectura espacial</div>
+          <p class="p">${escapeHtml(pE)}</p>
 
           ${mapImg ? `
             <figure>
-              <img class="figimg" src="${mapImg}" alt="Mapa">
-              <div class="figcap"><b>Figura 2.</b> Distribución espacial (puntos y densidad según filtros y disponibilidad de coordenadas).</div>
+              <img class="figimg" src="${mapImg}" alt="Mapa de patrullajes">
+              <div class="figcap"><b>Figura 2.</b> Distribución espacial con puntos (Lat/Lon) y densidad (heat) según filtros.</div>
             </figure>
-          ` : `<p class="p muted">No se pudo incluir el mapa por falta de coordenadas válidas.</p>`}
+          ` : `<p class="p muted">No se pudo incluir el mapa en el PDF (posible restricción CORS de tiles o falta de coordenadas válidas).</p>`}
 
-          ${imgs.muni && mostrarTopMuni ? `
-            <figure>
-              <img class="figimg" src="${imgs.muni}" alt="Top municipios">
-              <div class="figcap"><b>Figura 3.</b> Top 20 de municipios por número de registros.</div>
-            </figure>
-          ` : ``}
+          <div class="h2">5. Composición del subconjunto (según filtros)</div>
+          <ul class="bul">
+            <li>${compMuni}</li>
+            <li>${compGuarda}</li>
+            <li><b>Áreas protegidas (Top 5):</b> ${escapeHtml(compArea)}.</li>
+            <li><b>Tipos de patrullaje (Top 5):</b> ${escapeHtml(compTipo)}.</li>
+          </ul>
 
-          ${imgs.guarda && mostrarTopGuarda ? `
-            <figure>
-              <img class="figimg" src="${imgs.guarda}" alt="Top guardarecursos">
-              <div class="figcap"><b>Figura 4.</b> Top 20 de guardarecursos por número de registros.</div>
-            </figure>
-          ` : ``}
+          <div class="h2">6. Observaciones de calidad del dato y recomendaciones</div>
+          <p class="p">${escapeHtml(calidad)}</p>
 
-          <div class="pagebreak"></div>
-
-          <div class="h1">Vo.Bo.</div>
-          <div class="firma">
-            <div class="linea"></div>
-            <p style="margin:0;"><b>Ing. Juan Carlos Bocel Chiroy</b></p>
-            <p style="margin:0;">Director de RUMCLA - CONAP Altiplano Central</p>
-            <p style="margin-top:14px;">Fecha: ____________________</p>
+          <div class="sig">
+            <div class="h2">Vo.Bo. / Firma</div>
+            <div class="sig-row">
+              <div style="flex:1;">
+                <div class="line"></div>
+                <div class="sig-txt">
+                  <b>Vo.Bo. Ing. Juan Carlos Bocel Chiroy</b><br>
+                  Director de RUMCLA – CONAP Altiplano Central
+                </div>
+              </div>
+              <div style="width:40%; text-align:right;">
+                <div class="line"></div>
+                <div class="sig-txt right">
+                  <b>Fecha</b>
+                </div>
+              </div>
+            </div>
+            <p class="muted small" style="margin-top:10px;">
+              Nota: este documento reporta únicamente la información contenida en el subconjunto filtrado del tablero al momento de la generación.
+            </p>
           </div>
         </div>
       `;
@@ -1720,26 +1732,28 @@
       }
 
       const rows = aplicarFiltros();
-      const stats = computeReportStats(rows);
-      const stamp = new Date().toLocaleString("es");
-      const ctxAuto = detectarContexto(rows);
 
+      // Imágenes (JPEG para liviano)
       const imgs = {
-        tiempo: chartTiempo ? chartTiempo.toBase64Image("image/jpeg", 0.78) : "",
-        muni:   chartMuni   ? chartMuni.toBase64Image("image/jpeg", 0.78) : "",
-        guarda: chartGuarda ? chartGuarda.toBase64Image("image/jpeg", 0.78) : ""
+        tiempo: chartTiempo ? chartTiempo.toBase64Image("image/jpeg", 0.76) : "",
+        muni:   chartMuni   ? chartMuni.toBase64Image("image/jpeg", 0.76) : "",
+        guarda: chartGuarda ? chartGuarda.toBase64Image("image/jpeg", 0.76) : ""
       };
 
+      // Mapa (incluido siempre que se pueda capturar)
       const mapImg = await captureMapForPdf();
 
+      const stats = computeReportStats(rows);
+      const stamp = new Date().toLocaleString("es");
+
       const wrap = document.createElement("div");
-      wrap.innerHTML = buildReportHTML({rows, imgs, mapImg, stats, stamp, ctxAuto});
+      wrap.innerHTML = buildReportHTML({rows, imgs, mapImg, stats, stamp});
       document.body.appendChild(wrap);
 
       const opt = {
         margin:       10,
         filename:     "informe_tecnico_patrullajes_AC192.pdf",
-        image:        { type: "jpeg", quality: 0.78 },
+        image:        { type: "jpeg", quality: 0.76 },
         html2canvas:  { scale: 1.35, useCORS: true, backgroundColor: "#ffffff" },
         jsPDF:        { unit: "mm", format: "a4", orientation: "portrait", compress: true },
         pagebreak:    { mode: ["css", "legacy"] }
@@ -1756,39 +1770,13 @@
       }
     }
 
-    // ===== Chips =====
-    function renderChipsResumen(){
-      if(!chipsFiltros) return;
-
-      const chips = [];
-      const t = fTemporal.value;
-      if(t === "todo")   chips.push(["Temporal", "Todo"]);
-      if(t === "mes")    chips.push(["Temporal", "Mes: " + (fMes.value || "—")]);
-      if(t === "semana") chips.push(["Temporal", "Semana: " + (fSemana.value || "—")]);
-      if(t === "rango")  chips.push(["Temporal", "Rango: " + (fDesde.value||"—") + " a " + (fHasta.value||"—")]);
-
-      if(fMuni.value   !== "todo") chips.push(["Municipio", fMuni.value]);
-      if(fGuarda.value !== "todo") chips.push(["Guarda", fGuarda.value]);
-      if(fRegion.value !== "todo") chips.push(["Región", fRegion.value]);
-      if(fArea.value   !== "todo") chips.push(["Área", fArea.value]);
-      if(fTipo.value   !== "todo") chips.push(["Tipo", fTipo.value]);
-      if(fIlegal.value !== "todo") chips.push(["Ilegal", (fIlegal.value === "si" ? "Sí" : "No")]);
-      if(fInst.value   !== "todo") chips.push(["Instituciones", (fInst.value === "si" ? "Con" : "Sin")]);
-
-      chips.push(["Agrupar", fAgrupar.value]);
-
-      chipsFiltros.innerHTML = chips.map(([k, v]) =>
-        `<span class="chip"><b>${escapeHtml(k)}:</b> ${escapeHtml(v)}</span>`
-      ).join("");
-    }
-
     // ===== Refresh =====
-    function refrescar(updateURL){
+    function refrescar(updateURL, mapFit=true){
       const rows = aplicarFiltros();
       actualizarKPIs(rows);
       actualizarCharts(rows);
       actualizarTablas(rows);
-      updateMap(rows);
+      updateMap(rows, mapFit);
       renderChipsResumen();
       if(updateURL) setURLFromState();
     }
@@ -1817,7 +1805,8 @@
       filterSelect(fArea, "");
       filterSelect(fTipo, "");
 
-      refrescar(true);
+      lastFitKey = ""; // fuerza re-fit luego
+      refrescar(true, true);
     }
 
     function wire(){
@@ -1827,7 +1816,7 @@
       watchers.forEach(el=>{
         el.addEventListener("change", ()=>{
           if(el === fTemporal) setTemporalUI();
-          refrescar(true);
+          refrescar(true, true);
         });
       });
 
@@ -1849,7 +1838,8 @@
       $("toggle-heat").addEventListener("click", ()=>{
         heatEnabled = !heatEnabled;
         $("toggle-heat").textContent = heatEnabled ? "Densidad: ON" : "Densidad: OFF";
-        refrescar(false);
+        // NO hacemos fit al cambiar densidad (respeta zoom del usuario)
+        refrescar(false, false);
       });
 
       $("btn-pdf").addEventListener("click", generarInformePDF);
@@ -1875,6 +1865,7 @@
         return;
       }
 
+      // DPR moderado
       Chart.defaults.devicePixelRatio = 1.5;
 
       estado.textContent = "Leyendo datos_patrullaje.csv…";
@@ -1902,9 +1893,11 @@
         const ilegal = esIlegal(r) ? "si" : "no";
         const inst = tieneInstituciones(r) ? "si" : "no";
 
-        const coordLatLon = (safeNum(r[F.lat]) != null) && (safeNum(r[F.lon]) != null);
-        const coordXY = isNum(r[F.x]) && isNum(r[F.y]);
-        const coordOk = coordLatLon || coordXY;
+        // Prioridad Lat/Lon (aunque exista X/Y)
+        const lat = safeNum(r[F.lat]);
+        const lon = safeNum(r[F.lon]);
+        const latOk = (lat != null && lat >= -90 && lat <= 90);
+        const lonOk = (lon != null && lon >= -180 && lon <= 180);
 
         r.__date = d;
         r.__ym = ym;
@@ -1918,7 +1911,9 @@
         r.__ilegal = ilegal;
         r.__inst = inst;
         r.__durH = duracionHoras(r);
-        r.__coordOk = coordOk;
+
+        r.__lat = (latOk ? lat : null);
+        r.__lon = (lonOk ? lon : null);
 
         return r;
       });
@@ -1948,7 +1943,8 @@
       applyURLToControls();
 
       estado.textContent = `Listo. ${DATA.length.toLocaleString("es")} registros cargados.`;
-      refrescar(true);
+      lastFitKey = "";
+      refrescar(true, true);
     }
 
     document.addEventListener("DOMContentLoaded", ()=>{
