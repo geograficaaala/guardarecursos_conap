@@ -18,8 +18,9 @@
   <!-- Leaflet.heat -->
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
-  <!-- html2pdf (incluye html2canvas) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- html2canvas + html2pdf -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.min.js"></script>
 
   <style>
     :root{
@@ -156,6 +157,15 @@
       user-select:none;
       white-space:nowrap;
     }
+    .btn-primary{
+      background-color:var(--azul-boton); color:#fff;
+      box-shadow:0 1px 3px rgba(15,23,42,.14);
+    }
+    .btn-primary:hover{
+      background-color:var(--azul-boton-hover);
+      transform:translateY(-1px);
+      box-shadow:0 6px 18px rgba(15,23,42,.16);
+    }
     .btn-ghost{
       background-color:rgba(255,255,255,.95);
       color:#0f172a;
@@ -278,6 +288,7 @@
     .chartwrap.tall{ height:260px; }
     canvas{ width:100% !important; height:100% !important; }
 
+    /* MAPA */
     #map{
       width:100%;
       height:280px;
@@ -286,6 +297,11 @@
       overflow:hidden;
       background:#fff;
     }
+
+    /* Durante captura para PDF/PNG, ocultar controles para una figura limpia */
+    #map.capture .leaflet-control-container{ display:none !important; }
+    #map.capture .leaflet-control-attribution{ display:none !important; }
+
     .maprow{
       display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
       margin-bottom:10px;
@@ -306,11 +322,6 @@
       background:#eef6ff;
       border-color: rgba(59,130,246,0.35);
       box-shadow:0 3px 10px rgba(15,23,42,.10);
-    }
-
-    /* Asegura que el heat no “mate” a los puntos visualmente */
-    .leaflet-heatmap-layer{
-      opacity: 0.78;
     }
 
     .tablewrap{ overflow-x:auto; }
@@ -351,8 +362,7 @@
       .title-group{ text-align:center; }
       .header-inner{ justify-content:center; }
       .topnav{ top: 116px; }
-      .chartwrap{ height: 240px; }
-      #map{ height: 260px; }
+      #map{ height: 250px; }
     }
   </style>
 </head>
@@ -376,7 +386,7 @@
     <section class="page-header">
       <h2>AC192 · Patrullajes de control y vigilancia · Tablero dinámico</h2>
       <p>
-        Este tablero se genera automáticamente desde los datos extraídos de la boleta <strong>AC 192</strong> y permite
+        Este tablero se genera automáticamente desde los datos extraídos de la boleta AC 192 y permite
         filtrar, graficar y generar un informe PDF liviano.
       </p>
       <span class="pill">Tablero dinámico · CSV</span>
@@ -389,7 +399,7 @@
         <a class="tab" href="patrullajes_datos.html">Tabla de datos</a>
       </nav>
 
-      <!-- BOTONES (sin duplicados) -->
+      <!-- UNA SOLA FILA: sin duplicados -->
       <div class="nav-actions">
         <a class="btn btn-ghost" href="index.html">Inicio</a>
         <button class="btn btn-ghost" id="btn-reset" type="button">Limpiar filtros</button>
@@ -437,7 +447,7 @@
         </div>
 
         <div class="field">
-          <label for="f-guarda">Guarda recursos responsable (buscable)</label>
+          <label for="f-guarda">Guarda recursos (buscable)</label>
           <input id="s-guarda" class="small" type="search" placeholder="Buscar..." autocomplete="off">
           <select id="f-guarda"></select>
         </div>
@@ -525,7 +535,7 @@
         <div class="kpi">
           <div class="t">% Coord válidas</div>
           <div class="v" id="k-coord">–</div>
-          <div class="s">Lat/Lon</div>
+          <div class="s">Lat/Lon (preferente)</div>
         </div>
       </div>
     </section>
@@ -535,14 +545,14 @@
         <div class="maprow">
           <div>
             <h3 style="margin:0 0 4px;">Distribución espacial (mapa)</h3>
-            <p class="subnote" style="margin:0;">Puntos georreferenciados + densidad (heat) según filtros. Los puntos NO cambian de tamaño al hacer zoom.</p>
+            <p class="subnote" style="margin:0;">Puntos georreferenciados y densidad (heat) según filtros.</p>
           </div>
           <div class="mini-actions">
             <button class="mini-btn" id="png-map" type="button">Exportar PNG</button>
             <button class="mini-btn" id="toggle-heat" type="button">Densidad: ON</button>
           </div>
         </div>
-        <div id="map" aria-label="Mapa base"></div>
+        <div id="map" aria-label="Mapa"></div>
         <p class="subnote" id="map-note" style="margin-top:8px;">—</p>
       </div>
 
@@ -550,7 +560,7 @@
         <div class="maprow">
           <div>
             <h3 style="margin:0 0 4px;">Patrullajes en el tiempo</h3>
-            <p class="subnote" style="margin:0;">Serie (línea) según el agrupamiento seleccionado.</p>
+            <p class="subnote" style="margin:0;">Conteo por periodo (barras) según el agrupamiento seleccionado.</p>
           </div>
           <div class="mini-actions">
             <button class="mini-btn" id="png-tiempo" type="button">Exportar PNG</button>
@@ -665,8 +675,14 @@
     let map=null, layerPoints=null, layerHeat=null;
     let heatEnabled = true;
 
-    // Control de "fit" (para no romper zoom cuando solo enciendes/apagas densidad)
-    let lastFitKey = "";
+    // Paleta heat: amarillo -> rojo -> violeta
+    const HEAT_GRADIENT = {
+      0.00: "#ffff00",
+      0.35: "#ffb000",
+      0.60: "#ff0000",
+      0.82: "#8a2be2",
+      1.00: "#4b0082"
+    };
 
     // ===== DOM =====
     const $ = (id) => document.getElementById(id);
@@ -728,7 +744,12 @@
     function isNum(v){ return v !== null && v !== "" && isFinite(Number(v)); }
     function safeNum(v){
       if (v === null || v === undefined) return null;
-      const s = String(v).trim().replace(",", ".");
+      let s = String(v).trim();
+      if(!s) return null;
+      // quitar espacios y normalizar decimal coma->punto
+      s = s.replace(/\s+/g,"").replace(",", ".");
+      // permitir solo -, +, dígitos y punto
+      s = s.replace(/[^0-9+\-\.]/g,"");
       if(!s) return null;
       const n = Number(s);
       return isFinite(n) ? n : null;
@@ -892,9 +913,9 @@
       const horas = horasArr.reduce((a,b)=>a+b, 0);
       kHoras.textContent = horasArr.length ? (Math.round(horas*10)/10).toLocaleString("es") : "—";
 
-      // SOLO Lat/Lon (prioridad como pediste)
-      const coordValid = rows.filter(r => r.__lat != null && r.__lon != null).length;
-      const pctCoord = total ? Math.round((coordValid*1000)/total)/10 : 0;
+      // Preferente: lat/lon (ignorar x/y para el indicador principal)
+      const coordLatLon = rows.filter(r => safeNum(r[F.lat])!=null && safeNum(r[F.lon])!=null).length;
+      const pctCoord = total ? Math.round((coordLatLon*1000)/total)/10 : 0;
       kCoord.textContent = total ? (pctCoord.toLocaleString("es") + "%") : "—";
     }
 
@@ -935,10 +956,6 @@
           legend:{ display:true, labels:{ color: tick, boxWidth: 10, boxHeight: 10 } },
           tooltip:{ borderWidth: 0 }
         },
-        elements:{
-          line:{ borderWidth: 2 },
-          point:{ radius: 2.5, hoverRadius: 4 }
-        },
         scales:{
           x:{ ticks:{ color: tick, maxRotation: 0, autoSkip: true }, grid:{ color: grid } },
           y:{ beginAtZero:true, ticks:{ color: tick }, grid:{ color: grid } }
@@ -957,28 +974,24 @@
       return new Chart(ctx, cfg);
     }
 
-    // Top 20 en barras horizontales + colores pastel (verde y celeste)
     function actualizarCharts(rows){
       const agr = fAgrupar.value; // dia/semana/mes
       const keyFn = (agr === "mes") ? (r=>r.__ym) : (agr === "semana") ? (r=>r.__yw) : (r=>r.__yd);
 
-      // Serie temporal (línea)
+      // ===== Serie temporal (BARRAS) =====
       const mTiempo = countBy(rows, keyFn);
       const labelsT = Array.from(mTiempo.keys()).sort();
       const dataT = labelsT.map(k=>mTiempo.get(k));
 
       chartTiempo = renderChart("c-tiempo", chartTiempo, {
-        type:"line",
+        type:"bar",
         data:{
           labels: labelsT,
           datasets:[{
             label:"Patrullajes",
             data: dataT,
-            borderColor: "rgba(59,130,246,0.85)",
-            backgroundColor: "rgba(59,130,246,0.10)",
-            fill: true,
-            pointBackgroundColor: "rgba(59,130,246,0.85)",
-            pointBorderColor: "rgba(0,0,0,0)"
+            backgroundColor: "rgba(59,130,246,0.30)",
+            borderWidth: 0
           }]
         },
         options:{
@@ -994,12 +1007,16 @@
             } else {
               fTemporal.value = "rango"; setTemporalUI(); fDesde.value = label; fHasta.value = label;
             }
-            refrescar(true, true);
+            refrescar(true);
+          },
+          scales:{
+            x:{ ticks:{ maxRotation: 60, minRotation: 0, autoSkip: true } },
+            y:{ beginAtZero:true }
           }
         }
       });
 
-      // Top Municipios (Top 20) - barras horizontales pastel verde
+      // ===== Top Municipios (Top 20) - barras horizontales (verde pastel) =====
       const mM = countBy(rows, r=>r.__muni || "(Sin municipio)");
       const topM = topN(mM, 20);
       const labelsM = topM.map(x=>x[0]);
@@ -1012,7 +1029,7 @@
           datasets:[{
             label:"Registros",
             data: dataM,
-            backgroundColor: "rgba(167, 243, 208, 0.95)", // verde pastel
+            backgroundColor: "rgba(167, 243, 208, 0.95)",
             borderWidth: 0
           }]
         },
@@ -1023,7 +1040,7 @@
             if(!elements || !elements.length) return;
             const idx = elements[0].index;
             fMuni.value = labelsM[idx];
-            refrescar(true, true);
+            refrescar(true);
           },
           scales:{
             x:{ beginAtZero:true },
@@ -1032,7 +1049,7 @@
         }
       });
 
-      // Top Guardas (Top 20) - barras horizontales pastel celeste
+      // ===== Top Guardas (Top 20) - barras horizontales (celeste pastel) =====
       const mG = countBy(rows, r=>r.__guarda || "(Sin guarda)");
       const topG = topN(mG, 20);
       const labelsG = topG.map(x=>x[0]);
@@ -1045,7 +1062,7 @@
           datasets:[{
             label:"Registros",
             data: dataG,
-            backgroundColor: "rgba(191, 219, 254, 0.95)", // celeste pastel
+            backgroundColor: "rgba(191, 219, 254, 0.95)",
             borderWidth: 0
           }]
         },
@@ -1056,7 +1073,7 @@
             if(!elements || !elements.length) return;
             const idx = elements[0].index;
             fGuarda.value = labelsG[idx];
-            refrescar(true, true);
+            refrescar(true);
           },
           scales:{
             x:{ beginAtZero:true },
@@ -1067,43 +1084,72 @@
     }
 
     // ===== MAPA =====
+    function pointRadiusFromZoom(z){
+      // más zoom => puntos más pequeños (evita “gigantes”)
+      return Math.max(2.2, Math.min(5.2, 9 - z*0.45));
+    }
+    function heatParamsFromZoom(z){
+      // más zoom => heat más “cerrado” y definido
+      const radius = Math.max(12, Math.min(42, z * 2.2));
+      const blur   = Math.max(10, Math.min(30, z * 1.6));
+      return { radius, blur };
+    }
+
     function initMap(){
       if(map) return;
 
       map = L.map("map", {
         zoomControl:true,
         attributionControl:true,
-        preferCanvas:false // mejor para captura html2canvas y no afecta tamaño de circleMarker
+        preferCanvas:true
       });
 
-      // Panes (para asegurar orden: heat abajo, puntos arriba)
+      // panes para controlar z-index
       map.createPane("heatPane");
-      map.getPane("heatPane").style.zIndex = 250;
+      map.getPane("heatPane").style.zIndex = 410;
 
       map.createPane("pointsPane");
-      map.getPane("pointsPane").style.zIndex = 420;
+      map.getPane("pointsPane").style.zIndex = 450;
 
-      // CARTO (CORS OK para export / PDF)
+      // CARTO basemap con CORS para capturas (PDF/PNG)
       L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
         subdomains: "abcd",
-        maxZoom: 19,
+        maxZoom: 20,
         crossOrigin: true,
         attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
       }).addTo(map);
 
-      layerPoints = L.layerGroup([], { pane: "pointsPane" }).addTo(map);
+      layerPoints = L.layerGroup().addTo(map);
       layerHeat = null;
 
       map.setView([14.7, -91.2], 9);
 
-      // Heat sensible al zoom (los puntos NO cambian)
       map.on("zoomend", ()=>{
-        if(!layerHeat || !heatEnabled) return;
+        // ajustar heat
+        if(layerHeat && heatEnabled){
+          const z = map.getZoom() || 10;
+          const hp = heatParamsFromZoom(z);
+          layerHeat.setOptions({ radius: hp.radius, blur: hp.blur });
+        }
+        // ajustar puntos (radio)
         const z = map.getZoom() || 10;
-        const radius = Math.max(12, Math.min(42, z * 2.2));
-        const blur   = Math.max(10, Math.min(30, z * 1.6));
-        layerHeat.setOptions({ radius, blur });
+        const r = pointRadiusFromZoom(z);
+        layerPoints.getLayers().forEach(m=>{
+          if(m && typeof m.setRadius === "function") m.setRadius(r);
+        });
       });
+    }
+
+    function getLatLonRows(rows){
+      const pts = [];
+      rows.forEach(r=>{
+        const lat = safeNum(r[F.lat]);
+        const lon = safeNum(r[F.lon]);
+        if(lat==null || lon==null) return;
+        if(lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
+        pts.push({lat, lon, r});
+      });
+      return pts;
     }
 
     function escapeHtml(texto) {
@@ -1115,28 +1161,7 @@
         .replace(/'/g, "&#39;");
     }
 
-    function getLatLonRows(rows){
-      const pts = [];
-      rows.forEach(r=>{
-        const lat = r.__lat;
-        const lon = r.__lon;
-        if(lat==null || lon==null) return;
-        if(lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
-        pts.push({lat, lon, r});
-      });
-      return pts;
-    }
-
-    // Heat palette: rojo -> amarillo -> violeta
-    function heatGradient(){
-      return {
-        0.10: "#ff0000", // rojo (baja)
-        0.55: "#ffff00", // amarillo (medio)
-        1.00: "#7f00ff"  // violeta (alto)
-      };
-    }
-
-    function updateMap(rows, doFit=true){
+    function updateMap(rows){
       initMap();
 
       layerPoints.clearLayers();
@@ -1148,37 +1173,40 @@
       const pts = getLatLonRows(rows);
 
       if(!pts.length){
-        mapNote.textContent = "No hay Latitud/Longitud válidas en el subconjunto filtrado. Verifique captura de coordenadas (Lat/Lon).";
+        mapNote.textContent = "No hay Latitud/Longitud válidas en el subconjunto filtrado (para el mapa se usa Lat/Lon).";
         return;
       }
 
-      // Heat primero (abajo)
+      // heat primero (fondo)
       if(heatEnabled && typeof L.heatLayer === "function" && pts.length >= 3){
-        const heatPts = pts.map(p=>[p.lat, p.lon, 0.7]);
+        const heatPts = pts.map(p=>[p.lat, p.lon, 0.8]);
         const z = map.getZoom() || 10;
-        const radius = Math.max(12, Math.min(42, z * 2.2));
-        const blur   = Math.max(10, Math.min(30, z * 1.6));
+        const hp = heatParamsFromZoom(z);
 
         layerHeat = L.heatLayer(heatPts, {
           pane: "heatPane",
-          radius,
-          blur,
+          radius: hp.radius,
+          blur: hp.blur,
           maxZoom: 18,
-          minOpacity: 0.35,
-          gradient: heatGradient()
+          gradient: HEAT_GRADIENT,
+          minOpacity: 0.25
         }).addTo(map);
       }
 
-      // Puntos arriba: MUY visibles y radio fijo (NO crecen en zoom)
+      // puntos encima (más visibles)
+      const z = map.getZoom() || 10;
+      const pr = pointRadiusFromZoom(z);
+
       pts.forEach(p=>{
         const m = L.circleMarker([p.lat, p.lon], {
           pane: "pointsPane",
-          radius: 4.6,          // fijo (pixels) -> no se “gigantea”
-          weight: 1.6,
-          color: "rgba(255,255,255,0.95)",   // borde blanco para resaltar
-          fillColor: "rgba(15,23,42,0.80)",  // punto oscuro, se ve en base claro
-          fillOpacity: 0.95
+          radius: pr,
+          weight: 1.5,
+          color: "rgba(255,255,255,0.95)",   // borde claro para contraste
+          fillColor: "rgba(37,99,235,0.85)", // relleno visible
+          fillOpacity: 0.92
         });
+
         m.bindPopup(
           `<b>Guarda:</b> ${escapeHtml(p.r.__guarda)}<br>`+
           `<b>Municipio:</b> ${escapeHtml(p.r.__muni)}<br>`+
@@ -1189,43 +1217,111 @@
       });
 
       const bounds = L.latLngBounds(pts.map(p=>[p.lat, p.lon]));
-      const fitKey = `${pts.length}|${bounds.getSouthWest().lat.toFixed(4)},${bounds.getSouthWest().lng.toFixed(4)}|${bounds.getNorthEast().lat.toFixed(4)},${bounds.getNorthEast().lng.toFixed(4)}`;
-
-      if(doFit && fitKey !== lastFitKey){
-        lastFitKey = fitKey;
-        map.fitBounds(bounds.pad(0.25));
-      }
+      map.fitBounds(bounds.pad(0.25));
 
       mapNote.textContent = `Mapa generado con ${pts.length} puntos (Lat/Lon) ${heatEnabled ? "con densidad" : "sin densidad"}.`;
 
-      setTimeout(()=> map.invalidateSize(true), 250);
+      setTimeout(()=> map.invalidateSize(true), 200);
     }
 
-    // Export del mapa (PNG)
-    async function exportMapPNG(){
+    // ===== Searchable selects =====
+    const fullOptions = new Map();
+    function cacheOptions(select, placeholder){
+      if(!select) return;
+      const values = Array.from(select.options).map(o=>o.value).filter(v=>v && v !== "todo");
+      fullOptions.set(select.id, { placeholder, values });
+    }
+    function filterSelect(select, q){
+      if(!select) return;
+      const info = fullOptions.get(select.id);
+      if(!info) return;
+
+      const cur = select.value;
+      const qq = normalizar(q);
+
+      const filtered = info.values.filter(v=>{
+        if(!qq) return true;
+        return normalizar(v).includes(qq);
+      });
+
+      llenarSelect(select, filtered, info.placeholder);
+      const still = Array.from(select.options).some(o=>o.value === cur);
+      if(still) select.value = cur;
+    }
+
+    // ===== Export helpers =====
+    function downloadDataUrl(dataUrl, filename){
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    function exportChartPNG(chart, name){
+      if(!chart) return;
+      const url = chart.toBase64Image("image/png", 0.92);
+      downloadDataUrl(url, name);
+    }
+
+    const wait = (ms)=> new Promise(r=>setTimeout(r,ms));
+
+    async function ensureMapReadyForCapture(){
+      if(!map) return;
       const el = $("map");
       if(!el) return;
 
-      if(typeof html2canvas === "undefined"){
+      map.invalidateSize(true);
+      await wait(220);
+
+      // esperar tiles pendientes (máximo ~1200ms)
+      const tiles = el.querySelectorAll("img.leaflet-tile");
+      const pending = Array.from(tiles).filter(im => !im.complete);
+      if(pending.length){
+        await Promise.race([
+          Promise.all(pending.map(im => new Promise(res=>{
+            im.addEventListener("load", res, {once:true});
+            im.addEventListener("error", res, {once:true});
+          }))),
+          wait(1200)
+        ]);
+      }
+    }
+
+    async function captureMapImageJpeg(){
+      const el = $("map");
+      if(!el || typeof html2canvas === "undefined") return "";
+
+      await ensureMapReadyForCapture();
+
+      // ocultar controles para figura limpia
+      el.classList.add("capture");
+      await wait(60);
+
+      const canvas = await html2canvas(el, {
+        scale: 1.35,
+        useCORS: true,
+        backgroundColor: "#ffffff"
+      });
+
+      el.classList.remove("capture");
+      return canvas.toDataURL("image/jpeg", 0.82);
+    }
+
+    async function exportMapPNG(){
+      const el = $("map");
+      if(!el || typeof html2canvas === "undefined"){
         showToast("No se encontró html2canvas.");
         return;
       }
-
-      // Pequeña espera para tiles
-      await new Promise(r=>setTimeout(r, 550));
-
-      try{
-        const canvas = await html2canvas(el, {
-          scale: 1.35,
-          useCORS: true,
-          backgroundColor: "#ffffff"
-        });
-        const url = canvas.toDataURL("image/png", 0.92);
-        downloadDataUrl(url, "mapa_patrullajes.png");
-      }catch(e){
-        console.error(e);
-        showToast("No se pudo exportar el mapa (CORS/tiles).");
+      const jpg = await captureMapImageJpeg();
+      if(!jpg){
+        showToast("No se pudo capturar el mapa.");
+        return;
       }
+      // convertir a PNG “como viene” (descarga igual)
+      downloadDataUrl(jpg, "mapa_patrullajes.jpg");
     }
 
     // ===== Tablas =====
@@ -1234,20 +1330,20 @@
       const keyCol = (agr === "mes") ? "__ym" : (agr === "semana") ? "__yw" : "__yd";
 
       const colSet = new Set();
-      const mapx = new Map();
+      const map = new Map();
 
       rows.forEach(r=>{
         const rowKey = r.__guarda || "(Sin guarda)";
         const colKey = r[keyCol] || "(Sin fecha)";
         colSet.add(colKey);
 
-        if(!mapx.has(rowKey)) mapx.set(rowKey, { guarda: rowKey });
-        const obj = mapx.get(rowKey);
+        if(!map.has(rowKey)) map.set(rowKey, { guarda: rowKey });
+        const obj = map.get(rowKey);
         obj[colKey] = (obj[colKey] || 0) + 1;
       });
 
       const cols = Array.from(colSet).sort((a,b)=>a.localeCompare(b));
-      const data = Array.from(mapx.values()).sort((a,b)=>a.guarda.localeCompare(b.guarda,"es"));
+      const data = Array.from(map.values()).sort((a,b)=>a.guarda.localeCompare(b.guarda,"es"));
 
       const tabCols = [
         { title:"Guarda recurso", field:"guarda", frozen:true, headerFilter:"input", minWidth:220 },
@@ -1279,8 +1375,8 @@
         {title:"Guarda", field:F.guarda, headerFilter:"input", minWidth:220},
         {title:"Municipio", field:F.municipio, headerFilter:"input", width:160},
         {title:"Región", field:F.region, headerFilter:"input", width:140},
-        {title:"Área", field:F.area, headerFilter:"input", width:160},
-        {title:"Tipo", field:F.tipo, headerFilter:"input", width:170},
+        {title:"Área", field:F.area, headerFilter:"input", width:180},
+        {title:"Tipo", field:F.tipo, headerFilter:"input", width:190},
         {title:"Ilegal", field:F.ilegal, headerFilter:"input", width:160},
         {title:"Instituciones", field:F.inst, headerFilter:"input", minWidth:220},
         {title:"Inicio", field:F.hIni, headerFilter:"input", width:120},
@@ -1381,47 +1477,7 @@
       setIfExists(fInst, p.get("inst"));
     }
 
-    // ===== Searchable selects =====
-    const fullOptions = new Map();
-    function cacheOptions(select, placeholder){
-      if(!select) return;
-      const values = Array.from(select.options).map(o=>o.value).filter(v=>v && v !== "todo");
-      fullOptions.set(select.id, { placeholder, values });
-    }
-    function filterSelect(select, q){
-      if(!select) return;
-      const info = fullOptions.get(select.id);
-      if(!info) return;
-
-      const cur = select.value;
-      const qq = normalizar(q);
-
-      const filtered = info.values.filter(v=>{
-        if(!qq) return true;
-        return normalizar(v).includes(qq);
-      });
-
-      llenarSelect(select, filtered, info.placeholder);
-      const still = Array.from(select.options).some(o=>o.value === cur);
-      if(still) select.value = cur;
-    }
-
-    // ===== Export helpers =====
-    function downloadDataUrl(dataUrl, filename){
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-
-    function exportChartPNG(chart, name){
-      if(!chart) return;
-      const url = chart.toBase64Image("image/png", 0.92);
-      downloadDataUrl(url, name);
-    }
-
+    // ===== Resumen de filtros =====
     function resumenFiltrosTexto(){
       const parts = [];
       const t = fTemporal.value;
@@ -1466,7 +1522,7 @@
       ).join("");
     }
 
-    // ===== INFORME PDF (nuevo: textual, ejecutivo, con mapa y firma) =====
+    // ===== INFORME PDF (nuevo: más ejecutivo y textual, con firma y mapa) =====
     function fmtNum(n){ return (n ?? 0).toLocaleString("es"); }
     function fmtPct(num, den){
       if(!den) return "—";
@@ -1493,233 +1549,218 @@
       const horasSum = horasArr.reduce((a,b)=>a+b, 0);
       const horasAvg = horasArr.length ? (horasSum/horasArr.length) : null;
 
-      // SOLO Lat/Lon
-      const coordValidas = rows.filter(r => r.__lat != null && r.__lon != null).length;
+      const coordLatLon = rows.filter(r => safeNum(r[F.lat])!=null && safeNum(r[F.lon])!=null).length;
 
       const munisSet = new Set(rows.map(r=>r.__muni).filter(Boolean));
-      const guardSet = new Set(rows.map(r=>r.__guarda).filter(Boolean));
+      const guardasSet = new Set(rows.map(r=>r.__guarda).filter(Boolean));
 
       return {
-        total, withDateCount: withDate.length, minDate, maxDate,
+        total,
+        withDateCount: withDate.length,
+        minDate, maxDate,
         ilegalSi, instSi,
         horasSum, horasAvg, horasCount: horasArr.length,
-        coordValidas,
-        munis: munisSet.size, guardas: guardSet.size,
-        munisSet, guardSet
+        coordLatLon,
+        munis: munisSet.size,
+        guardas: guardasSet.size,
+        munisSet, guardasSet
       };
     }
 
     function topItems(rows, key, n=5){
-      const m = countBy(rows, r => r[key] || "(Sin dato)");
-      return topN(m, n);
-    }
-
-    function topItemsInline(rows, key, n=5){
       const total = rows.length || 0;
-      const top = topItems(rows, key, n);
-      if(!top.length) return "Sin datos suficientes.";
+      const m = countBy(rows, r => r[key] || "(Sin dato)");
+      const top = topN(m, n);
       return top.map(([k,v])=>{
         const p = total ? Math.round((v*1000)/total)/10 : 0;
-        return `${k} (${fmtNum(v)}, ${p.toLocaleString("es")}%)`;
-      }).join("; ");
+        return { k, v, p };
+      });
     }
 
-    function contextoFiltro(stats, rows){
-      const muniUnico = (stats.munisSet.size === 1) ? Array.from(stats.munisSet)[0] : null;
-      const guardaUnico = (stats.guardSet.size === 1) ? Array.from(stats.guardSet)[0] : null;
-
-      let muniTxt = "";
-      if(muniUnico) muniTxt = `Municipio: ${muniUnico}`;
-      else muniTxt = `Municipios: ${fmtNum(stats.munis)} (Top 3: ${topItemsInline(rows, "__muni", 3)})`;
-
-      let guardaTxt = "";
-      if(guardaUnico) guardaTxt = `Guarda recursos: ${guardaUnico}`;
-      else guardaTxt = `Guardarecursos: ${fmtNum(stats.guardas)} (Top 3: ${topItemsInline(rows, "__guarda", 3)})`;
-
-      return { muniUnico, guardaUnico, muniTxt, guardaTxt };
-    }
-
-    async function captureMapForPdf(){
-      const el = $("map");
-      if(!el || typeof html2canvas === "undefined") return "";
-
-      // Espera a tiles/puntos
-      await new Promise(r=>setTimeout(r, 650));
-
-      try{
-        const canvas = await html2canvas(el, { scale: 1.35, useCORS:true, backgroundColor:"#ffffff" });
-        return canvas.toDataURL("image/jpeg", 0.76);
-      }catch(e){
-        console.error(e);
-        return "";
+    function describeFocus(stats, rows){
+      // Municipio foco
+      let muniText = "";
+      if(fMuni.value !== "todo"){
+        muniText = `Municipio foco: ${fMuni.value}.`;
+      } else if(stats.munis === 1){
+        muniText = `Municipio foco: ${Array.from(stats.munisSet)[0]}.`;
+      } else {
+        const top3 = topItems(rows, "__muni", 3).map(x=>`${x.k} (${x.p.toLocaleString("es")}%)`).join(", ");
+        muniText = top3 ? `Municipios principales (Top 3): ${top3}.` : "Municipios: múltiples.";
       }
+
+      // Guarda foco
+      let guardaText = "";
+      if(fGuarda.value !== "todo"){
+        guardaText = `Guarda recurso foco: ${fGuarda.value}.`;
+      } else if(stats.guardas === 1){
+        guardaText = `Guarda recurso foco: ${Array.from(stats.guardasSet)[0]}.`;
+      } else {
+        const top3g = topItems(rows, "__guarda", 3).map(x=>`${x.k} (${x.p.toLocaleString("es")}%)`).join(", ");
+        guardaText = top3g ? `Guardarecursos principales (Top 3): ${top3g}.` : "Guardarecursos: múltiples.";
+      }
+
+      return `${muniText} ${guardaText}`.trim();
     }
 
     function buildReportHTML({rows, imgs, mapImg, stats, stamp}){
       const filtros = escapeHtml(resumenFiltrosTexto());
+
       const fechaInicio = stats.minDate ? fmtDateShort(stats.minDate) : "—";
       const fechaFin    = stats.maxDate ? fmtDateShort(stats.maxDate) : "—";
-
-      const ctx = contextoFiltro(stats, rows);
 
       const horasSum = stats.horasCount ? (Math.round(stats.horasSum*10)/10).toLocaleString("es") : "—";
       const horasAvg = stats.horasCount ? (Math.round(stats.horasAvg*10)/10).toLocaleString("es") : "—";
 
-      const coberturaEsp = `${fmtNum(stats.coordValidas)} de ${fmtNum(stats.total)} registros (${fmtPct(stats.coordValidas, stats.total)}) con Latitud/Longitud válida.`;
+      const foco = escapeHtml(describeFocus(stats, rows));
 
-      // Texto ejecutivo (sin repetir KPIs en “botones”)
-      const pA = `Este informe resume exclusivamente el subconjunto de registros resultante de los filtros activos en el tablero. En el estado actual del filtrado se analizan ${fmtNum(stats.total)} registros. Contexto del filtro: ${ctx.muniTxt}; ${ctx.guardaTxt}.`;
+      const topAreas = topItems(rows, "__area", 5);
+      const topTipos = topItems(rows, "__tipo", 5);
 
-      const pB = `Cobertura temporal del subconjunto: ${fechaInicio} a ${fechaFin} (registros con fecha válida: n=${fmtNum(stats.withDateCount)}). En el periodo filtrado se observan ${fmtNum(stats.ilegalSi)} registros con actividad ilegal (${fmtPct(stats.ilegalSi, stats.total)}) y ${fmtNum(stats.instSi)} con participación de instituciones (${fmtPct(stats.instSi, stats.total)}).`;
+      // incluir top muni/guarda SOLO si no está fijo y hay >1
+      const showTopMuni = (fMuni.value === "todo" && stats.munis > 1);
+      const showTopGuarda = (fGuarda.value === "todo" && stats.guardas > 1);
 
-      const pC = `Esfuerzo operativo (solo registros con horas consistentes): ${stats.horasCount ? `${horasSum} horas acumuladas y un promedio de ${horasAvg} horas por registro con duración calculable.` : `no se calcula duración por ausencia o inconsistencia de horas de inicio/fin en el subconjunto.`} Cobertura espacial: ${coberturaEsp}`;
+      const topMuni = showTopMuni ? topItems(rows, "__muni", 5) : [];
+      const topGuarda = showTopGuarda ? topItems(rows, "__guarda", 5) : [];
 
-      const pD = `Lectura temporal (agrupamiento: ${escapeHtml(fAgrupar.value)}): la serie permite identificar concentraciones de registros en periodos específicos y sirve como control operativo (dispersión vs. concentración en ventanas cortas).`;
+      const areaTxt = topAreas.length
+        ? topAreas.map(x=>`${x.k} (${fmtNum(x.v)}, ${x.p.toLocaleString("es")}%)`).join("; ")
+        : "Sin datos suficientes.";
 
-      const pE = `Lectura espacial: el mapa presenta puntos georreferenciados y densidad (heat) para visualizar concentraciones. La interpretación se limita a registros con Lat/Lon válida; si la cobertura espacial es parcial, las conclusiones se restringen a esa fracción del subconjunto.`;
+      const tipoTxt = topTipos.length
+        ? topTipos.map(x=>`${x.k} (${fmtNum(x.v)}, ${x.p.toLocaleString("es")}%)`).join("; ")
+        : "Sin datos suficientes.";
 
-      const compArea = topItemsInline(rows, "__area", 5);
-      const compTipo = topItemsInline(rows, "__tipo", 5);
+      const muniTxt = topMuni.length
+        ? topMuni.map(x=>`${x.k} (${fmtNum(x.v)}, ${x.p.toLocaleString("es")}%)`).join("; ")
+        : "";
 
-      let compMuni = "";
-      if(ctx.muniUnico){
-        compMuni = `El subconjunto corresponde a un único municipio: ${escapeHtml(ctx.muniUnico)} (100% de los registros).`;
-      }else{
-        compMuni = `Municipios con mayor frecuencia (Top 5): ${escapeHtml(topItemsInline(rows, "__muni", 5))}.`;
-      }
+      const guardaTxt = topGuarda.length
+        ? topGuarda.map(x=>`${x.k} (${fmtNum(x.v)}, ${x.p.toLocaleString("es")}%)`).join("; ")
+        : "";
 
-      let compGuarda = "";
-      if(ctx.guardaUnico){
-        compGuarda = `El subconjunto corresponde a un único guardarecurso responsable: ${escapeHtml(ctx.guardaUnico)} (100% de los registros).`;
-      }else{
-        compGuarda = `Guardarecursos con mayor frecuencia (Top 5): ${escapeHtml(topItemsInline(rows, "__guarda", 5))}.`;
-      }
+      // Texto ejecutivo (sin repetir KPIs en “tarjetas”)
+      const p0 = `Este informe describe exclusivamente el subconjunto resultante de los filtros activos en el tablero (no incluye registros fuera del filtro). ${foco}`;
 
-      const calidad = `Calidad del dato: los registros sin fecha válida no aportan a la cobertura temporal; las horas sin formato consistente no permiten calcular duración; y las coordenadas fuera de rango o ausentes limitan la lectura espacial. Recomendación práctica: estandarizar captura de Latitud/Longitud, validar horas al momento del registro y unificar catálogos (municipio/área/tipo) para evitar duplicaciones por variaciones de escritura.`;
+      const p1 = `Cobertura del subconjunto: ${fmtNum(stats.total)} registros. Periodo con fecha válida: ${fechaInicio} a ${fechaFin} (n=${fmtNum(stats.withDateCount)}). Georreferenciación (Lat/Lon): ${fmtNum(stats.coordLatLon)} registros (${fmtPct(stats.coordLatLon, stats.total)}).`;
+
+      const p2 = `Hallazgos operativos: actividad ilegal observada en ${fmtNum(stats.ilegalSi)} registros (${fmtPct(stats.ilegalSi, stats.total)}). Participación de instituciones en ${fmtNum(stats.instSi)} registros (${fmtPct(stats.instSi, stats.total)}). Duración reportada: ${horasSum} horas acumuladas (solo registros con horas válidas), con promedio de ${horasAvg} horas por registro calculable.`;
+
+      const p3 = `Composición del subconjunto: áreas protegidas más frecuentes (Top 5): ${areaTxt}. Tipos de patrullaje más frecuentes (Top 5): ${tipoTxt}.`;
+
+      const p4 = `Lectura temporal: la Figura 1 resume el conteo por periodo según el agrupamiento seleccionado (${escapeHtml(fAgrupar.value)}). La Figura 2 muestra la distribución espacial del subconjunto georreferenciado.`;
+
+      const p5 = `Calidad del dato (observación práctica): el rango temporal depende de fechas válidas; la estimación de horas depende de formatos consistentes en hora inicio/fin; y el mapa depende de Lat/Lon dentro de rango. Se recomienda validar estos campos en captura para mejorar comparabilidad y trazabilidad.`;
 
       return `
         <style>
-          .report{
-            font-family: "Times New Roman", Times, serif;
+          .r{
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 10.8pt;
-            line-height: 1.28;
-            color: #000;
-            text-align: justify;
-            background: #fff;
-            padding: 14px 16px;
+            line-height: 1.35;
+            color:#111;
+            background:#fff;
+            width: 190mm;
           }
-          .r-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
-          .r-logos{display:flex; gap:8px; align-items:center;}
-          .r-logos img{height:32px; background:#fff; border-radius:999px; padding:3px 6px; border:1px solid rgba(148,163,184,0.75);}
-          .muted{color:#111; opacity:.75; margin:0;}
-          .title{font-weight:700; font-size:13.5pt; margin:10px 0 2px; text-align:left;}
-          .sub{margin:0 0 6px; text-align:left;}
-          .chip{
-            display:inline-block; padding:4px 10px; border:1px solid rgba(148,163,184,0.85);
-            border-radius:999px; margin-top:6px; font-weight:700;
+          .head{
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            gap:10px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 8px;
           }
-          .h2{font-weight:700; margin:12px 0 6px; text-align:left;}
-          .p{margin:0 0 9px;}
-          .bul{margin:0 0 9px; padding-left:18px;}
-          .bul li{margin:0 0 4px;}
+          .logos{display:flex; gap:8px; align-items:center;}
+          .logos img{
+            height:34px;
+            background:#fff;
+            border-radius:999px;
+            padding:3px 6px;
+            border:1px solid #d1d5db;
+          }
+          .muted{color:#475569; font-size:9.6pt; margin:0;}
+          .h1{font-size:14pt; font-weight:800; margin:10px 0 2px;}
+          .h2{font-size:11.2pt; font-weight:800; margin:12px 0 6px;}
+          .block{margin:0 0 10px; text-align:justify;}
+          .filters{
+            font-size:9.8pt;
+            color:#0f172a;
+            background:#f8fafc;
+            border:1px solid #e5e7eb;
+            border-radius:10px;
+            padding:8px 10px;
+            margin-top:8px;
+          }
           figure{margin:10px 0; page-break-inside:avoid;}
-          .figimg{width:100%; border:1px solid rgba(148,163,184,0.85); border-radius:10px; display:block;}
-          .figcap{margin-top:4px; font-weight:700; text-align:left;}
+          .figimg{width:100%; border:1px solid #e5e7eb; border-radius:10px; display:block;}
+          .cap{margin-top:4px; font-size:9.8pt; color:#334155;}
           .sig{
-            margin-top:16px;
+            margin-top: 18px;
             page-break-inside:avoid;
           }
-          .sig-row{
-            display:flex;
-            justify-content:space-between;
-            gap:12px;
-            margin-top:14px;
-          }
           .line{
-            flex:1;
+            margin-top: 24px;
             border-top:1px solid #111;
-            margin-top:26px;
+            width: 75mm;
           }
-          .sig-txt{
-            font-size:10.5pt;
-            margin-top:6px;
-            text-align:left;
-          }
-          .right{ text-align:right; }
-          .small{ font-size:10.2pt; }
+          .sig small{ color:#334155; }
         </style>
 
-        <div class="report">
-          <div class="r-head">
-            <div class="r-logos">
+        <div class="r">
+          <div class="head">
+            <div class="logos">
               <img src="conap_logo.jpg" alt="CONAP">
               <img src="aala_logo.png" alt="AALA">
             </div>
-            <p class="muted">Generado: ${escapeHtml(stamp)}</p>
+            <div>
+              <p class="muted" style="text-align:right;">Generado: ${escapeHtml(stamp)}</p>
+              <p class="muted" style="text-align:right;">Fuente: datos extraídos de boleta AC 192</p>
+            </div>
           </div>
 
-          <div class="title">Informe técnico · Patrullajes AC192 (control y vigilancia)</div>
-          <p class="sub muted">Fuente: datos_patrullaje.csv · Tablero dinámico</p>
-          <div class="chip">Filtros aplicados: ${filtros}</div>
+          <div class="h1">Informe técnico · Patrullajes AC192 (control y vigilancia)</div>
 
-          <div class="h2">1. Alcance del informe</div>
-          <p class="p">${escapeHtml(pA)}</p>
+          <div class="filters"><b>Filtros aplicados:</b> ${filtros}</div>
 
-          <div class="h2">2. Síntesis operativa del subconjunto filtrado</div>
-          <p class="p">${escapeHtml(pB)}</p>
-          <p class="p">${escapeHtml(pC)}</p>
+          <div class="h2">1) Identificación del subconjunto (enfoque)</div>
+          <p class="block">${escapeHtml(p0)}</p>
 
-          <div class="h2">3. Lectura temporal</div>
-          <p class="p">${escapeHtml(pD)}</p>
+          <div class="h2">2) Síntesis operativa</div>
+          <p class="block">${escapeHtml(p1)}</p>
+          <p class="block">${escapeHtml(p2)}</p>
 
-          ${imgs.tiempo ? `
-            <figure>
-              <img class="figimg" src="${imgs.tiempo}" alt="Serie temporal">
-              <div class="figcap"><b>Figura 1.</b> Serie temporal de patrullajes (agrupamiento: ${escapeHtml(fAgrupar.value)}).</div>
-            </figure>
-          ` : ``}
+          <div class="h2">3) Composición (según filtro)</div>
+          <p class="block">${escapeHtml(p3)}</p>
 
-          <div class="h2">4. Lectura espacial</div>
-          <p class="p">${escapeHtml(pE)}</p>
+          ${showTopMuni ? `<p class="block"><b>Municipios (Top 5):</b> ${escapeHtml(muniTxt)}.</p>` : ``}
+          ${showTopGuarda ? `<p class="block"><b>Guardarecursos (Top 5):</b> ${escapeHtml(guardaTxt)}.</p>` : ``}
+
+          <div class="h2">4) Lectura temporal y espacial</div>
+          <p class="block">${escapeHtml(p4)}</p>
+
+          <figure>
+            ${imgs.tiempo ? `<img class="figimg" src="${imgs.tiempo}" alt="Serie temporal">` : ""}
+            <div class="cap"><b>Figura 1.</b> Conteo de patrullajes por periodo (agrupamiento: ${escapeHtml(fAgrupar.value)}).</div>
+          </figure>
 
           ${mapImg ? `
             <figure>
-              <img class="figimg" src="${mapImg}" alt="Mapa de patrullajes">
-              <div class="figcap"><b>Figura 2.</b> Distribución espacial con puntos (Lat/Lon) y densidad (heat) según filtros.</div>
+              <img class="figimg" src="${mapImg}" alt="Mapa">
+              <div class="cap"><b>Figura 2.</b> Distribución espacial (puntos y densidad) del subconjunto con Lat/Lon válidas.</div>
             </figure>
-          ` : `<p class="p muted">No se pudo incluir el mapa en el PDF (posible restricción CORS de tiles o falta de coordenadas válidas).</p>`}
+          ` : `<p class="block"><b>Figura 2.</b> No fue posible incluir el mapa en el PDF (captura fallida o tiles sin CORS).</p>`}
 
-          <div class="h2">5. Composición del subconjunto (según filtros)</div>
-          <ul class="bul">
-            <li>${compMuni}</li>
-            <li>${compGuarda}</li>
-            <li><b>Áreas protegidas (Top 5):</b> ${escapeHtml(compArea)}.</li>
-            <li><b>Tipos de patrullaje (Top 5):</b> ${escapeHtml(compTipo)}.</li>
-          </ul>
-
-          <div class="h2">6. Observaciones de calidad del dato y recomendaciones</div>
-          <p class="p">${escapeHtml(calidad)}</p>
+          <div class="h2">5) Calidad del dato y recomendaciones</div>
+          <p class="block">${escapeHtml(p5)}</p>
 
           <div class="sig">
-            <div class="h2">Vo.Bo. / Firma</div>
-            <div class="sig-row">
-              <div style="flex:1;">
-                <div class="line"></div>
-                <div class="sig-txt">
-                  <b>Vo.Bo. Ing. Juan Carlos Bocel Chiroy</b><br>
-                  Director de RUMCLA – CONAP Altiplano Central
-                </div>
-              </div>
-              <div style="width:40%; text-align:right;">
-                <div class="line"></div>
-                <div class="sig-txt right">
-                  <b>Fecha</b>
-                </div>
-              </div>
+            <div style="margin-top:10px;"><b>Vo.Bo.</b></div>
+            <div class="line"></div>
+            <div style="margin-top:6px;">
+              <b>Ing. Juan Carlos Bocel Chiroy</b><br>
+              <small>Director de RUMCLA – CONAP Altiplano Central</small>
             </div>
-            <p class="muted small" style="margin-top:10px;">
-              Nota: este documento reporta únicamente la información contenida en el subconjunto filtrado del tablero al momento de la generación.
-            </p>
           </div>
         </div>
       `;
@@ -1733,27 +1774,30 @@
 
       const rows = aplicarFiltros();
 
-      // Imágenes (JPEG para liviano)
+      // Charts: JPEG liviano
       const imgs = {
-        tiempo: chartTiempo ? chartTiempo.toBase64Image("image/jpeg", 0.76) : "",
-        muni:   chartMuni   ? chartMuni.toBase64Image("image/jpeg", 0.76) : "",
-        guarda: chartGuarda ? chartGuarda.toBase64Image("image/jpeg", 0.76) : ""
+        tiempo: chartTiempo ? chartTiempo.toBase64Image("image/jpeg", 0.82) : "",
+        muni:   chartMuni   ? chartMuni.toBase64Image("image/jpeg", 0.82) : "",
+        guarda: chartGuarda ? chartGuarda.toBase64Image("image/jpeg", 0.82) : ""
       };
 
-      // Mapa (incluido siempre que se pueda capturar)
-      const mapImg = await captureMapForPdf();
-
+      const mapImg = await captureMapImageJpeg();
       const stats = computeReportStats(rows);
       const stamp = new Date().toLocaleString("es");
 
+      // Importante: sacar el reporte del flujo (evita espacios raros)
       const wrap = document.createElement("div");
+      wrap.style.position = "fixed";
+      wrap.style.left = "-10000px";
+      wrap.style.top = "0";
+      wrap.style.background = "#fff";
       wrap.innerHTML = buildReportHTML({rows, imgs, mapImg, stats, stamp});
       document.body.appendChild(wrap);
 
       const opt = {
-        margin:       10,
+        margin:       [10, 10, 10, 10],
         filename:     "informe_tecnico_patrullajes_AC192.pdf",
-        image:        { type: "jpeg", quality: 0.76 },
+        image:        { type: "jpeg", quality: 0.84 },
         html2canvas:  { scale: 1.35, useCORS: true, backgroundColor: "#ffffff" },
         jsPDF:        { unit: "mm", format: "a4", orientation: "portrait", compress: true },
         pagebreak:    { mode: ["css", "legacy"] }
@@ -1771,12 +1815,12 @@
     }
 
     // ===== Refresh =====
-    function refrescar(updateURL, mapFit=true){
+    function refrescar(updateURL){
       const rows = aplicarFiltros();
       actualizarKPIs(rows);
       actualizarCharts(rows);
       actualizarTablas(rows);
-      updateMap(rows, mapFit);
+      updateMap(rows);
       renderChipsResumen();
       if(updateURL) setURLFromState();
     }
@@ -1805,8 +1849,7 @@
       filterSelect(fArea, "");
       filterSelect(fTipo, "");
 
-      lastFitKey = ""; // fuerza re-fit luego
-      refrescar(true, true);
+      refrescar(true);
     }
 
     function wire(){
@@ -1816,7 +1859,7 @@
       watchers.forEach(el=>{
         el.addEventListener("change", ()=>{
           if(el === fTemporal) setTemporalUI();
-          refrescar(true, true);
+          refrescar(true);
         });
       });
 
@@ -1838,8 +1881,7 @@
       $("toggle-heat").addEventListener("click", ()=>{
         heatEnabled = !heatEnabled;
         $("toggle-heat").textContent = heatEnabled ? "Densidad: ON" : "Densidad: OFF";
-        // NO hacemos fit al cambiar densidad (respeta zoom del usuario)
-        refrescar(false, false);
+        refrescar(false);
       });
 
       $("btn-pdf").addEventListener("click", generarInformePDF);
@@ -1849,6 +1891,32 @@
       sRegion.addEventListener("input", ()=> filterSelect(fRegion, sRegion.value));
       sArea.addEventListener("input", ()=> filterSelect(fArea, sArea.value));
       sTipo.addEventListener("input", ()=> filterSelect(fTipo, sTipo.value));
+    }
+
+    // ===== Carga CSV con fallback de codificación =====
+    async function fetchCsvTextSmart(url){
+      const res = await fetch(url, { cache: "no-store" });
+      if(!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+
+      const buf = await res.arrayBuffer();
+
+      const decUtf8 = new TextDecoder("utf-8", { fatal:false });
+      let textUtf8 = decUtf8.decode(buf);
+
+      // Conteo del carácter de reemplazo (indicio de encoding mal)
+      const badUtf8 = (textUtf8.match(/\uFFFD/g) || []).length;
+
+      // Quitar BOM si existe
+      textUtf8 = textUtf8.replace(/^\uFEFF/, "");
+
+      if(badUtf8 >= 2){
+        const dec1252 = new TextDecoder("windows-1252", { fatal:false });
+        let text1252 = dec1252.decode(buf).replace(/^\uFEFF/, "");
+        const bad1252 = (text1252.match(/\uFFFD/g) || []).length;
+        // elegir el que tenga menos “basura”
+        return (bad1252 < badUtf8) ? text1252 : textUtf8;
+      }
+      return textUtf8;
     }
 
     async function load(){
@@ -1865,13 +1933,10 @@
         return;
       }
 
-      // DPR moderado
-      Chart.defaults.devicePixelRatio = 1.5;
+      Chart.defaults.devicePixelRatio = 1.35;
 
       estado.textContent = "Leyendo datos_patrullaje.csv…";
-      const res = await fetch(CSV_URL, { cache: "no-store" });
-      if(!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
-      const csvText = await res.text();
+      const csvText = await fetchCsvTextSmart(CSV_URL);
 
       const parsed = Papa.parse(csvText, { header:true, skipEmptyLines:true, delimiter: DELIM });
       const rows = (parsed.data || []).filter(r => r && Object.keys(r).some(k => norm(r[k])));
@@ -1893,12 +1958,6 @@
         const ilegal = esIlegal(r) ? "si" : "no";
         const inst = tieneInstituciones(r) ? "si" : "no";
 
-        // Prioridad Lat/Lon (aunque exista X/Y)
-        const lat = safeNum(r[F.lat]);
-        const lon = safeNum(r[F.lon]);
-        const latOk = (lat != null && lat >= -90 && lat <= 90);
-        const lonOk = (lon != null && lon >= -180 && lon <= 180);
-
         r.__date = d;
         r.__ym = ym;
         r.__yd = yd;
@@ -1911,9 +1970,6 @@
         r.__ilegal = ilegal;
         r.__inst = inst;
         r.__durH = duracionHoras(r);
-
-        r.__lat = (latOk ? lat : null);
-        r.__lon = (lonOk ? lon : null);
 
         return r;
       });
@@ -1943,8 +1999,7 @@
       applyURLToControls();
 
       estado.textContent = `Listo. ${DATA.length.toLocaleString("es")} registros cargados.`;
-      lastFitKey = "";
-      refrescar(true, true);
+      refrescar(true);
     }
 
     document.addEventListener("DOMContentLoaded", ()=>{
