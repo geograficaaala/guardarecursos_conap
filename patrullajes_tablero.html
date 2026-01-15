@@ -11,16 +11,12 @@
   <!-- Chart.js (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Leaflet (OSM/CARTO) -->
+  <!-- Leaflet (CARTO basemap con CORS) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <!-- Leaflet.heat -->
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-
-  <!-- html2canvas + html2pdf -->
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.min.js"></script>
 
   <style>
     :root{
@@ -291,17 +287,12 @@
     /* MAPA */
     #map{
       width:100%;
-      height:280px;
+      height:320px;
       border-radius:14px;
       border:1px solid rgba(148,163,184,0.35);
       overflow:hidden;
       background:#fff;
     }
-
-    /* Durante captura para PDF/PNG, ocultar controles para una figura limpia */
-    #map.capture .leaflet-control-container{ display:none !important; }
-    #map.capture .leaflet-control-attribution{ display:none !important; }
-
     .maprow{
       display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
       margin-bottom:10px;
@@ -362,7 +353,8 @@
       .title-group{ text-align:center; }
       .header-inner{ justify-content:center; }
       .topnav{ top: 116px; }
-      #map{ height: 250px; }
+      .chartwrap{ height: 240px; }
+      #map{ height: 280px; }
     }
   </style>
 </head>
@@ -386,7 +378,7 @@
     <section class="page-header">
       <h2>AC192 · Patrullajes de control y vigilancia · Tablero dinámico</h2>
       <p>
-        Este tablero se genera automáticamente desde los datos extraídos de la boleta AC 192 y permite
+        Este tablero se genera automáticamente desde los datos extraídos de la boleta <strong>AC 192</strong> y permite
         filtrar, graficar y generar un informe PDF liviano.
       </p>
       <span class="pill">Tablero dinámico · CSV</span>
@@ -399,7 +391,6 @@
         <a class="tab" href="patrullajes_datos.html">Tabla de datos</a>
       </nav>
 
-      <!-- UNA SOLA FILA: sin duplicados -->
       <div class="nav-actions">
         <a class="btn btn-ghost" href="index.html">Inicio</a>
         <button class="btn btn-ghost" id="btn-reset" type="button">Limpiar filtros</button>
@@ -447,7 +438,7 @@
         </div>
 
         <div class="field">
-          <label for="f-guarda">Guarda recursos (buscable)</label>
+          <label for="f-guarda">Guarda recursos responsable (buscable)</label>
           <input id="s-guarda" class="small" type="search" placeholder="Buscar..." autocomplete="off">
           <select id="f-guarda"></select>
         </div>
@@ -535,7 +526,7 @@
         <div class="kpi">
           <div class="t">% Coord válidas</div>
           <div class="v" id="k-coord">–</div>
-          <div class="s">Lat/Lon (preferente)</div>
+          <div class="s">Lat/Lon (prioritario)</div>
         </div>
       </div>
     </section>
@@ -544,7 +535,7 @@
       <div class="card col-12">
         <div class="maprow">
           <div>
-            <h3 style="margin:0 0 4px;">Distribución espacial (mapa)</h3>
+            <h3 style="margin:0 0 4px;">Distribución espacial (CARTO/OSM)</h3>
             <p class="subnote" style="margin:0;">Puntos georreferenciados y densidad (heat) según filtros.</p>
           </div>
           <div class="mini-actions">
@@ -552,7 +543,7 @@
             <button class="mini-btn" id="toggle-heat" type="button">Densidad: ON</button>
           </div>
         </div>
-        <div id="map" aria-label="Mapa"></div>
+        <div id="map" aria-label="Mapa base"></div>
         <p class="subnote" id="map-note" style="margin-top:8px;">—</p>
       </div>
 
@@ -675,15 +666,6 @@
     let map=null, layerPoints=null, layerHeat=null;
     let heatEnabled = true;
 
-    // Paleta heat: amarillo -> rojo -> violeta
-    const HEAT_GRADIENT = {
-      0.00: "#ffff00",
-      0.35: "#ffb000",
-      0.60: "#ff0000",
-      0.82: "#8a2be2",
-      1.00: "#4b0082"
-    };
-
     // ===== DOM =====
     const $ = (id) => document.getElementById(id);
 
@@ -732,7 +714,7 @@
       toast.textContent = msg;
       toast.classList.add("show");
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(()=>toast.classList.remove("show"), 1600);
+      toastTimer = setTimeout(()=>toast.classList.remove("show"), 1700);
     }
 
     // ===== Helpers =====
@@ -744,15 +726,20 @@
     function isNum(v){ return v !== null && v !== "" && isFinite(Number(v)); }
     function safeNum(v){
       if (v === null || v === undefined) return null;
-      let s = String(v).trim();
-      if(!s) return null;
-      // quitar espacios y normalizar decimal coma->punto
-      s = s.replace(/\s+/g,"").replace(",", ".");
-      // permitir solo -, +, dígitos y punto
-      s = s.replace(/[^0-9+\-\.]/g,"");
+      const s = String(v).trim().replace(",", ".");
       if(!s) return null;
       const n = Number(s);
       return isFinite(n) ? n : null;
+    }
+    function clamp(a,b,x){ return Math.max(a, Math.min(b, x)); }
+
+    function escapeHtml(texto) {
+      return String(texto || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
 
     function extraerFechaCompleta(fechaRaw){
@@ -909,11 +896,9 @@
       const pct = total ? Math.round((ilegalSi*1000)/total)/10 : 0;
       kPctIlegal.textContent = total ? (pct.toLocaleString("es") + "%") : "—";
 
-      const horasArr = rows.map(r=>r.__durH).filter(v=>v!=null && isFinite(v));
-      const horas = horasArr.reduce((a,b)=>a+b, 0);
-      kHoras.textContent = horasArr.length ? (Math.round(horas*10)/10).toLocaleString("es") : "—";
+      const horas = rows.map(r=>r.__durH).filter(v=>v!=null && isFinite(v)).reduce((a,b)=>a+b, 0);
+      kHoras.textContent = horas ? (Math.round(horas*10)/10).toLocaleString("es") : "—";
 
-      // Preferente: lat/lon (ignorar x/y para el indicador principal)
       const coordLatLon = rows.filter(r => safeNum(r[F.lat])!=null && safeNum(r[F.lon])!=null).length;
       const pctCoord = total ? Math.round((coordLatLon*1000)/total)/10 : 0;
       kCoord.textContent = total ? (pctCoord.toLocaleString("es") + "%") : "—";
@@ -978,7 +963,7 @@
       const agr = fAgrupar.value; // dia/semana/mes
       const keyFn = (agr === "mes") ? (r=>r.__ym) : (agr === "semana") ? (r=>r.__yw) : (r=>r.__yd);
 
-      // ===== Serie temporal (BARRAS) =====
+      // ===== Serie temporal (BARRAS: mejor para conteos por periodo) =====
       const mTiempo = countBy(rows, keyFn);
       const labelsT = Array.from(mTiempo.keys()).sort();
       const dataT = labelsT.map(k=>mTiempo.get(k));
@@ -990,11 +975,12 @@
           datasets:[{
             label:"Patrullajes",
             data: dataT,
-            backgroundColor: "rgba(59,130,246,0.30)",
+            backgroundColor: "rgba(59,130,246,0.25)",
             borderWidth: 0
           }]
         },
         options:{
+          plugins:{ legend:{ display:true } },
           onClick:(evt, elements)=>{
             if(!elements || !elements.length) return;
             const idx = elements[0].index;
@@ -1008,15 +994,11 @@
               fTemporal.value = "rango"; setTemporalUI(); fDesde.value = label; fHasta.value = label;
             }
             refrescar(true);
-          },
-          scales:{
-            x:{ ticks:{ maxRotation: 60, minRotation: 0, autoSkip: true } },
-            y:{ beginAtZero:true }
           }
         }
       });
 
-      // ===== Top Municipios (Top 20) - barras horizontales (verde pastel) =====
+      // ===== Top Municipios (Top 20) - barras horizontales pastel verde =====
       const mM = countBy(rows, r=>r.__muni || "(Sin municipio)");
       const topM = topN(mM, 20);
       const labelsM = topM.map(x=>x[0]);
@@ -1049,7 +1031,7 @@
         }
       });
 
-      // ===== Top Guardas (Top 20) - barras horizontales (celeste pastel) =====
+      // ===== Top Guardas (Top 20) - barras horizontales pastel celeste =====
       const mG = countBy(rows, r=>r.__guarda || "(Sin guarda)");
       const topG = topN(mG, 20);
       const labelsG = topG.map(x=>x[0]);
@@ -1084,40 +1066,20 @@
     }
 
     // ===== MAPA =====
-    function pointRadiusFromZoom(z){
-      // más zoom => puntos más pequeños (evita “gigantes”)
-      return Math.max(2.2, Math.min(5.2, 9 - z*0.45));
-    }
-    function heatParamsFromZoom(z){
-      // más zoom => heat más “cerrado” y definido
-      const radius = Math.max(12, Math.min(42, z * 2.2));
-      const blur   = Math.max(10, Math.min(30, z * 1.6));
-      return { radius, blur };
-    }
-
     function initMap(){
       if(map) return;
 
-      map = L.map("map", {
-        zoomControl:true,
-        attributionControl:true,
-        preferCanvas:true
-      });
+      map = L.map("map", { zoomControl:true, attributionControl:true, preferCanvas:true });
 
-      // panes para controlar z-index
-      map.createPane("heatPane");
-      map.getPane("heatPane").style.zIndex = 410;
-
-      map.createPane("pointsPane");
-      map.getPane("pointsPane").style.zIndex = 450;
-
-      // CARTO basemap con CORS para capturas (PDF/PNG)
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-        subdomains: "abcd",
-        maxZoom: 20,
-        crossOrigin: true,
-        attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
-      }).addTo(map);
+      // CARTO basemap: normalmente habilita CORS (mejor para capturar a PDF)
+      const carto = L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        {
+          maxZoom: 19,
+          attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+          crossOrigin: true
+        }
+      ).addTo(map);
 
       layerPoints = L.layerGroup().addTo(map);
       layerHeat = null;
@@ -1125,18 +1087,13 @@
       map.setView([14.7, -91.2], 9);
 
       map.on("zoomend", ()=>{
-        // ajustar heat
-        if(layerHeat && heatEnabled){
-          const z = map.getZoom() || 10;
-          const hp = heatParamsFromZoom(z);
-          layerHeat.setOptions({ radius: hp.radius, blur: hp.blur });
-        }
-        // ajustar puntos (radio)
-        const z = map.getZoom() || 10;
-        const r = pointRadiusFromZoom(z);
-        layerPoints.getLayers().forEach(m=>{
-          if(m && typeof m.setRadius === "function") m.setRadius(r);
-        });
+        updateHeatForZoom();
+        updatePointRadiusForZoom();
+      });
+
+      carto.on("tileerror", ()=> {
+        // si hubiera bloqueo, al menos avisamos
+        // (no hacemos toast para no molestar)
       });
     }
 
@@ -1152,13 +1109,33 @@
       return pts;
     }
 
-    function escapeHtml(texto) {
-      return String(texto || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+    function heatRadiusBlurForZoom(z){
+      // sensible al zoom, sin exagerar
+      const radius = clamp(14, 40, z * 2.2);
+      const blur   = clamp(10, 28, z * 1.6);
+      return { radius, blur };
+    }
+
+    function updateHeatForZoom(){
+      if(!map || !layerHeat || !heatEnabled) return;
+      const z = map.getZoom() || 10;
+      const { radius, blur } = heatRadiusBlurForZoom(z);
+      layerHeat.setOptions({ radius, blur });
+    }
+
+    function pointRadiusForZoom(z){
+      // Evita “puntos gigantes” a zoom alto (mantiene pequeño)
+      // z ~ 9-18
+      return clamp(3.0, 5.5, 6.0 - Math.max(0, z - 12) * 0.5);
+    }
+
+    function updatePointRadiusForZoom(){
+      if(!map || !layerPoints) return;
+      const z = map.getZoom() || 10;
+      const r = pointRadiusForZoom(z);
+      layerPoints.eachLayer(l=>{
+        if(l && typeof l.setRadius === "function") l.setRadius(r);
+      });
     }
 
     function updateMap(rows){
@@ -1173,38 +1150,42 @@
       const pts = getLatLonRows(rows);
 
       if(!pts.length){
-        mapNote.textContent = "No hay Latitud/Longitud válidas en el subconjunto filtrado (para el mapa se usa Lat/Lon).";
+        mapNote.textContent = "No hay Latitud/Longitud válidas en el subconjunto filtrado.";
         return;
       }
 
-      // heat primero (fondo)
+      // 1) Heatmap al fondo (para no tapar puntos)
       if(heatEnabled && typeof L.heatLayer === "function" && pts.length >= 3){
-        const heatPts = pts.map(p=>[p.lat, p.lon, 0.8]);
+        const heatPts = pts.map(p=>[p.lat, p.lon, 0.75]);
         const z = map.getZoom() || 10;
-        const hp = heatParamsFromZoom(z);
+        const { radius, blur } = heatRadiusBlurForZoom(z);
 
         layerHeat = L.heatLayer(heatPts, {
-          pane: "heatPane",
-          radius: hp.radius,
-          blur: hp.blur,
+          radius,
+          blur,
           maxZoom: 18,
-          gradient: HEAT_GRADIENT,
-          minOpacity: 0.25
+          // Paleta: amarillo -> rojo -> violeta
+          gradient: {
+            0.00: "#ffff00",
+            0.35: "#ff9800",
+            0.60: "#ff0000",
+            1.00: "#8b00ff"
+          }
         }).addTo(map);
       }
 
-      // puntos encima (más visibles)
+      // 2) Puntos visibles encima
       const z = map.getZoom() || 10;
-      const pr = pointRadiusFromZoom(z);
+      const pr = pointRadiusForZoom(z);
 
       pts.forEach(p=>{
         const m = L.circleMarker([p.lat, p.lon], {
-          pane: "pointsPane",
           radius: pr,
-          weight: 1.5,
-          color: "rgba(255,255,255,0.95)",   // borde claro para contraste
-          fillColor: "rgba(37,99,235,0.85)", // relleno visible
-          fillOpacity: 0.92
+          weight: 1.25,
+          color: "rgba(15,23,42,0.70)",      // borde oscuro
+          fillColor: "rgba(37,99,235,0.80)", // azul visible
+          fillOpacity: 1,
+          renderer: L.canvas()
         });
 
         m.bindPopup(
@@ -1221,35 +1202,14 @@
 
       mapNote.textContent = `Mapa generado con ${pts.length} puntos (Lat/Lon) ${heatEnabled ? "con densidad" : "sin densidad"}.`;
 
-      setTimeout(()=> map.invalidateSize(true), 200);
+      setTimeout(()=> {
+        map.invalidateSize(true);
+        updateHeatForZoom();
+        updatePointRadiusForZoom();
+      }, 250);
     }
 
-    // ===== Searchable selects =====
-    const fullOptions = new Map();
-    function cacheOptions(select, placeholder){
-      if(!select) return;
-      const values = Array.from(select.options).map(o=>o.value).filter(v=>v && v !== "todo");
-      fullOptions.set(select.id, { placeholder, values });
-    }
-    function filterSelect(select, q){
-      if(!select) return;
-      const info = fullOptions.get(select.id);
-      if(!info) return;
-
-      const cur = select.value;
-      const qq = normalizar(q);
-
-      const filtered = info.values.filter(v=>{
-        if(!qq) return true;
-        return normalizar(v).includes(qq);
-      });
-
-      llenarSelect(select, filtered, info.placeholder);
-      const still = Array.from(select.options).some(o=>o.value === cur);
-      if(still) select.value = cur;
-    }
-
-    // ===== Export helpers =====
+    // ===== Export mapa PNG =====
     function downloadDataUrl(dataUrl, filename){
       const a = document.createElement("a");
       a.href = dataUrl;
@@ -1259,69 +1219,59 @@
       document.body.removeChild(a);
     }
 
-    function exportChartPNG(chart, name){
-      if(!chart) return;
-      const url = chart.toBase64Image("image/png", 0.92);
-      downloadDataUrl(url, name);
-    }
-
-    const wait = (ms)=> new Promise(r=>setTimeout(r,ms));
-
-    async function ensureMapReadyForCapture(){
-      if(!map) return;
-      const el = $("map");
-      if(!el) return;
-
-      map.invalidateSize(true);
-      await wait(220);
-
-      // esperar tiles pendientes (máximo ~1200ms)
-      const tiles = el.querySelectorAll("img.leaflet-tile");
-      const pending = Array.from(tiles).filter(im => !im.complete);
-      if(pending.length){
-        await Promise.race([
-          Promise.all(pending.map(im => new Promise(res=>{
-            im.addEventListener("load", res, {once:true});
-            im.addEventListener("error", res, {once:true});
-          }))),
-          wait(1200)
-        ]);
-      }
-    }
-
-    async function captureMapImageJpeg(){
-      const el = $("map");
-      if(!el || typeof html2canvas === "undefined") return "";
-
-      await ensureMapReadyForCapture();
-
-      // ocultar controles para figura limpia
-      el.classList.add("capture");
-      await wait(60);
-
-      const canvas = await html2canvas(el, {
-        scale: 1.35,
-        useCORS: true,
-        backgroundColor: "#ffffff"
+    async function ensureScript(src){
+      return new Promise((resolve, reject)=>{
+        const s = document.createElement("script");
+        s.src = src;
+        s.async = true;
+        s.onload = ()=>resolve(true);
+        s.onerror = ()=>reject(new Error("No se pudo cargar: " + src));
+        document.head.appendChild(s);
       });
+    }
 
-      el.classList.remove("capture");
-      return canvas.toDataURL("image/jpeg", 0.82);
+    async function ensurePdfLibs(){
+      // html2pdf trae html2canvas adentro, pero cargamos html2canvas aparte como respaldo
+      if(typeof html2canvas === "undefined"){
+        try{
+          await ensureScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+        }catch(e){}
+      }
+      if(typeof html2pdf === "undefined"){
+        await ensureScript("https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js");
+      }
+      if(typeof html2pdf === "undefined"){
+        throw new Error("No se pudo cargar html2pdf (revise conexión o bloqueo del navegador).");
+      }
+      return true;
     }
 
     async function exportMapPNG(){
       const el = $("map");
-      if(!el || typeof html2canvas === "undefined"){
-        showToast("No se encontró html2canvas.");
-        return;
+      if(!el) return;
+
+      try{
+        if(typeof html2canvas === "undefined"){
+          await ensureScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+        }
+        const canvas = await html2canvas(el, {
+          scale: 1.4,
+          useCORS: true,
+          backgroundColor: "#ffffff"
+        });
+        const url = canvas.toDataURL("image/png", 0.92);
+        downloadDataUrl(url, "mapa_patrullajes.png");
+        showToast("PNG del mapa exportado");
+      }catch(e){
+        console.error(e);
+        showToast("No se pudo exportar el mapa (CORS/tiles).");
       }
-      const jpg = await captureMapImageJpeg();
-      if(!jpg){
-        showToast("No se pudo capturar el mapa.");
-        return;
-      }
-      // convertir a PNG “como viene” (descarga igual)
-      downloadDataUrl(jpg, "mapa_patrullajes.jpg");
+    }
+
+    function exportChartPNG(chart, name){
+      if(!chart) return;
+      const url = chart.toBase64Image("image/png", 0.92);
+      downloadDataUrl(url, name);
     }
 
     // ===== Tablas =====
@@ -1375,9 +1325,9 @@
         {title:"Guarda", field:F.guarda, headerFilter:"input", minWidth:220},
         {title:"Municipio", field:F.municipio, headerFilter:"input", width:160},
         {title:"Región", field:F.region, headerFilter:"input", width:140},
-        {title:"Área", field:F.area, headerFilter:"input", width:180},
+        {title:"Área", field:F.area, headerFilter:"input", width:170},
         {title:"Tipo", field:F.tipo, headerFilter:"input", width:190},
-        {title:"Ilegal", field:F.ilegal, headerFilter:"input", width:160},
+        {title:"Ilegal", field:F.ilegal, headerFilter:"input", width:170},
         {title:"Instituciones", field:F.inst, headerFilter:"input", minWidth:220},
         {title:"Inicio", field:F.hIni, headerFilter:"input", width:120},
         {title:"Fin", field:F.hFin, headerFilter:"input", width:120},
@@ -1477,7 +1427,32 @@
       setIfExists(fInst, p.get("inst"));
     }
 
-    // ===== Resumen de filtros =====
+    // ===== Searchable selects =====
+    const fullOptions = new Map();
+    function cacheOptions(select, placeholder){
+      if(!select) return;
+      const values = Array.from(select.options).map(o=>o.value).filter(v=>v && v !== "todo");
+      fullOptions.set(select.id, { placeholder, values });
+    }
+    function filterSelect(select, q){
+      if(!select) return;
+      const info = fullOptions.get(select.id);
+      if(!info) return;
+
+      const cur = select.value;
+      const qq = normalizar(q);
+
+      const filtered = info.values.filter(v=>{
+        if(!qq) return true;
+        return normalizar(v).includes(qq);
+      });
+
+      llenarSelect(select, filtered, info.placeholder);
+      const still = Array.from(select.options).some(o=>o.value === cur);
+      if(still) select.value = cur;
+    }
+
+    // ===== Resumen filtros =====
     function resumenFiltrosTexto(){
       const parts = [];
       const t = fTemporal.value;
@@ -1522,7 +1497,7 @@
       ).join("");
     }
 
-    // ===== INFORME PDF (nuevo: más ejecutivo y textual, con firma y mapa) =====
+    // ===== INFORME PDF (nuevo, textual, sin “botones KPI”) =====
     function fmtNum(n){ return (n ?? 0).toLocaleString("es"); }
     function fmtPct(num, den){
       if(!den) return "—";
@@ -1551,59 +1526,119 @@
 
       const coordLatLon = rows.filter(r => safeNum(r[F.lat])!=null && safeNum(r[F.lon])!=null).length;
 
-      const munisSet = new Set(rows.map(r=>r.__muni).filter(Boolean));
-      const guardasSet = new Set(rows.map(r=>r.__guarda).filter(Boolean));
+      const munis = Array.from(new Set(rows.map(r=>r.__muni).filter(Boolean)));
+      const guardas = Array.from(new Set(rows.map(r=>r.__guarda).filter(Boolean)));
 
       return {
-        total,
-        withDateCount: withDate.length,
-        minDate, maxDate,
+        total, withDateCount: withDate.length, minDate, maxDate,
         ilegalSi, instSi,
         horasSum, horasAvg, horasCount: horasArr.length,
-        coordLatLon,
-        munis: munisSet.size,
-        guardas: guardasSet.size,
-        munisSet, guardasSet
+        coordValidas: coordLatLon,
+        munisList: munis, guardasList: guardas
       };
     }
 
-    function topItems(rows, key, n=5){
+    function topItemsText(rows, key, n=5){
       const total = rows.length || 0;
       const m = countBy(rows, r => r[key] || "(Sin dato)");
       const top = topN(m, n);
-      return top.map(([k,v])=>{
+      if(!top.length) return "Sin datos suficientes.";
+      return top.map(([k,v], i)=>{
         const p = total ? Math.round((v*1000)/total)/10 : 0;
-        return { k, v, p };
+        return `${i+1}. ${k}: ${fmtNum(v)} (${p.toLocaleString("es")}%)`;
+      }).join(" · ");
+    }
+
+    async function wait(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+    async function waitForMapTiles(timeout=2200){
+      if(!map) return false;
+      const start = Date.now();
+      while(Date.now() - start < timeout){
+        try{
+          if(map._tilesToLoad === 0) return true;
+        }catch(e){}
+        await wait(120);
+      }
+      return false;
+    }
+
+    function fallbackPointMapImage(pts){
+      // Siempre disponible: mapa de puntos sin basemap (por si CORS)
+      const w = 900, h = 520, pad = 30;
+      const cnv = document.createElement("canvas");
+      cnv.width = w; cnv.height = h;
+      const ctx = cnv.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0,0,w,h);
+
+      // bounding
+      let minLat=+Infinity, maxLat=-Infinity, minLon=+Infinity, maxLon=-Infinity;
+      pts.forEach(p=>{
+        minLat = Math.min(minLat, p.lat); maxLat = Math.max(maxLat, p.lat);
+        minLon = Math.min(minLon, p.lon); maxLon = Math.max(maxLon, p.lon);
       });
+      const dLat = (maxLat-minLat)||1e-6;
+      const dLon = (maxLon-minLon)||1e-6;
+
+      // marco
+      ctx.strokeStyle = "rgba(15,23,42,0.25)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pad, pad, w-2*pad, h-2*pad);
+
+      // puntos
+      ctx.fillStyle = "rgba(37,99,235,0.80)";
+      ctx.strokeStyle = "rgba(15,23,42,0.70)";
+      ctx.lineWidth = 1.2;
+
+      pts.forEach(p=>{
+        const x = pad + ((p.lon - minLon)/dLon) * (w-2*pad);
+        const y = pad + (1 - (p.lat - minLat)/dLat) * (h-2*pad);
+        ctx.beginPath();
+        ctx.arc(x,y,4.2,0,Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      // título
+      ctx.fillStyle = "rgba(15,23,42,0.85)";
+      ctx.font = "16px system-ui, -apple-system, Segoe UI, Roboto, Arial";
+      ctx.fillText("Distribución espacial (referencia geométrica sin basemap)", pad, 22);
+
+      return cnv.toDataURL("image/jpeg", 0.86);
     }
 
-    function describeFocus(stats, rows){
-      // Municipio foco
-      let muniText = "";
-      if(fMuni.value !== "todo"){
-        muniText = `Municipio foco: ${fMuni.value}.`;
-      } else if(stats.munis === 1){
-        muniText = `Municipio foco: ${Array.from(stats.munisSet)[0]}.`;
-      } else {
-        const top3 = topItems(rows, "__muni", 3).map(x=>`${x.k} (${x.p.toLocaleString("es")}%)`).join(", ");
-        muniText = top3 ? `Municipios principales (Top 3): ${top3}.` : "Municipios: múltiples.";
-      }
+    async function captureMapForPdf(rows){
+      const el = $("map");
+      if(!el) return { img:"", mode:"none" };
 
-      // Guarda foco
-      let guardaText = "";
-      if(fGuarda.value !== "todo"){
-        guardaText = `Guarda recurso foco: ${fGuarda.value}.`;
-      } else if(stats.guardas === 1){
-        guardaText = `Guarda recurso foco: ${Array.from(stats.guardasSet)[0]}.`;
-      } else {
-        const top3g = topItems(rows, "__guarda", 3).map(x=>`${x.k} (${x.p.toLocaleString("es")}%)`).join(", ");
-        guardaText = top3g ? `Guardarecursos principales (Top 3): ${top3g}.` : "Guardarecursos: múltiples.";
-      }
+      const pts = getLatLonRows(rows);
 
-      return `${muniText} ${guardaText}`.trim();
+      // intentamos captura real del mapa
+      try{
+        if(typeof html2canvas === "undefined"){
+          await ensureScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js");
+        }
+        map.invalidateSize(true);
+        await waitForMapTiles(2200);
+        await wait(250);
+
+        const canvas = await html2canvas(el, {
+          scale: 1.35,
+          useCORS: true,
+          backgroundColor: "#ffffff"
+        });
+        return { img: canvas.toDataURL("image/jpeg", 0.82), mode:"basemap" };
+      }catch(e){
+        // fallback: puntos sin basemap
+        if(pts.length){
+          return { img: fallbackPointMapImage(pts), mode:"fallback" };
+        }
+        return { img:"", mode:"none" };
+      }
     }
 
-    function buildReportHTML({rows, imgs, mapImg, stats, stamp}){
+    function buildReportHTML({rows, imgs, mapPack, stats, stamp}){
       const filtros = escapeHtml(resumenFiltrosTexto());
 
       const fechaInicio = stats.minDate ? fmtDateShort(stats.minDate) : "—";
@@ -1612,154 +1647,146 @@
       const horasSum = stats.horasCount ? (Math.round(stats.horasSum*10)/10).toLocaleString("es") : "—";
       const horasAvg = stats.horasCount ? (Math.round(stats.horasAvg*10)/10).toLocaleString("es") : "—";
 
-      const foco = escapeHtml(describeFocus(stats, rows));
+      const muniAuto =
+        (fMuni.value !== "todo") ? fMuni.value :
+        (stats.munisList.length === 1 ? stats.munisList[0] : `Varios (${stats.munisList.length})`);
 
-      const topAreas = topItems(rows, "__area", 5);
-      const topTipos = topItems(rows, "__tipo", 5);
+      const guardaAuto =
+        (fGuarda.value !== "todo") ? fGuarda.value :
+        (stats.guardasList.length === 1 ? stats.guardasList[0] : `Varios (${stats.guardasList.length})`);
 
-      // incluir top muni/guarda SOLO si no está fijo y hay >1
-      const showTopMuni = (fMuni.value === "todo" && stats.munis > 1);
-      const showTopGuarda = (fGuarda.value === "todo" && stats.guardas > 1);
+      const pAlcance =
+        `El presente informe describe exclusivamente el subconjunto definido por los filtros activos del Tablero Dinámico AC 192. ` +
+        `En el estado actual del filtrado, se consideran ${fmtNum(stats.total)} registros. ` +
+        `El periodo evaluado (con fecha válida) abarca del ${fechaInicio} al ${fechaFin} (n=${fmtNum(stats.withDateCount)}).`;
 
-      const topMuni = showTopMuni ? topItems(rows, "__muni", 5) : [];
-      const topGuarda = showTopGuarda ? topItems(rows, "__guarda", 5) : [];
+      const pHallazgos =
+        `En el subconjunto analizado, se registran eventos con actividad ilegal en ${fmtNum(stats.ilegalSi)} de ${fmtNum(stats.total)} casos ` +
+        `(${fmtPct(stats.ilegalSi, stats.total)}), y participación de instituciones en ${fmtNum(stats.instSi)} de ${fmtNum(stats.total)} ` +
+        `(${fmtPct(stats.instSi, stats.total)}). ` +
+        `La duración acumulada de patrullajes (solo registros con horas válidas) suma ${horasSum} horas, con un promedio de ${horasAvg} horas ` +
+        `por registro con información horaria consistente. ` +
+        `Las coordenadas (Latitud/Longitud) están disponibles en ${fmtNum(stats.coordValidas)} registros (${fmtPct(stats.coordValidas, stats.total)}).`;
 
-      const areaTxt = topAreas.length
-        ? topAreas.map(x=>`${x.k} (${fmtNum(x.v)}, ${x.p.toLocaleString("es")}%)`).join("; ")
-        : "Sin datos suficientes.";
+      const pInterpretacion =
+        `La distribución temporal (según el agrupamiento seleccionado: ${escapeHtml(fAgrupar.value)}) permite identificar periodos con mayor frecuencia de registros ` +
+        `y sirve como control operativo del esfuerzo de vigilancia dentro de los filtros aplicados. ` +
+        `El componente espacial complementa la lectura temporal al mostrar concentraciones o dispersión de patrullajes dentro del ámbito filtrado.`;
 
-      const tipoTxt = topTipos.length
-        ? topTipos.map(x=>`${x.k} (${fmtNum(x.v)}, ${x.p.toLocaleString("es")}%)`).join("; ")
-        : "Sin datos suficientes.";
+      const topMuni = topItemsText(rows, "__muni", 5);
+      const topGua  = topItemsText(rows, "__guarda", 5);
+      const topArea = topItemsText(rows, "__area", 5);
+      const topTipo = topItemsText(rows, "__tipo", 5);
 
-      const muniTxt = topMuni.length
-        ? topMuni.map(x=>`${x.k} (${fmtNum(x.v)}, ${x.p.toLocaleString("es")}%)`).join("; ")
-        : "";
-
-      const guardaTxt = topGuarda.length
-        ? topGuarda.map(x=>`${x.k} (${fmtNum(x.v)}, ${x.p.toLocaleString("es")}%)`).join("; ")
-        : "";
-
-      // Texto ejecutivo (sin repetir KPIs en “tarjetas”)
-      const p0 = `Este informe describe exclusivamente el subconjunto resultante de los filtros activos en el tablero (no incluye registros fuera del filtro). ${foco}`;
-
-      const p1 = `Cobertura del subconjunto: ${fmtNum(stats.total)} registros. Periodo con fecha válida: ${fechaInicio} a ${fechaFin} (n=${fmtNum(stats.withDateCount)}). Georreferenciación (Lat/Lon): ${fmtNum(stats.coordLatLon)} registros (${fmtPct(stats.coordLatLon, stats.total)}).`;
-
-      const p2 = `Hallazgos operativos: actividad ilegal observada en ${fmtNum(stats.ilegalSi)} registros (${fmtPct(stats.ilegalSi, stats.total)}). Participación de instituciones en ${fmtNum(stats.instSi)} registros (${fmtPct(stats.instSi, stats.total)}). Duración reportada: ${horasSum} horas acumuladas (solo registros con horas válidas), con promedio de ${horasAvg} horas por registro calculable.`;
-
-      const p3 = `Composición del subconjunto: áreas protegidas más frecuentes (Top 5): ${areaTxt}. Tipos de patrullaje más frecuentes (Top 5): ${tipoTxt}.`;
-
-      const p4 = `Lectura temporal: la Figura 1 resume el conteo por periodo según el agrupamiento seleccionado (${escapeHtml(fAgrupar.value)}). La Figura 2 muestra la distribución espacial del subconjunto georreferenciado.`;
-
-      const p5 = `Calidad del dato (observación práctica): el rango temporal depende de fechas válidas; la estimación de horas depende de formatos consistentes en hora inicio/fin; y el mapa depende de Lat/Lon dentro de rango. Se recomienda validar estos campos en captura para mejorar comparabilidad y trazabilidad.`;
+      const mapCaption =
+        mapPack.mode === "basemap"
+          ? "Distribución espacial sobre mapa base (CARTO/OSM), con densidad y puntos según disponibilidad."
+          : (mapPack.mode === "fallback"
+              ? "Distribución espacial (referencia geométrica). No fue posible capturar el mapa base (CORS/tiles), pero se incluyen los puntos georreferenciados."
+              : "No se incluyó componente espacial por ausencia de coordenadas válidas en el subconjunto filtrado.");
 
       return `
         <style>
-          .r{
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 10.8pt;
-            line-height: 1.35;
-            color:#111;
-            background:#fff;
-            width: 190mm;
+          .report{
+            font-family: "Times New Roman", Times, serif;
+            font-size: 11pt;
+            line-height: 1.28;
+            color: #000;
+            text-align: justify;
+            background: #fff;
+            padding: 14px 16px;
           }
-          .head{
-            display:flex;
-            align-items:flex-start;
-            justify-content:space-between;
-            gap:10px;
-            border-bottom: 1px solid #e5e7eb;
+          .r-head{
+            display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+            border-bottom: 1px solid rgba(0,0,0,0.25);
             padding-bottom: 8px;
+            margin-bottom: 10px;
           }
-          .logos{display:flex; gap:8px; align-items:center;}
-          .logos img{
-            height:34px;
-            background:#fff;
-            border-radius:999px;
-            padding:3px 6px;
-            border:1px solid #d1d5db;
-          }
-          .muted{color:#475569; font-size:9.6pt; margin:0;}
-          .h1{font-size:14pt; font-weight:800; margin:10px 0 2px;}
-          .h2{font-size:11.2pt; font-weight:800; margin:12px 0 6px;}
-          .block{margin:0 0 10px; text-align:justify;}
-          .filters{
-            font-size:9.8pt;
-            color:#0f172a;
-            background:#f8fafc;
-            border:1px solid #e5e7eb;
-            border-radius:10px;
-            padding:8px 10px;
-            margin-top:8px;
-          }
+          .r-logos{display:flex; gap:10px; align-items:center;}
+          .r-logos img{height:34px; background:#fff; border-radius:999px; padding:3px 6px; border:1px solid rgba(0,0,0,0.20);}
+          .muted{opacity:.80; margin:0;}
+          .title{font-weight:700; font-size:13.5pt; margin:6px 0 2px; text-align:left;}
+          .sub{margin:0 0 8px; font-size:10.5pt;}
+          .line{border:1px solid rgba(0,0,0,0.18); border-radius:10px; padding:8px 10px; margin:8px 0 10px;}
+          .h1{font-weight:700; margin:10px 0 6px; font-size:12pt; text-align:left;}
+          .p{margin:0 0 10px;}
           figure{margin:10px 0; page-break-inside:avoid;}
-          .figimg{width:100%; border:1px solid #e5e7eb; border-radius:10px; display:block;}
-          .cap{margin-top:4px; font-size:9.8pt; color:#334155;}
+          .figimg{width:100%; border:1px solid rgba(0,0,0,0.22); border-radius:10px; display:block;}
+          .figcap{margin-top:5px; font-weight:700; text-align:left; font-size:10.5pt;}
           .sig{
-            margin-top: 18px;
-            page-break-inside:avoid;
+            margin-top: 16px;
+            page-break-inside: avoid;
+            border-top: 1px solid rgba(0,0,0,0.18);
+            padding-top: 10px;
           }
-          .line{
-            margin-top: 24px;
-            border-top:1px solid #111;
-            width: 75mm;
-          }
-          .sig small{ color:#334155; }
+          .sig-row{display:flex; gap:20px; align-items:flex-end; justify-content:space-between;}
+          .sig-box{flex:1; min-height:80px;}
+          .sig-line{border-bottom:1px solid rgba(0,0,0,0.70); height:46px;}
+          .sig-text{margin-top:6px; font-size:10.5pt; text-align:left;}
+          .small{font-size:10.2pt;}
         </style>
 
-        <div class="r">
-          <div class="head">
-            <div class="logos">
+        <div class="report">
+          <div class="r-head">
+            <div class="r-logos">
               <img src="conap_logo.jpg" alt="CONAP">
               <img src="aala_logo.png" alt="AALA">
             </div>
-            <div>
-              <p class="muted" style="text-align:right;">Generado: ${escapeHtml(stamp)}</p>
-              <p class="muted" style="text-align:right;">Fuente: datos extraídos de boleta AC 192</p>
-            </div>
+            <p class="muted small">Generado: ${escapeHtml(stamp)}</p>
           </div>
 
-          <div class="h1">Informe técnico · Patrullajes AC192 (control y vigilancia)</div>
+          <div class="title">Informe técnico · Patrullajes AC192 (control y vigilancia)</div>
+          <p class="sub muted">Fuente: datos extraídos de la boleta AC 192 · Tablero dinámico</p>
 
-          <div class="filters"><b>Filtros aplicados:</b> ${filtros}</div>
+          <div class="line small">
+            <b>Filtros aplicados:</b> ${filtros}<br>
+            <b>Ámbito detectado:</b> Municipio = ${escapeHtml(muniAuto)} · Guarda recurso = ${escapeHtml(guardaAuto)}
+          </div>
 
-          <div class="h2">1) Identificación del subconjunto (enfoque)</div>
-          <p class="block">${escapeHtml(p0)}</p>
+          <div class="h1">1. Alcance del subconjunto</div>
+          <p class="p">${escapeHtml(pAlcance)}</p>
 
-          <div class="h2">2) Síntesis operativa</div>
-          <p class="block">${escapeHtml(p1)}</p>
-          <p class="block">${escapeHtml(p2)}</p>
+          <div class="h1">2. Resultados operativos (según filtros)</div>
+          <p class="p">${escapeHtml(pHallazgos)}</p>
 
-          <div class="h2">3) Composición (según filtro)</div>
-          <p class="block">${escapeHtml(p3)}</p>
-
-          ${showTopMuni ? `<p class="block"><b>Municipios (Top 5):</b> ${escapeHtml(muniTxt)}.</p>` : ``}
-          ${showTopGuarda ? `<p class="block"><b>Guardarecursos (Top 5):</b> ${escapeHtml(guardaTxt)}.</p>` : ``}
-
-          <div class="h2">4) Lectura temporal y espacial</div>
-          <p class="block">${escapeHtml(p4)}</p>
+          <div class="h1">3. Lectura temporal y espacial</div>
+          <p class="p">${escapeHtml(pInterpretacion)}</p>
 
           <figure>
             ${imgs.tiempo ? `<img class="figimg" src="${imgs.tiempo}" alt="Serie temporal">` : ""}
-            <div class="cap"><b>Figura 1.</b> Conteo de patrullajes por periodo (agrupamiento: ${escapeHtml(fAgrupar.value)}).</div>
+            <div class="figcap"><b>Figura 1.</b> Conteo de registros por periodo (agrupamiento: ${escapeHtml(fAgrupar.value)}).</div>
           </figure>
 
-          ${mapImg ? `
+          ${mapPack.img ? `
             <figure>
-              <img class="figimg" src="${mapImg}" alt="Mapa">
-              <div class="cap"><b>Figura 2.</b> Distribución espacial (puntos y densidad) del subconjunto con Lat/Lon válidas.</div>
+              <img class="figimg" src="${mapPack.img}" alt="Mapa">
+              <div class="figcap"><b>Figura 2.</b> ${escapeHtml(mapCaption)}</div>
             </figure>
-          ` : `<p class="block"><b>Figura 2.</b> No fue posible incluir el mapa en el PDF (captura fallida o tiles sin CORS).</p>`}
+          ` : `<p class="p muted">No se incluyó mapa: no hay coordenadas válidas en el subconjunto filtrado.</p>`}
 
-          <div class="h2">5) Calidad del dato y recomendaciones</div>
-          <p class="block">${escapeHtml(p5)}</p>
+          <div class="h1">4. Composición del esfuerzo (Top 5)</div>
+          <p class="p"><b>Municipios:</b> ${escapeHtml(topMuni)}.</p>
+          <p class="p"><b>Guardarecursos:</b> ${escapeHtml(topGua)}.</p>
+          <p class="p"><b>Áreas protegidas:</b> ${escapeHtml(topArea)}.</p>
+          <p class="p"><b>Tipos de patrullaje:</b> ${escapeHtml(topTipo)}.</p>
+
+          <div class="h1">5. Calidad del dato (observaciones)</div>
+          <p class="p">
+            Este reporte se limita al subconjunto filtrado; por lo tanto, cualquier interpretación debe leerse en el contexto de esos filtros.
+            Se recomienda mantener consistencia en la codificación del archivo (preferiblemente UTF-8), validar el formato de horas al registrar
+            y priorizar el uso de Latitud/Longitud para asegurar estabilidad en la cartografía y en la generación de informes.
+          </p>
 
           <div class="sig">
-            <div style="margin-top:10px;"><b>Vo.Bo.</b></div>
-            <div class="line"></div>
-            <div style="margin-top:6px;">
-              <b>Ing. Juan Carlos Bocel Chiroy</b><br>
-              <small>Director de RUMCLA – CONAP Altiplano Central</small>
+            <div class="sig-row">
+              <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-text"><b>Vo.Bo.</b> Ing. Juan Carlos Bocel Chiroy<br><span class="small">Director de RUMCLA-CONAP Altiplano Central</span></div>
+              </div>
+              <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-text"><b>Elaboró</b><br><span class="small">Nombre / Cargo</span></div>
+              </div>
             </div>
           </div>
         </div>
@@ -1767,37 +1794,33 @@
     }
 
     async function generarInformePDF(){
-      if(typeof html2pdf === "undefined"){
-        showToast("No se cargó html2pdf.");
+      try{
+        await ensurePdfLibs();
+      }catch(e){
+        console.error(e);
+        showToast(e.message || "No se pudo cargar html2pdf");
         return;
       }
 
       const rows = aplicarFiltros();
-
-      // Charts: JPEG liviano
-      const imgs = {
-        tiempo: chartTiempo ? chartTiempo.toBase64Image("image/jpeg", 0.82) : "",
-        muni:   chartMuni   ? chartMuni.toBase64Image("image/jpeg", 0.82) : "",
-        guarda: chartGuarda ? chartGuarda.toBase64Image("image/jpeg", 0.82) : ""
-      };
-
-      const mapImg = await captureMapImageJpeg();
       const stats = computeReportStats(rows);
       const stamp = new Date().toLocaleString("es");
 
-      // Importante: sacar el reporte del flujo (evita espacios raros)
+      const imgs = {
+        tiempo: chartTiempo ? chartTiempo.toBase64Image("image/jpeg", 0.82) : ""
+      };
+
+      // Captura de mapa con fallback
+      const mapPack = await captureMapForPdf(rows);
+
       const wrap = document.createElement("div");
-      wrap.style.position = "fixed";
-      wrap.style.left = "-10000px";
-      wrap.style.top = "0";
-      wrap.style.background = "#fff";
-      wrap.innerHTML = buildReportHTML({rows, imgs, mapImg, stats, stamp});
+      wrap.innerHTML = buildReportHTML({rows, imgs, mapPack, stats, stamp});
       document.body.appendChild(wrap);
 
       const opt = {
-        margin:       [10, 10, 10, 10],
+        margin:       10,
         filename:     "informe_tecnico_patrullajes_AC192.pdf",
-        image:        { type: "jpeg", quality: 0.84 },
+        image:        { type: "jpeg", quality: 0.82 },
         html2canvas:  { scale: 1.35, useCORS: true, backgroundColor: "#ffffff" },
         jsPDF:        { unit: "mm", format: "a4", orientation: "portrait", compress: true },
         pagebreak:    { mode: ["css", "legacy"] }
@@ -1852,6 +1875,33 @@
       refrescar(true);
     }
 
+    // ===== Codificación CSV (UTF-8 <-> Windows-1252) =====
+    function looksBadEncoding(txt){
+      // heurística simple: caracteres de reemplazo o patrones típicos
+      return txt.includes("\uFFFD") || /Ã.|Â./.test(txt);
+    }
+
+    function decodeCsvWithFallback(arrayBuffer){
+      // 1) UTF-8
+      let txt = "";
+      try{
+        txt = new TextDecoder("utf-8", {fatal:false}).decode(arrayBuffer);
+      }catch(e){
+        txt = "";
+      }
+      // 2) si se ve mal, probamos Windows-1252
+      if(!txt || looksBadEncoding(txt)){
+        try{
+          const txt2 = new TextDecoder("windows-1252", {fatal:false}).decode(arrayBuffer);
+          if(txt2 && !looksBadEncoding(txt2)) return txt2;
+          return txt2 || txt;
+        }catch(e){
+          return txt;
+        }
+      }
+      return txt;
+    }
+
     function wire(){
       setTemporalUI();
 
@@ -1893,32 +1943,6 @@
       sTipo.addEventListener("input", ()=> filterSelect(fTipo, sTipo.value));
     }
 
-    // ===== Carga CSV con fallback de codificación =====
-    async function fetchCsvTextSmart(url){
-      const res = await fetch(url, { cache: "no-store" });
-      if(!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
-
-      const buf = await res.arrayBuffer();
-
-      const decUtf8 = new TextDecoder("utf-8", { fatal:false });
-      let textUtf8 = decUtf8.decode(buf);
-
-      // Conteo del carácter de reemplazo (indicio de encoding mal)
-      const badUtf8 = (textUtf8.match(/\uFFFD/g) || []).length;
-
-      // Quitar BOM si existe
-      textUtf8 = textUtf8.replace(/^\uFEFF/, "");
-
-      if(badUtf8 >= 2){
-        const dec1252 = new TextDecoder("windows-1252", { fatal:false });
-        let text1252 = dec1252.decode(buf).replace(/^\uFEFF/, "");
-        const bad1252 = (text1252.match(/\uFFFD/g) || []).length;
-        // elegir el que tenga menos “basura”
-        return (bad1252 < badUtf8) ? text1252 : textUtf8;
-      }
-      return textUtf8;
-    }
-
     async function load(){
       if(typeof Papa === "undefined"){
         estado.textContent = "No se cargó papaparse.min.js (debe existir en el repo).";
@@ -1933,10 +1957,15 @@
         return;
       }
 
-      Chart.defaults.devicePixelRatio = 1.35;
+      // reduce peso / DPI
+      Chart.defaults.devicePixelRatio = 1.5;
 
       estado.textContent = "Leyendo datos_patrullaje.csv…";
-      const csvText = await fetchCsvTextSmart(CSV_URL);
+      const res = await fetch(CSV_URL, { cache: "no-store" });
+      if(!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+
+      const buf = await res.arrayBuffer();
+      const csvText = decodeCsvWithFallback(buf);
 
       const parsed = Papa.parse(csvText, { header:true, skipEmptyLines:true, delimiter: DELIM });
       const rows = (parsed.data || []).filter(r => r && Object.keys(r).some(k => norm(r[k])));
