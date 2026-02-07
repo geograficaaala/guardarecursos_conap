@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Patrullajes de control y vigilancia - Datos detallados</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Patrullajes de control y vigilancia - Datos detallados</title>
 
   <!-- Estilos de la página -->
   <style>
@@ -226,6 +227,37 @@
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+    }
+
+    // Decodificación robusta (UTF-8 vs Windows-1252) para evitar símbolos raros
+    function decodeSmartCsv(buffer) {
+      try {
+        const u8 = new Uint8Array(buffer);
+        const decUtf8 = new TextDecoder("utf-8", { fatal: false }).decode(u8);
+        const decWin = new TextDecoder("windows-1252", { fatal: false }).decode(u8);
+
+        function score(s) {
+          const bad = ["�", "Ã", "Â", "â€™", "â€“", "â€œ", "â€"];
+          let c = 0;
+          for (const b of bad) c += (s.split(b).length - 1);
+          return c;
+        }
+        const sUtf = score(decUtf8);
+        const sWin = score(decWin);
+        return (sWin < sUtf) ? decWin : decUtf8;
+      } catch (e) {
+        try { return new TextDecoder("utf-8").decode(new Uint8Array(buffer)); } catch(_) {}
+        return "";
+      }
+    }
+
+    // Detecta delimitador (coma o punto y coma) según la cabecera
+    function detectarDelimitador(csvText) {
+      const firstLine = String(csvText || "").split(/\r?\n/)[0] || "";
+      const sc = (firstLine.match(/;/g) || []).length;
+      const cc = (firstLine.match(/,/g) || []).length;
+      if (sc === 0 && cc === 0) return "";
+      return (sc >= cc) ? ";" : ",";
     }
 
     // Estilos comunes para informes (Word y PDF)
@@ -1162,16 +1194,18 @@
           if (!response.ok) {
             throw new Error("HTTP " + response.status + " " + response.statusText);
           }
-          return response.text();
+          return response.arrayBuffer();
         })
-        .then(function (csvText) {
+        .then(function (buffer) {
+          const csvText = decodeSmartCsv(buffer);
+
           console.log("Contenido bruto de datos_patrullaje.csv (primeros 200 caracteres):");
           console.log(csvText.slice(0, 200));
 
           const parsed = Papa.parse(csvText, {
             header: true,
             skipEmptyLines: true,
-            delimiter: ";"
+            delimiter: detectarDelimitador(csvText)
           });
 
           console.log("Resultado de Papa.parse:", parsed);

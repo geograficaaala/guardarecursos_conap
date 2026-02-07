@@ -11,7 +11,7 @@
   <!-- Chart.js (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Leaflet (OSM/CARTO) -->
+  <!-- Leaflet (OSM) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -392,17 +392,124 @@
       </div>
 
       <div class="infobox">
-        <b>Sugerencia:</b> haga clic sobre la serie temporal para aplicar un filtro adicional.
+        <b>Sugerencia:</b> haga clic sobre la serie temporal o sobre el gráfico de barras para filtrar.
         <div class="chips" id="chips-filtros" aria-label="Resumen de filtros"></div>
       </div>
 
       <p class="subnote" id="estado" style="margin-top:10px;">Cargando datos…</p>
     </section>
 
-    <!-- ... EL RESTO DEL HTML ES LARGO ... -->
-    <!-- IMPORTANTE: el archivo completo está en el link sandbox y también en el HTML que te adjunté -->
-    <!-- Por límites del chat, si necesitas que lo pegue aquí completo literal, dímelo y lo envío en 2 partes. -->
+    <section class="card soft" id="card-filtros" aria-label="Filtros del tablero">
+      <h3 style="margin:0 0 6px;">Filtros</h3>
+      <p class="subnote">Los filtros se aplican a KPIs, gráficos, mapa y tabla. Si un filtro no aplica (campo inexistente), se oculta automáticamente.</p>
 
+      <div class="filters" id="filters-grid">
+        <div class="field" id="wrap-anio">
+          <label for="f-anio">Año</label>
+          <select id="f-anio"></select>
+        </div>
+
+        <div class="field" id="wrap-mes">
+          <label for="f-mes">Mes</label>
+          <select id="f-mes"></select>
+        </div>
+
+        <div class="field wide" id="wrap-region">
+          <label for="f-region">Región</label>
+          <select id="f-region"></select>
+        </div>
+
+        <div class="field wide" id="wrap-municipio">
+          <label for="f-municipio">Municipio</label>
+          <select id="f-municipio"></select>
+        </div>
+
+        <div class="field wide" id="wrap-area">
+          <label for="f-area">Área protegida</label>
+          <select id="f-area"></select>
+        </div>
+
+        <div class="field wide" id="wrap-guarda">
+          <label for="f-guarda">Guardarrecursos responsable</label>
+          <select id="f-guarda"></select>
+        </div>
+
+        <div class="field wide" id="wrap-tipo">
+          <label for="f-tipo">Tipo de patrullaje</label>
+          <select id="f-tipo"></select>
+        </div>
+
+        <div class="field wide" id="wrap-ilegal">
+          <label for="f-ilegal">Actividad ilegal observada</label>
+          <select id="f-ilegal"></select>
+        </div>
+
+        <div class="field wide" id="wrap-ubicacion">
+          <label for="f-ubicacion">Ubicación</label>
+          <select id="f-ubicacion"></select>
+        </div>
+
+        <div class="field" id="wrap-buscar">
+          <label for="f-buscar">Buscar</label>
+          <input id="f-buscar" type="text" placeholder="palabra clave (en cualquier campo)" />
+        </div>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Indicadores">
+      <h3 style="margin:0 0 10px;">Indicadores</h3>
+      <div class="kpis">
+        <div class="kpi"><div class="t">Registros</div><div class="v" id="kpi-registros">–</div><div class="s" id="kpi-registros-s">Total</div></div>
+        <div class="kpi"><div class="t">Rango de fechas</div><div class="v" id="kpi-rango">–</div><div class="s">Según “Fecha de patrullaje”</div></div>
+        <div class="kpi"><div class="t">Regiones</div><div class="v" id="kpi-regiones">–</div><div class="s">Únicas</div></div>
+        <div class="kpi"><div class="t">Municipios</div><div class="v" id="kpi-municipios">–</div><div class="s">Únicos</div></div>
+        <div class="kpi"><div class="t">Áreas protegidas</div><div class="v" id="kpi-areas">–</div><div class="s">Únicas</div></div>
+        <div class="kpi"><div class="t">Con coordenadas</div><div class="v" id="kpi-coords">–</div><div class="s">Para el mapa</div></div>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Gráficos">
+      <div class="card col-6">
+        <h3 style="margin:0 0 8px;">Serie temporal (registros)</h3>
+        <div class="chartwrap tall"><canvas id="chart-tiempo"></canvas></div>
+        <p class="subnote" id="note-tiempo">Clic en un punto para filtrar por mes.</p>
+      </div>
+
+      <div class="card col-6">
+        <div class="maprow">
+          <h3 style="margin:0;">Distribución por tipo</h3>
+          <div class="mini-actions">
+            <button class="mini-btn" id="btn-clear-chart" type="button">Quitar filtro gráfico</button>
+          </div>
+        </div>
+        <div class="chartwrap tall"><canvas id="chart-tipo"></canvas></div>
+        <p class="subnote">Clic en una barra para filtrar por categoría.</p>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Mapa">
+      <div class="maprow">
+        <h3 style="margin:0;">Mapa (si hay coordenadas)</h3>
+        <div class="mini-actions">
+          <button class="mini-btn" id="btn-centrar" type="button">Centrar</button>
+          <button class="mini-btn" id="btn-geojson" type="button">Descargar GeoJSON</button>
+        </div>
+      </div>
+      <div id="map"></div>
+      <p class="subnote" id="map-note">Si el CSV no incluye coordenadas, el mapa se ocultará automáticamente.</p>
+    </section>
+
+    <section class="card" aria-label="Tabla de registros">
+      <div class="maprow">
+        <h3 style="margin:0;">Tabla (Tabulator)</h3>
+        <div class="mini-actions">
+          <button class="mini-btn" id="btn-csv" type="button">Descargar CSV</button>
+          <button class="mini-btn" id="btn-xlsx" type="button">Descargar Excel</button>
+        </div>
+      </div>
+      <div class="tablewrap"><div id="tabla"></div></div>
+      <p class="subnote">Tip: use el buscador superior y el filtro por columna (en encabezados) para refinar aún más.</p>
+    </section>
   </main>
 
   <footer>
@@ -411,11 +518,774 @@
 
   <div class="toast" id="toast">Listo</div>
 
+  <!-- Librerías locales del repositorio -->
   <script src="papaparse.min.js"></script>
   <script src="tabulator.min.js"></script>
   <script src="xlsx.full.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+  <!-- PDF -->
+  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 
-  <!-- TODO EL JS COMPLETO VIENE EN EL ARCHIVO LISTO PARA PEGAR -->
+  <script>
+  (function () {
+    const CSV_URL = "./datos_patrullaje.csv?v=" + Date.now();
+
+    // Campos esperados (según AC192). Se usan si existen en el CSV.
+    const FIELD_FECHA = "Fecha de patrullaje";
+    const FIELD_REGION = "Region";
+    const FIELD_MUNICIPIO = "Municipio";
+    const FIELD_AREA = "Area protegida";
+    const FIELD_GUARDA = "Guarda recursos responsable";
+    const FIELD_TIPO = "Tipo de patrullaje";
+    const FIELD_ILEGAL = "Actividad ilegal observada";
+    const FIELD_UBIC = "Ubicacion";
+
+    // Estado
+    let rawData = [];
+    let filteredData = [];
+    let tabla = null;
+    let chartTiempo = null;
+    let chartTipo = null;
+    let map = null;
+    let markersLayer = null;
+
+    // Filtro "extra" por interacción con gráficos
+    let chartFilter = {
+      monthKey: null,     // "YYYY-MM"
+      tipoValue: null     // categoría de Tipo de patrullaje
+    };
+
+    // UI helpers
+    const $ = (id) => document.getElementById(id);
+
+    function showToast(msg) {
+      const t = $("toast");
+      if (!t) return;
+      t.textContent = msg || "Listo";
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 1700);
+    }
+
+    function setEstado(msg) {
+      const el = $("estado");
+      if (el) el.textContent = msg;
+    }
+
+    // --- Decodificación robusta (evita símbolos raros) ---
+    function decodeSmartCsv(buffer) {
+      try {
+        const u8 = new Uint8Array(buffer);
+        const decUtf8 = new TextDecoder("utf-8", { fatal: false }).decode(u8);
+        const decWin = new TextDecoder("windows-1252", { fatal: false }).decode(u8);
+
+        function score(s) {
+          const bad = ["�", "Ã", "Â", "â€™", "â€“", "â€œ", "â€"];
+          let c = 0;
+          for (const b of bad) c += (s.split(b).length - 1);
+          return c;
+        }
+        return (score(decWin) < score(decUtf8)) ? decWin : decUtf8;
+      } catch (e) {
+        try { return new TextDecoder("utf-8").decode(new Uint8Array(buffer)); } catch(_) {}
+        return "";
+      }
+    }
+
+    function detectarDelimitador(csvText) {
+      const firstLine = String(csvText || "").split(/?
+/)[0] || "";
+      const sc = (firstLine.match(/;/g) || []).length;
+      const cc = (firstLine.match(/,/g) || []).length;
+      if (sc === 0 && cc === 0) return "";
+      return (sc >= cc) ? ";" : ",";
+    }
+
+    // --- Fechas (mismo enfoque que el módulo de datos: detectar MDY/DMY/YMD) ---
+    function detectarFormatoFecha(fechaRaw) {
+      if (!fechaRaw) return null;
+      const str = String(fechaRaw).trim();
+      const parteFecha = str.split(" ")[0];
+      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
+      if (!sep) return null;
+      const partes = parteFecha.split(sep);
+      if (partes.length < 3) return null;
+
+      const p1 = parseInt(partes[0], 10);
+      const p2 = parseInt(partes[1], 10);
+      const p3 = parseInt(partes[2], 10);
+      if (![p1,p2,p3].every(n => Number.isFinite(n))) return null;
+
+      if (String(partes[0]).length === 4) return "YMD";
+      if (p1 > 12 && p2 <= 12) return "DMY";
+      if (p2 > 12 && p1 <= 12) return "MDY";
+      return null;
+    }
+
+    function prepararHintsFechas(data) {
+      const hints = data.map(reg => detectarFormatoFecha(reg[FIELD_FECHA]));
+
+      let last = null;
+      for (let i = 0; i < hints.length; i++) {
+        if (!hints[i]) hints[i] = last;
+        else last = hints[i];
+      }
+
+      let next = null;
+      for (let i = hints.length - 1; i >= 0; i--) {
+        if (!hints[i]) hints[i] = next;
+        else next = hints[i];
+      }
+
+      for (let i = 0; i < data.length; i++) {
+        data[i]._dateHint = hints[i] || null;
+      }
+    }
+
+    function extraerFechaCompleta(fechaRaw, hint) {
+      if (!fechaRaw) return null;
+      const str = String(fechaRaw).trim();
+      if (!str) return null;
+
+      const parteFecha = str.split(" ")[0];
+      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
+      if (!sep) return null;
+
+      const partes = parteFecha.split(sep);
+      if (partes.length < 3) return null;
+
+      const p1s = (partes[0] || "").trim();
+      const p2s = (partes[1] || "").trim();
+      const p3s = (partes[2] || "").trim();
+
+      const p1 = parseInt(p1s, 10);
+      const p2 = parseInt(p2s, 10);
+      const p3 = parseInt(p3s, 10);
+      if (![p1,p2,p3].every(n => Number.isFinite(n))) return null;
+
+      let anio, mes, dia;
+
+      if (hint === "YMD" || p1s.length === 4) {
+        anio = p1; mes = p2; dia = p3;
+      } else if (hint === "DMY") {
+        dia = p1; mes = p2; anio = p3;
+      } else if (hint === "MDY") {
+        mes = p1; dia = p2; anio = p3;
+      } else {
+        if (p1 > 12 && p2 <= 12) { dia = p1; mes = p2; anio = p3; }
+        else { mes = p1; dia = p2; anio = p3; }
+      }
+
+      if (anio < 100) anio = anio + 2000;
+
+      const dt = new Date(anio, mes - 1, dia);
+      if (dt && dt.getFullYear() === anio && (dt.getMonth() + 1) === mes && dt.getDate() === dia) {
+        return dt;
+      }
+      return null;
+    }
+
+    function monthKey(dt) {
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, "0");
+      return y + "-" + m;
+    }
+
+    function formatDate(dt) {
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, "0");
+      const d = String(dt.getDate()).padStart(2, "0");
+      return d + "/" + m + "/" + y;
+    }
+
+    function escapeHtml(texto) {
+      return String(texto || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    // --- Utilidades de datos ---
+    function uniqueValues(data, field) {
+      const s = new Set();
+      for (const r of data) {
+        const v = (r[field] ?? "").toString().trim();
+        if (v) s.add(v);
+      }
+      return Array.from(s).sort((a,b) => a.localeCompare(b, "es"));
+    }
+
+    function hasField(field) {
+      return rawData.length > 0 && Object.prototype.hasOwnProperty.call(rawData[0], field);
+    }
+
+    function fillSelect(selectEl, values, placeholder) {
+      if (!selectEl) return;
+      selectEl.innerHTML = "";
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = placeholder || "Todos";
+      selectEl.appendChild(opt0);
+      for (const v of values) {
+        const opt = document.createElement("option");
+        opt.value = v;
+        opt.textContent = v;
+        selectEl.appendChild(opt);
+      }
+    }
+
+    function showOrHide(wrapId, visible) {
+      const wrap = $(wrapId);
+      if (wrap) wrap.style.display = visible ? "" : "none";
+    }
+
+    function getFieldValue(row, field) {
+      return (row[field] ?? "").toString().trim();
+    }
+
+    function rowMatchesSearch(row, q) {
+      if (!q) return true;
+      const needle = q.toLowerCase();
+      for (const k in row) {
+        if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
+        const v = row[k];
+        if (v === null || v === undefined) continue;
+        if (String(v).toLowerCase().includes(needle)) return true;
+      }
+      return false;
+    }
+
+    function getLatLng(row) {
+      const keys = Object.keys(row || {});
+
+      function findKey(patterns) {
+        const low = keys.map(k => [k, k.toLowerCase()]);
+        for (const p of patterns) {
+          const pp = p.toLowerCase();
+          const hit = low.find(([orig, lk]) => lk === pp || lk.includes(pp));
+          if (hit) return hit[0];
+        }
+        return null;
+      }
+
+      const kLat = findKey(["lat", "latitude", "y", "coordenada_y"]);
+      const kLon = findKey(["lon", "lng", "long", "longitude", "x", "coordenada_x"]);
+
+      function toNum(x) {
+        if (x === null || x === undefined) return null;
+        const s = String(x).trim().replace(",", ".");
+        const n = parseFloat(s);
+        return Number.isFinite(n) ? n : null;
+      }
+
+      if (kLat && kLon) {
+        const lat = toNum(row[kLat]);
+        const lon = toNum(row[kLon]);
+        if (lat !== null && lon !== null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+          return [lat, lon];
+        }
+      }
+
+      const u = getFieldValue(row, FIELD_UBIC);
+      if (u) {
+        const m = u.match(/(-?\d+(?:[\.,]\d+)?)\s*[, ]\s*(-?\d+(?:[\.,]\d+)?)/);
+        if (m) {
+          const a = toNum(m[1]);
+          const b = toNum(m[2]);
+          if (a !== null && b !== null) {
+            if (Math.abs(a) <= 90 && Math.abs(b) <= 180) return [a, b];
+            if (Math.abs(b) <= 90 && Math.abs(a) <= 180) return [b, a];
+          }
+        }
+      }
+
+      return null;
+    }
+
+    function applyFilters() {
+      const anio = $("f-anio").value;
+      const mes = $("f-mes").value;
+      const region = $("f-region").value;
+      const municipio = $("f-municipio").value;
+      const area = $("f-area").value;
+      const guarda = $("f-guarda").value;
+      const tipo = $("f-tipo").value;
+      const ilegal = $("f-ilegal").value;
+      const ubic = $("f-ubicacion").value;
+      const buscar = $("f-buscar").value.trim();
+
+      filteredData = rawData.filter((r) => {
+        if (anio && String(r._anio) !== anio) return false;
+        if (mes && String(r._mes) !== mes) return false;
+
+        if (region && getFieldValue(r, FIELD_REGION) !== region) return false;
+        if (municipio && getFieldValue(r, FIELD_MUNICIPIO) !== municipio) return false;
+        if (area && getFieldValue(r, FIELD_AREA) !== area) return false;
+        if (guarda && getFieldValue(r, FIELD_GUARDA) !== guarda) return false;
+        if (tipo && getFieldValue(r, FIELD_TIPO) !== tipo) return false;
+        if (ilegal && getFieldValue(r, FIELD_ILEGAL) !== ilegal) return false;
+        if (ubic && getFieldValue(r, FIELD_UBIC) !== ubic) return false;
+
+        if (chartFilter.monthKey && r._monthKey !== chartFilter.monthKey) return false;
+        if (chartFilter.tipoValue && getFieldValue(r, FIELD_TIPO) !== chartFilter.tipoValue) return false;
+
+        if (!rowMatchesSearch(r, buscar)) return false;
+        return true;
+      });
+
+      renderChips();
+      updateKPIs();
+      updateCharts();
+      updateMap();
+      updateTable();
+      setEstado(`Mostrando ${filteredData.length.toLocaleString("es-GT")} de ${rawData.length.toLocaleString("es-GT")} registros. CSV: ${CSV_URL.replace("./","")}`);
+    }
+
+    function renderChips() {
+      const chips = $("chips-filtros");
+      if (!chips) return;
+      chips.innerHTML = "";
+
+      function addChip(label, value) {
+        const el = document.createElement("span");
+        el.className = "chip";
+        el.innerHTML = `<b>${label}:</b> ${value}`;
+        chips.appendChild(el);
+      }
+
+      const mapping = [
+        ["Año", $("f-anio").value],
+        ["Mes", $("f-mes").value],
+        ["Región", $("f-region").value],
+        ["Municipio", $("f-municipio").value],
+        ["Área", $("f-area").value],
+        ["Guardarrecursos", $("f-guarda").value],
+        ["Tipo", $("f-tipo").value],
+        ["Ilegal", $("f-ilegal").value],
+        ["Ubicación", $("f-ubicacion").value]
+      ];
+
+      for (const [lab, v] of mapping) {
+        if (v) addChip(lab, v);
+      }
+      if (chartFilter.monthKey) addChip("Gráfico tiempo", chartFilter.monthKey);
+      if (chartFilter.tipoValue) addChip("Gráfico tipo", chartFilter.tipoValue);
+
+      const q = $("f-buscar").value.trim();
+      if (q) addChip("Buscar", q);
+
+      if (!chips.children.length) {
+        const el = document.createElement("span");
+        el.className = "chip";
+        el.textContent = "Sin filtros";
+        chips.appendChild(el);
+      }
+    }
+
+    function updateKPIs() {
+      $("kpi-registros").textContent = filteredData.length.toLocaleString("es-GT");
+
+      const fechas = filteredData.map(r => r._fechaObj).filter(Boolean).sort((a,b)=>a-b);
+      if (fechas.length) {
+        $("kpi-rango").textContent = formatDate(fechas[0]) + " – " + formatDate(fechas[fechas.length-1]);
+      } else {
+        $("kpi-rango").textContent = "–";
+      }
+
+      const regiones = hasField(FIELD_REGION) ? new Set(filteredData.map(r => getFieldValue(r, FIELD_REGION)).filter(Boolean)) : new Set();
+      const municipios = hasField(FIELD_MUNICIPIO) ? new Set(filteredData.map(r => getFieldValue(r, FIELD_MUNICIPIO)).filter(Boolean)) : new Set();
+      const areas = hasField(FIELD_AREA) ? new Set(filteredData.map(r => getFieldValue(r, FIELD_AREA)).filter(Boolean)) : new Set();
+
+      $("kpi-regiones").textContent = regiones.size ? regiones.size.toLocaleString("es-GT") : "–";
+      $("kpi-municipios").textContent = municipios.size ? municipios.size.toLocaleString("es-GT") : "–";
+      $("kpi-areas").textContent = areas.size ? areas.size.toLocaleString("es-GT") : "–";
+
+      let withCoords = 0;
+      for (const r of filteredData) {
+        if (getLatLng(r)) withCoords++;
+      }
+      $("kpi-coords").textContent = withCoords.toLocaleString("es-GT");
+    }
+
+    function destroyChart(ch) {
+      try { if (ch) ch.destroy(); } catch(_) {}
+    }
+
+    function updateCharts() {
+      const byMonth = new Map();
+      for (const r of filteredData) {
+        if (!r._monthKey) continue;
+        byMonth.set(r._monthKey, (byMonth.get(r._monthKey) || 0) + 1);
+      }
+      const months = Array.from(byMonth.keys()).sort();
+      const counts = months.map(m => byMonth.get(m));
+
+      destroyChart(chartTiempo);
+      const ctxT = document.getElementById("chart-tiempo");
+      if (ctxT) {
+        chartTiempo = new Chart(ctxT, {
+          type: "line",
+          data: {
+            labels: months,
+            datasets: [{
+              label: "Registros",
+              data: counts,
+              tension: 0.25,
+              pointRadius: 3,
+              pointHoverRadius: 5
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            onClick: (evt) => {
+              if (!months.length) return;
+              const points = chartTiempo.getElementsAtEventForMode(evt, "nearest", { intersect: true }, true);
+              if (!points || !points.length) return;
+              const idx = points[0].index;
+              const key = months[idx];
+              chartFilter.monthKey = (chartFilter.monthKey === key) ? null : key;
+              applyFilters();
+              showToast(chartFilter.monthKey ? ("Filtro por mes: " + chartFilter.monthKey) : "Filtro de mes quitado");
+            }
+          }
+        });
+      }
+
+      const byTipo = new Map();
+      if (hasField(FIELD_TIPO)) {
+        for (const r of filteredData) {
+          const v = getFieldValue(r, FIELD_TIPO) || "Sin dato";
+          byTipo.set(v, (byTipo.get(v) || 0) + 1);
+        }
+      }
+      const tipos = Array.from(byTipo.keys()).sort((a,b)=>byTipo.get(b)-byTipo.get(a));
+      const c2 = tipos.map(t => byTipo.get(t));
+
+      destroyChart(chartTipo);
+      const ctxB = document.getElementById("chart-tipo");
+      if (ctxB) {
+        chartTipo = new Chart(ctxB, {
+          type: "bar",
+          data: { labels: tipos, datasets: [{ label: "Registros", data: c2 }] },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            onClick: (evt) => {
+              if (!tipos.length) return;
+              const points = chartTipo.getElementsAtEventForMode(evt, "nearest", { intersect: true }, true);
+              if (!points || !points.length) return;
+              const idx = points[0].index;
+              const val = tipos[idx];
+              chartFilter.tipoValue = (chartFilter.tipoValue === val) ? null : val;
+              applyFilters();
+              showToast(chartFilter.tipoValue ? ("Filtro por tipo: " + chartFilter.tipoValue) : "Filtro de tipo quitado");
+            }
+          }
+        });
+      }
+
+      const btnClear = $("btn-clear-chart");
+      if (btnClear) btnClear.disabled = (!chartFilter.monthKey && !chartFilter.tipoValue);
+    }
+
+    function initMap() {
+      map = L.map("map", { zoomControl: true });
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(map);
+
+      markersLayer = L.layerGroup().addTo(map);
+      map.setView([15.5, -90.25], 7);
+    }
+
+    function updateMap() {
+      const mapWrap = document.querySelector('[aria-label="Mapa"]');
+      if (!mapWrap) return;
+
+      let pts = [];
+      for (const r of filteredData) {
+        const ll = getLatLng(r);
+        if (ll) pts.push({ ll, r });
+      }
+
+      if (!pts.length) {
+        mapWrap.style.display = "none";
+        return;
+      }
+      mapWrap.style.display = "";
+
+      if (!map) initMap();
+      if (!markersLayer) return;
+
+      markersLayer.clearLayers();
+      for (const p of pts.slice(0, 3000)) {
+        const lat = p.ll[0], lon = p.ll[1];
+        const popup = `
+          <b>${escapeHtml(getFieldValue(p.r, FIELD_GUARDA) || "Patrullaje")}</b><br/>
+          <b>Fecha:</b> ${escapeHtml(p.r[FIELD_FECHA] || "")}<br/>
+          <b>Región:</b> ${escapeHtml(getFieldValue(p.r, FIELD_REGION))}<br/>
+          <b>Municipio:</b> ${escapeHtml(getFieldValue(p.r, FIELD_MUNICIPIO))}<br/>
+          <b>Tipo:</b> ${escapeHtml(getFieldValue(p.r, FIELD_TIPO))}<br/>
+          <b>Ubicación:</b> ${escapeHtml(getFieldValue(p.r, FIELD_UBIC))}
+        `;
+        const m = L.circleMarker([lat, lon], { radius: 5, weight: 1 }).bindPopup(popup);
+        markersLayer.addLayer(m);
+      }
+
+      const bounds = L.latLngBounds(pts.map(p => p.ll));
+      try { map.fitBounds(bounds.pad(0.2)); } catch(_) {}
+
+      const note = $("map-note");
+      if (note) note.textContent = `Mostrando ${pts.length.toLocaleString("es-GT")} puntos (máx. 3000 marcadores por rendimiento).`;
+    }
+
+    function updateTable() {
+      if (!tabla) return;
+      tabla.replaceData(filteredData);
+    }
+
+    function initTable() {
+      const columns = Object.keys(rawData[0] || {}).filter(k => !k.startsWith("_")).map((field) => {
+        return {
+          title: field,
+          field: field,
+          headerFilter: "input",
+          headerFilterPlaceholder: "Filtrar…",
+          headerSort: true,
+          tooltip: true
+        };
+      });
+
+      tabla = new Tabulator("#tabla", {
+        data: filteredData,
+        layout: "fitDataStretch",
+        pagination: "local",
+        paginationSize: 20,
+        paginationSizeSelector: [10, 20, 50, 100],
+        movableColumns: true,
+        columns: columns
+      });
+    }
+
+    function initEvents() {
+      const ids = ["f-anio","f-mes","f-region","f-municipio","f-area","f-guarda","f-tipo","f-ilegal","f-ubicacion"];
+      ids.forEach(id => { const el = $(id); if (el) el.addEventListener("change", applyFilters); });
+
+      $("f-buscar").addEventListener("input", () => {
+        clearTimeout(window.__tSearch);
+        window.__tSearch = setTimeout(applyFilters, 150);
+      });
+
+      $("btn-reset").addEventListener("click", () => {
+        chartFilter.monthKey = null;
+        chartFilter.tipoValue = null;
+        ids.forEach(id => { if ($(id)) $(id).value = ""; });
+        $("f-buscar").value = "";
+        applyFilters();
+        showToast("Filtros limpios");
+      });
+
+      $("btn-clear-chart").addEventListener("click", () => {
+        chartFilter.monthKey = null;
+        chartFilter.tipoValue = null;
+        applyFilters();
+        showToast("Filtro de gráficos limpio");
+      });
+
+      $("btn-csv").addEventListener("click", () => { if (tabla) tabla.download("csv", "ac192_patrullajes_filtrado.csv"); });
+      $("btn-xlsx").addEventListener("click", () => { if (tabla) tabla.download("xlsx", "ac192_patrullajes_filtrado.xlsx", { sheetName: "AC192" }); });
+
+      $("btn-centrar").addEventListener("click", () => {
+        if (!map || !markersLayer) return;
+        const layers = markersLayer.getLayers();
+        if (!layers.length) return;
+        const bounds = L.latLngBounds(layers.map(l => l.getLatLng()));
+        try { map.fitBounds(bounds.pad(0.2)); showToast("Mapa centrado"); } catch(_) {}
+      });
+
+      $("btn-geojson").addEventListener("click", () => {
+        const features = [];
+        for (const r of filteredData) {
+          const ll = getLatLng(r);
+          if (!ll) continue;
+          const props = {};
+          for (const k in r) {
+            if (!Object.prototype.hasOwnProperty.call(r, k)) continue;
+            if (k.startsWith("_")) continue;
+            props[k] = r[k];
+          }
+          features.push({
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [ll[1], ll[0]] },
+            properties: props
+          });
+        }
+        const fc = { type: "FeatureCollection", features };
+        const blob = new Blob([JSON.stringify(fc, null, 2)], { type: "application/geo+json;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "ac192_patrullajes_filtrado.geojson";
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast("GeoJSON descargado");
+      });
+
+      $("btn-pdf").addEventListener("click", async () => {
+        try {
+          if (!window.html2pdf) {
+            alert("No se pudo cargar la librería de PDF (html2pdf). Revise su conexión o el enlace CDN.");
+            return;
+          }
+
+          const tmp = document.createElement("div");
+          tmp.style.padding = "14px";
+          tmp.style.fontFamily = "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+
+          const h = document.createElement("h2");
+          h.textContent = "AC192 · Informe liviano de patrullajes (filtrado)";
+          h.style.margin = "0 0 6px";
+          tmp.appendChild(h);
+
+          const p = document.createElement("p");
+          p.textContent = `Registros: ${filteredData.length.toLocaleString("es-GT")} (de ${rawData.length.toLocaleString("es-GT")}).`;
+          p.style.margin = "0 0 10px";
+          tmp.appendChild(p);
+
+          const chips = document.createElement("p");
+          chips.style.margin = "0 0 10px";
+          chips.textContent = "Filtros: " + Array.from(document.querySelectorAll("#chips-filtros .chip")).map(x => x.textContent).join(" · ");
+          tmp.appendChild(chips);
+
+          const ul = document.createElement("ul");
+          ul.style.margin = "0 0 10px 18px";
+          const items = [
+            ["Rango", $("kpi-rango").textContent],
+            ["Regiones", $("kpi-regiones").textContent],
+            ["Municipios", $("kpi-municipios").textContent],
+            ["Áreas", $("kpi-areas").textContent],
+            ["Con coordenadas", $("kpi-coords").textContent]
+          ];
+          for (const [k,v] of items) { const li = document.createElement("li"); li.textContent = `${k}: ${v}`; ul.appendChild(li); }
+          tmp.appendChild(ul);
+
+          if (chartTiempo) { const img = document.createElement("img"); img.src = chartTiempo.toBase64Image(); img.style.width = "100%"; img.style.marginBottom = "10px"; tmp.appendChild(img); }
+          if (chartTipo) { const img2 = document.createElement("img"); img2.src = chartTipo.toBase64Image(); img2.style.width = "100%"; img2.style.marginBottom = "10px"; tmp.appendChild(img2); }
+
+          const table = document.createElement("table");
+          table.style.width = "100%";
+          table.style.borderCollapse = "collapse";
+          table.style.fontSize = "10px";
+
+          const keys = Object.keys(rawData[0] || {}).filter(k => !k.startsWith("_")).slice(0, 8);
+          const thead = document.createElement("thead");
+          const trh = document.createElement("tr");
+          keys.forEach(k => { const th = document.createElement("th"); th.textContent = k; th.style.borderBottom = "1px solid #999"; th.style.textAlign = "left"; th.style.padding = "4px"; trh.appendChild(th); });
+          thead.appendChild(trh);
+          table.appendChild(thead);
+
+          const tbody = document.createElement("tbody");
+          filteredData.slice(0, 25).forEach(r => {
+            const tr = document.createElement("tr");
+            keys.forEach(k => { const td = document.createElement("td"); td.textContent = String(r[k] ?? ""); td.style.borderBottom = "1px solid #ddd"; td.style.padding = "4px"; tr.appendChild(td); });
+            tbody.appendChild(tr);
+          });
+          table.appendChild(tbody);
+          tmp.appendChild(table);
+
+          const filename = "ac192_informe_patrullajes_filtrado.pdf";
+
+          await html2pdf().set({
+            margin: 8,
+            filename,
+            image: { type: "jpeg", quality: 0.92 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+          }).from(tmp).save();
+
+          showToast("PDF generado");
+        } catch (e) {
+          console.error(e);
+          alert("No se pudo generar el PDF: " + e);
+        }
+      });
+    }
+
+    function initFilters() {
+      showOrHide("wrap-region", hasField(FIELD_REGION));
+      showOrHide("wrap-municipio", hasField(FIELD_MUNICIPIO));
+      showOrHide("wrap-area", hasField(FIELD_AREA));
+      showOrHide("wrap-guarda", hasField(FIELD_GUARDA));
+      showOrHide("wrap-tipo", hasField(FIELD_TIPO));
+      showOrHide("wrap-ilegal", hasField(FIELD_ILEGAL));
+      showOrHide("wrap-ubicacion", hasField(FIELD_UBIC));
+
+      const years = Array.from(new Set(rawData.map(r => r._anio).filter(Boolean))).sort((a,b)=>a-b);
+      const months = ["01","02","03","04","05","06","07","08","09","10","11","12"];
+
+      fillSelect($("f-anio"), years.map(String), "Todos");
+      fillSelect($("f-mes"), months, "Todos");
+
+      if (hasField(FIELD_REGION)) fillSelect($("f-region"), uniqueValues(rawData, FIELD_REGION), "Todas");
+      if (hasField(FIELD_MUNICIPIO)) fillSelect($("f-municipio"), uniqueValues(rawData, FIELD_MUNICIPIO), "Todos");
+      if (hasField(FIELD_AREA)) fillSelect($("f-area"), uniqueValues(rawData, FIELD_AREA), "Todas");
+      if (hasField(FIELD_GUARDA)) fillSelect($("f-guarda"), uniqueValues(rawData, FIELD_GUARDA), "Todos");
+      if (hasField(FIELD_TIPO)) fillSelect($("f-tipo"), uniqueValues(rawData, FIELD_TIPO), "Todos");
+      if (hasField(FIELD_ILEGAL)) fillSelect($("f-ilegal"), uniqueValues(rawData, FIELD_ILEGAL), "Todas");
+      if (hasField(FIELD_UBIC)) fillSelect($("f-ubicacion"), uniqueValues(rawData, FIELD_UBIC).slice(0, 500), "Todas");
+    }
+
+    async function loadData() {
+      setEstado("Cargando datos…");
+      try {
+        const res = await fetch(CSV_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+
+        const buffer = await res.arrayBuffer();
+        const csvText = decodeSmartCsv(buffer);
+
+        const parsed = Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          delimiter: detectarDelimitador(csvText),
+          transformHeader: (h) => String(h || "").trim()
+        });
+
+        rawData = (parsed.data || []).filter(r => r && Object.keys(r).some(k => String(r[k] || "").trim() !== ""));
+        if (!rawData.length) {
+          setEstado("No se encontraron datos en datos_patrullaje.csv.");
+          return;
+        }
+
+        prepararHintsFechas(rawData);
+        for (const r of rawData) {
+          const dt = extraerFechaCompleta(r[FIELD_FECHA], r._dateHint);
+          r._fechaObj = dt;
+          r._anio = dt ? dt.getFullYear() : null;
+          r._mes = dt ? String(dt.getMonth()+1).padStart(2,"0") : null;
+          r._monthKey = dt ? monthKey(dt) : null;
+        }
+
+        initFilters();
+        filteredData = rawData.slice();
+
+        initTable();
+        initEvents();
+        applyFilters();
+
+        showToast("Datos cargados");
+      } catch (e) {
+        console.error(e);
+        setEstado("Error al cargar datos: " + e.message);
+        alert("Error al cargar datos_patrullaje.csv: " + e.message + "\n\nVerifique que el archivo exista en la misma carpeta del módulo.");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadData);
+  })();
+  </script>
 </body>
 </html>
