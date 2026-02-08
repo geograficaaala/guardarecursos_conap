@@ -527,765 +527,1159 @@
 
   <script>
   (function () {
-    const CSV_URL = "./datos_patrullaje.csv?v=" + Date.now();
+    // =============================
+    // Configuración
+    // =============================
+    var CSV_CANDIDATES = [
+      "datos_patrullaje.csv",
+      "./datos_patrullaje.csv",
+      "data/datos_patrullaje.csv",
+      "./data/datos_patrullaje.csv"
+    ];
 
-    // Campos esperados (según AC192). Se usan si existen en el CSV.
-    const FIELD_FECHA = "Fecha de patrullaje";
-    const FIELD_REGION = "Region";
-    const FIELD_MUNICIPIO = "Municipio";
-    const FIELD_AREA = "Area protegida";
-    const FIELD_GUARDA = "Guarda recursos responsable";
-    const FIELD_TIPO = "Tipo de patrullaje";
-    const FIELD_ILEGAL = "Actividad ilegal observada";
-    const FIELD_UBIC = "Ubicacion";
-
-    // Estado
-    let rawData = [];
-    let filteredData = [];
-    let tabla = null;
-    let chartTiempo = null;
-    let chartTipo = null;
-    let map = null;
-    let markersLayer = null;
-
-    // Filtro "extra" por interacción con gráficos
-    let chartFilter = {
-      monthKey: null,     // "YYYY-MM"
-      tipoValue: null     // categoría de Tipo de patrullaje
+    // Nombres esperados (se resuelven por coincidencia exacta o "fuzzy")
+    var EXPECTED = {
+      fecha:   { exact: ["Fecha de patrullaje","Fecha patrullaje","Fecha"], tokens: ["fecha","patrull"] },
+      region:  { exact: ["Region","Región"], tokens: ["region"] },
+      municipio:{ exact: ["Municipio"], tokens: ["municip"] },
+      area:    { exact: ["Area protegida","Área protegida","Área Protegida","Area Protegida"], tokens: ["area","proteg"] },
+      guarda:  { exact: ["Guarda recursos responsable","Guardarrecursos responsable","Guarda recurso responsable","Guarda recurso"], tokens: ["guarda","recurso"] },
+      tipo:    { exact: ["Tipo de patrullaje","Tipo patrullaje","Tipo"], tokens: ["tipo","patrull"] },
+      ilegal:  { exact: ["Actividad ilegal observada","Actividad ilegal"], tokens: ["actividad","ilegal"] },
+      ubic:    { exact: ["Ubicacion","Ubicación","Ubicación (Lugar)","Lugar","Sitio"], tokens: ["ubic","lugar","sitio"] }
     };
 
-    // UI helpers
-    const $ = (id) => document.getElementById(id);
+    // =============================
+    // Estado
+    // =============================
+    var rawData = [];
+    var filteredData = [];
+    var fields = {}; // {fecha, region, municipio, area, guarda, tipo, ilegal, ubic}
+    var tabla = null;
+    var chartTiempo = null;
+    var chartTipo = null;
+    var map = null;
+    var markersLayer = null;
 
-    function showToast(msg) {
-      const t = $("toast");
-      if (!t) return;
+    // filtro extra por interacción con gráficos
+    var chartFilter = { monthKey: null, tipoValue: null };
+
+    // =============================
+    // Helpers DOM
+    // =============================
+    function $(id){ return document.getElementById(id); }
+
+    function showToast(msg){
+      var t = $("toast");
+      if(!t) return;
       t.textContent = msg || "Listo";
       t.classList.add("show");
-      setTimeout(() => t.classList.remove("show"), 1700);
+      setTimeout(function(){ t.classList.remove("show"); }, 1700);
     }
 
-    function setEstado(msg) {
-      const el = $("estado");
-      if (el) el.textContent = msg;
+    function setEstado(msg){
+      var el = $("estado");
+      if(el) el.textContent = msg;
     }
 
-    // --- Decodificación robusta (evita símbolos raros) ---
-    function decodeSmartCsv(buffer) {
-      try {
-        const u8 = new Uint8Array(buffer);
-        const decUtf8 = new TextDecoder("utf-8", { fatal: false }).decode(u8);
-        const decWin = new TextDecoder("windows-1252", { fatal: false }).decode(u8);
+    function escapeHtml(s){
+      return String(s || "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#39;");
+    }
 
-        function score(s) {
-          const bad = ["�", "Ã", "Â", "â€™", "â€“", "â€œ", "â€"];
-          let c = 0;
-          for (const b of bad) c += (s.split(b).length - 1);
+    // =============================
+    // Carga de librerías con fallback (por si faltan archivos locales)
+    // =============================
+    function loadScript(url){
+      return new Promise(function(resolve){
+        var s = document.createElement("script");
+        s.src = url;
+        s.async = true;
+        s.onload = function(){ resolve(true); };
+        s.onerror = function(){ resolve(false); };
+        document.head.appendChild(s);
+      });
+    }
+    function loadCss(url){
+      return new Promise(function(resolve){
+        var l = document.createElement("link");
+        l.rel = "stylesheet";
+        l.href = url;
+        l.onload = function(){ resolve(true); };
+        l.onerror = function(){ resolve(false); };
+        document.head.appendChild(l);
+      });
+    }
+
+    async function ensureLibs(){
+      // PapaParse
+      if(!window.Papa){
+        await loadScript("papaparse.min.js");
+        if(!window.Papa){
+          await loadScript("https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js");
+        }
+      }
+      // Tabulator + CSS
+      if(!window.Tabulator){
+        await loadCss("tabulator.min.css"); // si existe local
+        await loadScript("tabulator.min.js");
+        if(!window.Tabulator){
+          await loadCss("https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.6.2/css/tabulator.min.css");
+          await loadScript("https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.6.2/js/tabulator.min.js");
+        }
+      }
+      // XLSX
+      if(!window.XLSX){
+        await loadScript("xlsx.full.min.js");
+        if(!window.XLSX){
+          await loadScript("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
+        }
+      }
+      // Chart.js (solo para gráficos; si no carga, degradamos)
+      if(!window.Chart){
+        await loadScript("https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js");
+      }
+      // Leaflet (solo para mapa; si no carga, ocultamos mapa)
+      if(!window.L){
+        await loadCss("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
+        await loadScript("https://unpkg.com/leaflet@1.9.4/dist/leaflet.js");
+      }
+      return true;
+    }
+
+    // =============================
+    // CSV: decodificación + delimitador
+    // =============================
+    function decodeSmartCsv(buffer){
+      try{
+        var u8 = new Uint8Array(buffer);
+        var utf8 = new TextDecoder("utf-8", {fatal:false}).decode(u8);
+        var win  = null;
+        try{ win = new TextDecoder("windows-1252", {fatal:false}).decode(u8); }catch(e){ win = null; }
+
+        function score(s){
+          if(!s) return 999999;
+          var bad = ["\uFFFD", "Ã", "Â", "â€™", "â€“", "â€œ", "â€"];
+          var c = 0;
+          for(var i=0;i<bad.length;i++){
+            var b = bad[i];
+            c += (s.split(b).length - 1);
+          }
           return c;
         }
-        return (score(decWin) < score(decUtf8)) ? decWin : decUtf8;
-      } catch (e) {
-        try { return new TextDecoder("utf-8").decode(new Uint8Array(buffer)); } catch(_) {}
+
+        if(win && score(win) < score(utf8)) return win;
+        return utf8;
+      }catch(e){
+        try{ return new TextDecoder("utf-8").decode(new Uint8Array(buffer)); }catch(_){}
         return "";
       }
     }
 
-    function detectarDelimitador(csvText) {
-      const firstLine = String(csvText || "").split(/?
-/)[0] || "";
-      const sc = (firstLine.match(/;/g) || []).length;
-      const cc = (firstLine.match(/,/g) || []).length;
-      if (sc === 0 && cc === 0) return "";
+    function detectarDelimitador(csvText){
+      var lines = String(csvText || "").split(/\r?\n/).slice(0,5).join("\n");
+      var sc = (lines.match(/;/g) || []).length;
+      var cc = (lines.match(/,/g) || []).length;
+      if(sc === 0 && cc === 0) return "";
       return (sc >= cc) ? ";" : ",";
     }
 
-    // --- Fechas (mismo enfoque que el módulo de datos: detectar MDY/DMY/YMD) ---
-    function detectarFormatoFecha(fechaRaw) {
-      if (!fechaRaw) return null;
-      const str = String(fechaRaw).trim();
-      const parteFecha = str.split(" ")[0];
-      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
-      if (!sep) return null;
-      const partes = parteFecha.split(sep);
-      if (partes.length < 3) return null;
+    async function fetchCsvFromCandidates(){
+      var tried = [];
+      for(var i=0;i<CSV_CANDIDATES.length;i++){
+        var url = CSV_CANDIDATES[i];
+        tried.push(url);
+        try{
+          var r = await fetch(url, {cache:"no-store"});
+          if(!r.ok) continue;
+          var buf = await r.arrayBuffer();
+          var txt = decodeSmartCsv(buf);
+          if(txt && txt.length > 20){
+            return {url:url, text:txt};
+          }
+        }catch(e){
+          // continuar probando
+        }
+      }
+      throw new Error("No se pudo cargar el CSV. Probé: " + tried.join(", "));
+    }
 
-      const p1 = parseInt(partes[0], 10);
-      const p2 = parseInt(partes[1], 10);
-      const p3 = parseInt(partes[2], 10);
-      if (![p1,p2,p3].every(n => Number.isFinite(n))) return null;
+    // =============================
+    // Normalización de encabezados / resolución de campos
+    // =============================
+    function norm(s){
+      // lower + quitar acentos + espacios extras
+      s = String(s || "").trim().toLowerCase();
+      try{
+        s = s.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+      }catch(e){}
+      s = s.replace(/\s+/g," ").replace(/[^\w\s]/g,"");
+      return s;
+    }
 
-      if (String(partes[0]).length === 4) return "YMD";
-      if (p1 > 12 && p2 <= 12) return "DMY";
-      if (p2 > 12 && p1 <= 12) return "MDY";
+    function resolveField(headers, spec){
+      // 1) exact
+      for(var i=0;i<spec.exact.length;i++){
+        var ex = spec.exact[i];
+        for(var j=0;j<headers.length;j++){
+          if(headers[j] === ex) return headers[j];
+        }
+      }
+      // 2) fuzzy por tokens
+      var headersNorm = headers.map(norm);
+      for(var h=0;h<headers.length;h++){
+        var hn = headersNorm[h];
+        var ok = true;
+        for(var t=0;t<spec.tokens.length;t++){
+          if(hn.indexOf(spec.tokens[t]) === -1){ ok = false; break; }
+        }
+        if(ok) return headers[h];
+      }
       return null;
     }
 
-    function prepararHintsFechas(data) {
-      const hints = data.map(reg => detectarFormatoFecha(reg[FIELD_FECHA]));
+    // =============================
+    // Fechas
+    // =============================
+    function detectarFormatoFecha(fechaRaw){
+      if(!fechaRaw) return null;
+      var str = String(fechaRaw).trim();
+      if(!str) return null;
+      var parteFecha = str.split(" ")[0];
+      var sep = parteFecha.indexOf("/") >= 0 ? "/" : (parteFecha.indexOf("-") >= 0 ? "-" : null);
+      if(!sep) return null;
 
-      let last = null;
-      for (let i = 0; i < hints.length; i++) {
-        if (!hints[i]) hints[i] = last;
-        else last = hints[i];
+      var partes = parteFecha.split(sep);
+      if(partes.length < 3) return null;
+
+      var p1s = String(partes[0] || "").trim();
+      var p2s = String(partes[1] || "").trim();
+      var p3s = String(partes[2] || "").trim();
+      var p1 = parseInt(p1s,10), p2 = parseInt(p2s,10), p3 = parseInt(p3s,10);
+      if(!(isFinite(p1)&&isFinite(p2)&&isFinite(p3))) return null;
+
+      if(p1s.length === 4) return "YMD";
+      if(p1 > 12 && p2 <= 12) return "DMY";
+      if(p2 > 12 && p1 <= 12) return "MDY";
+      return null;
+    }
+
+    function prepararHintsFechas(data){
+      var hints = [];
+      for(var i=0;i<data.length;i++){
+        var v = fields.fecha ? data[i][fields.fecha] : null;
+        hints.push(detectarFormatoFecha(v));
       }
 
-      let next = null;
-      for (let i = hints.length - 1; i >= 0; i--) {
-        if (!hints[i]) hints[i] = next;
+      var last = null;
+      for(i=0;i<hints.length;i++){
+        if(!hints[i]) hints[i] = last;
+        else last = hints[i];
+      }
+      var next = null;
+      for(i=hints.length-1;i>=0;i--){
+        if(!hints[i]) hints[i] = next;
         else next = hints[i];
       }
 
-      for (let i = 0; i < data.length; i++) {
+      for(i=0;i<data.length;i++){
         data[i]._dateHint = hints[i] || null;
       }
     }
 
-    function extraerFechaCompleta(fechaRaw, hint) {
-      if (!fechaRaw) return null;
-      const str = String(fechaRaw).trim();
-      if (!str) return null;
+    function parseFecha(fechaRaw, hint){
+      if(!fechaRaw) return null;
+      var str = String(fechaRaw).trim();
+      if(!str) return null;
 
-      const parteFecha = str.split(" ")[0];
-      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
-      if (!sep) return null;
+      var parteFecha = str.split(" ")[0];
+      var sep = parteFecha.indexOf("/") >= 0 ? "/" : (parteFecha.indexOf("-") >= 0 ? "-" : null);
+      if(!sep) return null;
 
-      const partes = parteFecha.split(sep);
-      if (partes.length < 3) return null;
+      var partes = parteFecha.split(sep);
+      if(partes.length < 3) return null;
 
-      const p1s = (partes[0] || "").trim();
-      const p2s = (partes[1] || "").trim();
-      const p3s = (partes[2] || "").trim();
+      var p1s = String(partes[0] || "").trim();
+      var p2s = String(partes[1] || "").trim();
+      var p3s = String(partes[2] || "").trim();
 
-      const p1 = parseInt(p1s, 10);
-      const p2 = parseInt(p2s, 10);
-      const p3 = parseInt(p3s, 10);
-      if (![p1,p2,p3].every(n => Number.isFinite(n))) return null;
+      var p1 = parseInt(p1s,10), p2 = parseInt(p2s,10), p3 = parseInt(p3s,10);
+      if(!(isFinite(p1)&&isFinite(p2)&&isFinite(p3))) return null;
 
-      let anio, mes, dia;
+      var anio, mes, dia;
 
-      if (hint === "YMD" || p1s.length === 4) {
+      if(hint === "YMD" || p1s.length === 4){
         anio = p1; mes = p2; dia = p3;
-      } else if (hint === "DMY") {
+      }else if(hint === "DMY"){
         dia = p1; mes = p2; anio = p3;
-      } else if (hint === "MDY") {
+      }else if(hint === "MDY"){
         mes = p1; dia = p2; anio = p3;
-      } else {
-        if (p1 > 12 && p2 <= 12) { dia = p1; mes = p2; anio = p3; }
+      }else{
+        if(p1 > 12 && p2 <= 12){ dia = p1; mes = p2; anio = p3; }
         else { mes = p1; dia = p2; anio = p3; }
       }
 
-      if (anio < 100) anio = anio + 2000;
+      if(anio < 100) anio = anio + 2000;
+      var dt = new Date(anio, mes-1, dia);
+      if(dt && dt.getFullYear() === anio && (dt.getMonth()+1) === mes && dt.getDate() === dia) return dt;
+      return null;
+    }
 
-      const dt = new Date(anio, mes - 1, dia);
-      if (dt && dt.getFullYear() === anio && (dt.getMonth() + 1) === mes && dt.getDate() === dia) {
-        return dt;
+    function monthKey(dt){
+      var y = dt.getFullYear();
+      var m = String(dt.getMonth()+1).padStart(2,"0");
+      return y + "-" + m;
+    }
+
+    function monthLabel(key){
+      // key "YYYY-MM"
+      var parts = String(key || "").split("-");
+      if(parts.length !== 2) return key;
+      var y = parts[0], m = parseInt(parts[1],10);
+      var meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+      return meses[(m-1+12)%12] + " " + y;
+    }
+
+    // =============================
+    // Coordenadas
+    // =============================
+    function detectCoordKeys(headers){
+      var n = headers.map(norm);
+      function findByIncludes(arr){
+        for(var i=0;i<n.length;i++){
+          for(var j=0;j<arr.length;j++){
+            if(n[i].indexOf(arr[j]) !== -1) return headers[i];
+          }
+        }
+        return null;
+      }
+      var lat = findByIncludes(["lat","latitude","y","coordy","coordenaday"]);
+      var lon = findByIncludes(["lon","lng","long","longitude","x","coordx","coordenadax"]);
+      return {latKey:lat, lonKey:lon};
+    }
+
+    function parseLatLonFromRow(r, coordKeys){
+      // 1) columnas dedicadas
+      var lat = null, lon = null;
+      if(coordKeys && coordKeys.latKey && coordKeys.lonKey){
+        var a = String(r[coordKeys.latKey] || "").replace(",",".").trim();
+        var b = String(r[coordKeys.lonKey] || "").replace(",",".").trim();
+        var la = parseFloat(a), lo = parseFloat(b);
+        if(isFinite(la) && isFinite(lo)){
+          // si parecen UTM (muy grandes), no mapear
+          if(Math.abs(la) <= 90 && Math.abs(lo) <= 180){
+            lat = la; lon = lo;
+          }
+        }
+      }
+      if(lat !== null && lon !== null) return {lat:lat, lon:lon};
+
+      // 2) desde campo de ubicación tipo "14.55,-91.12"
+      var uField = fields.ubic;
+      if(uField){
+        var u = String(r[uField] || "");
+        var m = u.match(/(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)/);
+        if(m){
+          var la2 = parseFloat(m[1]), lo2 = parseFloat(m[2]);
+          if(isFinite(la2) && isFinite(lo2) && Math.abs(la2)<=90 && Math.abs(lo2)<=180){
+            return {lat:la2, lon:lo2};
+          }
+        }
       }
       return null;
     }
 
-    function monthKey(dt) {
-      const y = dt.getFullYear();
-      const m = String(dt.getMonth() + 1).padStart(2, "0");
-      return y + "-" + m;
+    // =============================
+    // Filtros
+    // =============================
+    function getValue(row, field){
+      if(!field) return "";
+      var v = row[field];
+      if(v === undefined || v === null) return "";
+      return String(v).trim();
     }
 
-    function formatDate(dt) {
-      const y = dt.getFullYear();
-      const m = String(dt.getMonth() + 1).padStart(2, "0");
-      const d = String(dt.getDate()).padStart(2, "0");
-      return d + "/" + m + "/" + y;
-    }
-
-    function escapeHtml(texto) {
-      return String(texto || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-
-    // --- Utilidades de datos ---
-    function uniqueValues(data, field) {
-      const s = new Set();
-      for (const r of data) {
-        const v = (r[field] ?? "").toString().trim();
-        if (v) s.add(v);
+    function buildUniqueValues(data, field){
+      var s = {};
+      for(var i=0;i<data.length;i++){
+        var v = getValue(data[i], field);
+        if(v) s[v] = true;
       }
-      return Array.from(s).sort((a,b) => a.localeCompare(b, "es"));
+      return Object.keys(s).sort(function(a,b){ return a.localeCompare(b,"es",{sensitivity:"base"}); });
     }
 
-    function hasField(field) {
-      return rawData.length > 0 && Object.prototype.hasOwnProperty.call(rawData[0], field);
-    }
-
-    function fillSelect(selectEl, values, placeholder) {
-      if (!selectEl) return;
-      selectEl.innerHTML = "";
-      const opt0 = document.createElement("option");
+    function setSelectOptions(sel, values){
+      if(!sel) return;
+      var current = sel.value || "";
+      sel.innerHTML = "";
+      var opt0 = document.createElement("option");
       opt0.value = "";
-      opt0.textContent = placeholder || "Todos";
-      selectEl.appendChild(opt0);
-      for (const v of values) {
-        const opt = document.createElement("option");
-        opt.value = v;
-        opt.textContent = v;
-        selectEl.appendChild(opt);
+      opt0.textContent = "Todos";
+      sel.appendChild(opt0);
+
+      for(var i=0;i<values.length;i++){
+        var o = document.createElement("option");
+        o.value = values[i];
+        o.textContent = values[i];
+        sel.appendChild(o);
       }
+      // restaurar selección si todavía existe
+      sel.value = current;
+      if(sel.value !== current) sel.value = "";
     }
 
-    function showOrHide(wrapId, visible) {
-      const wrap = $(wrapId);
-      if (wrap) wrap.style.display = visible ? "" : "none";
+    function hideWrap(idWrap, hide){
+      var el = $(idWrap);
+      if(!el) return;
+      el.style.display = hide ? "none" : "";
     }
 
-    function getFieldValue(row, field) {
-      return (row[field] ?? "").toString().trim();
+    function readFilters(){
+      return {
+        anio: $("f-anio") ? $("f-anio").value : "",
+        mes: $("f-mes") ? $("f-mes").value : "",
+        region: $("f-region") ? $("f-region").value : "",
+        municipio: $("f-municipio") ? $("f-municipio").value : "",
+        area: $("f-area") ? $("f-area").value : "",
+        guarda: $("f-guarda") ? $("f-guarda").value : "",
+        tipo: $("f-tipo") ? $("f-tipo").value : "",
+        ilegal: $("f-ilegal") ? $("f-ilegal").value : "",
+        ubic: $("f-ubicacion") ? $("f-ubicacion").value : "",
+        buscar: $("f-buscar") ? $("f-buscar").value : ""
+      };
     }
 
-    function rowMatchesSearch(row, q) {
-      if (!q) return true;
-      const needle = q.toLowerCase();
-      for (const k in row) {
-        if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
-        const v = row[k];
-        if (v === null || v === undefined) continue;
-        if (String(v).toLowerCase().includes(needle)) return true;
+    function rowMatchesSearch(row, q, headers){
+      if(!q) return true;
+      q = String(q).toLowerCase();
+      for(var i=0;i<headers.length;i++){
+        var v = row[headers[i]];
+        if(v === undefined || v === null) continue;
+        if(String(v).toLowerCase().indexOf(q) !== -1) return true;
       }
       return false;
     }
 
-    function getLatLng(row) {
-      const keys = Object.keys(row || {});
+    function applyFilters(){
+      var f = readFilters();
+      var headers = rawData.length ? Object.keys(rawData[0]) : [];
 
-      function findKey(patterns) {
-        const low = keys.map(k => [k, k.toLowerCase()]);
-        for (const p of patterns) {
-          const pp = p.toLowerCase();
-          const hit = low.find(([orig, lk]) => lk === pp || lk.includes(pp));
-          if (hit) return hit[0];
+      filteredData = rawData.filter(function(r){
+        // filtros por selects (solo si el campo existe)
+        if(f.region && fields.region && getValue(r, fields.region) !== f.region) return false;
+        if(f.municipio && fields.municipio && getValue(r, fields.municipio) !== f.municipio) return false;
+        if(f.area && fields.area && getValue(r, fields.area) !== f.area) return false;
+        if(f.guarda && fields.guarda && getValue(r, fields.guarda) !== f.guarda) return false;
+        if(f.tipo && fields.tipo && getValue(r, fields.tipo) !== f.tipo) return false;
+        if(f.ilegal && fields.ilegal && getValue(r, fields.ilegal) !== f.ilegal) return false;
+        if(f.ubic && fields.ubic && getValue(r, fields.ubic) !== f.ubic) return false;
+
+        // año/mes se basan en _dt
+        if(f.anio){
+          if(!r._dt || String(r._dt.getFullYear()) !== f.anio) return false;
         }
-        return null;
-      }
-
-      const kLat = findKey(["lat", "latitude", "y", "coordenada_y"]);
-      const kLon = findKey(["lon", "lng", "long", "longitude", "x", "coordenada_x"]);
-
-      function toNum(x) {
-        if (x === null || x === undefined) return null;
-        const s = String(x).trim().replace(",", ".");
-        const n = parseFloat(s);
-        return Number.isFinite(n) ? n : null;
-      }
-
-      if (kLat && kLon) {
-        const lat = toNum(row[kLat]);
-        const lon = toNum(row[kLon]);
-        if (lat !== null && lon !== null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
-          return [lat, lon];
+        if(f.mes){
+          if(!r._dt || monthKey(r._dt) !== f.mes) return false;
         }
-      }
 
-      const u = getFieldValue(row, FIELD_UBIC);
-      if (u) {
-        const m = u.match(/(-?\d+(?:[\.,]\d+)?)\s*[, ]\s*(-?\d+(?:[\.,]\d+)?)/);
-        if (m) {
-          const a = toNum(m[1]);
-          const b = toNum(m[2]);
-          if (a !== null && b !== null) {
-            if (Math.abs(a) <= 90 && Math.abs(b) <= 180) return [a, b];
-            if (Math.abs(b) <= 90 && Math.abs(a) <= 180) return [b, a];
-          }
+        // interacción con gráficos
+        if(chartFilter.monthKey){
+          if(!r._dt || monthKey(r._dt) !== chartFilter.monthKey) return false;
         }
-      }
+        if(chartFilter.tipoValue){
+          if(fields.tipo && getValue(r, fields.tipo) !== chartFilter.tipoValue) return false;
+        }
 
-      return null;
-    }
+        // búsqueda libre
+        if(f.buscar && !rowMatchesSearch(r, f.buscar, headers)) return false;
 
-    function applyFilters() {
-      const anio = $("f-anio").value;
-      const mes = $("f-mes").value;
-      const region = $("f-region").value;
-      const municipio = $("f-municipio").value;
-      const area = $("f-area").value;
-      const guarda = $("f-guarda").value;
-      const tipo = $("f-tipo").value;
-      const ilegal = $("f-ilegal").value;
-      const ubic = $("f-ubicacion").value;
-      const buscar = $("f-buscar").value.trim();
-
-      filteredData = rawData.filter((r) => {
-        if (anio && String(r._anio) !== anio) return false;
-        if (mes && String(r._mes) !== mes) return false;
-
-        if (region && getFieldValue(r, FIELD_REGION) !== region) return false;
-        if (municipio && getFieldValue(r, FIELD_MUNICIPIO) !== municipio) return false;
-        if (area && getFieldValue(r, FIELD_AREA) !== area) return false;
-        if (guarda && getFieldValue(r, FIELD_GUARDA) !== guarda) return false;
-        if (tipo && getFieldValue(r, FIELD_TIPO) !== tipo) return false;
-        if (ilegal && getFieldValue(r, FIELD_ILEGAL) !== ilegal) return false;
-        if (ubic && getFieldValue(r, FIELD_UBIC) !== ubic) return false;
-
-        if (chartFilter.monthKey && r._monthKey !== chartFilter.monthKey) return false;
-        if (chartFilter.tipoValue && getFieldValue(r, FIELD_TIPO) !== chartFilter.tipoValue) return false;
-
-        if (!rowMatchesSearch(r, buscar)) return false;
         return true;
       });
 
-      renderChips();
-      updateKPIs();
-      updateCharts();
-      updateMap();
-      updateTable();
-      setEstado(`Mostrando ${filteredData.length.toLocaleString("es-GT")} de ${rawData.length.toLocaleString("es-GT")} registros. CSV: ${CSV_URL.replace("./","")}`);
+      updateUI();
     }
 
-    function renderChips() {
-      const chips = $("chips-filtros");
-      if (!chips) return;
-      chips.innerHTML = "";
+    function resetAll(){
+      if($("f-anio")) $("f-anio").value = "";
+      if($("f-mes")) $("f-mes").value = "";
+      if($("f-region")) $("f-region").value = "";
+      if($("f-municipio")) $("f-municipio").value = "";
+      if($("f-area")) $("f-area").value = "";
+      if($("f-guarda")) $("f-guarda").value = "";
+      if($("f-tipo")) $("f-tipo").value = "";
+      if($("f-ilegal")) $("f-ilegal").value = "";
+      if($("f-ubicacion")) $("f-ubicacion").value = "";
+      if($("f-buscar")) $("f-buscar").value = "";
+      chartFilter.monthKey = null;
+      chartFilter.tipoValue = null;
+      if($("btn-clear-chart")) $("btn-clear-chart").disabled = true;
+      applyFilters();
+      showToast("Filtros limpiados");
+    }
 
-      function addChip(label, value) {
-        const el = document.createElement("span");
-        el.className = "chip";
-        el.innerHTML = `<b>${label}:</b> ${value}`;
-        chips.appendChild(el);
+    // =============================
+    // KPIs + Chips
+    // =============================
+    function setKpi(id, val){
+      var el = $(id);
+      if(el) el.textContent = val;
+    }
+
+    function updateChips(){
+      var box = $("chips-filtros");
+      if(!box) return;
+      box.innerHTML = "";
+      var f = readFilters();
+      var chips = [];
+
+      function add(label, value){
+        if(value) chips.push({label:label, value:value});
       }
 
-      const mapping = [
-        ["Año", $("f-anio").value],
-        ["Mes", $("f-mes").value],
-        ["Región", $("f-region").value],
-        ["Municipio", $("f-municipio").value],
-        ["Área", $("f-area").value],
-        ["Guardarrecursos", $("f-guarda").value],
-        ["Tipo", $("f-tipo").value],
-        ["Ilegal", $("f-ilegal").value],
-        ["Ubicación", $("f-ubicacion").value]
-      ];
+      add("Año", f.anio);
+      add("Mes", f.mes ? monthLabel(f.mes) : "");
+      add("Región", f.region);
+      add("Municipio", f.municipio);
+      add("Área", f.area);
+      add("Guardarrecursos", f.guarda);
+      add("Tipo", f.tipo);
+      add("Ilegal", f.ilegal);
+      add("Ubicación", f.ubic);
+      add("Buscar", f.buscar);
 
-      for (const [lab, v] of mapping) {
-        if (v) addChip(lab, v);
+      if(chartFilter.monthKey) chips.push({label:"(Gráfico) Mes", value: monthLabel(chartFilter.monthKey)});
+      if(chartFilter.tipoValue) chips.push({label:"(Gráfico) Tipo", value: chartFilter.tipoValue});
+
+      if(!chips.length){
+        var empty = document.createElement("span");
+        empty.className = "chip";
+        empty.textContent = "Sin filtros";
+        box.appendChild(empty);
+        return;
       }
-      if (chartFilter.monthKey) addChip("Gráfico tiempo", chartFilter.monthKey);
-      if (chartFilter.tipoValue) addChip("Gráfico tipo", chartFilter.tipoValue);
 
-      const q = $("f-buscar").value.trim();
-      if (q) addChip("Buscar", q);
-
-      if (!chips.children.length) {
-        const el = document.createElement("span");
-        el.className = "chip";
-        el.textContent = "Sin filtros";
-        chips.appendChild(el);
+      for(var i=0;i<chips.length;i++){
+        var c = document.createElement("span");
+        c.className = "chip";
+        c.textContent = chips[i].label + ": " + chips[i].value;
+        box.appendChild(c);
       }
     }
 
-    function updateKPIs() {
-      $("kpi-registros").textContent = filteredData.length.toLocaleString("es-GT");
+    function updateKpis(){
+      setKpi("kpi-registros", filteredData.length);
+      setKpi("kpi-registros-s", rawData.length);
 
-      const fechas = filteredData.map(r => r._fechaObj).filter(Boolean).sort((a,b)=>a-b);
-      if (fechas.length) {
-        $("kpi-rango").textContent = formatDate(fechas[0]) + " – " + formatDate(fechas[fechas.length-1]);
-      } else {
-        $("kpi-rango").textContent = "–";
+      // rango de fechas
+      var dts = filteredData.map(function(r){ return r._dt; }).filter(function(d){ return d instanceof Date; });
+      dts.sort(function(a,b){ return a-b; });
+      if(dts.length){
+        var a = dts[0], b = dts[dts.length-1];
+        var fmt = function(d){
+          var dd = String(d.getDate()).padStart(2,"0");
+          var mm = String(d.getMonth()+1).padStart(2,"0");
+          var yy = d.getFullYear();
+          return dd + "/" + mm + "/" + yy;
+        };
+        setKpi("kpi-rango", fmt(a) + " – " + fmt(b));
+      }else{
+        setKpi("kpi-rango", "—");
       }
 
-      const regiones = hasField(FIELD_REGION) ? new Set(filteredData.map(r => getFieldValue(r, FIELD_REGION)).filter(Boolean)) : new Set();
-      const municipios = hasField(FIELD_MUNICIPIO) ? new Set(filteredData.map(r => getFieldValue(r, FIELD_MUNICIPIO)).filter(Boolean)) : new Set();
-      const areas = hasField(FIELD_AREA) ? new Set(filteredData.map(r => getFieldValue(r, FIELD_AREA)).filter(Boolean)) : new Set();
-
-      $("kpi-regiones").textContent = regiones.size ? regiones.size.toLocaleString("es-GT") : "–";
-      $("kpi-municipios").textContent = municipios.size ? municipios.size.toLocaleString("es-GT") : "–";
-      $("kpi-areas").textContent = areas.size ? areas.size.toLocaleString("es-GT") : "–";
-
-      let withCoords = 0;
-      for (const r of filteredData) {
-        if (getLatLng(r)) withCoords++;
+      // únicos
+      function uniqCount(field){
+        if(!field) return "—";
+        var s = {};
+        for(var i=0;i<filteredData.length;i++){
+          var v = getValue(filteredData[i], field);
+          if(v) s[v] = true;
+        }
+        return Object.keys(s).length;
       }
-      $("kpi-coords").textContent = withCoords.toLocaleString("es-GT");
+      setKpi("kpi-regiones", uniqCount(fields.region));
+      setKpi("kpi-municipios", uniqCount(fields.municipio));
+      setKpi("kpi-areas", uniqCount(fields.area));
+
+      // coords
+      var withCoord = 0;
+      for(i=0;i<filteredData.length;i++){
+        if(filteredData[i]._ll) withCoord++;
+      }
+      setKpi("kpi-coords", withCoord);
     }
 
-    function destroyChart(ch) {
-      try { if (ch) ch.destroy(); } catch(_) {}
+    // =============================
+    // Charts
+    // =============================
+    function destroyChart(ch){
+      try{ if(ch && ch.destroy) ch.destroy(); }catch(e){}
+      return null;
     }
 
-    function updateCharts() {
-      const byMonth = new Map();
-      for (const r of filteredData) {
-        if (!r._monthKey) continue;
-        byMonth.set(r._monthKey, (byMonth.get(r._monthKey) || 0) + 1);
+    function updateCharts(){
+      // si Chart.js no está, ocultar canvas (pero el tablero sigue funcionando)
+      var hasChart = !!window.Chart;
+      if(!hasChart){
+        if($("chart-tiempo")) $("chart-tiempo").style.display = "none";
+        if($("chart-tipo")) $("chart-tipo").style.display = "none";
+        if($("note-tiempo")) $("note-tiempo").textContent = "Gráficos deshabilitados (no cargó Chart.js).";
+        return;
+      }else{
+        if($("chart-tiempo")) $("chart-tiempo").style.display = "";
+        if($("chart-tipo")) $("chart-tipo").style.display = "";
       }
-      const months = Array.from(byMonth.keys()).sort();
-      const counts = months.map(m => byMonth.get(m));
 
-      destroyChart(chartTiempo);
-      const ctxT = document.getElementById("chart-tiempo");
-      if (ctxT) {
+      // serie temporal por mes
+      var series = {};
+      for(var i=0;i<filteredData.length;i++){
+        var r = filteredData[i];
+        if(!r._dt) continue;
+        var k = monthKey(r._dt);
+        series[k] = (series[k] || 0) + 1;
+      }
+      var keys = Object.keys(series).sort();
+      var labels = keys.map(monthLabel);
+      var vals = keys.map(function(k){ return series[k]; });
+
+      var ctxT = $("chart-tiempo") ? $("chart-tiempo").getContext("2d") : null;
+      chartTiempo = destroyChart(chartTiempo);
+      if(ctxT){
         chartTiempo = new Chart(ctxT, {
           type: "line",
-          data: {
-            labels: months,
-            datasets: [{
-              label: "Registros",
-              data: counts,
-              tension: 0.25,
-              pointRadius: 3,
-              pointHoverRadius: 5
-            }]
-          },
+          data: { labels: labels, datasets: [{ label: "Registros", data: vals, tension: 0.25, fill: false }] },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
-            onClick: (evt) => {
-              if (!months.length) return;
-              const points = chartTiempo.getElementsAtEventForMode(evt, "nearest", { intersect: true }, true);
-              if (!points || !points.length) return;
-              const idx = points[0].index;
-              const key = months[idx];
-              chartFilter.monthKey = (chartFilter.monthKey === key) ? null : key;
+            scales: { y: { beginAtZero: true } },
+            onClick: function(evt, elements){
+              if(!elements || !elements.length) return;
+              var idx = elements[0].index;
+              var monthK = keys[idx];
+              chartFilter.monthKey = monthK;
+              if($("btn-clear-chart")) $("btn-clear-chart").disabled = false;
               applyFilters();
-              showToast(chartFilter.monthKey ? ("Filtro por mes: " + chartFilter.monthKey) : "Filtro de mes quitado");
+              showToast("Filtro gráfico: " + monthLabel(monthK));
             }
           }
         });
       }
 
-      const byTipo = new Map();
-      if (hasField(FIELD_TIPO)) {
-        for (const r of filteredData) {
-          const v = getFieldValue(r, FIELD_TIPO) || "Sin dato";
-          byTipo.set(v, (byTipo.get(v) || 0) + 1);
+      // barras por tipo
+      var tipoCounts = {};
+      if(fields.tipo){
+        for(i=0;i<filteredData.length;i++){
+          var tv = getValue(filteredData[i], fields.tipo) || "Sin dato";
+          tipoCounts[tv] = (tipoCounts[tv] || 0) + 1;
         }
       }
-      const tipos = Array.from(byTipo.keys()).sort((a,b)=>byTipo.get(b)-byTipo.get(a));
-      const c2 = tipos.map(t => byTipo.get(t));
+      var tKeys = Object.keys(tipoCounts).sort(function(a,b){ return (tipoCounts[b]-tipoCounts[a]); }).slice(0, 25);
+      var tVals = tKeys.map(function(k){ return tipoCounts[k]; });
 
-      destroyChart(chartTipo);
-      const ctxB = document.getElementById("chart-tipo");
-      if (ctxB) {
+      var ctxB = $("chart-tipo") ? $("chart-tipo").getContext("2d") : null;
+      chartTipo = destroyChart(chartTipo);
+      if(ctxB){
         chartTipo = new Chart(ctxB, {
           type: "bar",
-          data: { labels: tipos, datasets: [{ label: "Registros", data: c2 }] },
+          data: { labels: tKeys, datasets: [{ label: "Registros", data: tVals }] },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            onClick: (evt) => {
-              if (!tipos.length) return;
-              const points = chartTipo.getElementsAtEventForMode(evt, "nearest", { intersect: true }, true);
-              if (!points || !points.length) return;
-              const idx = points[0].index;
-              const val = tipos[idx];
-              chartFilter.tipoValue = (chartFilter.tipoValue === val) ? null : val;
+            plugins: { legend: { display:false } },
+            scales: { y: { beginAtZero:true } },
+            onClick: function(evt, elements){
+              if(!elements || !elements.length) return;
+              var idx2 = elements[0].index;
+              var val = tKeys[idx2];
+              chartFilter.tipoValue = val === "Sin dato" ? "" : val;
+              if($("btn-clear-chart")) $("btn-clear-chart").disabled = false;
               applyFilters();
-              showToast(chartFilter.tipoValue ? ("Filtro por tipo: " + chartFilter.tipoValue) : "Filtro de tipo quitado");
+              showToast("Filtro gráfico: " + val);
             }
           }
         });
       }
-
-      const btnClear = $("btn-clear-chart");
-      if (btnClear) btnClear.disabled = (!chartFilter.monthKey && !chartFilter.tipoValue);
     }
 
-    function initMap() {
-      map = L.map("map", { zoomControl: true });
+    function clearChartFilters(){
+      chartFilter.monthKey = null;
+      chartFilter.tipoValue = null;
+      if($("btn-clear-chart")) $("btn-clear-chart").disabled = true;
+      applyFilters();
+      showToast("Filtro de gráficos quitado");
+    }
+
+    // =============================
+    // Mapa
+    // =============================
+    function ensureMap(){
+      if(!window.L){
+        // sin Leaflet
+        if($("map")) $("map").style.display = "none";
+        if($("map-note")) $("map-note").textContent = "Mapa deshabilitado (no cargó Leaflet).";
+        return false;
+      }
+      if(map) return true;
+
+      map = L.map("map", { scrollWheelZoom: false });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap"
       }).addTo(map);
 
       markersLayer = L.layerGroup().addTo(map);
-      map.setView([15.5, -90.25], 7);
+      map.setView([14.6, -90.5], 7); // Guatemala aprox.
+      return true;
     }
 
-    function updateMap() {
-      const mapWrap = document.querySelector('[aria-label="Mapa"]');
-      if (!mapWrap) return;
-
-      let pts = [];
-      for (const r of filteredData) {
-        const ll = getLatLng(r);
-        if (ll) pts.push({ ll, r });
+    function updateMap(){
+      var note = $("map-note");
+      if(!filteredData.length){
+        if(note) note.textContent = "Sin datos filtrados.";
       }
-
-      if (!pts.length) {
-        mapWrap.style.display = "none";
-        return;
-      }
-      mapWrap.style.display = "";
-
-      if (!map) initMap();
-      if (!markersLayer) return;
+      if(!ensureMap()) return;
 
       markersLayer.clearLayers();
-      for (const p of pts.slice(0, 3000)) {
-        const lat = p.ll[0], lon = p.ll[1];
-        const popup = `
-          <b>${escapeHtml(getFieldValue(p.r, FIELD_GUARDA) || "Patrullaje")}</b><br/>
-          <b>Fecha:</b> ${escapeHtml(p.r[FIELD_FECHA] || "")}<br/>
-          <b>Región:</b> ${escapeHtml(getFieldValue(p.r, FIELD_REGION))}<br/>
-          <b>Municipio:</b> ${escapeHtml(getFieldValue(p.r, FIELD_MUNICIPIO))}<br/>
-          <b>Tipo:</b> ${escapeHtml(getFieldValue(p.r, FIELD_TIPO))}<br/>
-          <b>Ubicación:</b> ${escapeHtml(getFieldValue(p.r, FIELD_UBIC))}
-        `;
-        const m = L.circleMarker([lat, lon], { radius: 5, weight: 1 }).bindPopup(popup);
-        markersLayer.addLayer(m);
+
+      // recolectar puntos
+      var pts = [];
+      for(var i=0;i<filteredData.length;i++){
+        var r = filteredData[i];
+        if(r._ll) pts.push(r);
       }
 
-      const bounds = L.latLngBounds(pts.map(p => p.ll));
-      try { map.fitBounds(bounds.pad(0.2)); } catch(_) {}
+      if(!pts.length){
+        if($("map")) $("map").style.display = "none";
+        if(note) note.textContent = "Sin coordenadas válidas (lat/lon) en el filtro actual.";
+        return;
+      }
 
-      const note = $("map-note");
-      if (note) note.textContent = `Mostrando ${pts.length.toLocaleString("es-GT")} puntos (máx. 3000 marcadores por rendimiento).`;
-    }
+      if($("map")) $("map").style.display = "";
+      if(note) note.textContent = "Mostrando " + Math.min(pts.length, 2500) + " puntos (máx. 2500).";
 
-    function updateTable() {
-      if (!tabla) return;
-      tabla.replaceData(filteredData);
-    }
+      var bounds = [];
+      for(i=0;i<pts.slice(0,2500).length;i++){
+        var rr = pts[i];
+        var lat = rr._ll[0], lon = rr._ll[1];
+        bounds.push([lat,lon]);
 
-    function initTable() {
-      const columns = Object.keys(rawData[0] || {}).filter(k => !k.startsWith("_")).map((field) => {
-        return {
-          title: field,
-          field: field,
-          headerFilter: "input",
-          headerFilterPlaceholder: "Filtrar…",
-          headerSort: true,
-          tooltip: true
+        var popup = "<b>" + escapeHtml(getValue(rr, fields.guarda) || "Patrullaje") + "</b><br/>" +
+          "<b>Fecha:</b> " + escapeHtml(getValue(rr, fields.fecha)) + "<br/>" +
+          "<b>Región:</b> " + escapeHtml(getValue(rr, fields.region)) + "<br/>" +
+          "<b>Municipio:</b> " + escapeHtml(getValue(rr, fields.municipio)) + "<br/>" +
+          "<b>Tipo:</b> " + escapeHtml(getValue(rr, fields.tipo)) + "<br/>";
+
+        L.circleMarker([lat,lon], { radius:5, weight:1, fillOpacity:0.75 })
+          .bindPopup(popup)
+          .addTo(markersLayer);
+      }
+
+      try{
+        var b = L.latLngBounds(bounds);
+        map.fitBounds(b, {padding:[20,20]});
+      }catch(e){}
+
+      // botones
+      var btnC = $("btn-centrar");
+      if(btnC){
+        btnC.onclick = function(){
+          try{
+            var b2 = L.latLngBounds(bounds);
+            map.fitBounds(b2, {padding:[20,20]});
+          }catch(e){}
         };
-      });
+      }
 
-      tabla = new Tabulator("#tabla", {
-        data: filteredData,
-        layout: "fitDataStretch",
-        pagination: "local",
-        paginationSize: 20,
-        paginationSizeSelector: [10, 20, 50, 100],
-        movableColumns: true,
-        columns: columns
-      });
+      var btnG = $("btn-geojson");
+      if(btnG){
+        btnG.onclick = function(){
+          var feats = pts.slice(0,2500).map(function(r){
+            return {
+              type:"Feature",
+              geometry:{ type:"Point", coordinates:[r._ll[1], r._ll[0]] },
+              properties:r
+            };
+          });
+          var geo = { type:"FeatureCollection", features:feats };
+          var blob = new Blob([JSON.stringify(geo)], {type:"application/geo+json"});
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "ac192_patrullajes_filtrado.geojson";
+          a.click();
+          URL.revokeObjectURL(a.href);
+        };
+      }
     }
 
-    function initEvents() {
-      const ids = ["f-anio","f-mes","f-region","f-municipio","f-area","f-guarda","f-tipo","f-ilegal","f-ubicacion"];
-      ids.forEach(id => { const el = $(id); if (el) el.addEventListener("change", applyFilters); });
+    // =============================
+    // Tabla
+    // =============================
+    function buildTable(){
+      var container = $("tabla");
+      if(!container) return;
 
-      $("f-buscar").addEventListener("input", () => {
-        clearTimeout(window.__tSearch);
-        window.__tSearch = setTimeout(applyFilters, 150);
-      });
-
-      $("btn-reset").addEventListener("click", () => {
-        chartFilter.monthKey = null;
-        chartFilter.tipoValue = null;
-        ids.forEach(id => { if ($(id)) $(id).value = ""; });
-        $("f-buscar").value = "";
-        applyFilters();
-        showToast("Filtros limpios");
-      });
-
-      $("btn-clear-chart").addEventListener("click", () => {
-        chartFilter.monthKey = null;
-        chartFilter.tipoValue = null;
-        applyFilters();
-        showToast("Filtro de gráficos limpio");
-      });
-
-      $("btn-csv").addEventListener("click", () => { if (tabla) tabla.download("csv", "ac192_patrullajes_filtrado.csv"); });
-      $("btn-xlsx").addEventListener("click", () => { if (tabla) tabla.download("xlsx", "ac192_patrullajes_filtrado.xlsx", { sheetName: "AC192" }); });
-
-      $("btn-centrar").addEventListener("click", () => {
-        if (!map || !markersLayer) return;
-        const layers = markersLayer.getLayers();
-        if (!layers.length) return;
-        const bounds = L.latLngBounds(layers.map(l => l.getLatLng()));
-        try { map.fitBounds(bounds.pad(0.2)); showToast("Mapa centrado"); } catch(_) {}
-      });
-
-      $("btn-geojson").addEventListener("click", () => {
-        const features = [];
-        for (const r of filteredData) {
-          const ll = getLatLng(r);
-          if (!ll) continue;
-          const props = {};
-          for (const k in r) {
-            if (!Object.prototype.hasOwnProperty.call(r, k)) continue;
-            if (k.startsWith("_")) continue;
-            props[k] = r[k];
-          }
-          features.push({
-            type: "Feature",
-            geometry: { type: "Point", coordinates: [ll[1], ll[0]] },
-            properties: props
+      // preferir Tabulator, si existe
+      if(window.Tabulator){
+        var cols = [];
+        if(filteredData.length){
+          var keys = Object.keys(filteredData[0]).filter(function(k){ return k.indexOf("_") !== 0; });
+          cols = keys.map(function(k){
+            return { title: k, field: k, headerFilter: "input", headerFilterPlaceholder: "Filtrar…" };
           });
         }
-        const fc = { type: "FeatureCollection", features };
-        const blob = new Blob([JSON.stringify(fc, null, 2)], { type: "application/geo+json;charset=utf-8" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "ac192_patrullajes_filtrado.geojson";
-        a.click();
-        URL.revokeObjectURL(a.href);
-        showToast("GeoJSON descargado");
-      });
 
-      $("btn-pdf").addEventListener("click", async () => {
-        try {
-          if (!window.html2pdf) {
-            alert("No se pudo cargar la librería de PDF (html2pdf). Revise su conexión o el enlace CDN.");
+        if(!tabla){
+          tabla = new Tabulator("#tabla", {
+            data: filteredData,
+            layout: "fitDataStretch",
+            height: 520,
+            pagination: "local",
+            paginationSize: 25,
+            movableColumns: true,
+            reactiveData: false,
+            columns: cols.length ? cols : undefined
+          });
+        }else{
+          try{
+            tabla.setColumns(cols.length ? cols : tabla.getColumns());
+          }catch(e){}
+          tabla.replaceData(filteredData);
+        }
+
+        // downloads
+        var bCsv = $("btn-csv");
+        if(bCsv){
+          bCsv.onclick = function(){
+            tabla.download("csv", "ac192_patrullajes_filtrado.csv");
+          };
+        }
+        var bXlsx = $("btn-xlsx");
+        if(bXlsx){
+          bXlsx.onclick = function(){
+            tabla.download("xlsx", "ac192_patrullajes_filtrado.xlsx", {sheetName:"AC192"});
+          };
+        }
+        return;
+      }
+
+      // fallback: tabla HTML simple
+      container.innerHTML = "";
+      var keys2 = filteredData.length ? Object.keys(filteredData[0]).filter(function(k){ return k.indexOf("_") !== 0; }) : [];
+      if(!keys2.length){
+        container.textContent = "No hay datos para mostrar.";
+        return;
+      }
+
+      var table = document.createElement("table");
+      table.style.width = "100%";
+      table.style.borderCollapse = "collapse";
+
+      var thead = document.createElement("thead");
+      var trh = document.createElement("tr");
+      for(var i=0;i<keys2.length;i++){
+        var th = document.createElement("th");
+        th.textContent = keys2[i];
+        th.style.textAlign = "left";
+        th.style.borderBottom = "2px solid #cbd5e1";
+        th.style.padding = "6px";
+        trh.appendChild(th);
+      }
+      thead.appendChild(trh);
+      table.appendChild(thead);
+
+      var tbody = document.createElement("tbody");
+      for(var r=0;r<Math.min(filteredData.length, 200);r++){
+        var tr = document.createElement("tr");
+        for(i=0;i<keys2.length;i++){
+          var td = document.createElement("td");
+          var vv = filteredData[r][keys2[i]];
+          if(vv === undefined || vv === null) vv = "";
+          td.textContent = String(vv);
+          td.style.borderBottom = "1px solid #e2e8f0";
+          td.style.padding = "6px";
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+      container.appendChild(table);
+
+      // downloads fallback
+      var bc = $("btn-csv");
+      if(bc){
+        bc.onclick = function(){
+          var csv = keys2.join(",") + "\n";
+          for(var rr=0;rr<filteredData.length;rr++){
+            var row = filteredData[rr];
+            var line = keys2.map(function(k){
+              var val = row[k];
+              if(val === undefined || val === null) val = "";
+              val = String(val).replace(/"/g,'""');
+              if(val.indexOf(",")>=0 || val.indexOf("\n")>=0) val = '"' + val + '"';
+              return val;
+            }).join(",");
+            csv += line + "\n";
+          }
+          var blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "ac192_patrullajes_filtrado.csv";
+          a.click();
+          URL.revokeObjectURL(a.href);
+        };
+      }
+      var bx = $("btn-xlsx");
+      if(bx){
+        bx.onclick = function(){
+          if(!window.XLSX){
+            alert("No se pudo exportar a Excel (no cargó XLSX).");
             return;
           }
+          var ws = XLSX.utils.json_to_sheet(filteredData.map(function(r0){
+            var o = {};
+            for(var i2=0;i2<keys2.length;i2++){
+              o[keys2[i2]] = r0[keys2[i2]];
+            }
+            return o;
+          }));
+          var wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "AC192");
+          XLSX.writeFile(wb, "ac192_patrullajes_filtrado.xlsx");
+        };
+      }
+    }
 
-          const tmp = document.createElement("div");
-          tmp.style.padding = "14px";
-          tmp.style.fontFamily = "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+    // =============================
+    // PDF liviano
+    // =============================
+    function generarPdfLiviano(){
+      // si no existe html2pdf, usar print
+      if(!window.html2pdf){
+        window.print();
+        return;
+      }
 
-          const h = document.createElement("h2");
-          h.textContent = "AC192 · Informe liviano de patrullajes (filtrado)";
-          h.style.margin = "0 0 6px";
-          tmp.appendChild(h);
+      var f = readFilters();
+      var resumen = "Registros: " + filteredData.length + " / " + rawData.length;
+      var chips = $("chips-filtros") ? $("chips-filtros").innerText : "";
 
-          const p = document.createElement("p");
-          p.textContent = `Registros: ${filteredData.length.toLocaleString("es-GT")} (de ${rawData.length.toLocaleString("es-GT")}).`;
-          p.style.margin = "0 0 10px";
-          tmp.appendChild(p);
+      var div = document.createElement("div");
+      div.style.fontFamily = "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+      div.style.padding = "10px 12px";
+      div.innerHTML =
+        "<h2 style='margin:0 0 6px 0'>AC192 · Patrullajes</h2>" +
+        "<div style='margin:0 0 10px 0; color:#334155'>" + escapeHtml(resumen) + "</div>" +
+        "<div style='margin:0 0 12px 0; color:#475569; font-size:12px'>" + escapeHtml(chips) + "</div>";
 
-          const chips = document.createElement("p");
-          chips.style.margin = "0 0 10px";
-          chips.textContent = "Filtros: " + Array.from(document.querySelectorAll("#chips-filtros .chip")).map(x => x.textContent).join(" · ");
-          tmp.appendChild(chips);
-
-          const ul = document.createElement("ul");
-          ul.style.margin = "0 0 10px 18px";
-          const items = [
-            ["Rango", $("kpi-rango").textContent],
-            ["Regiones", $("kpi-regiones").textContent],
-            ["Municipios", $("kpi-municipios").textContent],
-            ["Áreas", $("kpi-areas").textContent],
-            ["Con coordenadas", $("kpi-coords").textContent]
-          ];
-          for (const [k,v] of items) { const li = document.createElement("li"); li.textContent = `${k}: ${v}`; ul.appendChild(li); }
-          tmp.appendChild(ul);
-
-          if (chartTiempo) { const img = document.createElement("img"); img.src = chartTiempo.toBase64Image(); img.style.width = "100%"; img.style.marginBottom = "10px"; tmp.appendChild(img); }
-          if (chartTipo) { const img2 = document.createElement("img"); img2.src = chartTipo.toBase64Image(); img2.style.width = "100%"; img2.style.marginBottom = "10px"; tmp.appendChild(img2); }
-
-          const table = document.createElement("table");
-          table.style.width = "100%";
-          table.style.borderCollapse = "collapse";
-          table.style.fontSize = "10px";
-
-          const keys = Object.keys(rawData[0] || {}).filter(k => !k.startsWith("_")).slice(0, 8);
-          const thead = document.createElement("thead");
-          const trh = document.createElement("tr");
-          keys.forEach(k => { const th = document.createElement("th"); th.textContent = k; th.style.borderBottom = "1px solid #999"; th.style.textAlign = "left"; th.style.padding = "4px"; trh.appendChild(th); });
-          thead.appendChild(trh);
-          table.appendChild(thead);
-
-          const tbody = document.createElement("tbody");
-          filteredData.slice(0, 25).forEach(r => {
-            const tr = document.createElement("tr");
-            keys.forEach(k => { const td = document.createElement("td"); td.textContent = String(r[k] ?? ""); td.style.borderBottom = "1px solid #ddd"; td.style.padding = "4px"; tr.appendChild(td); });
-            tbody.appendChild(tr);
-          });
-          table.appendChild(tbody);
-          tmp.appendChild(table);
-
-          const filename = "ac192_informe_patrullajes_filtrado.pdf";
-
-          await html2pdf().set({
-            margin: 8,
-            filename,
-            image: { type: "jpeg", quality: 0.92 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-          }).from(tmp).save();
-
-          showToast("PDF generado");
-        } catch (e) {
-          console.error(e);
-          alert("No se pudo generar el PDF: " + e);
-        }
+      // incluir una tablita con primeras filas (liviano)
+      var keys = filteredData.length ? Object.keys(filteredData[0]).filter(function(k){ return k.indexOf("_") !== 0; }) : [];
+      var small = filteredData.slice(0, 40).map(function(r){ 
+        var o = {};
+        for(var i=0;i<Math.min(keys.length, 12);i++){ o[keys[i]] = r[keys[i]]; }
+        return o;
       });
+
+      if(window.XLSX){
+        // no necesario
+      }
+
+      var table = document.createElement("table");
+      table.style.width = "100%";
+      table.style.borderCollapse = "collapse";
+      table.style.fontSize = "10px";
+
+      var thead = document.createElement("thead");
+      var trh = document.createElement("tr");
+      for(var i=0;i<Math.min(keys.length, 12);i++){
+        var th = document.createElement("th");
+        th.textContent = keys[i];
+        th.style.textAlign = "left";
+        th.style.borderBottom = "2px solid #0f172a";
+        th.style.padding = "3px";
+        trh.appendChild(th);
+      }
+      thead.appendChild(trh);
+      table.appendChild(thead);
+
+      var tbody = document.createElement("tbody");
+      for(var r=0;r<small.length;r++){
+        var tr = document.createElement("tr");
+        for(i=0;i<Math.min(keys.length,12);i++){
+          var td = document.createElement("td");
+          var v = small[r][keys[i]];
+          if(v === undefined || v === null) v = "";
+          td.textContent = String(v);
+          td.style.borderBottom = "1px solid #cbd5e1";
+          td.style.padding = "3px";
+          tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+      div.appendChild(table);
+
+      var opt = {
+        margin: 8,
+        filename: "ac192_patrullajes_informe_liviano.pdf",
+        image: { type: "jpeg", quality: 0.92 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+      };
+      html2pdf().set(opt).from(div).save();
     }
 
-    function initFilters() {
-      showOrHide("wrap-region", hasField(FIELD_REGION));
-      showOrHide("wrap-municipio", hasField(FIELD_MUNICIPIO));
-      showOrHide("wrap-area", hasField(FIELD_AREA));
-      showOrHide("wrap-guarda", hasField(FIELD_GUARDA));
-      showOrHide("wrap-tipo", hasField(FIELD_TIPO));
-      showOrHide("wrap-ilegal", hasField(FIELD_ILEGAL));
-      showOrHide("wrap-ubicacion", hasField(FIELD_UBIC));
+    // =============================
+    // UI update global
+    // =============================
+    function updateUI(){
+      updateChips();
+      updateKpis();
+      updateCharts();
+      updateMap();
+      buildTable();
 
-      const years = Array.from(new Set(rawData.map(r => r._anio).filter(Boolean))).sort((a,b)=>a-b);
-      const months = ["01","02","03","04","05","06","07","08","09","10","11","12"];
-
-      fillSelect($("f-anio"), years.map(String), "Todos");
-      fillSelect($("f-mes"), months, "Todos");
-
-      if (hasField(FIELD_REGION)) fillSelect($("f-region"), uniqueValues(rawData, FIELD_REGION), "Todas");
-      if (hasField(FIELD_MUNICIPIO)) fillSelect($("f-municipio"), uniqueValues(rawData, FIELD_MUNICIPIO), "Todos");
-      if (hasField(FIELD_AREA)) fillSelect($("f-area"), uniqueValues(rawData, FIELD_AREA), "Todas");
-      if (hasField(FIELD_GUARDA)) fillSelect($("f-guarda"), uniqueValues(rawData, FIELD_GUARDA), "Todos");
-      if (hasField(FIELD_TIPO)) fillSelect($("f-tipo"), uniqueValues(rawData, FIELD_TIPO), "Todos");
-      if (hasField(FIELD_ILEGAL)) fillSelect($("f-ilegal"), uniqueValues(rawData, FIELD_ILEGAL), "Todas");
-      if (hasField(FIELD_UBIC)) fillSelect($("f-ubicacion"), uniqueValues(rawData, FIELD_UBIC).slice(0, 500), "Todas");
+      setEstado("Mostrando " + filteredData.length + " de " + rawData.length + " registros.");
     }
 
-    async function loadData() {
-      setEstado("Cargando datos…");
-      try {
-        const res = await fetch(CSV_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+    // =============================
+    // Inicialización
+    // =============================
+    function wireEvents(){
+      var ids = ["f-anio","f-mes","f-region","f-municipio","f-area","f-guarda","f-tipo","f-ilegal","f-ubicacion"];
+      for(var i=0;i<ids.length;i++){
+        var el = $(ids[i]);
+        if(el) el.addEventListener("change", applyFilters);
+      }
+      if($("f-buscar")) $("f-buscar").addEventListener("input", function(){ 
+        // debounce simple
+        clearTimeout(window.__ac192deb); 
+        window.__ac192deb = setTimeout(applyFilters, 120);
+      });
 
-        const buffer = await res.arrayBuffer();
-        const csvText = decodeSmartCsv(buffer);
+      if($("btn-reset")) $("btn-reset").addEventListener("click", resetAll);
+      if($("btn-pdf")) $("btn-pdf").addEventListener("click", generarPdfLiviano);
+      if($("btn-clear-chart")) $("btn-clear-chart").addEventListener("click", clearChartFilters);
+    }
 
-        const parsed = Papa.parse(csvText, {
+    async function loadData(){
+      try{
+        setEstado("Cargando librerías…");
+        await ensureLibs();
+
+        setEstado("Cargando datos…");
+        var res = await fetchCsvFromCandidates();
+        var csvText = res.text;
+
+        if(!window.Papa) throw new Error("No se pudo cargar PapaParse (CSV).");
+
+        var delim = detectarDelimitador(csvText);
+        var parsed = Papa.parse(csvText, {
           header: true,
           skipEmptyLines: true,
-          delimiter: detectarDelimitador(csvText),
-          transformHeader: (h) => String(h || "").trim()
+          delimiter: delim || undefined
         });
-
-        rawData = (parsed.data || []).filter(r => r && Object.keys(r).some(k => String(r[k] || "").trim() !== ""));
-        if (!rawData.length) {
-          setEstado("No se encontraron datos en datos_patrullaje.csv.");
-          return;
+        if(parsed.errors && parsed.errors.length){
+          // no abortar, pero mostrar primer error
+          console.warn(parsed.errors[0]);
+        }
+        rawData = parsed.data || [];
+        if(!rawData.length){
+          throw new Error("El CSV se cargó pero no hay filas. Revise delimitador/cabeceras.");
         }
 
+        // Resolver campos
+        var headers = Object.keys(rawData[0]);
+        fields.fecha = resolveField(headers, EXPECTED.fecha);
+        fields.region = resolveField(headers, EXPECTED.region);
+        fields.municipio = resolveField(headers, EXPECTED.municipio);
+        fields.area = resolveField(headers, EXPECTED.area);
+        fields.guarda = resolveField(headers, EXPECTED.guarda);
+        fields.tipo = resolveField(headers, EXPECTED.tipo);
+        fields.ilegal = resolveField(headers, EXPECTED.ilegal);
+        fields.ubic = resolveField(headers, EXPECTED.ubic);
+
+        // Ocultar filtros que no aplican
+        hideWrap("wrap-region", !fields.region);
+        hideWrap("wrap-municipio", !fields.municipio);
+        hideWrap("wrap-area", !fields.area);
+        hideWrap("wrap-guarda", !fields.guarda);
+        hideWrap("wrap-tipo", !fields.tipo);
+        hideWrap("wrap-ilegal", !fields.ilegal);
+        hideWrap("wrap-ubicacion", !fields.ubic);
+
+        // Fechas + coordenadas
         prepararHintsFechas(rawData);
-        for (const r of rawData) {
-          const dt = extraerFechaCompleta(r[FIELD_FECHA], r._dateHint);
-          r._fechaObj = dt;
-          r._anio = dt ? dt.getFullYear() : null;
-          r._mes = dt ? String(dt.getMonth()+1).padStart(2,"0") : null;
-          r._monthKey = dt ? monthKey(dt) : null;
+        var coordKeys = detectCoordKeys(headers);
+
+        for(var i=0;i<rawData.length;i++){
+          var r = rawData[i];
+
+          // fecha
+          var dt = null;
+          if(fields.fecha){
+            dt = parseFecha(r[fields.fecha], r._dateHint);
+          }
+          r._dt = dt;
+
+          // coords
+          var ll = parseLatLonFromRow(r, coordKeys);
+          r._ll = ll ? [ll.lat, ll.lon] : null;
         }
 
-        initFilters();
+        // Opciones de filtros (año/mes)
+        var years = {};
+        var months = {};
+        for(i=0;i<rawData.length;i++){
+          var d = rawData[i]._dt;
+          if(d){
+            years[String(d.getFullYear())] = true;
+            months[monthKey(d)] = true;
+          }
+        }
+        var yList = Object.keys(years).sort();
+        var mList = Object.keys(months).sort();
+
+        setSelectOptions($("f-anio"), yList);
+        setSelectOptions($("f-mes"), mList);
+
+        // selects por campos
+        if(fields.region) setSelectOptions($("f-region"), buildUniqueValues(rawData, fields.region));
+        if(fields.municipio) setSelectOptions($("f-municipio"), buildUniqueValues(rawData, fields.municipio));
+        if(fields.area) setSelectOptions($("f-area"), buildUniqueValues(rawData, fields.area));
+        if(fields.guarda) setSelectOptions($("f-guarda"), buildUniqueValues(rawData, fields.guarda));
+        if(fields.tipo) setSelectOptions($("f-tipo"), buildUniqueValues(rawData, fields.tipo));
+        if(fields.ilegal) setSelectOptions($("f-ilegal"), buildUniqueValues(rawData, fields.ilegal));
+        if(fields.ubic){
+          var vals = buildUniqueValues(rawData, fields.ubic);
+          // si es demasiado largo, ocultarlo (queda la búsqueda libre)
+          if(vals.length > 250){
+            hideWrap("wrap-ubicacion", true);
+          }else{
+            setSelectOptions($("f-ubicacion"), vals);
+          }
+        }
+
+        wireEvents();
+        if($("btn-clear-chart")) $("btn-clear-chart").disabled = true;
+
+        // primer render
         filteredData = rawData.slice();
-
-        initTable();
-        initEvents();
-        applyFilters();
-
+        updateUI();
         showToast("Datos cargados");
-      } catch (e) {
+      }catch(e){
         console.error(e);
-        setEstado("Error al cargar datos: " + e.message);
-        alert("Error al cargar datos_patrullaje.csv: " + e.message + "\n\nVerifique que el archivo exista en la misma carpeta del módulo.");
+        setEstado("Error: " + e.message);
+        alert("Error al cargar el tablero AC192: " + e.message + "\n\nSugerencia: verifique que datos_patrullaje.csv y las librerías (papaparse/tabulator/xlsx) estén en la misma carpeta, o que el navegador tenga acceso a CDNs.");
       }
     }
 
     document.addEventListener("DOMContentLoaded", loadData);
   })();
   </script>
+
 </body>
 </html>
