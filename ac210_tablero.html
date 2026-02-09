@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>AC210 - Tablero dinámico (CSV)</title>
+  <title>AC210 · Asistencia técnica a viveros - Tablero dinámico (CSV)</title>
 
-  <!-- Tabulator local (repo) -->
-  <link rel="stylesheet" href="tabulator.min.css">
-
-  <!-- Chart.js (CDN) -->
+  <!-- Dependencias (CDN) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- html2pdf (CDN) para PDF multipágina -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <style>
@@ -27,6 +26,7 @@
       --card-radius:14px;
     }
     *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
     body{
       margin:0;
       font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -39,7 +39,6 @@
       display:flex;
       flex-direction:column;
     }
-
     header{
       background: linear-gradient(90deg, var(--verde-header), var(--verde-header-2));
       color:#fff;
@@ -65,8 +64,8 @@
       box-shadow:0 2px 6px rgba(15,23,42,0.25);
     }
     .title-group{ text-align:right; flex:1 1 260px;}
-    .title-group h1{ margin:0 0 2px; font-size:22px;}
-    .title-group p{ margin:0; opacity:.95; font-size:13px; }
+    .title-group h1{ margin:0 0 2px; font-size:22px; letter-spacing:.02em;}
+    .title-group p{ margin:0; opacity:.95; font-size:13px; line-height:1.35;}
     .chip-version{
       margin-top:8px;
       display:inline-flex;
@@ -77,12 +76,13 @@
       background: rgba(255,255,255,0.14);
       border:1px solid rgba(255,255,255,0.18);
       font-size:12px;
-      font-weight:800;
+      font-weight:900;
+      letter-spacing:.02em;
+      text-transform:uppercase;
     }
     .chip-dot{ width:9px; height:9px; border-radius:999px; background:#34d399; box-shadow:0 0 0 3px rgba(52,211,153,0.25); }
 
     main{ max-width:1100px; margin:0 auto; width:100%; padding:18px 16px 34px; }
-
     .page-header{
       padding:16px 18px;
       border-radius: var(--card-radius);
@@ -97,7 +97,7 @@
       display:inline-flex; margin-top:10px;
       padding:6px 10px; border-radius:999px;
       background:#e0f2fe; border:1px solid #bae6fd;
-      color:#0f172a; font-size:12px; font-weight:800;
+      color:#0f172a; font-size:12px; font-weight:900;
     }
 
     .tabs{
@@ -131,9 +131,7 @@
       padding:16px;
       margin:14px 0;
     }
-    .card.soft{
-      background: rgba(255,255,255,0.68);
-    }
+    .card.soft{ background: rgba(255,255,255,0.68); }
     .subnote{ color:var(--texto-secundario); font-size:13px; margin:0 0 10px; }
 
     .filters{
@@ -142,10 +140,7 @@
       gap:10px;
       margin-top:10px;
     }
-    .field{
-      grid-column: span 3;
-      min-width: 200px;
-    }
+    .field{ grid-column: span 3; min-width: 200px; }
     .field.wide{ grid-column: span 4; }
     label{
       display:block;
@@ -154,8 +149,8 @@
       color:#0f172a;
       margin-bottom:4px;
     }
-    .hint{ font-weight:700; color:#64748b; font-size:11px; }
-    select, input[type="date"], input[type="search"]{
+    .hint{ font-weight:800; color:#64748b; font-size:11px; }
+    select, input[type="search"]{
       width:100%;
       padding:9px 10px;
       border-radius:10px;
@@ -192,7 +187,7 @@
       font-weight:900;
       font-size:13px;
       box-shadow:0 8px 18px rgba(15,23,42,0.10);
-      transition:transform .12s ease, filter .12s ease;
+      transition:transform .12s ease, filter .12s ease, background .12s ease;
     }
     .btn:hover{ transform: translateY(-1px); filter:brightness(0.97); }
     .btn.primary{ background: var(--azul-boton); color:#fff; }
@@ -218,6 +213,7 @@
       border:1px solid #e5e7eb;
       background: rgba(255,255,255,0.92);
       box-shadow:0 6px 16px rgba(15,23,42,0.06);
+      min-height: 98px;
     }
     .kpi .t{ font-size:12px; font-weight:900; color:#0f172a; }
     .kpi .v{ font-size:26px; font-weight:950; margin-top:6px; }
@@ -227,26 +223,60 @@
     .chartwrap{ height:340px; }
     canvas{ width:100% !important; height:100% !important; }
 
-    .tablewrap{ overflow-x:auto; }
-    .cardhead{
-      display:flex; flex-wrap:wrap;
-      align-items:center; justify-content:space-between;
+    .mapwrap{ height:260px; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb; }
+    #map{ height:260px; width:100%; }
+    .mapmeta{ color:var(--texto-secundario); font-size:12px; margin-top:8px; }
+
+    .tablewrap{ overflow:auto; border:1px solid #e5e7eb; border-radius:12px; background:#fff; }
+    table{ border-collapse:separate; border-spacing:0; width:100%; min-width: 980px; }
+    thead th{
+      position:sticky; top:0;
+      background:#f8fafc;
+      border-bottom:1px solid #e5e7eb;
+      font-size:12px;
+      text-align:left;
+      padding:10px 10px;
+      white-space:nowrap;
+      cursor:pointer;
+      user-select:none;
+    }
+    tbody td{
+      border-bottom:1px solid #eef2f7;
+      padding:9px 10px;
+      font-size:12px;
+      vertical-align:top;
+    }
+    tbody tr:hover{ background:#f8fafc; }
+    .muted{ color:var(--texto-secundario); }
+
+    .pager{
+      display:flex;
+      flex-wrap:wrap;
       gap:10px;
-      margin-bottom:10px;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:10px;
     }
-    .mini-actions{
-      display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
-    }
-    .mini-btn{
+    .pager .left, .pager .right{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .pager select{
+      width:auto;
       padding:7px 10px;
-      font-size:13px;
       border-radius:999px;
       border:1px solid #cbd5f5;
-      background: rgba(255,255,255,0.9);
+      background:#fff;
+      font-weight:900;
+      font-size:13px;
+    }
+    .pager button{
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid #cbd5f5;
+      background:rgba(255,255,255,0.9);
       cursor:pointer;
       font-weight:900;
+      font-size:13px;
     }
-    .mini-btn:hover{ background:#e5edff; border-color:#93c5fd; }
+    .pager button:hover{ background:#e5edff; border-color:#93c5fd; }
 
     footer{
       text-align:center;
@@ -272,10 +302,7 @@
       transition: opacity .2s ease, transform .2s ease;
       z-index:9999;
     }
-    .toast.show{
-      opacity:1;
-      transform:translateX(-50%) translateY(-4px);
-    }
+    .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
 
     @media (max-width: 980px){
       .field{ grid-column: span 12; min-width:unset; }
@@ -284,10 +311,8 @@
       .col-6{ grid-column: span 12; }
       .title-group{ text-align:center; }
       .header-inner{ justify-content:center; }
+      table{ min-width: 860px; }
     }
-
-    /* Área que capturamos para PDF */
-    #pdf-area{ }
   </style>
 </head>
 
@@ -313,12 +338,12 @@
   <main id="pdf-area">
     <section class="page-header">
       <h2>AC210 Asistencia técnica a viveros · Tablero dinámico</h2>
-      <p>Este tablero se genera automáticamente desde <strong>base2_datos.csv</strong> (del repo) y permite filtrar, graficar y exportar.</p>
+      <p>Filtra, visualiza y exporta los registros de asistencia técnica a viveros (AC210).</p>
       <span class="pill">Tablero dinámico · CSV</span>
     </section>
 
     <nav class="tabs" aria-label="Navegación del módulo">
-      <a class="tab" href="ac210_dashboard.html">🗺️ Experience Builder</a>
+      <a class="tab" href="ac210_dashboard.html">🗺️ Dashboard geográfico</a>
       <a class="tab active" href="ac210_tablero.html">📈 Tablero dinámico</a>
       <a class="tab" href="ac210_datos.html">📋 Tabla</a>
     </nav>
@@ -326,47 +351,16 @@
     <section class="card soft">
       <p class="subnote" id="estado">Cargando datos…</p>
 
+      <!-- Filtros (misma estructura que AC192, adaptada a AC210) -->
       <div class="filters">
-        <div class="field wide">
-          <label for="f-temporal">Filtro temporal</label>
-          <select id="f-temporal">
-            <option value="todo">Todo</option>
-            <option value="mes">Por mes</option>
-            <option value="semana">Por semana (ISO)</option>
-            <option value="rango">Rango de fechas</option>
-          </select>
+        <div class="field">
+          <label for="f-anio">Año</label>
+          <select id="f-anio"></select>
         </div>
 
-        <div class="field" id="wrap-mes" style="display:none;">
+        <div class="field">
           <label for="f-mes">Mes</label>
           <select id="f-mes"></select>
-        </div>
-
-        <div class="field" id="wrap-semana" style="display:none;">
-          <label for="f-semana">Semana</label>
-          <select id="f-semana"></select>
-        </div>
-
-        <div class="field" id="wrap-desde" style="display:none;">
-          <label for="f-desde">Desde</label>
-          <input id="f-desde" type="date" />
-        </div>
-
-        <div class="field" id="wrap-hasta" style="display:none;">
-          <label for="f-hasta">Hasta</label>
-          <input id="f-hasta" type="date" />
-        </div>
-
-        <div class="field">
-          <label for="f-guarda">Guarda recurso <span class="hint">(buscable)</span></label>
-          <input id="s-guarda" class="small" type="search" placeholder="Buscar guarda…" autocomplete="off">
-          <select id="f-guarda"></select>
-        </div>
-
-        <div class="field">
-          <label for="f-muni">Municipio <span class="hint">(buscable)</span></label>
-          <input id="s-muni" class="small" type="search" placeholder="Buscar municipio…" autocomplete="off">
-          <select id="f-muni"></select>
         </div>
 
         <div class="field">
@@ -376,9 +370,26 @@
         </div>
 
         <div class="field">
+          <label for="f-muni">Municipio <span class="hint">(buscable)</span></label>
+          <input id="s-muni" class="small" type="search" placeholder="Buscar municipio…" autocomplete="off">
+          <select id="f-muni"></select>
+        </div>
+
+        <div class="field">
           <label for="f-area">Área protegida <span class="hint">(buscable)</span></label>
           <input id="s-area" class="small" type="search" placeholder="Buscar área…" autocomplete="off">
           <select id="f-area"></select>
+        </div>
+
+        <div class="field">
+          <label for="f-guarda">Guarda recurso <span class="hint">(buscable)</span></label>
+          <input id="s-guarda" class="small" type="search" placeholder="Buscar guarda…" autocomplete="off">
+          <select id="f-guarda"></select>
+        </div>
+
+        <div class="field">
+          <label for="f-actividad">Actividad</label>
+          <select id="f-actividad"></select>
         </div>
 
         <div class="field">
@@ -391,25 +402,17 @@
           </select>
         </div>
 
-        <div class="field">
-          <label for="f-actividad">Actividad (código) <span class="hint">(desde “Actividades realizadas”)</span></label>
-          <select id="f-actividad"></select>
-        </div>
-
-        <div class="field">
-          <label for="f-agrupar">Agrupar gráficos / pivote por</label>
-          <select id="f-agrupar">
-            <option value="mes">Mes</option>
-            <option value="semana">Semana</option>
-            <option value="dia">Día</option>
-          </select>
+        <div class="field wide">
+          <label for="f-texto">Buscar en todo</label>
+          <input id="f-texto" type="search" placeholder="Buscar (vivero, observaciones, etc.)…" autocomplete="off">
         </div>
       </div>
 
       <div class="actions-row">
         <div class="btns">
           <button class="btn ghost" id="btn-reset" type="button">♻️ Limpiar filtros</button>
-          <button class="btn ghost" id="btn-copy" type="button">🔗 Copiar enlace con filtros</button>
+          <button class="btn ghost" id="btn-dl-csv" type="button">⬇️ CSV</button>
+          <button class="btn ghost" id="btn-dl-xlsx" type="button">⬇️ Excel</button>
           <button class="btn primary" id="btn-pdf" type="button">🧾 PDF del tablero</button>
         </div>
         <div class="subnote" id="meta" style="margin:0;"></div>
@@ -442,907 +445,1018 @@
           <div class="s">Jornada (si hay horas)</div>
         </div>
         <div class="kpi">
-          <div class="t">Coord. válidas</div>
+          <div class="t">Coord. Guatemala</div>
           <div class="v" id="k-coord">—</div>
-          <div class="s">% con X/Y</div>
+          <div class="s">% dentro del país</div>
         </div>
 
         <section class="card col-6">
-          <div class="cardhead">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
             <div>
-              <h3 style="margin:0 0 6px;">Registros por periodo</h3>
-              <p class="subnote" style="margin:0;">Conteo según agrupación (mes/semana/día). Click en barra para filtrar.</p>
+              <h3 style="margin:0 0 6px;">Registros por mes</h3>
+              <p class="subnote" style="margin:0;">Conteo mensual (según filtros). Click para filtrar por mes.</p>
             </div>
-            <div class="mini-actions">
-              <button class="mini-btn" id="png-tiempo" type="button">PNG</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn ghost" id="png-tiempo" type="button">PNG</button>
             </div>
           </div>
           <div class="chartwrap"><canvas id="c-tiempo"></canvas></div>
         </section>
 
         <section class="card col-6">
-          <div class="cardhead">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+            <div>
+              <h3 style="margin:0 0 6px;">Actividades (Top 10)</h3>
+              <p class="subnote" style="margin:0;">Cada registro puede incluir varias actividades.</p>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn ghost" id="png-act" type="button">PNG</button>
+            </div>
+          </div>
+          <div class="chartwrap"><canvas id="c-act"></canvas></div>
+        </section>
+
+        <section class="card col-6">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
             <div>
               <h3 style="margin:0 0 6px;">Top municipios</h3>
-              <p class="subnote" style="margin:0;">Top 10 por registros (filtro actual). Click en barra para filtrar.</p>
+              <p class="subnote" style="margin:0;">Top 10 por registros. Click para filtrar.</p>
             </div>
-            <div class="mini-actions">
-              <button class="mini-btn" id="png-muni" type="button">PNG</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn ghost" id="png-muni" type="button">PNG</button>
             </div>
           </div>
           <div class="chartwrap"><canvas id="c-muni"></canvas></div>
         </section>
 
         <section class="card col-6">
-          <div class="cardhead">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
             <div>
               <h3 style="margin:0 0 6px;">Top guardarecursos</h3>
-              <p class="subnote" style="margin:0;">Top 10 por registros (filtro actual). Click en barra para filtrar.</p>
+              <p class="subnote" style="margin:0;">Top 10 por registros. Click para filtrar.</p>
             </div>
-            <div class="mini-actions">
-              <button class="mini-btn" id="png-guarda" type="button">PNG</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn ghost" id="png-guarda" type="button">PNG</button>
             </div>
           </div>
           <div class="chartwrap"><canvas id="c-guarda"></canvas></div>
         </section>
-      </div>
-    </section>
 
-    <section class="card">
-      <div class="cardhead">
-        <div>
-          <h3 style="margin:0 0 6px;">Tabla pivote (Guarda × Periodo)</h3>
-          <p class="subnote" style="margin:0;">Filas: guarda · Columnas: periodo (día/semana/mes) · Valores: conteo.</p>
-        </div>
-        <div class="mini-actions">
-          <button class="mini-btn" id="piv-csv" type="button">CSV</button>
-          <button class="mini-btn" id="piv-xlsx" type="button">Excel</button>
-        </div>
-      </div>
-      <div class="tablewrap">
-        <div id="tabla-pivote"></div>
-      </div>
-    </section>
+        <section class="card" style="grid-column: span 12;">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+            <div>
+              <h3 style="margin:0 0 6px;">Mapa (solo puntos dentro de Guatemala)</h3>
+              <p class="subnote" style="margin:0;">Se excluyen coordenadas 0/0 y puntos fuera del país.</p>
+            </div>
+          </div>
+          <div class="mapwrap"><div id="map"></div></div>
+          <div class="mapmeta" id="mapmeta">—</div>
+        </section>
 
-    <section class="card">
-      <div class="cardhead">
-        <div>
-          <h3 style="margin:0 0 6px;">Registros filtrados</h3>
-          <p class="subnote" style="margin:0;">Tabla completa filtrada (puedes exportar lo filtrado).</p>
-        </div>
-        <div class="mini-actions">
-          <button class="mini-btn" id="btn-dl-csv" type="button">CSV</button>
-          <button class="mini-btn" id="btn-dl-xlsx" type="button">Excel</button>
-          <button class="mini-btn" id="btn-dl-json" type="button">JSON</button>
-        </div>
-      </div>
-      <div class="tablewrap" style="margin-top:12px;">
-        <div id="tabla-registros"></div>
+        <section class="card" style="grid-column: span 12;">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+            <div>
+              <h3 style="margin:0 0 6px;">Registros filtrados</h3>
+              <p class="subnote" style="margin:0;">Tabla simple. Click en encabezado para ordenar.</p>
+            </div>
+          </div>
+
+          <div class="tablewrap">
+            <table id="t-data">
+              <thead><tr id="t-head"></tr></thead>
+              <tbody id="t-body"></tbody>
+            </table>
+          </div>
+
+          <div class="pager">
+            <div class="left">
+              <span class="muted" id="t-info">—</span>
+            </div>
+            <div class="right">
+              <label class="muted" for="t-size">Filas:</label>
+              <select id="t-size">
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <button id="t-prev" type="button">◀</button>
+              <span class="muted" id="t-page">—</span>
+              <button id="t-next" type="button">▶</button>
+            </div>
+          </div>
+        </section>
       </div>
     </section>
   </main>
 
   <footer>
-    <p>© 2025 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
+    <p>© 2026 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
   </footer>
 
   <div class="toast" id="toast">Listo</div>
 
-  <!-- Librerías locales (repo) -->
-  <script src="papaparse.min.js"></script>
-  <script src="tabulator.min.js"></script>
-  <script src="xlsx.full.min.js"></script>
-
   <script>
-    // ===== CSV config =====
-    const CSV_URL = "./base2_datos.csv";
-    const DELIM = ";";
+  // =========================
+  // Config AC210
+  // =========================
+  const CSV_CANDIDATES = [
+    "./base2_datos.csv",
+    "base2_datos.csv",
+    "./data/base2_datos.csv",
+  ];
 
-    // Campos esperados (AC210)
-    const F = {
-      fecha: "CreationDate",
-      guarda: "Nombre del guarda recurso",
-      municipio: "Municipio",
-      region: "Region",
-      area: "Area protegida",
-      apoyo: "Esta en apoyo a un vivero fuera de su municipio",
-      municipioApoyo: "Especifique el municipio o lugar de apoyo",
-      areaFuera: "Especifique area (Fuera de RUMCLA)",
-      vivero: "Nombre del area y/o lugar del vivero establecido (Barrio, Caserio, Canton, Aldea, etc.)",
-      act: "Actividades realizadas",
-      otraAct: "Especifique otra actividad",
-      hIni: "Hora de inicio de actividades",
-      hFin: "Hora de finalizacion de actividades",
-      x: "X",
-      y: "Y",
-    };
+  const F = {
+    fecha: "CreationDate",
+    guarda: "Nombre del guarda recurso",
+    municipio: "Municipio",
+    region: "Region",
+    area: "Area protegida",
+    apoyo: "Esta en apoyo a un vivero fuera de su municipio",
+    act: "Actividades realizadas",
+    vivero: "Nombre del area y/o lugar del vivero establecido (Barrio, Caserio, Canton, Aldea, etc.)",
+    obs: "Observaciones",
+    hIni: "Hora de inicio de actividades",
+    hFin: "Hora de finalizacion de actividades",
+    x: "X", // lon
+    y: "Y", // lat
+  };
 
-    let DATA = [];
-    let chartTiempo = null, chartMuni = null, chartGuarda = null;
-    let tPivote = null, tRegistros = null;
+  const GUATEMALA_BBOX = { // filtro estricto para NO dibujar fuera del país
+    minLon: -92.55,
+    maxLon: -88.00,
+    minLat:  13.45,
+    maxLat:  18.55,
+  };
 
-    // ===== DOM =====
-    const $ = (id) => document.getElementById(id);
+  // =========================
+  // DOM helpers
+  // =========================
+  const $ = (id) => document.getElementById(id);
+  const estado = $("estado");
+  const meta = $("meta");
+  const toast = $("toast");
 
-    const estado = $("estado");
-    const meta = $("meta");
+  const fAnio = $("f-anio");
+  const fMes = $("f-mes");
+  const fRegion = $("f-region");
+  const fMuni = $("f-muni");
+  const fArea = $("f-area");
+  const fGuarda = $("f-guarda");
+  const fActividad = $("f-actividad");
+  const fApoyo = $("f-apoyo");
+  const fTexto = $("f-texto");
 
-    const fTemporal = $("f-temporal");
-    const wrapMes = $("wrap-mes");
-    const wrapSemana = $("wrap-semana");
-    const wrapDesde = $("wrap-desde");
-    const wrapHasta = $("wrap-hasta");
+  const sRegion = $("s-region");
+  const sMuni = $("s-muni");
+  const sArea = $("s-area");
+  const sGuarda = $("s-guarda");
 
-    const fMes = $("f-mes");
-    const fSemana = $("f-semana");
-    const fDesde = $("f-desde");
-    const fHasta = $("f-hasta");
+  const kTotal = $("k-total");
+  const kTotalS = $("k-total-s");
+  const kMunis = $("k-munis");
+  const kGuardas = $("k-guardas");
+  const kApoyo = $("k-apoyo");
+  const kHoras = $("k-horas");
+  const kCoord = $("k-coord");
 
-    const fGuarda = $("f-guarda");
-    const fMuni = $("f-muni");
-    const fRegion = $("f-region");
-    const fArea = $("f-area");
-    const fApoyo = $("f-apoyo");
-    const fActividad = $("f-actividad");
-    const fAgrupar = $("f-agrupar");
+  const mapmeta = $("mapmeta");
 
-    // buscadores
-    const sGuarda = $("s-guarda");
-    const sMuni = $("s-muni");
-    const sRegion = $("s-region");
-    const sArea = $("s-area");
+  const tHead = $("t-head");
+  const tBody = $("t-body");
+  const tInfo = $("t-info");
+  const tSize = $("t-size");
+  const tPrev = $("t-prev");
+  const tNext = $("t-next");
+  const tPage = $("t-page");
 
-    // KPIs
-    const kTotal = $("k-total");
-    const kTotalS = $("k-total-s");
-    const kMunis = $("k-munis");
-    const kGuardas = $("k-guardas");
-    const kApoyo = $("k-apoyo");
-    const kHoras = $("k-horas");
-    const kCoord = $("k-coord");
+  let toastTimer = null;
+  function showToast(msg){
+    toast.textContent = msg || "Listo";
+    toast.classList.add("show");
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toast.classList.remove("show"), 1600);
+  }
 
-    // Toast
-    const toast = $("toast");
-    let toastTimer = null;
+  // =========================
+  // Utilidades
+  // =========================
+  function norm(v){
+    if(v === undefined || v === null) return "";
+    return String(v).replace(/\u00A0/g," ").trim().replace(/\s+/g," ");
+  }
+  function canonKey(v){
+    return norm(v).toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/\s+/g," ")
+      .trim();
+  }
+  function isFiniteNum(x){ const n = Number(x); return Number.isFinite(n); }
 
-    function showToast(msg){
-      toast.textContent = msg || "Listo";
-      toast.classList.add("show");
-      if(toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(()=> toast.classList.remove("show"), 1600);
+  function spanishMonthName(m){
+    const n = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    return n[m-1] || "";
+  }
+  function monthLabel(yyyyMM){
+    const [y,m] = yyyyMM.split("-").map(Number);
+    const nm = spanishMonthName(m);
+    return (nm ? nm.charAt(0).toUpperCase()+nm.slice(1) : "Mes") + " " + y;
+  }
+
+  function tryDecode(arrayBuffer){
+    const tries = ["utf-8","iso-8859-1","windows-1252"];
+    for(const enc of tries){
+      try{
+        const td = new TextDecoder(enc, {fatal:false});
+        const txt = td.decode(arrayBuffer);
+        // heuristic: if we get many replacement chars, try next
+        const bad = (txt.match(/\uFFFD/g)||[]).length;
+        if(bad <= 2) return txt;
+      }catch(e){}
+    }
+    return new TextDecoder("utf-8", {fatal:false}).decode(arrayBuffer);
+  }
+
+  function detectDelimiter(sampleText){
+    const lines = sampleText.split(/\r?\n/).slice(0,5).join("\n");
+    const semi = (lines.match(/;/g)||[]).length;
+    const comma = (lines.match(/,/g)||[]).length;
+    const tab = (lines.match(/\t/g)||[]).length;
+    if(tab > semi && tab > comma) return "\t";
+    if(semi >= comma) return ";";
+    return ",";
+  }
+
+  function detectDateOrder(values){
+    // devuelve "mdy" o "dmy" por inspección
+    let mdy=0, dmy=0;
+    const re = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/;
+    for(const s0 of values){
+      const s = norm(s0);
+      const m = s.match(re);
+      if(!m) continue;
+      const a = Number(m[1]), b = Number(m[2]);
+      if(a > 12 && b <= 12) dmy++;
+      if(b > 12 && a <= 12) mdy++;
+    }
+    // si nadie gana, por defecto US (mdy)
+    return (dmy > mdy) ? "dmy" : "mdy";
+  }
+
+  function parseDateSmart(raw, order){
+    const s = norm(raw);
+    if(!s) return null;
+
+    // time-only tipo "07:09.1" -> sin fecha
+    if(/^\d{1,2}:\d{2}(?:\.\d+)?$/.test(s)) return null;
+
+    // ISO yyyy-mm-dd...
+    let iso = s;
+    if(iso.includes("T")) iso = iso.split("T")[0];
+    if(iso.includes(" ")) iso = iso.split(" ")[0];
+    let m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(m){
+      const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+      const dt = new Date(y, mo-1, d);
+      if(Number.isFinite(dt.getTime())) return dt;
     }
 
-    // ===== Helpers =====
-    function pad2(n){ return String(n).padStart(2,"0"); }
-
-    function norm(v){
-      if(v === undefined || v === null) return "";
-      return String(v).trim();
-    }
-    function normKey(v){
-      return norm(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    }
-    function isNum(v){
-      const n = Number(v);
-      return isFinite(n);
+    // slash dates
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(m){
+      const p1 = Number(m[1]), p2 = Number(m[2]), y = Number(m[3]);
+      let mo, d;
+      if(order === "dmy"){ d=p1; mo=p2; } else { mo=p1; d=p2; }
+      const dt = new Date(y, mo-1, d);
+      if(Number.isFinite(dt.getTime())) return dt;
     }
 
-    function parseHora(h){
-      // soporta "HH:MM" o "HH:MM:SS"
-      const s = norm(h);
-      if(!s) return null;
-      const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-      if(!m) return null;
-      const hh = Number(m[1]);
-      const mm = Number(m[2]);
-      if(!isFinite(hh) || !isFinite(mm)) return null;
-      return hh*60 + mm;
+    // fallback
+    const dt2 = new Date(s);
+    if(Number.isFinite(dt2.getTime())) return dt2;
+    return null;
+  }
+
+  function parseHoraMin(raw){
+    const s = norm(raw);
+    if(!s) return null;
+    const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if(!m) return null;
+    const hh = Number(m[1]), mm = Number(m[2]);
+    if(!Number.isFinite(hh) || !Number.isFinite(mm)) return null;
+    return hh*60 + mm;
+  }
+
+  function duracionHoras(hIni, hFin){
+    const a = parseHoraMin(hIni);
+    const b = parseHoraMin(hFin);
+    if(a===null || b===null) return null;
+    let diff = b - a;
+    if(diff < 0) diff += 24*60; // por si cruza medianoche
+    return diff/60;
+  }
+
+  function inGuatemala(lon, lat){
+    return lon >= GUATEMALA_BBOX.minLon && lon <= GUATEMALA_BBOX.maxLon &&
+           lat >= GUATEMALA_BBOX.minLat && lat <= GUATEMALA_BBOX.maxLat;
+  }
+
+  // build canonical display labels (para eliminar duplicados por acentos/mayúsculas)
+  function buildDisplayMap(rows, field){
+    const counts = new Map(); // canon -> {total, variants: Map(label->count)}
+    for(const r of rows){
+      const label = norm(r[field]);
+      if(!label) continue;
+      const key = canonKey(label);
+      if(!counts.has(key)) counts.set(key, {total:0, variants:new Map()});
+      const obj = counts.get(key);
+      obj.total++;
+      obj.variants.set(label, (obj.variants.get(label)||0)+1);
     }
-
-    function extraerFechaCompleta(valor){
-      // Devuelve {date, anio, mes, dia} o null
-      const s = norm(valor);
-      if(!s) return null;
-
-      // Caso YYYY-MM-DD (posiblemente con hora: "YYYY-MM-DD HH:MM:SS" o "YYYY-MM-DDTHH:MM:SS")
-      let iso = s;
-      if(iso.includes("T")) iso = iso.split("T")[0];
-      if(iso.includes(" ")) iso = iso.split(" ")[0];
-
-      let m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if(m){
-        const anio = Number(m[1]), mes = Number(m[2]), dia = Number(m[3]);
-        const d = new Date(anio, mes-1, dia);
-        if(isFinite(d.getTime())) return { date:d, anio, mes, dia };
+    const display = new Map();
+    for(const [k,obj] of counts.entries()){
+      let best = "";
+      let bestCount = -1;
+      for(const [lab,c] of obj.variants.entries()){
+        if(c > bestCount){
+          best = lab; bestCount = c;
+        }
       }
+      display.set(k, best || k);
+    }
+    return display;
+  }
 
-      // Caso DD/MM/YYYY
-      m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-      if(m){
-        const dia = Number(m[1]), mes = Number(m[2]), anio = Number(m[3]);
-        const d = new Date(anio, mes-1, dia);
-        if(isFinite(d.getTime())) return { date:d, anio, mes, dia };
+  function fillSelect(selectEl, options, placeholder="(Todos)"){
+    selectEl.innerHTML = "";
+    const op0 = document.createElement("option");
+    op0.value = "";
+    op0.textContent = placeholder;
+    selectEl.appendChild(op0);
+    for(const {value,label} of options){
+      const op = document.createElement("option");
+      op.value = value;
+      op.textContent = label;
+      selectEl.appendChild(op);
+    }
+  }
+
+  function wireSearchToSelect(searchEl, selectEl){
+    const allOpts = () => Array.from(selectEl.options).map(o=>({value:o.value, text:o.textContent}));
+    const base = allOpts();
+    searchEl.addEventListener("input", ()=>{
+      const q = canonKey(searchEl.value);
+      selectEl.innerHTML = "";
+      for(const o of base){
+        if(!q || canonKey(o.text).includes(q)){
+          const op = document.createElement("option");
+          op.value = o.value;
+          op.textContent = o.text;
+          selectEl.appendChild(op);
+        }
       }
+    });
+  }
 
-      // Intento final (Date.parse)
-      const d2 = new Date(s);
-      if(isFinite(d2.getTime())){
-        return { date:d2, anio:d2.getFullYear(), mes:d2.getMonth()+1, dia:d2.getDate() };
+  // =========================
+  // Estado global
+  // =========================
+  let DATA = [];
+  let ORDER = "mdy";
+
+  let chartTiempo=null, chartAct=null, chartMuni=null, chartGuarda=null;
+
+  // tabla simple state
+  const DISPLAY_COLS = [
+    {key:"_fecha_txt", label:"Fecha"},
+    {key:F.region, label:"Región"},
+    {key:F.municipio, label:"Municipio"},
+    {key:F.area, label:"Área protegida"},
+    {key:F.guarda, label:"Guarda recurso"},
+    {key:F.vivero, label:"Vivero / lugar"},
+    {key:"_actividades_txt", label:"Actividades"},
+    {key:F.apoyo, label:"Apoyo fuera"},
+  ];
+  let tableRows = [];
+  let tableSort = {key:"_fecha_sort", dir:"desc"};
+  let page = 1;
+
+  // Leaflet
+  let map = null;
+  let layer = null;
+
+  // =========================
+  // Carga CSV
+  // =========================
+  async function fetchCSV(){
+    for(const url of CSV_CANDIDATES){
+      try{
+        const res = await fetch(url, {cache:"no-store"});
+        if(!res.ok) continue;
+        const buf = await res.arrayBuffer();
+        const txt = tryDecode(buf);
+        return {text:txt, url};
+      }catch(e){}
+    }
+    // fallback raw GitHub (por si Pages mueve rutas)
+    try{
+      const raw = "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/base2_datos.csv";
+      const res = await fetch(raw, {cache:"no-store"});
+      if(res.ok){
+        const buf = await res.arrayBuffer();
+        const txt = tryDecode(buf);
+        return {text:txt, url:raw};
       }
+    }catch(e){}
+    throw new Error("No se pudo cargar base2_datos.csv (verifica que exista en el repo).");
+  }
 
-      return null;
+  function parseCSV(text){
+    const delim = detectDelimiter(text);
+    const parsed = Papa.parse(text, {
+      header:true,
+      skipEmptyLines:true,
+      delimiter: delim,
+    });
+    if(parsed.errors && parsed.errors.length){
+      console.warn(parsed.errors.slice(0,5));
     }
+    return parsed.data || [];
+  }
 
-    function isoWeekKey(date){
-      // ISO week (YYYY-Www)
-      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-      const dayNum = d.getUTCDay() || 7;
-      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-      return d.getUTCFullYear() + "-W" + pad2(weekNo);
-    }
-
-    function countBy(rows, keyFn){
-      const m = new Map();
-      rows.forEach(r=>{
-        const k = keyFn(r);
-        m.set(k, (m.get(k)||0)+1);
-      });
-      return m;
-    }
-
-    function topN(map, n){
-      return Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0,n);
-    }
-
-    function uniqCount(rows, key){
-      const s = new Set();
-      rows.forEach(r=>{
-        const v = r[key];
-        if(v && v !== "(Sin dato)") s.add(v);
-      });
-      return s.size;
-    }
-
-    // ===== Select builders =====
-    function fillSelect(sel, values, includeAll=true, allLabel="(Todos)"){
-      const prev = sel.value;
-      sel.innerHTML = "";
-      if(includeAll){
-        const o = document.createElement("option");
-        o.value = "";
-        o.textContent = allLabel;
-        sel.appendChild(o);
+  // =========================
+  // Preparación datos + filtros
+  // =========================
+  function preprocess(rows){
+    // determinar orden de fechas
+    ORDER = detectDateOrder(rows.map(r=>r[F.fecha]));
+    // anexar campos derivados
+    return rows.map(r=>{
+      const dt = parseDateSmart(r[F.fecha], ORDER);
+      let yyyy="", mm="", yyyyMM="", fechaTxt="", sortKey="";
+      if(dt){
+        const y = dt.getFullYear();
+        const m = dt.getMonth()+1;
+        const d = dt.getDate();
+        yyyy = String(y);
+        mm = String(m).padStart(2,"0");
+        yyyyMM = yyyy + "-" + mm;
+        fechaTxt = String(d).padStart(2,"0") + "/" + mm + "/" + yyyy;
+        sortKey = yyyy + mm + String(d).padStart(2,"0");
       }
-      values.forEach(v=>{
-        const o = document.createElement("option");
-        o.value = v;
-        o.textContent = v;
-        sel.appendChild(o);
-      });
-      // intenta mantener selección
-      if(prev && Array.from(sel.options).some(o=>o.value===prev)) sel.value = prev;
-      else sel.value = "";
-    }
-
-    function filterSelect(sel, query){
-      const q = normKey(query);
-      Array.from(sel.options).forEach((opt, idx)=>{
-        if(idx===0 && opt.value===""){ opt.hidden = false; return; } // (Todos)
-        const t = normKey(opt.textContent);
-        opt.hidden = q ? !t.includes(q) : false;
-      });
-    }
-
-    // ===== URL state =====
-    function getStateFromURL(){
-      const p = new URLSearchParams(location.search);
+      const actsRaw = norm(r[F.act]);
+      const acts = actsRaw ? actsRaw.split(/[,;]+/).map(s=>norm(s)).filter(Boolean) : [];
       return {
-        temporal: p.get("temporal") || "todo",
-        mes: p.get("mes") || "",
-        semana: p.get("semana") || "",
-        desde: p.get("desde") || "",
-        hasta: p.get("hasta") || "",
-        guarda: p.get("guarda") || "",
-        muni: p.get("muni") || "",
-        region: p.get("region") || "",
-        area: p.get("area") || "",
-        apoyo: p.get("apoyo") || "",
-        act: p.get("act") || "",
-        agrupar: p.get("agrupar") || "mes",
+        ...r,
+        _dt: dt,
+        _anio: yyyy,
+        _mes: yyyyMM,
+        _fecha_txt: fechaTxt || "",
+        _fecha_sort: sortKey || "",
+        _acts: acts,
+        _actividades_txt: acts.join(", "),
+        _k_region: canonKey(r[F.region]),
+        _k_muni: canonKey(r[F.municipio]),
+        _k_area: canonKey(r[F.area]),
+        _k_guarda: canonKey(r[F.guarda]),
+        _k_apoyo: canonKey(r[F.apoyo]),
       };
+    });
+  }
+
+  function buildFilters(){
+    const dispRegion = buildDisplayMap(DATA, F.region);
+    const dispMuni   = buildDisplayMap(DATA, F.municipio);
+    const dispArea   = buildDisplayMap(DATA, F.area);
+    const dispGuarda = buildDisplayMap(DATA, F.guarda);
+
+    // Años
+    const years = Array.from(new Set(DATA.map(r=>r._anio).filter(Boolean))).sort();
+    const yearOpts = years.map(y=>({value:y, label:y}));
+    fillSelect(fAnio, yearOpts, "(Todos)");
+
+    // Meses (dependen de año seleccionado)
+    function fillMonthsForYear(y){
+      const months = Array.from(new Set(DATA.filter(r=>!y || r._anio===y).map(r=>r._mes).filter(Boolean))).sort();
+      const opts = months.map(m=>({value:m, label: monthLabel(m)}));
+      fillSelect(fMes, opts, "(Todos)");
     }
+    fillMonthsForYear("");
 
-    function setURLFromState(){
-      const p = new URLSearchParams();
-      p.set("temporal", fTemporal.value || "todo");
-      if(fMes.value) p.set("mes", fMes.value);
-      if(fSemana.value) p.set("semana", fSemana.value);
-      if(fDesde.value) p.set("desde", fDesde.value);
-      if(fHasta.value) p.set("hasta", fHasta.value);
-      if(fGuarda.value) p.set("guarda", fGuarda.value);
-      if(fMuni.value) p.set("muni", fMuni.value);
-      if(fRegion.value) p.set("region", fRegion.value);
-      if(fArea.value) p.set("area", fArea.value);
-      if(fApoyo.value) p.set("apoyo", fApoyo.value);
-      if(fActividad.value) p.set("act", fActividad.value);
-      if(fAgrupar.value) p.set("agrupar", fAgrupar.value);
+    // Región/Muni/Area/Guarda: value=canonKey, label=mejor etiqueta
+    const regionKeys = Array.from(dispRegion.keys()).sort((a,b)=>dispRegion.get(a).localeCompare(dispRegion.get(b), "es"));
+    fillSelect(fRegion, regionKeys.map(k=>({value:k, label: dispRegion.get(k)})), "(Todos)");
 
-      const newUrl = location.pathname + "?" + p.toString();
-      history.replaceState({}, "", newUrl);
-    }
+    const muniKeys = Array.from(dispMuni.keys()).sort((a,b)=>dispMuni.get(a).localeCompare(dispMuni.get(b), "es"));
+    fillSelect(fMuni, muniKeys.map(k=>({value:k, label: dispMuni.get(k)})), "(Todos)");
 
-    function applyStateToUI(st){
-      fTemporal.value = st.temporal;
-      setTemporalUI();
+    const areaKeys = Array.from(dispArea.keys()).sort((a,b)=>dispArea.get(a).localeCompare(dispArea.get(b), "es"));
+    fillSelect(fArea, areaKeys.map(k=>({value:k, label: dispArea.get(k)})), "(Todos)");
 
-      fMes.value = st.mes;
-      fSemana.value = st.semana;
-      fDesde.value = st.desde;
-      fHasta.value = st.hasta;
+    const guardaKeys = Array.from(dispGuarda.keys()).sort((a,b)=>dispGuarda.get(a).localeCompare(dispGuarda.get(b), "es"));
+    fillSelect(fGuarda, guardaKeys.map(k=>({value:k, label: dispGuarda.get(k)})), "(Todos)");
 
-      fGuarda.value = st.guarda;
-      fMuni.value = st.muni;
-      fRegion.value = st.region;
-      fArea.value = st.area;
-
-      fApoyo.value = st.apoyo;
-      fActividad.value = st.act;
-      fAgrupar.value = st.agrupar;
-    }
-
-    // ===== Temporal UI =====
-    function setTemporalUI(){
-      const v = fTemporal.value;
-      wrapMes.style.display = (v === "mes") ? "" : "none";
-      wrapSemana.style.display = (v === "semana") ? "" : "none";
-      wrapDesde.style.display = (v === "rango") ? "" : "none";
-      wrapHasta.style.display = (v === "rango") ? "" : "none";
-    }
-
-    function limpiarFiltros(){
-      fTemporal.value = "todo";
-      setTemporalUI();
-      fMes.value = "";
-      fSemana.value = "";
-      fDesde.value = "";
-      fHasta.value = "";
-      fGuarda.value = "";
-      fMuni.value = "";
-      fRegion.value = "";
-      fArea.value = "";
-      fApoyo.value = "";
-      fActividad.value = "";
-      fAgrupar.value = "mes";
-
-      sGuarda.value = "";
-      sMuni.value = "";
-      sRegion.value = "";
-      sArea.value = "";
-
-      // mostrar todas las opciones de selects filtrables
-      filterSelect(fGuarda, "");
-      filterSelect(fMuni, "");
-      filterSelect(fRegion, "");
-      filterSelect(fArea, "");
-
-      refrescar(true);
-      showToast("Filtros limpios");
-    }
-
-    // ===== Derived fields (AC210) =====
-    function apoyoNorm(r){
-      const v = normKey(r[F.apoyo]);
-      if(!v) return "sin";
-      if(v === "si" || v === "sí") return "si";
-      if(v === "no") return "no";
-      return "sin";
-    }
-
-    function actCodes(r){
-      const a = norm(r[F.act]);
-      if(!a) return [];
-      return a.split(/[,;]+/).map(x=>x.trim()).filter(Boolean);
-    }
-
-    // ===== Filtering =====
-    function filterRows(){
-      const temporal = fTemporal.value;
-      const mes = fMes.value;
-      const semana = fSemana.value;
-      const desde = fDesde.value;
-      const hasta = fHasta.value;
-
-      const g = fGuarda.value;
-      const m = fMuni.value;
-      const reg = fRegion.value;
-      const area = fArea.value;
-      const apoyo = fApoyo.value;
-      const act = fActividad.value;
-
-      let rows = DATA.slice();
-
-      // temporal
-      if(temporal === "mes" && mes){
-        rows = rows.filter(r=> r.__ym === mes);
-      }else if(temporal === "semana" && semana){
-        rows = rows.filter(r=> r.__yw === semana);
-      }else if(temporal === "rango" && (desde || hasta)){
-        const d1 = desde ? new Date(desde + "T00:00:00") : null;
-        const d2 = hasta ? new Date(hasta + "T23:59:59") : null;
-        rows = rows.filter(r=>{
-          if(!r.__date) return false;
-          if(d1 && r.__date < d1) return false;
-          if(d2 && r.__date > d2) return false;
-          return true;
-        });
+    // Actividades (desde _acts)
+    const actCounts = new Map();
+    for(const r of DATA){
+      for(const a of (r._acts||[])){
+        const key = canonKey(a);
+        if(!key) continue;
+        actCounts.set(key, (actCounts.get(key)||0)+1);
       }
+    }
+    const actKeys = Array.from(actCounts.keys()).sort((a,b)=> (actCounts.get(b)-actCounts.get(a)) || a.localeCompare(b,"es"));
+    const actOpts = actKeys.map(k=>({value:k, label:k.replace(/_/g," ")}));
+    fillSelect(fActividad, actOpts, "(Todas)");
 
-      // selects
-      if(g) rows = rows.filter(r=> r.__guarda === g);
-      if(m) rows = rows.filter(r=> r.__muni === m);
-      if(reg) rows = rows.filter(r=> r.__region === reg);
-      if(area) rows = rows.filter(r=> r.__area === area);
+    // wire search
+    wireSearchToSelect(sRegion, fRegion);
+    wireSearchToSelect(sMuni, fMuni);
+    wireSearchToSelect(sArea, fArea);
+    wireSearchToSelect(sGuarda, fGuarda);
+
+    // events
+    fAnio.addEventListener("change", ()=>{
+      fillMonthsForYear(fAnio.value);
+      applyAll();
+    });
+    const triggers = [fMes,fRegion,fMuni,fArea,fGuarda,fActividad,fApoyo,fTexto];
+    triggers.forEach(el=> el.addEventListener("change", applyAll));
+    fTexto.addEventListener("input", ()=>{ applyAll(); });
+
+    $("btn-reset").addEventListener("click", ()=>{
+      fAnio.value=""; fMes.value="";
+      fRegion.value=""; fMuni.value=""; fArea.value=""; fGuarda.value="";
+      fActividad.value=""; fApoyo.value=""; fTexto.value="";
+      sRegion.value=""; sMuni.value=""; sArea.value=""; sGuarda.value="";
+      // reconstruir selects para reset de búsquedas
+      buildFilters();
+      showToast("Filtros limpiados");
+      applyAll();
+    });
+
+    $("btn-dl-csv").addEventListener("click", ()=> exportCSV(currentFiltered()));
+    $("btn-dl-xlsx").addEventListener("click", ()=> exportXLSX(currentFiltered()));
+    $("btn-pdf").addEventListener("click", exportPDF);
+
+    $("png-tiempo").addEventListener("click", ()=> downloadChartPNG(chartTiempo, "ac210_registros_por_mes.png"));
+    $("png-act").addEventListener("click", ()=> downloadChartPNG(chartAct, "ac210_actividades_top.png"));
+    $("png-muni").addEventListener("click", ()=> downloadChartPNG(chartMuni, "ac210_top_municipios.png"));
+    $("png-guarda").addEventListener("click", ()=> downloadChartPNG(chartGuarda, "ac210_top_guardarecursos.png"));
+
+    // tabla paginación
+    tSize.addEventListener("change", ()=>{ page=1; renderTable(); });
+    tPrev.addEventListener("click", ()=>{ page=Math.max(1,page-1); renderTable(); });
+    tNext.addEventListener("click", ()=>{ page=page+1; renderTable(); });
+
+    // sort headers
+    tHead.innerHTML = "";
+    for(const c of DISPLAY_COLS){
+      const th = document.createElement("th");
+      th.textContent = c.label;
+      th.dataset.key = c.key;
+      th.addEventListener("click", ()=>{
+        const k = th.dataset.key;
+        if(tableSort.key === k){
+          tableSort.dir = (tableSort.dir === "asc") ? "desc" : "asc";
+        }else{
+          tableSort.key = k;
+          tableSort.dir = "asc";
+        }
+        renderTable();
+      });
+      tHead.appendChild(th);
+    }
+  }
+
+  function currentFiltered(){
+    const y = fAnio.value;
+    const m = fMes.value;
+    const kRegion = fRegion.value;
+    const kMuni = fMuni.value;
+    const kArea = fArea.value;
+    const kGuarda = fGuarda.value;
+    const kAct = fActividad.value;
+    const apoyo = fApoyo.value;
+    const q = canonKey(fTexto.value);
+
+    return DATA.filter(r=>{
+      if(y && r._anio !== y) return false;
+      if(m && r._mes !== m) return false;
+      if(kRegion && r._k_region !== kRegion) return false;
+      if(kMuni && r._k_muni !== kMuni) return false;
+      if(kArea && r._k_area !== kArea) return false;
+      if(kGuarda && r._k_guarda !== kGuarda) return false;
 
       if(apoyo){
-        rows = rows.filter(r=> r.__apoyo === apoyo);
+        const v = canonKey(r[F.apoyo]);
+        if(apoyo === "sin"){
+          if(v) return false;
+        }else{
+          if(v !== apoyo) return false;
+        }
       }
 
-      if(act){
-        rows = rows.filter(r=> (r.__actCodes || []).includes(act));
+      if(kAct){
+        const has = (r._acts||[]).some(a=> canonKey(a)===kAct);
+        if(!has) return false;
       }
 
-      return rows;
+      if(q){
+        const hay = Object.values(r).some(val => canonKey(val).includes(q));
+        if(!hay) return false;
+      }
+      return true;
+    });
+  }
+
+  // =========================
+  // Render / KPI / Charts / Map / Table
+  // =========================
+  function applyAll(){
+    const rows = currentFiltered();
+    const total = rows.length;
+    const totalAll = DATA.length;
+    kTotal.textContent = total.toLocaleString("es");
+    kTotalS.textContent = `Mostrando ${total.toLocaleString("es")} de ${totalAll.toLocaleString("es")}`;
+
+    // uniques
+    const munis = new Set(rows.map(r=>r._k_muni).filter(Boolean));
+    const guardas = new Set(rows.map(r=>r._k_guarda).filter(Boolean));
+    kMunis.textContent = munis.size.toLocaleString("es");
+    kGuardas.textContent = guardas.size.toLocaleString("es");
+
+    // apoyo % (solo sí/no)
+    let si=0,no=0;
+    for(const r of rows){
+      const v = canonKey(r[F.apoyo]);
+      if(v==="si" || v==="sí") si++;
+      else if(v==="no") no++;
+    }
+    const denom = si+no;
+    const pct = denom ? Math.round((si/denom)*1000)/10 : 0;
+    kApoyo.textContent = denom ? (pct.toFixed(1) + "%") : "—";
+
+    // horas promedio
+    const hs = [];
+    for(const r of rows){
+      const h = duracionHoras(r[F.hIni], r[F.hFin]);
+      if(h!==null && Number.isFinite(h) && h>=0 && h<=20) hs.push(h);
+    }
+    const prom = hs.length ? (hs.reduce((a,b)=>a+b,0)/hs.length) : null;
+    kHoras.textContent = prom===null ? "—" : prom.toFixed(1);
+
+    // coords en Guatemala
+    let withGT=0, withAny=0;
+    for(const r of rows){
+      const lon = Number(r[F.x]);
+      const lat = Number(r[F.y]);
+      if(!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+      if(lon===0 && lat===0) continue;
+      withAny++;
+      if(inGuatemala(lon,lat)) withGT++;
+    }
+    const pctGT = withAny ? Math.round((withGT/withAny)*1000)/10 : 0;
+    kCoord.textContent = withAny ? (pctGT.toFixed(1)+"%") : "—";
+
+    meta.textContent = `Fecha (parser): ${ORDER.toUpperCase()} · Registros sin fecha: ${DATA.filter(r=>!r._dt).length}`;
+
+    renderCharts(rows);
+    renderMap(rows);
+    tableRows = rows;
+    page = 1;
+    renderTable();
+  }
+
+  function renderCharts(rows){
+    // tiempo por mes (solo registros con mes)
+    const m = new Map();
+    for(const r of rows){
+      if(!r._mes) continue;
+      m.set(r._mes, (m.get(r._mes)||0)+1);
+    }
+    const labels = Array.from(m.keys()).sort();
+    const data = labels.map(k=>m.get(k));
+    const labelsPretty = labels.map(monthLabel);
+
+    if(chartTiempo) chartTiempo.destroy();
+    chartTiempo = new Chart($("c-tiempo"), {
+      type: "line",
+      data: { labels: labelsPretty, datasets: [{ label: "Registros", data }] },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}},
+        onClick: (evt, elements)=>{
+          if(!elements || !elements.length) return;
+          const idx = elements[0].index;
+          const key = labels[idx];
+          fMes.value = key;
+          applyAll();
+          showToast("Filtro: " + monthLabel(key));
+        },
+        scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } }
+      }
+    });
+
+    // actividades top 10 (cuenta multi)
+    const act = new Map();
+    for(const r of rows){
+      for(const a of (r._acts||[])){
+        const k = canonKey(a);
+        if(!k) continue;
+        act.set(k, (act.get(k)||0)+1);
+      }
+    }
+    const actKeys = Array.from(act.keys()).sort((a,b)=> (act.get(b)-act.get(a)));
+    const topAct = actKeys.slice(0,10);
+    const actLabels = topAct.map(k=> k.replace(/_/g," "));
+    const actData = topAct.map(k=> act.get(k));
+
+    if(chartAct) chartAct.destroy();
+    chartAct = new Chart($("c-act"), {
+      type:"bar",
+      data:{ labels: actLabels, datasets:[{ label:"Actividades", data: actData }] },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}},
+        onClick:(evt,elements)=>{
+          if(!elements || !elements.length) return;
+          const idx = elements[0].index;
+          const key = topAct[idx];
+          fActividad.value = key;
+          applyAll();
+          showToast("Filtro: actividad");
+        },
+        scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } }
+      }
+    });
+
+    // top municipios
+    const muni = new Map();
+    for(const r of rows){
+      const k = r._k_muni;
+      if(!k) continue;
+      muni.set(k, (muni.get(k)||0)+1);
+    }
+    const muniKeys = Array.from(muni.keys()).sort((a,b)=> muni.get(b)-muni.get(a)).slice(0,10);
+    const muniLabels = muniKeys.map(k=> (findSelectLabel(fMuni,k) || k));
+    const muniData = muniKeys.map(k=> muni.get(k));
+
+    if(chartMuni) chartMuni.destroy();
+    chartMuni = new Chart($("c-muni"), {
+      type:"bar",
+      data:{ labels: muniLabels, datasets:[{ label:"Municipios", data: muniData }] },
+      options:{
+        indexAxis:"y",
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}},
+        onClick:(evt,elements)=>{
+          if(!elements || !elements.length) return;
+          const idx = elements[0].index;
+          const key = muniKeys[idx];
+          fMuni.value = key;
+          applyAll();
+          showToast("Filtro: municipio");
+        },
+        scales:{ x:{ beginAtZero:true, ticks:{ precision:0 } } }
+      }
+    });
+
+    // top guardas
+    const g = new Map();
+    for(const r of rows){
+      const k = r._k_guarda;
+      if(!k) continue;
+      g.set(k, (g.get(k)||0)+1);
+    }
+    const gKeys = Array.from(g.keys()).sort((a,b)=> g.get(b)-g.get(a)).slice(0,10);
+    const gLabels = gKeys.map(k=> (findSelectLabel(fGuarda,k) || k));
+    const gData = gKeys.map(k=> g.get(k));
+
+    if(chartGuarda) chartGuarda.destroy();
+    chartGuarda = new Chart($("c-guarda"), {
+      type:"bar",
+      data:{ labels: gLabels, datasets:[{ label:"Guardarecursos", data: gData }] },
+      options:{
+        indexAxis:"y",
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}},
+        onClick:(evt,elements)=>{
+          if(!elements || !elements.length) return;
+          const idx = elements[0].index;
+          const key = gKeys[idx];
+          fGuarda.value = key;
+          applyAll();
+          showToast("Filtro: guarda");
+        },
+        scales:{ x:{ beginAtZero:true, ticks:{ precision:0 } } }
+      }
+    });
+  }
+
+  function findSelectLabel(selectEl, value){
+    const opt = Array.from(selectEl.options).find(o=>o.value===value);
+    return opt ? opt.textContent : null;
+  }
+
+  function renderMap(rows){
+    if(!map){
+      map = L.map("map", {scrollWheelZoom:false});
+      layer = L.layerGroup().addTo(map);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 18,
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(map);
+      // vista inicial lago de Atitlán
+      map.setView([14.69,-91.20], 10);
     }
 
-    // ===== Charts =====
-    const whiteBgPlugin = {
-      id: 'whiteBg',
-      beforeDraw: (chart, args, pluginOptions) => {
-        const {ctx, width, height} = chart;
-        ctx.save();
-        ctx.globalCompositeOperation = 'destination-over';
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, width, height);
-        ctx.restore();
+    layer.clearLayers();
+    let ok=0, bad=0;
+    const pts = [];
+    for(const r of rows){
+      const lon = Number(r[F.x]);
+      const lat = Number(r[F.y]);
+      if(!Number.isFinite(lon) || !Number.isFinite(lat)) { bad++; continue; }
+      if(lon===0 && lat===0) { bad++; continue; }
+      if(!inGuatemala(lon,lat)) { bad++; continue; }
+      ok++;
+      pts.push([lat,lon, r]);
+    }
+
+    for(const [lat,lon,r] of pts){
+      const muni = norm(r[F.municipio]);
+      const area = norm(r[F.area]);
+      const guarda = norm(r[F.guarda]);
+      const acts = norm(r._actividades_txt);
+      const fecha = r._fecha_txt || "(sin fecha)";
+      const vivero = norm(r[F.vivero]);
+      const html = `
+        <div style="font-family:system-ui; font-size:12px; line-height:1.35;">
+          <div style="font-weight:900; margin-bottom:4px;">${escapeHtml(muni || "Punto")}</div>
+          <div><b>Fecha:</b> ${escapeHtml(fecha)}</div>
+          <div><b>Área:</b> ${escapeHtml(area)}</div>
+          <div><b>Guarda:</b> ${escapeHtml(guarda)}</div>
+          <div><b>Vivero:</b> ${escapeHtml(vivero)}</div>
+          <div><b>Act:</b> ${escapeHtml(acts)}</div>
+        </div>`;
+      L.circleMarker([lat,lon], {radius:6, weight:1, fillOpacity:0.75})
+        .bindPopup(html)
+        .addTo(layer);
+    }
+
+    if(ok){
+      const bounds = L.latLngBounds(pts.map(p=>[p[0],p[1]]));
+      map.fitBounds(bounds, {padding:[20,20], maxZoom: 12});
+    }else{
+      map.setView([14.69,-91.20], 10);
+    }
+    mapmeta.textContent = `Puntos dibujados: ${ok} · Ignorados (0/0 o fuera de Guatemala): ${bad}`;
+    setTimeout(()=> map.invalidateSize(), 0);
+  }
+
+  function escapeHtml(s){
+    return String(s||"")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#39;");
+  }
+
+  // =========================
+  // Tabla simple
+  // =========================
+  function getRowValue(r, key){
+    if(key === "_fecha_sort") return r._fecha_sort || "";
+    if(key === "_fecha_txt") return r._fecha_txt || "";
+    if(key === "_actividades_txt") return r._actividades_txt || "";
+    return norm(r[key]);
+  }
+
+  function renderTable(){
+    // sort
+    const rows = [...tableRows];
+    const k = tableSort.key;
+    const dir = tableSort.dir;
+    rows.sort((a,b)=>{
+      const va = getRowValue(a,k);
+      const vb = getRowValue(b,k);
+      if(va === vb) return 0;
+      if(dir==="asc") return (va>vb ? 1 : -1);
+      return (va<vb ? 1 : -1);
+    });
+
+    const size = Number(tSize.value)||25;
+    const total = rows.length;
+    const pages = Math.max(1, Math.ceil(total/size));
+    page = Math.min(page, pages);
+    const start = (page-1)*size;
+    const slice = rows.slice(start, start+size);
+
+    tBody.innerHTML = "";
+    for(const r of slice){
+      const tr = document.createElement("tr");
+      for(const c of DISPLAY_COLS){
+        const td = document.createElement("td");
+        let v = getRowValue(r, c.key);
+        if(c.key===F.apoyo){
+          const vv = canonKey(v);
+          if(vv==="si"||vv==="sí") v = "Sí";
+          else if(vv==="no") v = "No";
+          else v = v || "";
+        }
+        td.textContent = v;
+        tr.appendChild(td);
       }
+      tBody.appendChild(tr);
+    }
+
+    tInfo.textContent = `Mostrando ${Math.min(start+1,total)}–${Math.min(start+size,total)} de ${total}`;
+    tPage.textContent = `Página ${page} / ${pages}`;
+    tPrev.disabled = page<=1;
+    tNext.disabled = page>=pages;
+  }
+
+  // =========================
+  // Exportaciones
+  // =========================
+  function exportCSV(rows){
+    const cols = DISPLAY_COLS.map(c=>({key:c.key,label:c.label}));
+    const header = cols.map(c=>`"${c.label.replace(/"/g,'""')}"`).join(",");
+    const lines = rows.map(r=>{
+      return cols.map(c=>{
+        const v = getRowValue(r,c.key);
+        return `"${String(v).replace(/"/g,'""')}"`;
+      }).join(",");
+    });
+    const csv = [header, ...lines].join("\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+    downloadBlob(blob, "ac210_filtrado.csv");
+    showToast("CSV descargado");
+  }
+
+  function exportXLSX(rows){
+    const out = rows.map(r=>{
+      const o = {};
+      for(const c of DISPLAY_COLS){
+        o[c.label] = getRowValue(r, c.key);
+      }
+      return o;
+    });
+    const ws = XLSX.utils.json_to_sheet(out);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "AC210");
+    XLSX.writeFile(wb, "ac210_filtrado.xlsx");
+    showToast("Excel descargado");
+  }
+
+  function exportPDF(){
+    const el = $("pdf-area");
+    const opt = {
+      margin: 10,
+      filename: "ac210_tablero.pdf",
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
     };
+    html2pdf().set(opt).from(el).save();
+  }
 
-    function renderChart(canvasId, existingChart, config){
-      const ctx = document.getElementById(canvasId).getContext("2d");
-      if(existingChart) existingChart.destroy();
-      return new Chart(ctx, config);
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadChartPNG(chart, filename){
+    if(!chart) return;
+    const a = document.createElement("a");
+    a.href = chart.toBase64Image();
+    a.download = filename;
+    a.click();
+  }
+
+  // =========================
+  // Init
+  // =========================
+  (async function init(){
+    try{
+      const {text, url} = await fetchCSV();
+      const rows = parseCSV(text);
+      DATA = preprocess(rows);
+      buildFilters();
+      estado.textContent = `Datos cargados (${DATA.length.toLocaleString("es")}) desde: ${url}`;
+      applyAll();
+    }catch(err){
+      console.error(err);
+      estado.textContent = "Error: " + (err && err.message ? err.message : String(err));
     }
-
-    function exportChartPNG(chart, filename){
-      if(!chart) return;
-      const a = document.createElement("a");
-      a.href = chart.toBase64Image("image/png", 1);
-      a.download = filename || "chart.png";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      showToast("PNG generado");
-    }
-
-    function actualizarCharts(rows){
-      const agr = fAgrupar.value;
-
-      const keyFn = (agr === "mes") ? (r=>r.__ym) : (agr === "semana") ? (r=>r.__yw) : (r=>r.__yd);
-      const mTiempo = countBy(rows, keyFn);
-      const labelsT = Array.from(mTiempo.keys()).filter(Boolean).sort();
-      const dataT = labelsT.map(k=>mTiempo.get(k));
-
-      chartTiempo = renderChart("c-tiempo", chartTiempo, {
-        type:"bar",
-        data:{ labels: labelsT, datasets:[{ label:"Registros AC210", data: dataT }] },
-        plugins:[whiteBgPlugin],
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          onClick:(evt, elements)=>{
-            if(!elements || !elements.length) return;
-            const idx = elements[0].index;
-            const label = labelsT[idx];
-
-            if(agr === "mes"){
-              fTemporal.value = "mes";
-              setTemporalUI();
-              fMes.value = label;
-            } else if(agr === "semana"){
-              fTemporal.value = "semana";
-              setTemporalUI();
-              fSemana.value = label;
-            } else {
-              fTemporal.value = "rango";
-              setTemporalUI();
-              fDesde.value = label;
-              fHasta.value = label;
-            }
-            refrescar(true);
-          },
-          plugins:{ legend:{ display:true } },
-          scales:{ y:{ beginAtZero:true } }
-        }
-      });
-
-      const mM = countBy(rows, r=>r.__muni || "(Sin municipio)");
-      const topM = topN(mM, 10);
-      const labelsM = topM.map(x=>x[0]);
-      chartMuni = renderChart("c-muni", chartMuni, {
-        type:"bar",
-        data:{ labels: labelsM, datasets:[{ label:"Registros", data: topM.map(x=>x[1]) }] },
-        plugins:[whiteBgPlugin],
-        options:{
-          indexAxis:"y",
-          responsive:true,
-          maintainAspectRatio:false,
-          onClick:(evt, elements)=>{
-            if(!elements || !elements.length) return;
-            const idx = elements[0].index;
-            const label = labelsM[idx];
-            fMuni.value = label;
-            refrescar(true);
-          },
-          plugins:{ legend:{ display:true } },
-          scales:{ x:{ beginAtZero:true } }
-        }
-      });
-
-      const mG = countBy(rows, r=>r.__guarda || "(Sin guarda)");
-      const topG = topN(mG, 10);
-      const labelsG = topG.map(x=>x[0]);
-      chartGuarda = renderChart("c-guarda", chartGuarda, {
-        type:"bar",
-        data:{ labels: labelsG, datasets:[{ label:"Registros", data: topG.map(x=>x[1]) }] },
-        plugins:[whiteBgPlugin],
-        options:{
-          indexAxis:"y",
-          responsive:true,
-          maintainAspectRatio:false,
-          onClick:(evt, elements)=>{
-            if(!elements || !elements.length) return;
-            const idx = elements[0].index;
-            const label = labelsG[idx];
-            fGuarda.value = label;
-            refrescar(true);
-          },
-          plugins:{ legend:{ display:true } },
-          scales:{ x:{ beginAtZero:true } }
-        }
-      });
-    }
-
-    // ===== Tables =====
-    function construirPivote(rows){
-      const agr = fAgrupar.value;
-      const keyCol = (agr === "mes") ? "__ym" : (agr === "semana") ? "__yw" : "__yd";
-
-      const colSet = new Set();
-      const map = new Map();
-
-      rows.forEach(r=>{
-        const rowKey = r.__guarda || "(Sin guarda)";
-        const colKey = r[keyCol] || "(Sin fecha)";
-        colSet.add(colKey);
-
-        if(!map.has(rowKey)) map.set(rowKey, { guarda: rowKey });
-        const obj = map.get(rowKey);
-        obj[colKey] = (obj[colKey] || 0) + 1;
-      });
-
-      const cols = Array.from(colSet).sort((a,b)=>a.localeCompare(b,"es"));
-      const data = Array.from(map.values()).sort((a,b)=>a.guarda.localeCompare(b.guarda,"es"));
-
-      const tabCols = [
-        { title:"Guarda recurso", field:"guarda", frozen:true, headerFilter:"input", minWidth:240 },
-        ...cols.map(c=>({ title:c, field:c, hozAlign:"right" }))
-      ];
-
-      return { tabCols, data };
-    }
-
-    function actualizarTablas(rows){
-      const piv = construirPivote(rows);
-
-      if(!tPivote){
-        tPivote = new Tabulator("#tabla-pivote", {
-          data: piv.data,
-          columns: piv.tabCols,
-          layout:"fitDataStretch",
-          pagination:"local",
-          paginationSize: 12,
-          paginationSizeSelector:[12, 25, 50, 100],
-          movableColumns:true
-        });
-      }else{
-        tPivote.setColumns(piv.tabCols);
-        tPivote.replaceData(piv.data);
-      }
-
-      // Tabla de registros (todas las columnas del CSV, sin las internas __)
-      const cols = rows.length ? Object.keys(rows[0]).filter(k=>!k.startsWith("__")).map(field=>({
-        title: field,
-        field: field,
-        headerFilter:"input",
-        minWidth: 140
-      })) : [];
-
-      if(!tRegistros){
-        tRegistros = new Tabulator("#tabla-registros", {
-          data: rows,
-          columns: cols,
-          layout:"fitDataStretch",
-          pagination:"local",
-          paginationSize: 20,
-          paginationSizeSelector:[10, 20, 50, 100],
-          movableColumns:true
-        });
-      }else{
-        tRegistros.setColumns(cols);
-        tRegistros.replaceData(rows);
-      }
-    }
-
-    // ===== KPI =====
-    function actualizarKPIs(rows){
-      const total = rows.length;
-      const munis = new Set(rows.map(r=>r.__muni).filter(Boolean));
-      const guardas = new Set(rows.map(r=>r.__guarda).filter(Boolean));
-
-      const si = rows.filter(r=>r.__apoyo==="si").length;
-      const no = rows.filter(r=>r.__apoyo==="no").length;
-      const denom = si + no;
-      const pctApoyo = denom ? Math.round((si/denom)*100) : 0;
-
-      const dur = rows.map(r=>r.__durHoras).filter(v=>typeof v==="number" && isFinite(v));
-      const avgHoras = dur.length ? (dur.reduce((a,b)=>a+b,0)/dur.length) : null;
-
-      const coordOk = rows.filter(r=>r.__coordOk).length;
-      const pctCoord = total ? Math.round((coordOk/total)*100) : 0;
-
-      kTotal.textContent = total.toLocaleString("es-GT");
-      kTotalS.textContent = "Filtrado (de " + DATA.length.toLocaleString("es-GT") + ")";
-
-      kMunis.textContent = munis.size.toLocaleString("es-GT");
-      kGuardas.textContent = guardas.size.toLocaleString("es-GT");
-
-      kApoyo.textContent = pctApoyo + "%";
-      kHoras.textContent = (avgHoras === null) ? "—" : (Math.round(avgHoras*10)/10).toString();
-      kCoord.textContent = pctCoord + "%";
-    }
-
-    // ===== Build filter lists =====
-    function buildFilterOptions(){
-      const meses = Array.from(new Set(DATA.map(r=>r.__ym).filter(Boolean))).sort();
-      const semanas = Array.from(new Set(DATA.map(r=>r.__yw).filter(Boolean))).sort();
-
-      fillSelect(fMes, meses, true, "(Todos)");
-      fillSelect(fSemana, semanas, true, "(Todos)");
-
-      const guardas = Array.from(new Set(DATA.map(r=>r.__guarda).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
-      const munis = Array.from(new Set(DATA.map(r=>r.__muni).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
-      const regiones = Array.from(new Set(DATA.map(r=>r.__region).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
-      const areas = Array.from(new Set(DATA.map(r=>r.__area).filter(Boolean))).sort((a,b)=>a.localeCompare(b,"es"));
-
-      fillSelect(fGuarda, guardas, true, "(Todos)");
-      fillSelect(fMuni, munis, true, "(Todos)");
-      fillSelect(fRegion, regiones, true, "(Todos)");
-      fillSelect(fArea, areas, true, "(Todos)");
-
-      // Actividades: construir lista de códigos únicos a partir de todos los registros
-      const codesSet = new Set();
-      DATA.forEach(r=>{
-        (r.__actCodes || []).forEach(c=> codesSet.add(c));
-      });
-      const codes = Array.from(codesSet).sort((a,b)=>a.localeCompare(b,"es"));
-      fillSelect(fActividad, codes, true, "(Todas)");
-    }
-
-    // ===== Refresh =====
-    function refrescar(updateUrl){
-      const rows = filterRows();
-
-      actualizarKPIs(rows);
-      actualizarCharts(rows);
-      actualizarTablas(rows);
-
-      const txt = "Mostrando " + rows.length.toLocaleString("es-GT") + " registros.";
-      meta.textContent = txt;
-
-      if(updateUrl) setURLFromState();
-    }
-
-    // ===== PDF =====
-    function generarReportePDF(){
-      try{
-        setURLFromState();
-
-        const now = new Date();
-        const tag = now.getFullYear() + "-" + pad2(now.getMonth()+1) + "-" + pad2(now.getDate());
-        const filename = "ac210_tablero_" + tag + ".pdf";
-
-        const element = document.getElementById("pdf-area");
-
-        // Ajuste: mejor nitidez en capturas
-        const opt = {
-          margin:       [8, 8, 8, 8],
-          filename:     filename,
-          image:        { type: "jpeg", quality: 0.98 },
-          html2canvas:  { scale: 2, useCORS: true },
-          jsPDF:        { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak:    { mode: ["css", "legacy"] }
-        };
-
-        showToast("Generando PDF…");
-        html2pdf().set(opt).from(element).save().then(()=> showToast("PDF listo"));
-      }catch(e){
-        console.error(e);
-        alert("Error generando PDF: " + e);
-      }
-    }
-
-    // ===== Wire =====
-    function wire(){
-      // watchers
-      const watchers = [
-        fTemporal,fMes,fSemana,fDesde,fHasta,
-        fGuarda,fMuni,fRegion,fArea,fApoyo,fActividad,
-        fAgrupar
-      ];
-
-      watchers.forEach(el=>{
-        el.addEventListener("change", ()=>{
-          if(el === fTemporal) setTemporalUI();
-          refrescar(true);
-        });
-      });
-
-      $("btn-reset").addEventListener("click", limpiarFiltros);
-
-      $("btn-dl-csv").addEventListener("click", ()=>{
-        if(tRegistros) tRegistros.download("csv", "ac210_filtrado.csv");
-      });
-      $("btn-dl-xlsx").addEventListener("click", ()=>{
-        if(tRegistros) tRegistros.download("xlsx", "ac210_filtrado.xlsx", {sheetName:"Filtrado"});
-      });
-      $("btn-dl-json").addEventListener("click", ()=>{
-        if(tRegistros) tRegistros.download("json", "ac210_filtrado.json");
-      });
-
-      $("piv-csv").addEventListener("click", ()=>{
-        if(tPivote) tPivote.download("csv", "pivote_guarda_periodo_ac210.csv");
-      });
-      $("piv-xlsx").addEventListener("click", ()=>{
-        if(tPivote) tPivote.download("xlsx", "pivote_guarda_periodo_ac210.xlsx", {sheetName:"Pivote"});
-      });
-
-      $("png-tiempo").addEventListener("click", ()=> exportChartPNG(chartTiempo, "ac210_tiempo.png"));
-      $("png-muni").addEventListener("click", ()=> exportChartPNG(chartMuni, "ac210_top_municipios.png"));
-      $("png-guarda").addEventListener("click", ()=> exportChartPNG(chartGuarda, "ac210_top_guardas.png"));
-
-      $("btn-copy").addEventListener("click", async ()=>{
-        setURLFromState();
-        const url = location.origin + location.pathname + location.search;
-        try{
-          await navigator.clipboard.writeText(url);
-          showToast("Enlace copiado");
-        }catch(e){
-          const ta = document.createElement("textarea");
-          ta.value = url;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand("copy");
-          document.body.removeChild(ta);
-          showToast("Enlace copiado");
-        }
-      });
-
-      $("btn-pdf").addEventListener("click", generarReportePDF);
-
-      // buscadores: filtran opciones sin romper la selección
-      sGuarda.addEventListener("input", ()=> filterSelect(fGuarda, sGuarda.value));
-      sMuni.addEventListener("input", ()=> filterSelect(fMuni, sMuni.value));
-      sRegion.addEventListener("input", ()=> filterSelect(fRegion, sRegion.value));
-      sArea.addEventListener("input", ()=> filterSelect(fArea, sArea.value));
-    }
-
-    // ===== Load =====
-    async function load(){
-      try{
-        if(typeof Papa === "undefined"){
-          estado.textContent = "No se cargó papaparse.min.js (debe existir en el repo).";
-          return;
-        }
-        if(typeof Tabulator === "undefined"){
-          estado.textContent = "No se cargó tabulator.min.js (debe existir en el repo).";
-          return;
-        }
-        if(typeof Chart === "undefined"){
-          estado.textContent = "No se cargó Chart.js (CDN).";
-          return;
-        }
-
-        // mejora de nitidez (para PNG/PDF)
-        Chart.defaults.devicePixelRatio = 2;
-
-        estado.textContent = "Leyendo base2_datos.csv…";
-        const res = await fetch(CSV_URL, { cache: "no-store" });
-        if(!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
-        const csvText = await res.text();
-
-        const parsed = Papa.parse(csvText, { header:true, skipEmptyLines:true, delimiter: DELIM });
-        const rows = (parsed.data || []).filter(r => r && Object.keys(r).some(k => norm(r[k])));
-
-        DATA = rows.map(r=>{
-          const info = extraerFechaCompleta(r[F.fecha]);
-          const d = info ? info.date : null;
-
-          const ym = info ? (info.anio + "-" + pad2(info.mes)) : "";
-          const yd = info ? (info.anio + "-" + pad2(info.mes) + "-" + pad2(info.dia)) : "";
-          const yw = d ? isoWeekKey(d) : "";
-
-          const guarda = norm(r[F.guarda]) || "(Sin guarda)";
-          const muni = norm(r[F.municipio]) || "(Sin municipio)";
-          const region = norm(r[F.region]) || "(Sin región)";
-          const area = norm(r[F.area]) || "(Sin área)";
-
-          const ap = apoyoNorm(r); // si/no/sin
-
-          // coordenadas
-          const coordOk = isNum(r[F.x]) && isNum(r[F.y]);
-
-          // duración (si hay horas)
-          const hIni = parseHora(r[F.hIni]);
-          const hFin = parseHora(r[F.hFin]);
-          let durHoras = null;
-          if(hIni !== null && hFin !== null){
-            let diff = hFin - hIni;
-            if(diff < 0) diff += 24*60; // si cruzó medianoche
-            durHoras = diff / 60.0;
-          }
-
-          const codes = actCodes(r);
-
-          r.__date = d;
-          r.__ym = ym;
-          r.__yd = yd;
-          r.__yw = yw;
-
-          r.__guarda = guarda;
-          r.__muni = muni;
-          r.__region = region;
-          r.__area = area;
-
-          r.__apoyo = ap;
-          r.__coordOk = coordOk;
-          r.__durHoras = durHoras;
-
-          r.__actCodes = codes;
-
-          return r;
-        });
-
-        // construir filtros
-        buildFilterOptions();
-
-        // aplicar estado desde URL si existe
-        const st = getStateFromURL();
-        applyStateToUI(st);
-
-        // refrescar
-        refrescar(false);
-
-        estado.textContent = "Datos cargados: " + DATA.length.toLocaleString("es-GT") + " registros.";
-      }catch(e){
-        console.error(e);
-        estado.textContent = "Error cargando " + CSV_URL + ": " + e;
-      }
-    }
-
-    wire();
-    load();
+  })();
   </script>
 </body>
 </html>
