@@ -7,6 +7,8 @@
 
   <!-- Tabulator local (repo) -->
   <link rel="stylesheet" href="tabulator.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/css/tabulator.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.2.5/dist/css/tabulator.min.css">
 
   <!-- Chart.js (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -545,9 +547,6 @@ footer{
   <div class="toast" id="toast">Listo</div>
 
   <!-- Librerías locales del repositorio -->
-  <script src="papaparse.min.js"></script>
-  <script src="tabulator.min.js"></script>
-  <script src="xlsx.full.min.js"></script>
   <!-- PDF -->
   <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 
@@ -666,19 +665,23 @@ footer{
   }
 
   async function ensureDependencies() {
+    const loaded = [];
     // Si tus archivos locales existen, se usarán primero; si no, cae a CDN.
-    await ensureLib("PapaParse", () => !!window.Papa, [
-      "papaparse.min.js",
-      "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
-    ]);
-    await ensureLib("Tabulator", () => !!window.Tabulator, [
-      "tabulator.min.js",
-      "https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/js/tabulator.min.js"
-    ]);
-    await ensureLib("XLSX", () => !!window.XLSX, [
-      "xlsx.full.min.js",
-      "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
-    ]);
+    loaded.push(await ensureLib("PapaParse", () => !!window.Papa, [
+      "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js",
+      "https://unpkg.com/papaparse@5.4.1/papaparse.min.js",
+      "papaparse.min.js"
+    ]));
+    loaded.push(await ensureLib("Tabulator", () => !!window.Tabulator, [
+      "https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/js/tabulator.min.js",
+      "https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js",
+      "tabulator.min.js"
+    ]));
+    loaded.push(await ensureLib("XLSX", () => !!window.XLSX, [
+      "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+      "https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js",
+      "xlsx.full.min.js"
+    ]));
     await ensureLib("Chart.js", () => !!window.Chart, [
       "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
     ]);
@@ -688,7 +691,9 @@ footer{
     await ensureLib("html2pdf", () => !!window.html2pdf, [
       "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
     ]);
-  }
+  
+    return loaded;
+}
 
   // -----------------------------
   // CSV decoding / parsing
@@ -1194,7 +1199,8 @@ footer{
       }
     }));
 
-    table = new Tabulator("#tabla", {
+    try {
+      table = new Tabulator("#tabla", {
       data: filteredData,
       layout: "fitColumns",
       height: "520px",
@@ -1223,10 +1229,75 @@ footer{
 
     // Asegura que se renderice correctamente dentro de contenedores con scroll
     setTimeout(function(){ try{ table.redraw(true); }catch(e){} }, 0);
+    } catch (e) {
+      console.error(e);
+      const el = document.getElementById('diag');
+      if (el) el.textContent = 'Error Tabulator: ' + (e && e.message ? e.message : String(e));
+      renderFallbackTable(filteredData);
+    }
   }
 
+  // Tabulator fallback
+  function renderFallbackTable(data){
+    const host = document.getElementById('tabla');
+    if (!host) return;
+    host.innerHTML = '';
+    const note = document.createElement('div');
+    note.style.fontSize='12px';
+    note.style.color='#334155';
+    note.style.padding='6px 8px';
+    note.textContent = 'Mostrando tabla básica (Tabulator no disponible).';
+    host.appendChild(note);
+    if (!data || !data.length){
+      const empty = document.createElement('div');
+      empty.style.padding='10px 8px';
+      empty.textContent='Sin registros para mostrar';
+      host.appendChild(empty);
+      return;
+    }
+    const keys = Object.keys(data[0]);
+    const tbl = document.createElement('table');
+    tbl.style.width='100%';
+    tbl.style.borderCollapse='collapse';
+    tbl.style.fontSize='12px';
+    const thead = document.createElement('thead');
+    const trh = document.createElement('tr');
+    keys.forEach(k=>{
+      const th=document.createElement('th');
+      th.textContent=k;
+      th.style.textAlign='left';
+      th.style.position='sticky';
+      th.style.top='0';
+      th.style.background='#f8fafc';
+      th.style.borderBottom='1px solid #e2e8f0';
+      th.style.padding='6px';
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+    tbl.appendChild(thead);
+    const tbody=document.createElement('tbody');
+    const maxRows=Math.min(data.length, 300);
+    for (let i=0;i<maxRows;i++){
+      const tr=document.createElement('tr');
+      keys.forEach(k=>{
+        const td=document.createElement('td');
+        td.textContent = (data[i][k]==null?'':String(data[i][k]));
+        td.style.borderBottom='1px solid #eef2f7';
+        td.style.padding='6px';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    }
+    tbl.appendChild(tbody);
+    host.appendChild(tbl);
+  }
+
+
   function updateTable() {
-    if (!table) return;
+    if (!table) {
+      if (typeof renderFallbackTable === 'function') renderFallbackTable(filteredData);
+      return;
+    }
     table.replaceData(filteredData);
   }
 
@@ -1370,7 +1441,12 @@ footer{
   // -----------------------------
   async function loadData() {
     setEstado("Cargando librerías…");
-    await ensureDependencies();
+    const loadedLibs = await ensureDependencies();
+    try {
+      const diag = (loadedLibs || []).map(o => o.name + ": " + (o.url || "")).join(" · ");
+      const el = document.getElementById("diag");
+      if (el) el.textContent = "Librerías: " + diag;
+    } catch (e) {}
 
     setEstado("Cargando datos…");
     try {
