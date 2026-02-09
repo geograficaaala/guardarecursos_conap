@@ -1,19 +1,18 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>AC210 Asistencia técnica a viveros - Datos detallados</title>
-
-  <!-- Estilos -->
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>AC210 · Asistencia técnica a viveros - Datos detallados</title>
+<!-- Estilos -->
+<style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       background-color: #f5f7fa;
     }
 
-    /* Header general del sitio */
     .header-bar {
       background-color: #0f766e;
       color: #fff;
@@ -23,16 +22,15 @@
     .header-bar h1 {
       margin: 0 0 4px 0;
       font-size: 22px;
-      color: #ffffff;  /* FORZAR BLANCO */
+      color: #ffffff;
     }
     .header-bar p {
       margin: 0;
       font-size: 13px;
-      color: #ffffff;  /* FORZAR BLANCO */
-      opacity: 1;      /* SIN TRANSPARENCIA */
+      color: #ffffff;
+      opacity: 1;
     }
 
-    /* Contenedor principal */
     .main-container {
       max-width: 1100px;
       margin: 24px auto 40px auto;
@@ -81,7 +79,8 @@
       background-color: #16a34a;
       color: white;
     }
-    /* Botones informe por registro */
+
+    /* Botones informes por registro */
     #generate-report-word {
       background-color: #f97316;
       color: white;
@@ -96,8 +95,7 @@
       margin-top: 10px;
       margin-bottom: 10px;
       padding: 10px 12px;
-      background-color: #0f766e; /* cuadro azul/verde */
-      color: #ffffff;
+      background-color: #e0f2fe;
       border-radius: 6px;
       display: flex;
       flex-wrap: wrap;
@@ -107,7 +105,7 @@
     .monthly-report-bar label {
       font-size: 13px;
       font-weight: 600;
-      color: #ffffff;
+      color: #0f172a;
       margin-right: 4px;
     }
     .monthly-report-bar select {
@@ -116,6 +114,7 @@
       border: 1px solid #cbd5f5;
       font-size: 13px;
     }
+
     #generate-monthly-report-word {
       background-color: #0d9488;
       color: white;
@@ -136,10 +135,9 @@
 
     /* Estilo visible para la fila seleccionada de Tabulator */
     .tabulator-row.tabulator-selected {
-      background-color: #bfdbfe !important; /* azul clarito */
+      background-color: #bfdbfe !important;
     }
 
-    /* Botón para regresar al dashboard */
     .back-container {
       margin-top: 10px;
       margin-bottom: 10px;
@@ -156,159 +154,50 @@
     .back-link:hover {
       background-color: #e0f2ff;
     }
-  
-    /* === Header moderno (homogéneo con tableros) === */
-    header.site-header{
-      background: linear-gradient(90deg, #0f766e, #0e7490);
-      color:#fff;
-      padding:14px 20px 18px;
-      box-shadow:0 2px 10px rgba(15,23,42,0.25);
-      position:sticky; top:0; z-index:10;
-    }
-    .header-inner{
-      max-width:1100px; margin:0 auto;
-      display:flex; align-items:center; justify-content:space-between;
-      gap:16px; flex-wrap:wrap;
-    }
-    .logo-group{
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-      background-color: rgba(255,255,255,0.12);
-      border-radius:999px; padding:6px 10px;
-      border:1px solid rgba(255,255,255,0.15);
-      backdrop-filter: blur(4px);
-    }
-    .logo-group img{
-      height:40px; max-width:130px; object-fit:contain;
-      background-color:#fff; border-radius:999px; padding:4px 8px;
-      box-shadow:0 2px 6px rgba(15,23,42,0.25);
-    }
-    .title-group{ text-align:right; flex:1 1 260px;}
-    .title-group h1{ margin:0 0 2px; font-size:22px; color:#fff; }
-    .title-group p{ margin:0; opacity:.95; font-size:13px; color:#fff; }
-    .chip-version{
-      margin-top:8px;
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      background: rgba(255,255,255,0.14);
-      border:1px solid rgba(255,255,255,0.18);
-      font-size:12px;
-      font-weight:900;
-      letter-spacing:.02em;
-      text-transform:uppercase;
-    }
-    .chip-dot{ width:9px; height:9px; border-radius:999px; background:#34d399; box-shadow:0 0 0 3px rgba(52,211,153,0.25); }
-
-    .tabs{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin:12px 0 12px;
-    }
-    .tab{
-      text-decoration:none;
-      color:#0f172a;
-      font-weight:900;
-      font-size:13px;
-      padding:9px 12px;
-      border-radius:999px;
-      border:1px solid #cbd5f5;
-      background:rgba(255,255,255,0.9);
-      transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
-    }
-    .tab:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(15,23,42,0.10); }
-    .tab.active{
-      background: rgba(29,155,240,0.12);
-      border-color: rgba(29,155,240,0.45);
-    }
-
-    footer.site-footer{
-      text-align:center;
-      font-size:12px;
-      color:#6b7280;
-      padding:10px 20px 18px;
-      border-top:1px solid #e5e7eb;
-      background-color:rgba(248,250,252,0.9);
-      margin-top:20px;
-    }
-
-    @media (max-width: 980px){
-      .title-group{ text-align:center; }
-      .header-inner{ justify-content:center; }
-    }
-
   </style>
-
-  <!-- CSS de Tabulator LOCAL -->
-  <link rel="stylesheet" href="tabulator.min.css">
+<!-- CSS de Tabulator LOCAL -->
+<link href="tabulator.min.css" rel="stylesheet"/>
 </head>
 <body>
-  <header class="site-header">
-    <div class="header-inner">
-      <div class="logo-group">
-        <img src="conap_logo.jpg" alt="Logo CONAP">
-        <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
-      </div>
-      <div class="title-group">
-        <h1>Centro de consulta de datos</h1>
-        <p>Sistema de monitoreo de actividades</p>
-        <p>CONAP – Dirección Regional Altiplano Central</p>
-        <div class="chip-version">
-          <span class="chip-dot"></span>
-          <span>Módulo AC210 · Viveros</span>
-        </div>
-      </div>
-    </div>
-  </header>
+<header class="header-bar">
+<h1>Centro de consulta de datos</h1>
+<p>Sistema de monitoreo de actividades CONAP-DIRECCIÓN REGIONAL ALTIPLANO CENTRAL</p>
+</header>
+<main class="main-container">
 
-  <main class="main-container">
-    <nav class="tabs" aria-label="Navegación del módulo">
-      <a class="tab" href="ac210_dashboard.html">🗺️ Dashboard geográfico</a>
-      <a class="tab" href="ac210_tablero.html">📈 Tablero dinámico</a>
-      <a class="tab active" href="ac210_datos.html">📋 Tabla</a>
-    </nav>
-    <div class="top-bar">
-      <div>
-        <h2>AC210 Asistencia técnica a viveros</h2>
-        <p>Detalle de registros (tabla basada en base2_datos.csv).</p>
-      </div>
-      <div class="buttons">
-        <button id="download-csv">Descargar CSV</button>
-        <button id="download-xlsx">Descargar Excel</button>
-        <!-- Botones informe por registro -->
-        <button id="generate-report-word">Informe registro (Word)</button>
-        <button id="generate-report-pdf">Informe registro (PDF)</button>
-      </div>
-    </div>
-
-    <!-- Barra para informe mensual -->
-    <div class="monthly-report-bar">
-      <label for="monthly-month-select">Informe mensual de asistencia técnica a viveros (AC210):</label>
-      <select id="monthly-month-select">
-        <option value="">Cargando meses...</option>
-      </select>
-      <button id="generate-monthly-report-word" disabled>Generar informe mensual (Word)</button>
-      <button id="generate-monthly-report-pdf" disabled>Generar informe mensual (PDF)</button>
-    </div>
-
-    <div class="back-container">
-      <a href="ac210_dashboard.html" class="back-link">← Volver al dashboard</a>
-    </div>
-
-    <!-- Solo la tabla aquí -->
-    <div id="tabla"></div>
-  </main>
-
-  <!-- Librerías JS necesarias (LOCALES) -->
-  <script src="tabulator.min.js"></script>
-  <script src="papaparse.min.js"></script>
-  <script src="xlsx.full.min.js"></script>
-  <!-- Librería para generar PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-  <script>
+<div class="top-bar">
+<div>
+<h2>Asistencia técnica a viveros (AC210)</h2>
+<p>Detalle de registros (tabla basada en base2_datos.csv).</p>
+</div>
+<div class="buttons">
+<button id="download-csv">Descargar CSV</button>
+<button id="download-xlsx">Descargar Excel</button>
+<!-- Botones informe por registro -->
+<button id="generate-report-word">Informe registro (Word)</button>
+<button id="generate-report-pdf">Informe registro (PDF)</button>
+</div>
+</div>
+<!-- Barra para informe mensual -->
+<div class="monthly-report-bar">
+<label for="monthly-month-select">Informe mensual de asistencia técnica a viveros (AC210):</label>
+<select id="monthly-month-select">
+<option value="">Cargando meses...</option>
+</select>
+<button disabled="" id="generate-monthly-report-word">Generar informe mensual (Word)</button>
+<button disabled="" id="generate-monthly-report-pdf">Generar informe mensual (PDF)</button>
+</div>
+<div class="back-container"><a class="back-link" href="index.html">← Volver al inicio</a><a class="back-link" href="ac210_dashboard.html" style="margin-left:12px;">Dashboard geográfico</a><a class="back-link" href="ac210_tablero.html" style="margin-left:12px;">Tablero dinámico</a></div>
+<!-- Solo la tabla aquí -->
+<div id="tabla"></div>
+</main>
+<!-- Librerías JS necesarias (LOCALES) -->
+<script src="tabulator.min.js"></script>
+<script src="papaparse.min.js"></script>
+<script src="xlsx.full.min.js"></script>
+<!-- Librería para generar PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
     // Referencias globales
     let tablaAC210;
     let datosAC210 = [];

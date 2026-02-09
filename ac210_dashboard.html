@@ -1,197 +1,409 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>AC210 · Asistencia técnica a viveros - Dashboard geográfico</title>
-
-  <style>
-    :root{
-      --verde-header:#0f766e;
-      --verde-header-2:#0e7490;
-      --gris-fondo:#f5f7fa;
-      --texto-principal:#0f172a;
-      --texto-secundario:#6b7280;
-      --borde-suave:#e5e7eb;
-      --card-radius:14px;
+<meta charset="utf-8"/>
+<title>AC210 · Asistencia técnica a viveros - Dashboard geográfico</title>
+<style>
+    :root {
+      --verde-header: #0f766e;
+      --azul-boton: #1d9bf0;
+      --azul-boton-hover: #0f80cc;
+      --gris-fondo: #f5f7fa;
+      --texto-principal: #0f172a;
+      --texto-secundario: #6b7280;
+      --borde-suave: #e5e7eb;
+      --card-radius: 14px;
     }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-      color:var(--texto-principal);
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        Roboto, Helvetica, Arial, sans-serif;
+      color: var(--texto-principal);
       background:
         radial-gradient(circle at top left, #dbeafe 0, transparent 55%),
         radial-gradient(circle at bottom right, #bbf7d0 0, transparent 55%),
-        linear-gradient(180deg, #e5f3f0 0%, var(--gris-fondo) 35%, #eef2ff 100%);
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
+        linear-gradient(
+          180deg,
+          #e5f3f0 0%,
+          var(--gris-fondo) 35%,
+          #eef2ff 100%
+        );
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      animation: fadeInBody 0.4s ease-out forwards;
     }
-    header{
-      background: linear-gradient(90deg, var(--verde-header), var(--verde-header-2));
-      color:#fff;
-      padding:14px 20px 18px;
-      box-shadow:0 2px 10px rgba(15,23,42,0.25);
-      position:sticky; top:0; z-index:10;
+
+    @keyframes fadeInBody {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    .header-inner{
-      max-width:1100px; margin:0 auto;
-      display:flex; align-items:center; justify-content:space-between;
-      gap:16px; flex-wrap:wrap;
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+      body {
+        animation: none;
+        opacity: 1;
+      }
+      .btn,
+      .card {
+        transition: none !important;
+      }
     }
-    .logo-group{
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-      background-color: rgba(255,255,255,0.12);
-      border-radius:999px; padding:6px 10px;
-      border:1px solid rgba(255,255,255,0.15);
+
+    /* HEADER institucional (igual estilo que index) */
+    header {
+      background: linear-gradient(90deg, #0f766e, #0e7490);
+      color: #fff;
+      padding: 14px 20px 18px 20px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.25);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      background-color: rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(4px);
     }
-    .logo-group img{
-      height:40px; max-width:130px; object-fit:contain;
-      background-color:#fff; border-radius:999px; padding:4px 8px;
-      box-shadow:0 2px 6px rgba(15,23,42,0.25);
-    }
-    .title-group{ text-align:right; flex:1 1 260px; }
-    .title-group h1{ margin:0 0 2px; font-size:22px; letter-spacing:.02em; }
-    .title-group p{ margin:0; opacity:.95; font-size:13px; line-height:1.35; }
-    .chip-version{
-      margin-top:8px;
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      background: rgba(255,255,255,0.14);
-      border:1px solid rgba(255,255,255,0.18);
-      font-size:12px;
-      font-weight:900;
-      letter-spacing:.02em;
-      text-transform:uppercase;
-    }
-    .chip-dot{ width:9px; height:9px; border-radius:999px; background:#34d399; box-shadow:0 0 0 3px rgba(52,211,153,0.25); }
 
-    main{ max-width:1100px; margin:0 auto; width:100%; padding:18px 16px 34px; }
-    .page-header{
-      padding:16px 18px;
+    .logo-group img {
+      height: 40px;
+      max-width: 130px;
+      object-fit: contain;
+      background-color: #ffffff;
+      border-radius: 999px;
+      padding: 4px 8px;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+    }
+
+    .title-group {
+      text-align: right;
+      flex: 1 1 260px;
+    }
+
+    .title-group h1 {
+      margin: 0 0 2px 0;
+      font-size: 22px;
+      letter-spacing: 0.02em;
+    }
+
+    .title-group p {
+      margin: 0;
+      font-size: 13px;
+      opacity: 0.96;
+      line-height: 1.4;
+    }
+
+    .chip-version {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(248, 250, 252, 0.4);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background-color: rgba(15, 23, 42, 0.18);
+    }
+
+    .chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background-color: #bbf7d0;
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
+    }
+
+    /* CONTENIDO PRINCIPAL */
+    main {
+      max-width: 1100px;
+      width: 100%;
+      margin: 26px auto 0 auto;
+      padding: 0 20px 40px 20px;
+      flex: 1 0 auto;
+    }
+
+    .page-header {
+      margin-bottom: 18px;
+    }
+
+    .page-header h2 {
+      margin: 0 0 6px 0;
+      font-size: 20px;
+    }
+
+    .page-header p {
+      margin: 2px 0;
+      font-size: 14px;
+      color: var(--texto-secundario);
+    }
+
+    .pill {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 3px 10px;
+      font-size: 11px;
+      border-radius: 999px;
+      background-color: rgba(37, 99, 235, 0.08);
+      color: #1d4ed8;
+      border: 1px solid rgba(191, 219, 254, 0.9);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* Tarjeta del dashboard */
+    .card {
+      background-color: #ffffff;
       border-radius: var(--card-radius);
-      border:1px solid var(--borde-suave);
-      background: rgba(255,255,255,0.72);
-      box-shadow:0 8px 18px rgba(15,23,42,0.06);
-      margin-bottom:12px;
-    }
-    .page-header h2{ margin:0 0 6px; font-size:20px; }
-    .page-header p{ margin:0; color:var(--texto-secundario); }
-    .pill{
-      display:inline-flex; margin-top:10px;
-      padding:6px 10px; border-radius:999px;
-      background:#e0f2fe; border:1px solid #bae6fd;
-      color:#0f172a; font-size:12px; font-weight:900;
-    }
-    .tabs{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin:10px 0 14px;
-    }
-    .tab{
-      text-decoration:none;
-      color:var(--texto-principal);
-      font-weight:900;
-      font-size:13px;
-      padding:9px 12px;
-      border-radius:999px;
-      border:1px solid #cbd5f5;
-      background:rgba(255,255,255,0.75);
-      transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
-    }
-    .tab:hover{ transform:translateY(-1px); box-shadow:0 6px 16px rgba(15,23,42,0.10); }
-    .tab.active{
-      background: rgba(29,155,240,0.12);
-      border-color: rgba(29,155,240,0.45);
+      border: 1px solid var(--borde-suave);
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.1);
+      padding: 18px 18px 20px 18px;
+      margin-bottom: 22px;
+      position: relative;
+      overflow: hidden;
     }
 
-    .card{
-      background: rgba(255,255,255,0.82);
-      border:1px solid var(--borde-suave);
-      border-radius: var(--card-radius);
-      box-shadow:0 10px 24px rgba(15,23,42,0.07);
-      padding:14px;
-      margin:14px 0;
-    }
-    .iframe-wrap{
-      border:1px solid #e5e7eb;
-      border-radius:12px;
-      overflow:hidden;
-      background:#fff;
-      height: 720px;
-    }
-    .iframe-wrap iframe{ width:100%; height:100%; border:0; }
-
-    footer{
-      text-align:center;
-      font-size:12px;
-      color:#6b7280;
-      padding:10px 20px 18px;
-      border-top:1px solid #e5e7eb;
-      background-color:rgba(248,250,252,0.9);
-      margin-top:auto;
+    .card::before {
+      content: "";
+      position: absolute;
+      left: -40px;
+      top: -40px;
+      width: 120px;
+      height: 120px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.1), transparent 65%);
+      pointer-events: none;
     }
 
-    @media (max-width: 980px){
-      .title-group{ text-align:center; }
-      .header-inner{ justify-content:center; }
-      .iframe-wrap{ height: 740px; }
+    .card-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title span.emoji {
+      font-size: 18px;
+      filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.25));
+    }
+
+    .card-subtitle {
+      margin: 4px 0 10px 0;
+      font-size: 13px;
+      color: var(--texto-secundario);
+    }
+
+    .embed-container {
+      position: relative;
+      padding-bottom: 80%;
+      height: 0;
+      overflow: hidden;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      background: #fff;
+      border: 1px solid #e5e7eb;
+    }
+
+    .embed-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    /* Botones de navegación */
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 14px;
+      font-size: 14px;
+      border-radius: 999px;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      font-weight: 600;
+      transition:
+        background-color 0.18s ease,
+        color 0.18s ease,
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        border-color 0.18s ease;
+    }
+
+    .btn span.icon {
+      margin-right: 6px;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background-color: var(--azul-boton);
+      color: #fff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--azul-boton-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.28);
+    }
+
+    .btn-ghost {
+      background-color: rgba(255, 255, 255, 0.9);
+      color: #0f172a;
+      border-color: #cbd5f5;
+    }
+
+    .btn-ghost:hover {
+      background-color: #e5edff;
+      border-color: #93c5fd;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
+    }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: #6b7280;
+      padding: 10px 20px 18px 20px;
+      border-top: 1px solid #e5e7eb;
+      background-color: rgba(248, 250, 252, 0.9);
+      margin-top: auto;
+    }
+
+    footer p {
+      margin: 3px 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 720px) {
+      .header-inner {
+        justify-content: center;
+      }
+
+      .title-group {
+        text-align: center;
+      }
+
+      .title-group h1 {
+        font-size: 20px;
+      }
+
+      .logo-group {
+        justify-content: center;
+      }
+
+      .card {
+        padding: 14px 14px 16px 14px;
+      }
     }
   </style>
 </head>
-
 <body>
-  <header>
-    <div class="header-inner">
-      <div class="logo-group">
-        <img src="conap_logo.jpg" alt="Logo CONAP">
-        <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
-      </div>
-      <div class="title-group">
-        <h1>Centro de consulta de datos</h1>
-        <p>Sistema de monitoreo de actividades</p>
-        <p>CONAP – Dirección Regional Altiplano Central</p>
-        <div class="chip-version">
-          <span class="chip-dot"></span>
-          <span>Módulo AC210 · Viveros</span>
-        </div>
-      </div>
-    </div>
-  </header>
+<header>
+<div class="header-inner">
+<div class="logo-group">
+<img alt="Logo CONAP" src="conap_logo.jpg"/>
+<img alt="Logo Laboratorio SIG AALA" src="aala_logo.png"/>
+</div>
+<div class="title-group">
+<h1>Centro de consulta de datos</h1>
+<p>Sistema de monitoreo de actividades</p>
+<p>CONAP – Dirección Regional Altiplano Central</p>
+<div class="chip-version">
+<span class="chip-dot"></span>
+<span>Módulo AC210 · Viveros</span>
+</div>
+</div>
+</div>
+</header>
+<main>
+<section class="page-header">
+<h2>Asistencia técnica a viveros</h2><p>Panel geográfico de asistencia técnica a viveros.</p><p>Use los filtros del visor para explorar espacialmente los registros del formulario.</p>
 
-  <main>
-    <section class="page-header">
-      <h2>AC210 Asistencia técnica a viveros · Dashboard geográfico</h2>
-      <p>Panel geográfico incrustado (ArcGIS Experience Builder).</p>
-      <span class="pill">Dashboard geográfico</span>
-    </section>
 
-    <nav class="tabs" aria-label="Navegación del módulo">
-      <a class="tab active" href="ac210_dashboard.html">🗺️ Dashboard geográfico</a>
-      <a class="tab" href="ac210_tablero.html">📈 Tablero dinámico</a>
-      <a class="tab" href="ac210_datos.html">📋 Tabla</a>
-    </nav>
-
-    <section class="card">
-      <div class="iframe-wrap">
-        <iframe
-          src="https://experience.arcgis.com/experience/f6fc7c0301a6408294ce81e2941a6f99/"
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
-          allowfullscreen
-          title="AC210 Dashboard geográfico"></iframe>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <p>© 2026 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
-  </footer>
+<span class="pill">Dashboard geográfico · ArcGIS Experience</span>
+</section>
+<section id="dashboard">
+<div class="card">
+<div class="card-header-row">
+<h3 class="card-title"><span class="emoji">🗺️</span> Dashboard geográfico de viveros</h3>
+</div>
+<p class="card-subtitle">Visor geográfico (ArcGIS Experience) con los registros de asistencia técnica a viveros (AC210).</p>
+<div class="embed-container">
+<iframe allowfullscreen="" src="https://experience.arcgis.com/experience/f6fc7c0301a6408294ce81e2941a6f99/"></iframe>
+</div>
+</div>
+</section>
+<div class="actions">
+<a class="btn btn-ghost" href="index.html"><span class="icon">←</span> Volver al inicio</a>
+<!-- ✅ NUEVO (único cambio necesario): botón al tablero dinámico -->
+<a class="btn btn-primary" href="ac210_tablero.html"><span class="icon">📈</span> Tablero dinámico (CSV)</a>
+<a class="btn btn-primary" href="ac210_datos.html"><span class="icon">📊</span> Ver tabla de datos de viveros</a>
+</div>
+</main>
+<footer>
+<p>© 2026 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
+</footer>
 </body>
 </html>
