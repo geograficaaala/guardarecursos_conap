@@ -1,23 +1,18 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>AC192 · Patrullajes - Tablero dinámico (CSV)</title>
-
-  <!-- Tabulator local (repo) -->
-  <link rel="stylesheet" href="tabulator.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/css/tabulator.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.2.5/dist/css/tabulator.min.css">
-
-  <!-- Chart.js (CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- Leaflet (OSM) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>AC192 · Patrullajes - Tablero dinámico (CSV)</title>
+<!-- Tabulator local (repo) -->
+<link href="tabulator.min.css" rel="stylesheet"/>
+<!-- Chart.js (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- Leaflet (OSM) -->
+<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
     :root{
       --verde-header:#34d399;
       --verde-header-2:#60a5fa;
@@ -316,32 +311,8 @@
       box-shadow:0 3px 10px rgba(15,23,42,.10);
     }
 
-    /* Tabla (Tabulator) */
-    .card.card-table{ overflow: visible; } /* permite scroll interno sin que el card lo recorte */
-
-    .tablewrap{
-      width:100%;
-      overflow:auto;                 /* scroll horizontal/vertical si hace falta */
-      -webkit-overflow-scrolling: touch;
-      border:1px solid rgba(148,163,184,0.35);
-      border-radius:14px;
-      background:#fff;
-      padding:6px;                   /* evita que el scroll toque el borde */
-    }
-
-    #tabla{ width:100%; }
-
-    /* Inputs de filtros en encabezados (mejor tamaño en móvil) */
-    .tabulator .tabulator-header .tabulator-col .tabulator-header-filter input{
-      width:100%;
-      box-sizing:border-box;
-      padding:4px 6px;
-      border-radius:8px;
-      border:1px solid rgba(148,163,184,0.55);
-      font-size:12px;
-    }
-
-footer{
+    .tablewrap{ overflow:hidden; }
+    footer{
       text-align:center;
       font-size:12px;
       color:#64748b;
@@ -381,176 +352,155 @@ footer{
       .chartwrap{ height: 230px; }
       #map{ height: 300px; }
     }
-  </style>
+  
+#tabla{ min-height:520px; }
+</style>
 </head>
-
 <body>
-  <header>
-    <div class="header-inner">
-      <div class="logo-group">
-        <img src="conap_logo.jpg" alt="Logo CONAP">
-        <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
-      </div>
-      <div class="title-group">
-        <h1>Centro de consulta de datos</h1>
-        <p>Sistema de monitoreo de actividades</p>
-        <p>CONAP – Dirección Regional Altiplano Central</p>
-      </div>
-    </div>
-  </header>
-
-  <main>
-    <section class="page-header">
-      <h2>AC192 · Patrullajes de control y vigilancia · Tablero dinámico</h2>
-      <p>Este tablero se genera automáticamente desde los datos extraídos de la boleta AC 192 y permite filtrar, graficar y generar un informe PDF liviano.</p>
-      <span class="pill">Tablero dinámico · CSV</span>
-    </section>
-
-    <section class="topnav" aria-label="Navegación y acciones del módulo">
-      <nav class="tabs" aria-label="Navegación del módulo">
-        <a class="tab" href="patrullajes_dashboard.html">Dashboard geográfico</a>
-        <a class="tab active" href="patrullajes_tablero.html">Tablero dinámico</a>
-        <a class="tab" href="patrullajes_datos.html">Tabla de datos</a>
-      </nav>
-
-      <div class="nav-actions">
-        <a class="btn btn-ghost" href="index.html">Inicio</a>
-        <button class="btn btn-ghost" id="btn-reset" type="button">Limpiar filtros</button>
-        <button class="btn btn-warn" id="btn-pdf" type="button">Generar informe PDF (liviano)</button>
-      </div>
-
-      <div class="infobox">
-        <b>Sugerencia:</b> haga clic sobre la serie temporal o sobre el gráfico de barras para filtrar.
-        <div class="chips" id="chips-filtros" aria-label="Resumen de filtros"></div>
-      </div>
-
-      <p class="subnote" id="estado" style="margin-top:10px;">Cargando datos…</p>
-    </section>
-
-    <section class="card soft" id="card-filtros" aria-label="Filtros del tablero">
-      <h3 style="margin:0 0 6px;">Filtros</h3>
-      <p class="subnote">Los filtros se aplican a KPIs, gráficos, mapa y tabla. Si un filtro no aplica (campo inexistente), se oculta automáticamente.</p>
-
-      <div class="filters" id="filters-grid">
-        <div class="field" id="wrap-anio">
-          <label for="f-anio">Año</label>
-          <select id="f-anio"></select>
-        </div>
-
-        <div class="field" id="wrap-mes">
-          <label for="f-mes">Mes</label>
-          <select id="f-mes"></select>
-        </div>
-
-        <div class="field wide" id="wrap-region">
-          <label for="f-region">Región</label>
-          <select id="f-region"></select>
-        </div>
-
-        <div class="field wide" id="wrap-municipio">
-          <label for="f-municipio">Municipio</label>
-          <select id="f-municipio"></select>
-        </div>
-
-        <div class="field wide" id="wrap-area">
-          <label for="f-area">Área protegida</label>
-          <select id="f-area"></select>
-        </div>
-
-        <div class="field wide" id="wrap-guarda">
-          <label for="f-guarda">Guardarrecursos responsable</label>
-          <select id="f-guarda"></select>
-        </div>
-
-        <div class="field wide" id="wrap-tipo">
-          <label for="f-tipo">Tipo de patrullaje</label>
-          <select id="f-tipo"></select>
-        </div>
-
-        <div class="field wide" id="wrap-ilegal">
-          <label for="f-ilegal">Actividad ilegal observada</label>
-          <select id="f-ilegal"></select>
-        </div>
-
-        <div class="field wide" id="wrap-ubicacion">
-          <label for="f-ubicacion">Ubicación</label>
-          <select id="f-ubicacion"></select>
-        </div>
-
-        <div class="field" id="wrap-buscar">
-          <label for="f-buscar">Buscar</label>
-          <input id="f-buscar" type="text" placeholder="palabra clave (en cualquier campo)" />
-        </div>
-      </div>
-    </section>
-
-    <section class="card" aria-label="Indicadores">
-      <h3 style="margin:0 0 10px;">Indicadores</h3>
-      <div class="kpis">
-        <div class="kpi"><div class="t">Registros</div><div class="v" id="kpi-registros">–</div><div class="s" id="kpi-registros-s">Total</div></div>
-        <div class="kpi"><div class="t">Rango de fechas</div><div class="v" id="kpi-rango">–</div><div class="s">Según “Fecha de patrullaje”</div></div>
-        <div class="kpi"><div class="t">Regiones</div><div class="v" id="kpi-regiones">–</div><div class="s">Únicas</div></div>
-        <div class="kpi"><div class="t">Municipios</div><div class="v" id="kpi-municipios">–</div><div class="s">Únicos</div></div>
-        <div class="kpi"><div class="t">Áreas protegidas</div><div class="v" id="kpi-areas">–</div><div class="s">Únicas</div></div>
-        <div class="kpi"><div class="t">Con coordenadas</div><div class="v" id="kpi-coords">–</div><div class="s">Para el mapa</div></div>
-      </div>
-    </section>
-
-    <section class="grid" aria-label="Gráficos">
-      <div class="card col-6">
-        <h3 style="margin:0 0 8px;">Serie temporal (registros)</h3>
-        <div class="chartwrap tall"><canvas id="chart-tiempo"></canvas></div>
-        <p class="subnote" id="note-tiempo">Clic en un punto para filtrar por mes.</p>
-      </div>
-
-      <div class="card col-6">
-        <div class="maprow">
-          <h3 style="margin:0;">Distribución por tipo</h3>
-          <div class="mini-actions">
-            <button class="mini-btn" id="btn-clear-chart" type="button">Quitar filtro gráfico</button>
-          </div>
-        </div>
-        <div class="chartwrap tall"><canvas id="chart-tipo"></canvas></div>
-        <p class="subnote">Clic en una barra para filtrar por categoría.</p>
-      </div>
-    </section>
-
-    <section class="card" aria-label="Mapa">
-      <div class="maprow">
-        <h3 style="margin:0;">Mapa (si hay coordenadas)</h3>
-        <div class="mini-actions">
-          <button class="mini-btn" id="btn-centrar" type="button">Centrar</button>
-          <button class="mini-btn" id="btn-geojson" type="button">Descargar GeoJSON</button>
-        </div>
-      </div>
-      <div id="map"></div>
-      <p class="subnote" id="map-note">Si el CSV no incluye coordenadas, el mapa se ocultará automáticamente.</p>
-    </section>
-
-    <section class="card card-table" aria-label="Tabla de registros">
-      <div class="maprow">
-        <h3 style="margin:0;">Tabla (Tabulator)</h3>
-        <div class="mini-actions">
-          <button class="mini-btn" id="btn-csv" type="button">Descargar CSV</button>
-          <button class="mini-btn" id="btn-xlsx" type="button">Descargar Excel</button>
-        </div>
-      </div>
-      <div class="tablewrap"><div id="tabla"></div></div>
-      <p class="subnote">Tip: use el buscador superior y el filtro por columna (en encabezados) para refinar aún más.</p>
-    </section>
-  </main>
-
-  <footer>
-    <p>© 2026 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
-  </footer>
-
-  <div class="toast" id="toast">Listo</div>
-
-  <!-- Librerías locales del repositorio -->
-  <!-- PDF -->
-  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
-
-  <script>
+<header>
+<div class="header-inner">
+<div class="logo-group">
+<img alt="Logo CONAP" src="conap_logo.jpg"/>
+<img alt="Logo Laboratorio SIG AALA" src="aala_logo.png"/>
+</div>
+<div class="title-group">
+<h1>Centro de consulta de datos</h1>
+<p>Sistema de monitoreo de actividades</p>
+<p>CONAP – Dirección Regional Altiplano Central</p>
+</div>
+</div>
+</header>
+<main>
+<section class="page-header">
+<h2>AC192 · Patrullajes de control y vigilancia · Tablero dinámico</h2>
+<p>Este tablero se genera automáticamente desde los datos extraídos de la boleta AC 192 y permite filtrar, graficar y generar un informe PDF liviano.</p>
+<span class="pill">Tablero dinámico · CSV</span>
+</section>
+<section aria-label="Navegación y acciones del módulo" class="topnav">
+<nav aria-label="Navegación del módulo" class="tabs">
+<a class="tab" href="patrullajes_dashboard.html">Dashboard geográfico</a>
+<a class="tab active" href="patrullajes_tablero.html">Tablero dinámico</a>
+<a class="tab" href="patrullajes_datos.html">Tabla de datos</a>
+</nav>
+<div class="nav-actions">
+<a class="btn btn-ghost" href="index.html">Inicio</a>
+<button class="btn btn-ghost" id="btn-reset" type="button">Limpiar filtros</button>
+<button class="btn btn-warn" id="btn-pdf" type="button">Generar informe PDF (liviano)</button>
+</div>
+<div class="infobox">
+<b>Sugerencia:</b> haga clic sobre la serie temporal o sobre el gráfico de barras para filtrar.
+        <div aria-label="Resumen de filtros" class="chips" id="chips-filtros"></div>
+</div>
+<p class="subnote" id="estado" style="margin-top:10px;">Cargando datos…</p>
+</section>
+<section aria-label="Filtros del tablero" class="card soft" id="card-filtros">
+<h3 style="margin:0 0 6px;">Filtros</h3>
+<p class="subnote">Los filtros se aplican a KPIs, gráficos, mapa y tabla. Si un filtro no aplica (campo inexistente), se oculta automáticamente.</p>
+<div class="filters" id="filters-grid">
+<div class="field" id="wrap-anio">
+<label for="f-anio">Año</label>
+<select id="f-anio"></select>
+</div>
+<div class="field" id="wrap-mes">
+<label for="f-mes">Mes</label>
+<select id="f-mes"></select>
+</div>
+<div class="field wide" id="wrap-region">
+<label for="f-region">Región</label>
+<select id="f-region"></select>
+</div>
+<div class="field wide" id="wrap-municipio">
+<label for="f-municipio">Municipio</label>
+<select id="f-municipio"></select>
+</div>
+<div class="field wide" id="wrap-area">
+<label for="f-area">Área protegida</label>
+<select id="f-area"></select>
+</div>
+<div class="field wide" id="wrap-guarda">
+<label for="f-guarda">Guardarrecursos responsable</label>
+<select id="f-guarda"></select>
+</div>
+<div class="field wide" id="wrap-tipo">
+<label for="f-tipo">Tipo de patrullaje</label>
+<select id="f-tipo"></select>
+</div>
+<div class="field wide" id="wrap-ilegal">
+<label for="f-ilegal">Actividad ilegal observada</label>
+<select id="f-ilegal"></select>
+</div>
+<div class="field wide" id="wrap-ubicacion">
+<label for="f-ubicacion">Ubicación</label>
+<select id="f-ubicacion"></select>
+</div>
+<div class="field" id="wrap-buscar">
+<label for="f-buscar">Buscar</label>
+<input id="f-buscar" placeholder="palabra clave (en cualquier campo)" type="text"/>
+</div>
+</div>
+</section>
+<section aria-label="Indicadores" class="card">
+<h3 style="margin:0 0 10px;">Indicadores</h3>
+<div class="kpis">
+<div class="kpi"><div class="t">Registros</div><div class="v" id="kpi-registros">–</div><div class="s" id="kpi-registros-s">Total</div></div>
+<div class="kpi"><div class="t">Rango de fechas</div><div class="v" id="kpi-rango">–</div><div class="s">Según “Fecha de patrullaje”</div></div>
+<div class="kpi"><div class="t">Regiones</div><div class="v" id="kpi-regiones">–</div><div class="s">Únicas</div></div>
+<div class="kpi"><div class="t">Municipios</div><div class="v" id="kpi-municipios">–</div><div class="s">Únicos</div></div>
+<div class="kpi"><div class="t">Áreas protegidas</div><div class="v" id="kpi-areas">–</div><div class="s">Únicas</div></div>
+<div class="kpi"><div class="t">Con coordenadas</div><div class="v" id="kpi-coords">–</div><div class="s">Para el mapa</div></div>
+</div>
+</section>
+<section aria-label="Gráficos" class="grid">
+<div class="card col-6">
+<h3 style="margin:0 0 8px;">Serie temporal (registros)</h3>
+<div class="chartwrap tall"><canvas id="chart-tiempo"></canvas></div>
+<p class="subnote" id="note-tiempo">Clic en un punto para filtrar por mes.</p>
+</div>
+<div class="card col-6">
+<div class="maprow">
+<h3 style="margin:0;">Distribución por tipo</h3>
+<div class="mini-actions">
+<button class="mini-btn" id="btn-clear-chart" type="button">Quitar filtro gráfico</button>
+</div>
+</div>
+<div class="chartwrap tall"><canvas id="chart-tipo"></canvas></div>
+<p class="subnote">Clic en una barra para filtrar por categoría.</p>
+</div>
+</section>
+<section aria-label="Mapa" class="card">
+<div class="maprow">
+<h3 style="margin:0;">Mapa (si hay coordenadas)</h3>
+<div class="mini-actions">
+<button class="mini-btn" id="btn-centrar" type="button">Centrar</button>
+<button class="mini-btn" id="btn-geojson" type="button">Descargar GeoJSON</button>
+</div>
+</div>
+<div id="map"></div>
+<p class="subnote" id="map-note">Si el CSV no incluye coordenadas, el mapa se ocultará automáticamente.</p>
+</section>
+<section aria-label="Tabla de registros" class="card">
+<div class="maprow">
+<h3 style="margin:0;">Tabla (Tabulator)</h3>
+<div class="mini-actions">
+<button class="mini-btn" id="btn-csv" type="button">Descargar CSV</button>
+<button class="mini-btn" id="btn-xlsx" type="button">Descargar Excel</button>
+</div>
+</div>
+<div class="tablewrap"><div id="tabla"></div></div>
+<p class="subnote">Tip: use el buscador superior y el filtro por columna (en encabezados) para refinar aún más.</p>
+</section>
+</main>
+<footer>
+<p>© 2026 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
+</footer>
+<div class="toast" id="toast">Listo</div>
+<!-- Librerías locales del repositorio -->
+<script src="papaparse.min.js"></script>
+<script src="tabulator.min.js"></script>
+<script src="xlsx.full.min.js"></script>
+<!-- PDF -->
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+<script>
 (function () {
   // -----------------------------
   // Config
@@ -665,23 +615,19 @@ footer{
   }
 
   async function ensureDependencies() {
-    const loaded = [];
     // Si tus archivos locales existen, se usarán primero; si no, cae a CDN.
-    loaded.push(await ensureLib("PapaParse", () => !!window.Papa, [
-      "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js",
-      "https://unpkg.com/papaparse@5.4.1/papaparse.min.js",
-      "papaparse.min.js"
-    ]));
-    loaded.push(await ensureLib("Tabulator", () => !!window.Tabulator, [
-      "https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/js/tabulator.min.js",
-      "https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js",
-      "tabulator.min.js"
-    ]));
-    loaded.push(await ensureLib("XLSX", () => !!window.XLSX, [
-      "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
-      "https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js",
-      "xlsx.full.min.js"
-    ]));
+    await ensureLib("PapaParse", () => !!window.Papa, [
+      "papaparse.min.js",
+      "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
+    ]);
+    await ensureLib("Tabulator", () => !!window.Tabulator, [
+      "tabulator.min.js",
+      "https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/js/tabulator.min.js"
+    ]);
+    await ensureLib("XLSX", () => !!window.XLSX, [
+      "xlsx.full.min.js",
+      "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+    ]);
     await ensureLib("Chart.js", () => !!window.Chart, [
       "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
     ]);
@@ -691,9 +637,7 @@ footer{
     await ensureLib("html2pdf", () => !!window.html2pdf, [
       "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
     ]);
-  
-    return loaded;
-}
+  }
 
   // -----------------------------
   // CSV decoding / parsing
@@ -838,16 +782,74 @@ footer{
     return rawData.length && Object.prototype.hasOwnProperty.call(rawData[0], fieldName);
   }
 
-  function uniqueValues(rows, field) {
-    const set = new Set();
-    rows.forEach(r => {
-      const v = (r && r[field] != null) ? String(r[field]).trim() : "";
-      if (v) set.add(v);
-    });
-    return Array.from(set).sort((a,b)=>a.localeCompare(b, "es"));
+  // Normalización para evitar duplicados (acentos / mayúsculas / espacios)
+  const _STOP_WORDS = new Set(["y","de","del","la","las","los","el","al","a","en","por","con","sin"]);
+  function canonText(v) {
+    const s = String(v ?? "").trim().replace(/\s+/g, " ");
+    if (!s) return "";
+    return s.normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
   }
-
-  function numFromAny(v) {
+  function applyAlias(field, canon) {
+    if (!canon) return "";
+    let c = canon;
+    if (field === "region") {
+      if (c === "altiplano centraln") c = "altiplano central";
+      // "Reginal" -> "Regional"
+      c = c.replace(/\breginal\b/g, "regional");
+    }
+    return c;
+  }
+  function canonField(v, field) {
+    return applyAlias(field, canonText(v));
+  }
+  function accentScore(s) {
+    return (String(s||"").match(/[áéíóúÁÉÍÓÚñÑüÜ]/g) || []).length;
+  }
+  function bestVariant(list) {
+    const arr = (list || []).map(x => String(x||"").trim()).filter(Boolean);
+    if (!arr.length) return "";
+    arr.sort((a,b) => {
+      const dAcc = accentScore(b) - accentScore(a);
+      if (dAcc) return dAcc;
+      const dLen = b.length - a.length;
+      if (dLen) return dLen;
+      return a.localeCompare(b, "es");
+    });
+    return arr[0];
+  }
+  function prettyLabel(raw) {
+    const s = String(raw||"").trim().replace(/\s+/g, " ");
+    if (!s) return "";
+    // Mantener siglas cortas (ej. RUMCLA)
+    if (/^[A-ZÁÉÍÓÚÑÜ0-9]{2,10}$/.test(s)) return s;
+    const words = s.toLocaleLowerCase("es").split(" ");
+    return words.map((w,i) => {
+      if (i>0 && _STOP_WORDS.has(w)) return w;
+      return w.charAt(0).toLocaleUpperCase("es") + w.slice(1);
+    }).join(" ");
+  }
+  function uniquePairs(rows, field, canonKey, canonFieldName) {
+    const map = new Map(); // canon -> variants[]
+    rows.forEach(r => {
+      const raw = (r && r[field] != null) ? String(r[field]).trim() : "";
+      const c = (r && r[canonKey]) ? String(r[canonKey]) : canonField(raw, canonFieldName || "");
+      if (!raw || !c) return;
+      if (!map.has(c)) map.set(c, []);
+      map.get(c).push(raw);
+    });
+    const pairs = Array.from(map.entries()).map(([value, variants]) => ({
+      value,
+      label: prettyLabel(bestVariant(variants))
+    }));
+    pairs.sort((a,b)=>a.label.localeCompare(b.label, "es"));
+    return pairs;
+  }
+function numFromAny(v) {
     if (v == null) return null;
     const s = String(v).trim();
     if (!s) return null;
@@ -890,13 +892,13 @@ footer{
     // Mes depende del año seleccionado
     updateMesOptions();
 
-    if (hasField(FIELD_REGION)) fillSelect($("f-region"), uniqueValues(rawData, FIELD_REGION), "Todas");
-    if (hasField(FIELD_MUNICIPIO)) fillSelect($("f-municipio"), uniqueValues(rawData, FIELD_MUNICIPIO), "Todos");
-    if (hasField(FIELD_AREA)) fillSelect($("f-area"), uniqueValues(rawData, FIELD_AREA), "Todas");
-    if (hasField(FIELD_GUARDA)) fillSelect($("f-guarda"), uniqueValues(rawData, FIELD_GUARDA), "Todos");
-    if (hasField(FIELD_TIPO)) fillSelect($("f-tipo"), uniqueValues(rawData, FIELD_TIPO), "Todos");
-    if (hasField(FIELD_ILEGAL)) fillSelect($("f-ilegal"), uniqueValues(rawData, FIELD_ILEGAL), "Todas");
-    if (hasField(FIELD_UBIC)) fillSelect($("f-ubicacion"), uniqueValues(rawData, FIELD_UBIC), "Todas");
+    if (hasField(FIELD_REGION)) fillSelectPairs($("f-region"), uniquePairs(rawData, FIELD_REGION, "_c_region", "region"), "Todas");
+    if (hasField(FIELD_MUNICIPIO)) fillSelectPairs($("f-municipio"), uniquePairs(rawData, FIELD_MUNICIPIO, "_c_municipio", "municipio"), "Todos");
+    if (hasField(FIELD_AREA)) fillSelectPairs($("f-area"), uniquePairs(rawData, FIELD_AREA, "_c_area", "area"), "Todas");
+    if (hasField(FIELD_GUARDA)) fillSelectPairs($("f-guarda"), uniquePairs(rawData, FIELD_GUARDA, "_c_guarda", "guarda"), "Todos");
+    if (hasField(FIELD_TIPO)) fillSelectPairs($("f-tipo"), uniquePairs(rawData, FIELD_TIPO, "_c_tipo", "tipo"), "Todos");
+    if (hasField(FIELD_ILEGAL)) fillSelectPairs($("f-ilegal"), uniquePairs(rawData, FIELD_ILEGAL, "_c_ilegal", "ilegal"), "Todas");
+    if (hasField(FIELD_UBIC)) fillSelectPairs($("f-ubicacion"), uniquePairs(rawData, FIELD_UBIC, "_c_ubic", "ubic"), "Todas");
   }
 
   function updateMesOptions() {
@@ -934,13 +936,13 @@ footer{
       if (anio && String(r._anio) !== String(anio)) return false;
       if (mesKey && r._monthKey !== mesKey) return false;
 
-      if (region && String(r[FIELD_REGION] || "").trim() !== region) return false;
-      if (municipio && String(r[FIELD_MUNICIPIO] || "").trim() !== municipio) return false;
-      if (area && String(r[FIELD_AREA] || "").trim() !== area) return false;
-      if (guarda && String(r[FIELD_GUARDA] || "").trim() !== guarda) return false;
-      if (tipo && String(r[FIELD_TIPO] || "").trim() !== tipo) return false;
-      if (ilegal && String(r[FIELD_ILEGAL] || "").trim() !== ilegal) return false;
-      if (ubic && String(r[FIELD_UBIC] || "").trim() !== ubic) return false;
+      if (region && (r._c_region || "") !== region) return false;
+      if (municipio && (r._c_municipio || "") !== municipio) return false;
+      if (area && (r._c_area || "") !== area) return false;
+      if (guarda && (r._c_guarda || "") !== guarda) return false;
+      if (tipo && (r._c_tipo || "") !== tipo) return false;
+      if (ilegal && (r._c_ilegal || "") !== ilegal) return false;
+      if (ubic && (r._c_ubic || "") !== ubic) return false;
 
       if (q) {
         const hay = Object.keys(r).some(k => {
@@ -960,6 +962,14 @@ footer{
     updateChips();
   }
 
+  function selectedLabel(id) {
+    const el = $(id);
+    if (!el) return "";
+    const opt = el.options[el.selectedIndex];
+    if (!opt || !opt.value) return "";
+    return opt.textContent || "";
+  }
+
   function updateChips() {
     const chips = $("chips-filtros");
     if (!chips) return;
@@ -967,13 +977,13 @@ footer{
     const mapping = [
       ["Año", $("f-anio").value],
       ["Mes", $("f-mes").value ? labelMonthKey($("f-mes").value) : ""],
-      ["Región", $("f-region").value],
-      ["Municipio", $("f-municipio").value],
-      ["Área", $("f-area").value],
-      ["Guardarrecursos", $("f-guarda").value],
-      ["Tipo", $("f-tipo").value],
-      ["Actividad ilegal", $("f-ilegal").value],
-      ["Ubicación", $("f-ubicacion").value],
+      ["Región", selectedLabel("f-region")],
+      ["Municipio", selectedLabel("f-municipio")],
+      ["Área", selectedLabel("f-area")],
+      ["Guardarrecursos", selectedLabel("f-guarda")],
+      ["Tipo", selectedLabel("f-tipo")],
+      ["Actividad ilegal", selectedLabel("f-ilegal")],
+      ["Ubicación", selectedLabel("f-ubicacion")],
       ["Buscar", ($("f-buscar").value || "").trim()]
     ];
 
@@ -1000,9 +1010,9 @@ footer{
     }
 
     // únicos
-    const reg = hasField(FIELD_REGION) ? new Set(filteredData.map(r => String(r[FIELD_REGION]||"").trim()).filter(Boolean)).size : 0;
-    const mun = hasField(FIELD_MUNICIPIO) ? new Set(filteredData.map(r => String(r[FIELD_MUNICIPIO]||"").trim()).filter(Boolean)).size : 0;
-    const ar = hasField(FIELD_AREA) ? new Set(filteredData.map(r => String(r[FIELD_AREA]||"").trim()).filter(Boolean)).size : 0;
+    const reg = hasField(FIELD_REGION) ? new Set(filteredData.map(r => (r._c_region||"")).filter(Boolean)).size : 0;
+    const mun = hasField(FIELD_MUNICIPIO) ? new Set(filteredData.map(r => (r._c_municipio||"")).filter(Boolean)).size : 0;
+    const ar = hasField(FIELD_AREA) ? new Set(filteredData.map(r => (r._c_area||"")).filter(Boolean)).size : 0;
 
     $("kpi-regiones").textContent = reg ? String(reg) : "–";
     $("kpi-municipios").textContent = mun ? String(mun) : "–";
@@ -1199,106 +1209,22 @@ footer{
       }
     }));
 
-    try {
-      table = new Tabulator("#tabla", {
+    table = new Tabulator("#tabla", {
       data: filteredData,
       layout: "fitColumns",
       height: "520px",
-      autoResize: true,
+      placeholder: "No hay registros para los filtros seleccionados.",
       pagination: "local",
       paginationSize: 25,
-      paginationSizeSelector: [25, 50, 100],
       movableColumns: true,
-      resizableColumnFit: true,
-      responsiveLayout: "collapse",
-      responsiveLayoutCollapseStartOpen: false,
-      responsiveLayoutCollapseFormatter: function(data){
-        // Muestra campos ocultos en pantallas pequeñas
-        const rows = Object.keys(data).map(function(k){
-          const v = (data[k] === null || data[k] === undefined) ? "" : String(data[k]);
-          return '<tr><td style="padding:2px 6px;border-bottom:1px solid #eef2f7;vertical-align:top"><b>' +
-            escapeHtml(String(k)) + '</b></td><td style="padding:2px 6px;border-bottom:1px solid #eef2f7">' +
-            escapeHtml(v) + '</td></tr>';
-        }).join("");
-        return '<div style="padding:8px 10px"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
-          rows + '</table></div>';
-      },
-      placeholder: "Sin registros para mostrar",
       columns: columns
     });
-
-    // Asegura que se renderice correctamente dentro de contenedores con scroll
-    setTimeout(function(){ try{ table.redraw(true); }catch(e){} }, 0);
-    } catch (e) {
-      console.error(e);
-      const el = document.getElementById('diag');
-      if (el) el.textContent = 'Error Tabulator: ' + (e && e.message ? e.message : String(e));
-      renderFallbackTable(filteredData);
-    }
   }
-
-  // Tabulator fallback
-  function renderFallbackTable(data){
-    const host = document.getElementById('tabla');
-    if (!host) return;
-    host.innerHTML = '';
-    const note = document.createElement('div');
-    note.style.fontSize='12px';
-    note.style.color='#334155';
-    note.style.padding='6px 8px';
-    note.textContent = 'Mostrando tabla básica (Tabulator no disponible).';
-    host.appendChild(note);
-    if (!data || !data.length){
-      const empty = document.createElement('div');
-      empty.style.padding='10px 8px';
-      empty.textContent='Sin registros para mostrar';
-      host.appendChild(empty);
-      return;
-    }
-    const keys = Object.keys(data[0]);
-    const tbl = document.createElement('table');
-    tbl.style.width='100%';
-    tbl.style.borderCollapse='collapse';
-    tbl.style.fontSize='12px';
-    const thead = document.createElement('thead');
-    const trh = document.createElement('tr');
-    keys.forEach(k=>{
-      const th=document.createElement('th');
-      th.textContent=k;
-      th.style.textAlign='left';
-      th.style.position='sticky';
-      th.style.top='0';
-      th.style.background='#f8fafc';
-      th.style.borderBottom='1px solid #e2e8f0';
-      th.style.padding='6px';
-      trh.appendChild(th);
-    });
-    thead.appendChild(trh);
-    tbl.appendChild(thead);
-    const tbody=document.createElement('tbody');
-    const maxRows=Math.min(data.length, 300);
-    for (let i=0;i<maxRows;i++){
-      const tr=document.createElement('tr');
-      keys.forEach(k=>{
-        const td=document.createElement('td');
-        td.textContent = (data[i][k]==null?'':String(data[i][k]));
-        td.style.borderBottom='1px solid #eef2f7';
-        td.style.padding='6px';
-        tr.appendChild(td);
-      });
-      tbody.appendChild(tr);
-    }
-    tbl.appendChild(tbody);
-    host.appendChild(tbl);
-  }
-
 
   function updateTable() {
-    if (!table) {
-      if (typeof renderFallbackTable === 'function') renderFallbackTable(filteredData);
-      return;
-    }
+    if (!table) return;
     table.replaceData(filteredData);
+    try { table.redraw(true); } catch (_) {}
   }
 
   // -----------------------------
@@ -1441,12 +1367,7 @@ footer{
   // -----------------------------
   async function loadData() {
     setEstado("Cargando librerías…");
-    const loadedLibs = await ensureDependencies();
-    try {
-      const diag = (loadedLibs || []).map(o => o.name + ": " + (o.url || "")).join(" · ");
-      const el = document.getElementById("diag");
-      if (el) el.textContent = "Librerías: " + diag;
-    } catch (e) {}
+    await ensureDependencies();
 
     setEstado("Cargando datos…");
     try {
@@ -1473,6 +1394,15 @@ footer{
         r._fechaObj = dt;
         r._anio = dt ? dt.getFullYear() : null;
         r._monthKey = dt ? monthKey(dt) : null;
+        // campos canónicos (para deduplicar filtros)
+        r._c_region = canonField(r[FIELD_REGION], "region");
+        r._c_municipio = canonField(r[FIELD_MUNICIPIO], "municipio");
+        r._c_area = canonField(r[FIELD_AREA], "area");
+        r._c_guarda = canonField(r[FIELD_GUARDA], "guarda");
+        r._c_tipo = canonField(r[FIELD_TIPO], "tipo");
+        r._c_ilegal = canonField(r[FIELD_ILEGAL], "ilegal");
+        r._c_ubic = canonField(r[FIELD_UBIC], "ubic");
+
       });
 
       initFilters();
@@ -1494,13 +1424,6 @@ footer{
       setEstado("Error inicial: " + err.message, true);
     });
   });
-
-  // Redibujar componentes en resize (evita cortes en Tabulator/Leaflet)
-  window.addEventListener("resize", function(){
-    try{ if (table) table.redraw(true); }catch(e){}
-    try{ if (map) map.invalidateSize(); }catch(e){}
-  });
-
 })();
 </script>
 </body>
