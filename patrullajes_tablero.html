@@ -528,793 +528,852 @@
   <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 
   <script>
-  (function () {
-    const CSV_URL = "./datos_patrullaje.csv?v=" + Date.now();
+(function () {
+  // -----------------------------
+  // Config
+  // -----------------------------
+  const CSV_CANDIDATES = [
+    "./datos_patrullaje.csv",
+    "datos_patrullaje.csv",
+    // Fallback: raw GitHub (sirve aunque Pages esté apuntando a /docs u otra carpeta)
+    "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/datos_patrullaje.csv"
+  ];
 
-    // Campos esperados (según AC192). Se usan si existen en el CSV.
-    const FIELD_FECHA = "Fecha de patrullaje";
-    const FIELD_REGION = "Region";
-    const FIELD_MUNICIPIO = "Municipio";
-    const FIELD_AREA = "Area protegida";
-    const FIELD_GUARDA = "Guarda recursos responsable";
-    const FIELD_TIPO = "Tipo de patrullaje";
-    const FIELD_ILEGAL = "Actividad ilegal observada";
-    const FIELD_UBIC = "Ubicacion";
+  // Campos esperados (según AC192). Se usan si existen en el CSV.
+  const FIELD_FECHA = "Fecha de patrullaje";
+  const FIELD_REGION = "Region";
+  const FIELD_MUNICIPIO = "Municipio";
+  const FIELD_AREA = "Area protegida";
+  const FIELD_GUARDA = "Guarda recursos responsable";
+  const FIELD_TIPO = "Tipo de patrullaje";
+  const FIELD_ILEGAL = "Actividad ilegal observada";
+  const FIELD_UBIC = "Ubicacion";
 
-    // Estado
-    let rawData = [];
-    let filteredData = [];
-    let tabla = null;
-    let chartTiempo = null;
-    let chartTipo = null;
-    let map = null;
-    let markersLayer = null;
+  // Coordenadas (según tu CSV)
+  const FIELD_LAT = "Latitud";
+  const FIELD_LON = "Longitud";
 
-    // Filtro "extra" por interacción con gráficos
-    let chartFilter = {
-      monthKey: null,     // "YYYY-MM"
-      tipoValue: null     // categoría de Tipo de patrullaje
-    };
+  // Rangos razonables para Guatemala (evita que un outlier arruine el zoom)
+  const GT_BOUNDS = { minLat: 13.0, maxLat: 18.6, minLon: -93.5, maxLon: -88.0 };
 
-    // UI helpers
-    const $ = (id) => document.getElementById(id);
+  // -----------------------------
+  // Helpers UI
+  // -----------------------------
+  const $ = (id) => document.getElementById(id);
 
-    function showToast(msg) {
-      const t = $("toast");
-      if (!t) return;
-      t.textContent = msg || "Listo";
-      t.classList.add("show");
-      setTimeout(() => t.classList.remove("show"), 1700);
-    }
+  function setEstado(msg, isError) {
+    const el = $("estado");
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = isError ? "#b91c1c" : "#1f2937";
+  }
 
-    function setEstado(msg) {
-      const el = $("estado");
-      if (el) el.textContent = msg;
-    }
+  function showToast(msg) {
+    const t = $("toast");
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 1500);
+  }
 
-    // --- Decodificación robusta (evita símbolos raros) ---
-    function decodeSmartCsv(buffer) {
+  function showOrHide(wrapperId, show) {
+    const el = $(wrapperId);
+    if (!el) return;
+    el.style.display = show ? "" : "none";
+  }
+
+  function fillSelect(selectEl, values, placeholder) {
+    if (!selectEl) return;
+    selectEl.innerHTML = "";
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = placeholder || "Todos";
+    selectEl.appendChild(opt0);
+
+    (values || []).forEach(v => {
+      const o = document.createElement("option");
+      o.value = v;
+      o.textContent = v;
+      selectEl.appendChild(o);
+    });
+  }
+
+  function fillSelectPairs(selectEl, pairs, placeholder) {
+    if (!selectEl) return;
+    selectEl.innerHTML = "";
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = placeholder || "Todos";
+    selectEl.appendChild(opt0);
+
+    (pairs || []).forEach(p => {
+      const o = document.createElement("option");
+      o.value = p.value;
+      o.textContent = p.label;
+      selectEl.appendChild(o);
+    });
+  }
+
+  // -----------------------------
+  // Robust loading of libs
+  // -----------------------------
+  function loadScript(url) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = url;
+      s.async = true;
+      s.onload = () => resolve(url);
+      s.onerror = () => reject(new Error("No se pudo cargar: " + url));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensureLib(name, testFn, urls) {
+    try {
+      if (testFn()) return { name, url: "preload" };
+    } catch (_) {}
+    for (const u of urls) {
       try {
-        const u8 = new Uint8Array(buffer);
-        const decUtf8 = new TextDecoder("utf-8", { fatal: false }).decode(u8);
-        const decWin = new TextDecoder("windows-1252", { fatal: false }).decode(u8);
+        await loadScript(u);
+        if (testFn()) return { name, url: u };
+      } catch (e) { /* try next */ }
+    }
+    throw new Error("Falta librería: " + name);
+  }
 
-        function score(s) {
-          const bad = ["�", "Ã", "Â", "â€™", "â€“", "â€œ", "â€"];
-          let c = 0;
-          for (const b of bad) c += (s.split(b).length - 1);
-          return c;
+  async function ensureDependencies() {
+    // Si tus archivos locales existen, se usarán primero; si no, cae a CDN.
+    await ensureLib("PapaParse", () => !!window.Papa, [
+      "papaparse.min.js",
+      "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
+    ]);
+    await ensureLib("Tabulator", () => !!window.Tabulator, [
+      "tabulator.min.js",
+      "https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/js/tabulator.min.js"
+    ]);
+    await ensureLib("XLSX", () => !!window.XLSX, [
+      "xlsx.full.min.js",
+      "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+    ]);
+    await ensureLib("Chart.js", () => !!window.Chart, [
+      "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+    ]);
+    await ensureLib("Leaflet", () => !!window.L, [
+      "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    ]);
+    await ensureLib("html2pdf", () => !!window.html2pdf, [
+      "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
+    ]);
+  }
+
+  // -----------------------------
+  // CSV decoding / parsing
+  // -----------------------------
+  function countReplacementChars(s) {
+    let c = 0;
+    for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) === 0xFFFD) c++;
+    return c;
+  }
+
+  function decodeSmartCsv(buffer) {
+    // Intenta UTF-8 vs Windows-1252 (muy común en CSV exportados en Windows)
+    try {
+      const utf8 = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
+      let best = utf8;
+      let bestScore = countReplacementChars(utf8);
+
+      try {
+        const w1252 = new TextDecoder("windows-1252", { fatal: false }).decode(buffer);
+        const score2 = countReplacementChars(w1252);
+        if (score2 < bestScore) {
+          best = w1252;
+          bestScore = score2;
         }
-        return (score(decWin) < score(decUtf8)) ? decWin : decUtf8;
+      } catch (_) { /* ignore */ }
+
+      return best;
+    } catch (_) {
+      // Último recurso: convertir a string de bytes
+      const bytes = new Uint8Array(buffer);
+      let out = "";
+      for (let i = 0; i < bytes.length; i++) out += String.fromCharCode(bytes[i]);
+      return out;
+    }
+  }
+
+  function detectarDelimitador(csvText) {
+    const lines = csvText.split(/\r?\n/).slice(0, 15).join("\n");
+    const cSemi = (lines.match(/;/g) || []).length;
+    const cComma = (lines.match(/,/g) || []).length;
+    const cTab = (lines.match(/\t/g) || []).length;
+    if (cSemi >= cComma && cSemi >= cTab) return ";";
+    if (cComma >= cSemi && cComma >= cTab) return ",";
+    return "\t";
+  }
+
+  async function fetchFirstOk(urls) {
+    let lastErr = null;
+    for (const base of urls) {
+      const url = base + (base.includes("?") ? "&" : "?") + "v=" + Date.now();
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+        const buffer = await res.arrayBuffer();
+        return { url, buffer };
       } catch (e) {
-        try { return new TextDecoder("utf-8").decode(new Uint8Array(buffer)); } catch(_) {}
-        return "";
+        lastErr = e;
       }
     }
+    throw lastErr || new Error("No se pudo descargar el CSV.");
+  }
 
-    function detectarDelimitador(csvText) {
-      const firstLine = String(csvText || "").split(/
-?
-/)[0] || "";
-      const sc = (firstLine.match(/;/g) || []).length;
-      const cc = (firstLine.match(/,/g) || []).length;
-      if (sc === 0 && cc === 0) return "";
-      return (sc >= cc) ? ";" : ",";
+  // -----------------------------
+  // Date parsing (DD/MM vs MM/DD)
+  // -----------------------------
+  function prepararHintsFechas(rows) {
+    let seenDayFirst = 0;
+    let seenMonthFirst = 0;
+
+    const sample = rows.slice(0, 250).map(r => (r && r[FIELD_FECHA]) ? String(r[FIELD_FECHA]).trim() : "").filter(Boolean);
+    for (const s of sample) {
+      const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+      if (!m) continue;
+      const a = parseInt(m[1], 10);
+      const b = parseInt(m[2], 10);
+      if (a > 12 && b <= 12) seenDayFirst++;
+      if (b > 12 && a <= 12) seenMonthFirst++;
     }
 
-    // --- Fechas (mismo enfoque que el módulo de datos: detectar MDY/DMY/YMD) ---
-    function detectarFormatoFecha(fechaRaw) {
-      if (!fechaRaw) return null;
-      const str = String(fechaRaw).trim();
-      const parteFecha = str.split(" ")[0];
-      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
-      if (!sep) return null;
-      const partes = parteFecha.split(sep);
-      if (partes.length < 3) return null;
+    const dayFirst = seenDayFirst >= seenMonthFirst; // tie -> dayFirst
+    rows.forEach(r => { r._dateHint = { dayFirst }; });
+  }
 
-      const p1 = parseInt(partes[0], 10);
-      const p2 = parseInt(partes[1], 10);
-      const p3 = parseInt(partes[2], 10);
-      if (![p1,p2,p3].every(n => Number.isFinite(n))) return null;
+  function parseFechaFlexible(s, hint) {
+    if (!s) return null;
+    const str = String(s).trim();
+    if (!str) return null;
 
-      if (String(partes[0]).length === 4) return "YMD";
-      if (p1 > 12 && p2 <= 12) return "DMY";
-      if (p2 > 12 && p1 <= 12) return "MDY";
-      return null;
+    // YYYY-MM-DD
+    let m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) {
+      const y = parseInt(m[1],10), mo = parseInt(m[2],10), d = parseInt(m[3],10);
+      const dt = new Date(y, mo-1, d);
+      return isNaN(dt.getTime()) ? null : dt;
     }
 
-    function prepararHintsFechas(data) {
-      const hints = data.map(reg => detectarFormatoFecha(reg[FIELD_FECHA]));
-
-      let last = null;
-      for (let i = 0; i < hints.length; i++) {
-        if (!hints[i]) hints[i] = last;
-        else last = hints[i];
-      }
-
-      let next = null;
-      for (let i = hints.length - 1; i >= 0; i--) {
-        if (!hints[i]) hints[i] = next;
-        else next = hints[i];
-      }
-
-      for (let i = 0; i < data.length; i++) {
-        data[i]._dateHint = hints[i] || null;
-      }
+    // DD/MM/YYYY o MM/DD/YYYY
+    m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+    if (m) {
+      let p1 = parseInt(m[1],10), p2 = parseInt(m[2],10), y = parseInt(m[3],10);
+      if (y < 100) y += 2000;
+      const dayFirst = hint && hint.dayFirst;
+      const d = dayFirst ? p1 : p2;
+      const mo = dayFirst ? p2 : p1;
+      const dt = new Date(y, mo-1, d);
+      return isNaN(dt.getTime()) ? null : dt;
     }
 
-    function extraerFechaCompleta(fechaRaw, hint) {
-      if (!fechaRaw) return null;
-      const str = String(fechaRaw).trim();
-      if (!str) return null;
+    return null;
+  }
 
-      const parteFecha = str.split(" ")[0];
-      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
-      if (!sep) return null;
+  function monthKey(dt) {
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth()+1).padStart(2,"0");
+    return y + "-" + m;
+  }
 
-      const partes = parteFecha.split(sep);
-      if (partes.length < 3) return null;
+  const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  function labelMonthKey(k) {
+    const parts = String(k).split("-");
+    if (parts.length !== 2) return k;
+    const y = parts[0];
+    const m = parseInt(parts[1],10);
+    const name = (m>=1 && m<=12) ? MONTHS_ES[m-1] : parts[1];
+    return name + " " + y;
+  }
 
-      const p1s = (partes[0] || "").trim();
-      const p2s = (partes[1] || "").trim();
-      const p3s = (partes[2] || "").trim();
+  // -----------------------------
+  // Data, filters, charts, map, table
+  // -----------------------------
+  let rawData = [];
+  let filteredData = [];
+  let table = null;
 
-      const p1 = parseInt(p1s, 10);
-      const p2 = parseInt(p2s, 10);
-      const p3 = parseInt(p3s, 10);
-      if (![p1,p2,p3].every(n => Number.isFinite(n))) return null;
+  let chartTiempo = null;
+  let chartTipo = null;
 
-      let anio, mes, dia;
+  let map = null;
+  let markersLayer = null;
 
-      if (hint === "YMD" || p1s.length === 4) {
-        anio = p1; mes = p2; dia = p3;
-      } else if (hint === "DMY") {
-        dia = p1; mes = p2; anio = p3;
-      } else if (hint === "MDY") {
-        mes = p1; dia = p2; anio = p3;
+  function hasField(fieldName) {
+    return rawData.length && Object.prototype.hasOwnProperty.call(rawData[0], fieldName);
+  }
+
+  function uniqueValues(rows, field) {
+    const set = new Set();
+    rows.forEach(r => {
+      const v = (r && r[field] != null) ? String(r[field]).trim() : "";
+      if (v) set.add(v);
+    });
+    return Array.from(set).sort((a,b)=>a.localeCompare(b, "es"));
+  }
+
+  function numFromAny(v) {
+    if (v == null) return null;
+    const s = String(v).trim();
+    if (!s) return null;
+    const clean = s.replace(",", ".");
+    const n = parseFloat(clean);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function isCoordInGT(lat, lon) {
+    if (lat == null || lon == null) return false;
+    if (Math.abs(lat) < 0.000001 && Math.abs(lon) < 0.000001) return false; // 0,0
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return false;
+    return (lat >= GT_BOUNDS.minLat && lat <= GT_BOUNDS.maxLat && lon >= GT_BOUNDS.minLon && lon <= GT_BOUNDS.maxLon);
+  }
+
+  function getValidCoords(rows) {
+    let ok = [];
+    let ignored = 0;
+    rows.forEach(r => {
+      const lat = numFromAny(r[FIELD_LAT]);
+      const lon = numFromAny(r[FIELD_LON]);
+      if (isCoordInGT(lat, lon)) ok.push({ lat, lon, row: r });
+      else ignored++;
+    });
+    return { ok, ignored };
+  }
+
+  function initFilters() {
+    showOrHide("wrap-region", hasField(FIELD_REGION));
+    showOrHide("wrap-municipio", hasField(FIELD_MUNICIPIO));
+    showOrHide("wrap-area", hasField(FIELD_AREA));
+    showOrHide("wrap-guarda", hasField(FIELD_GUARDA));
+    showOrHide("wrap-tipo", hasField(FIELD_TIPO));
+    showOrHide("wrap-ilegal", hasField(FIELD_ILEGAL));
+    showOrHide("wrap-ubicacion", hasField(FIELD_UBIC));
+
+    const years = Array.from(new Set(rawData.map(r => r._anio).filter(Boolean))).sort((a,b)=>a-b);
+    fillSelect($("f-anio"), years.map(String), "Todos");
+
+    // Mes depende del año seleccionado
+    updateMesOptions();
+
+    if (hasField(FIELD_REGION)) fillSelect($("f-region"), uniqueValues(rawData, FIELD_REGION), "Todas");
+    if (hasField(FIELD_MUNICIPIO)) fillSelect($("f-municipio"), uniqueValues(rawData, FIELD_MUNICIPIO), "Todos");
+    if (hasField(FIELD_AREA)) fillSelect($("f-area"), uniqueValues(rawData, FIELD_AREA), "Todas");
+    if (hasField(FIELD_GUARDA)) fillSelect($("f-guarda"), uniqueValues(rawData, FIELD_GUARDA), "Todos");
+    if (hasField(FIELD_TIPO)) fillSelect($("f-tipo"), uniqueValues(rawData, FIELD_TIPO), "Todos");
+    if (hasField(FIELD_ILEGAL)) fillSelect($("f-ilegal"), uniqueValues(rawData, FIELD_ILEGAL), "Todas");
+    if (hasField(FIELD_UBIC)) fillSelect($("f-ubicacion"), uniqueValues(rawData, FIELD_UBIC), "Todas");
+  }
+
+  function updateMesOptions() {
+    const anioEl = $("f-anio");
+    const mesEl = $("f-mes");
+    if (!anioEl || !mesEl) return;
+
+    const anio = anioEl.value;
+    const keys = new Set();
+    rawData.forEach(r => {
+      if (!r._monthKey) return;
+      if (anio && String(r._anio) !== String(anio)) return;
+      keys.add(r._monthKey);
+    });
+    const ordered = Array.from(keys).sort(); // YYYY-MM ordena bien lexicográficamente
+    const pairs = ordered.map(k => ({ value: k, label: labelMonthKey(k) }));
+    const current = mesEl.value;
+    fillSelectPairs(mesEl, pairs, "Todos");
+    if (current && ordered.includes(current)) mesEl.value = current;
+  }
+
+  function applyFilters() {
+    const anio = $("f-anio").value;
+    const mesKey = $("f-mes").value;
+    const region = $("f-region").value;
+    const municipio = $("f-municipio").value;
+    const area = $("f-area").value;
+    const guarda = $("f-guarda").value;
+    const tipo = $("f-tipo").value;
+    const ilegal = $("f-ilegal").value;
+    const ubic = $("f-ubicacion").value;
+    const q = ($("f-buscar").value || "").trim().toLowerCase();
+
+    filteredData = rawData.filter(r => {
+      if (anio && String(r._anio) !== String(anio)) return false;
+      if (mesKey && r._monthKey !== mesKey) return false;
+
+      if (region && String(r[FIELD_REGION] || "").trim() !== region) return false;
+      if (municipio && String(r[FIELD_MUNICIPIO] || "").trim() !== municipio) return false;
+      if (area && String(r[FIELD_AREA] || "").trim() !== area) return false;
+      if (guarda && String(r[FIELD_GUARDA] || "").trim() !== guarda) return false;
+      if (tipo && String(r[FIELD_TIPO] || "").trim() !== tipo) return false;
+      if (ilegal && String(r[FIELD_ILEGAL] || "").trim() !== ilegal) return false;
+      if (ubic && String(r[FIELD_UBIC] || "").trim() !== ubic) return false;
+
+      if (q) {
+        const hay = Object.keys(r).some(k => {
+          if (k.startsWith("_")) return false;
+          const v = r[k];
+          return v != null && String(v).toLowerCase().includes(q);
+        });
+        if (!hay) return false;
+      }
+      return true;
+    });
+
+    updateKpis();
+    updateCharts();
+    updateMap();
+    updateTable();
+    updateChips();
+  }
+
+  function updateChips() {
+    const chips = $("chips-filtros");
+    if (!chips) return;
+    chips.innerHTML = "";
+    const mapping = [
+      ["Año", $("f-anio").value],
+      ["Mes", $("f-mes").value ? labelMonthKey($("f-mes").value) : ""],
+      ["Región", $("f-region").value],
+      ["Municipio", $("f-municipio").value],
+      ["Área", $("f-area").value],
+      ["Guardarrecursos", $("f-guarda").value],
+      ["Tipo", $("f-tipo").value],
+      ["Actividad ilegal", $("f-ilegal").value],
+      ["Ubicación", $("f-ubicacion").value],
+      ["Buscar", ($("f-buscar").value || "").trim()]
+    ];
+
+    mapping.forEach(([label, value]) => {
+      if (!value) return;
+      const el = document.createElement("span");
+      el.className = "chip";
+      el.innerHTML = `<b>${label}:</b> ${escapeHtml(String(value))}`;
+      chips.appendChild(el);
+    });
+  }
+
+  function updateKpis() {
+    const total = filteredData.length;
+    $("kpi-registros").textContent = total.toLocaleString("es-GT");
+
+    // rango fechas
+    const dates = filteredData.map(r => r._fechaObj).filter(Boolean).sort((a,b)=>a-b);
+    if (!dates.length) {
+      $("kpi-rango").textContent = "–";
+    } else {
+      const fmt = (d) => String(d.getDate()).padStart(2,"0") + "/" + String(d.getMonth()+1).padStart(2,"0") + "/" + d.getFullYear();
+      $("kpi-rango").textContent = fmt(dates[0]) + " — " + fmt(dates[dates.length-1]);
+    }
+
+    // únicos
+    const reg = hasField(FIELD_REGION) ? new Set(filteredData.map(r => String(r[FIELD_REGION]||"").trim()).filter(Boolean)).size : 0;
+    const mun = hasField(FIELD_MUNICIPIO) ? new Set(filteredData.map(r => String(r[FIELD_MUNICIPIO]||"").trim()).filter(Boolean)).size : 0;
+    const ar = hasField(FIELD_AREA) ? new Set(filteredData.map(r => String(r[FIELD_AREA]||"").trim()).filter(Boolean)).size : 0;
+
+    $("kpi-regiones").textContent = reg ? String(reg) : "–";
+    $("kpi-municipios").textContent = mun ? String(mun) : "–";
+    $("kpi-areas").textContent = ar ? String(ar) : "–";
+
+    const coords = getValidCoords(filteredData);
+    $("kpi-coords").textContent = coords.ok.length ? String(coords.ok.length) : "–";
+
+    // Nota bajo el mapa (también sirve de diagnóstico de outliers)
+    const note = $("map-note");
+    if (note) {
+      if (!hasField(FIELD_LAT) || !hasField(FIELD_LON)) {
+        note.textContent = "Si el CSV no incluye coordenadas, el mapa se ocultará automáticamente.";
+      } else if (coords.ignored) {
+        note.textContent = `Mostrando puntos válidos. Se ignoraron ${coords.ignored} por inválidos/outliers.`;
       } else {
-        if (p1 > 12 && p2 <= 12) { dia = p1; mes = p2; anio = p3; }
-        else { mes = p1; dia = p2; anio = p3; }
-      }
-
-      if (anio < 100) anio = anio + 2000;
-
-      const dt = new Date(anio, mes - 1, dia);
-      if (dt && dt.getFullYear() === anio && (dt.getMonth() + 1) === mes && dt.getDate() === dia) {
-        return dt;
-      }
-      return null;
-    }
-
-    function monthKey(dt) {
-      const y = dt.getFullYear();
-      const m = String(dt.getMonth() + 1).padStart(2, "0");
-      return y + "-" + m;
-    }
-
-    function formatDate(dt) {
-      const y = dt.getFullYear();
-      const m = String(dt.getMonth() + 1).padStart(2, "0");
-      const d = String(dt.getDate()).padStart(2, "0");
-      return d + "/" + m + "/" + y;
-    }
-
-    function escapeHtml(texto) {
-      return String(texto || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-
-    // --- Utilidades de datos ---
-    function uniqueValues(data, field) {
-      const s = new Set();
-      for (const r of data) {
-        const v = (r[field] ?? "").toString().trim();
-        if (v) s.add(v);
-      }
-      return Array.from(s).sort((a,b) => a.localeCompare(b, "es"));
-    }
-
-    function hasField(field) {
-      return rawData.length > 0 && Object.prototype.hasOwnProperty.call(rawData[0], field);
-    }
-
-    function fillSelect(selectEl, values, placeholder) {
-      if (!selectEl) return;
-      selectEl.innerHTML = "";
-      const opt0 = document.createElement("option");
-      opt0.value = "";
-      opt0.textContent = placeholder || "Todos";
-      selectEl.appendChild(opt0);
-      for (const v of values) {
-        const opt = document.createElement("option");
-        opt.value = v;
-        opt.textContent = v;
-        selectEl.appendChild(opt);
+        note.textContent = "Mostrando puntos válidos del CSV.";
       }
     }
+  }
 
-    function showOrHide(wrapId, visible) {
-      const wrap = $(wrapId);
-      if (wrap) wrap.style.display = visible ? "" : "none";
-    }
+  function groupCount(rows, keyFn) {
+    const m = new Map();
+    rows.forEach(r => {
+      const k = keyFn(r);
+      if (!k) return;
+      m.set(k, (m.get(k) || 0) + 1);
+    });
+    return m;
+  }
 
-    function getFieldValue(row, field) {
-      return (row[field] ?? "").toString().trim();
-    }
+  function updateCharts() {
+    // Serie temporal por mes (YYYY-MM)
+    const byMonth = groupCount(filteredData, r => r._monthKey);
+    const keys = Array.from(byMonth.keys()).sort();
+    const counts = keys.map(k => byMonth.get(k));
+    const prettyLabels = keys.map(labelMonthKey);
 
-    function rowMatchesSearch(row, q) {
-      if (!q) return true;
-      const needle = q.toLowerCase();
-      for (const k in row) {
-        if (!Object.prototype.hasOwnProperty.call(row, k)) continue;
-        const v = row[k];
-        if (v === null || v === undefined) continue;
-        if (String(v).toLowerCase().includes(needle)) return true;
-      }
-      return false;
-    }
-
-    function getLatLng(row) {
-      const keys = Object.keys(row || {});
-
-      function findKey(patterns) {
-        const low = keys.map(k => [k, k.toLowerCase()]);
-        for (const p of patterns) {
-          const pp = p.toLowerCase();
-          const hit = low.find(([orig, lk]) => lk === pp || lk.includes(pp));
-          if (hit) return hit[0];
-        }
-        return null;
-      }
-
-      const kLat = findKey(["latitud", "latitude", "lat", "y", "coordenada_y"]);
-      const kLon = findKey(["longitud", "longitude", "lon", "lng", "long", "x", "coordenada_x"]);
-
-      function toNum(x) {
-        if (x === null || x === undefined) return null;
-        const s = String(x).trim().replace(",", ".");
-        const n = parseFloat(s);
-        return Number.isFinite(n) ? n : null;
-      }
-
-      if (kLat && kLon) {
-        const lat = toNum(row[kLat]);
-        const lon = toNum(row[kLon]);
-
-        // 1) Validación básica de rango geográfico
-        if (lat !== null && lon !== null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
-
-          // 2) Ignorar ceros (típico "sin dato")
-          if (lat === 0 || lon === 0) return null;
-
-          // 3) Filtro anti-outliers: para este módulo (Atitlán/Altiplano Central),
-          //    esperamos coordenadas dentro de Guatemala aprox. (evita zoom exagerado).
-          //    Si en el futuro se amplía a otros territorios, se puede ajustar.
-          const GT = { latMin: 12.0, latMax: 18.5, lonMin: -93.7, lonMax: -88.0 };
-          if (lat < GT.latMin || lat > GT.latMax || lon < GT.lonMin || lon > GT.lonMax) return null;
-
-          return [lat, lon];
-        }
-      }
-
-      const u = getFieldValue(row, FIELD_UBIC);
-      if (u) {
-        const m = u.match(/(-?\d+(?:[\.,]\d+)?)\s*[, ]\s*(-?\d+(?:[\.,]\d+)?)/);
-        if (m) {
-          const a = toNum(m[1]);
-          const b = toNum(m[2]);
-          if (a !== null && b !== null) {
-            if (Math.abs(a) <= 90 && Math.abs(b) <= 180) return [a, b];
-            if (Math.abs(b) <= 90 && Math.abs(a) <= 180) return [b, a];
-          }
-        }
-      }
-
-      return null;
-    }
-
-    function applyFilters() {
-      const anio = $("f-anio").value;
-      const mes = $("f-mes").value;
-      const region = $("f-region").value;
-      const municipio = $("f-municipio").value;
-      const area = $("f-area").value;
-      const guarda = $("f-guarda").value;
-      const tipo = $("f-tipo").value;
-      const ilegal = $("f-ilegal").value;
-      const ubic = $("f-ubicacion").value;
-      const buscar = $("f-buscar").value.trim();
-
-      filteredData = rawData.filter((r) => {
-        if (anio && String(r._anio) !== anio) return false;
-        if (mes && String(r._mes) !== mes) return false;
-
-        if (region && getFieldValue(r, FIELD_REGION) !== region) return false;
-        if (municipio && getFieldValue(r, FIELD_MUNICIPIO) !== municipio) return false;
-        if (area && getFieldValue(r, FIELD_AREA) !== area) return false;
-        if (guarda && getFieldValue(r, FIELD_GUARDA) !== guarda) return false;
-        if (tipo && getFieldValue(r, FIELD_TIPO) !== tipo) return false;
-        if (ilegal && getFieldValue(r, FIELD_ILEGAL) !== ilegal) return false;
-        if (ubic && getFieldValue(r, FIELD_UBIC) !== ubic) return false;
-
-        if (chartFilter.monthKey && r._monthKey !== chartFilter.monthKey) return false;
-        if (chartFilter.tipoValue && getFieldValue(r, FIELD_TIPO) !== chartFilter.tipoValue) return false;
-
-        if (!rowMatchesSearch(r, buscar)) return false;
-        return true;
-      });
-
-      renderChips();
-      updateKPIs();
-      updateCharts();
-      updateMap();
-      updateTable();
-      setEstado(`Mostrando ${filteredData.length.toLocaleString("es-GT")} de ${rawData.length.toLocaleString("es-GT")} registros. CSV: ${CSV_URL.replace("./","")}`);
-    }
-
-    function renderChips() {
-      const chips = $("chips-filtros");
-      if (!chips) return;
-      chips.innerHTML = "";
-
-      function addChip(label, value) {
-        const el = document.createElement("span");
-        el.className = "chip";
-        el.innerHTML = `<b>${label}:</b> ${value}`;
-        chips.appendChild(el);
-      }
-
-      const mapping = [
-        ["Año", $("f-anio").value],
-        ["Mes", $("f-mes").value],
-        ["Región", $("f-region").value],
-        ["Municipio", $("f-municipio").value],
-        ["Área", $("f-area").value],
-        ["Guardarrecursos", $("f-guarda").value],
-        ["Tipo", $("f-tipo").value],
-        ["Ilegal", $("f-ilegal").value],
-        ["Ubicación", $("f-ubicacion").value]
-      ];
-
-      for (const [lab, v] of mapping) {
-        if (v) addChip(lab, v);
-      }
-      if (chartFilter.monthKey) addChip("Gráfico tiempo", chartFilter.monthKey);
-      if (chartFilter.tipoValue) addChip("Gráfico tipo", chartFilter.tipoValue);
-
-      const q = $("f-buscar").value.trim();
-      if (q) addChip("Buscar", q);
-
-      if (!chips.children.length) {
-        const el = document.createElement("span");
-        el.className = "chip";
-        el.textContent = "Sin filtros";
-        chips.appendChild(el);
-      }
-    }
-
-    function updateKPIs() {
-      $("kpi-registros").textContent = filteredData.length.toLocaleString("es-GT");
-
-      const fechas = filteredData.map(r => r._fechaObj).filter(Boolean).sort((a,b)=>a-b);
-      if (fechas.length) {
-        $("kpi-rango").textContent = formatDate(fechas[0]) + " – " + formatDate(fechas[fechas.length-1]);
-      } else {
-        $("kpi-rango").textContent = "–";
-      }
-
-      const regiones = hasField(FIELD_REGION) ? new Set(filteredData.map(r => getFieldValue(r, FIELD_REGION)).filter(Boolean)) : new Set();
-      const municipios = hasField(FIELD_MUNICIPIO) ? new Set(filteredData.map(r => getFieldValue(r, FIELD_MUNICIPIO)).filter(Boolean)) : new Set();
-      const areas = hasField(FIELD_AREA) ? new Set(filteredData.map(r => getFieldValue(r, FIELD_AREA)).filter(Boolean)) : new Set();
-
-      $("kpi-regiones").textContent = regiones.size ? regiones.size.toLocaleString("es-GT") : "–";
-      $("kpi-municipios").textContent = municipios.size ? municipios.size.toLocaleString("es-GT") : "–";
-      $("kpi-areas").textContent = areas.size ? areas.size.toLocaleString("es-GT") : "–";
-
-      let withCoords = 0;
-      for (const r of filteredData) {
-        if (getLatLng(r)) withCoords++;
-      }
-      $("kpi-coords").textContent = withCoords.toLocaleString("es-GT");
-    }
-
-    function destroyChart(ch) {
-      try { if (ch) ch.destroy(); } catch(_) {}
-    }
-
-    function updateCharts() {
-      const byMonth = new Map();
-      for (const r of filteredData) {
-        if (!r._monthKey) continue;
-        byMonth.set(r._monthKey, (byMonth.get(r._monthKey) || 0) + 1);
-      }
-      const months = Array.from(byMonth.keys()).sort();
-      const counts = months.map(m => byMonth.get(m));
-
-      destroyChart(chartTiempo);
-      const ctxT = document.getElementById("chart-tiempo");
-      if (ctxT) {
-        chartTiempo = new Chart(ctxT, {
-          type: "line",
-          data: {
-            labels: months,
-            datasets: [{
-              label: "Registros",
-              data: counts,
-              tension: 0.25,
-              pointRadius: 3,
-              pointHoverRadius: 5
-            }]
+    const ctx1 = $("chart-tiempo");
+    if (ctx1) {
+      if (chartTiempo) chartTiempo.destroy();
+      chartTiempo = new Chart(ctx1, {
+        type: "line",
+        data: {
+          labels: prettyLabels,
+          datasets: [{ label: "Registros", data: counts, tension: 0.2 }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          onClick: (evt, elements) => {
+            if (!elements || !elements.length) return;
+            const idx = elements[0].index;
+            const k = keys[idx];
+            if (k) {
+              $("f-mes").value = k;
+              applyFilters();
+            }
           },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            onClick: (evt) => {
-              if (!months.length) return;
-              const points = chartTiempo.getElementsAtEventForMode(evt, "nearest", { intersect: true }, true);
-              if (!points || !points.length) return;
-              const idx = points[0].index;
-              const key = months[idx];
-              chartFilter.monthKey = (chartFilter.monthKey === key) ? null : key;
-              applyFilters();
-              showToast(chartFilter.monthKey ? ("Filtro por mes: " + chartFilter.monthKey) : "Filtro de mes quitado");
-            }
-          }
-        });
-      }
-
-      const byTipo = new Map();
-      if (hasField(FIELD_TIPO)) {
-        for (const r of filteredData) {
-          const v = getFieldValue(r, FIELD_TIPO) || "Sin dato";
-          byTipo.set(v, (byTipo.get(v) || 0) + 1);
+          scales: { y: { beginAtZero: true } }
         }
-      }
-      const tipos = Array.from(byTipo.keys()).sort((a,b)=>byTipo.get(b)-byTipo.get(a));
-      const c2 = tipos.map(t => byTipo.get(t));
-
-      destroyChart(chartTipo);
-      const ctxB = document.getElementById("chart-tipo");
-      if (ctxB) {
-        chartTipo = new Chart(ctxB, {
-          type: "bar",
-          data: { labels: tipos, datasets: [{ label: "Registros", data: c2 }] },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            onClick: (evt) => {
-              if (!tipos.length) return;
-              const points = chartTipo.getElementsAtEventForMode(evt, "nearest", { intersect: true }, true);
-              if (!points || !points.length) return;
-              const idx = points[0].index;
-              const val = tipos[idx];
-              chartFilter.tipoValue = (chartFilter.tipoValue === val) ? null : val;
-              applyFilters();
-              showToast(chartFilter.tipoValue ? ("Filtro por tipo: " + chartFilter.tipoValue) : "Filtro de tipo quitado");
-            }
-          }
-        });
-      }
-
-      const btnClear = $("btn-clear-chart");
-      if (btnClear) btnClear.disabled = (!chartFilter.monthKey && !chartFilter.tipoValue);
+      });
     }
 
-    function initMap() {
-      map = L.map("map", { zoomControl: true });
+    // Distribución por tipo (top 10)
+    const tipoFieldExists = hasField(FIELD_TIPO);
+    const ctx2 = $("chart-tipo");
+    if (ctx2) {
+      if (chartTipo) chartTipo.destroy();
+      if (!tipoFieldExists) {
+        ctx2.parentElement.style.display = "none";
+      } else {
+        ctx2.parentElement.style.display = "";
+        const byTipo = groupCount(filteredData, r => String(r[FIELD_TIPO] || "").trim());
+        const entries = Array.from(byTipo.entries()).sort((a,b)=>b[1]-a[1]).slice(0,10);
+        const lbl = entries.map(e=>e[0] || "(vacío)");
+        const dat = entries.map(e=>e[1]);
+        chartTipo = new Chart(ctx2, {
+          type: "bar",
+          data: { labels: lbl, datasets: [{ label: "Registros", data: dat }] },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            onClick: (evt, elements) => {
+              if (!elements || !elements.length) return;
+              const idx = elements[0].index;
+              const cat = lbl[idx];
+              if (cat) {
+                $("f-tipo").value = cat === "(vacío)" ? "" : cat;
+                applyFilters();
+              }
+            },
+            scales: { y: { beginAtZero: true } }
+          }
+        });
+      }
+    }
+  }
+
+  function ensureMap() {
+    const mapEl = $("map");
+    if (!mapEl) return;
+
+    if (!map) {
+      map = L.map("map", { scrollWheelZoom: false });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap"
       }).addTo(map);
-
       markersLayer = L.layerGroup().addTo(map);
-      map.setView([15.5, -90.25], 7);
+
+      // altura estable
+      mapEl.style.height = "340px";
+    }
+    setTimeout(() => { try { map.invalidateSize(); } catch (_) {} }, 50);
+  }
+
+  function updateMap() {
+    const mapCard = $("map") ? $("map").closest(".card") : null;
+
+    // Solo mostrar mapa si existe lat/lon en el CSV
+    const hasCoords = hasField(FIELD_LAT) && hasField(FIELD_LON);
+    if (!hasCoords) {
+      if (mapCard) mapCard.style.display = "none";
+      return;
+    }
+    if (mapCard) mapCard.style.display = "";
+
+    ensureMap();
+    if (!map || !markersLayer) return;
+
+    markersLayer.clearLayers();
+
+    const coords = getValidCoords(filteredData);
+    const pts = coords.ok;
+
+    if (!pts.length) {
+      try { map.setView([15.5, -90.5], 7); } catch (_) {}
+      return;
     }
 
-    function updateMap() {
-      const mapWrap = document.querySelector('[aria-label="Mapa"]');
-      if (!mapWrap) return;
+    const bounds = [];
+    pts.forEach(p => {
+      const m = L.circleMarker([p.lat, p.lon], { radius: 5, weight: 1 });
+      m.bindPopup(buildPopupHtml(p.row));
+      m.addTo(markersLayer);
+      bounds.push([p.lat, p.lon]);
+    });
 
-      let pts = [];
-      let skipped = 0;
-      for (const r of filteredData) {
-        const ll = getLatLng(r);
-        if (ll) pts.push({ ll, r });
-        else {
-          // Cuenta "saltados" solo si el registro parece traer coordenadas pero no pasaron validación
-          const ks = Object.keys(r || {});
-          const kLatGuess = ks.find(k => k.toLowerCase().includes("lat"));
-          const kLonGuess = ks.find(k => (k.toLowerCase().includes("lon") || k.toLowerCase().includes("long")));
-          const hasSome = (kLatGuess && String(r[kLatGuess] || "").trim()) || (kLonGuess && String(r[kLonGuess] || "").trim());
-          if (hasSome) skipped++;
-        }
+    try {
+      map.fitBounds(bounds, { padding: [20, 20] });
+    } catch (_) {}
+  }
+
+  function buildPopupHtml(row) {
+    const items = [];
+    function add(label, field) {
+      if (!field) return;
+      const v = row[field];
+      if (v == null || String(v).trim() === "") return;
+      items.push(`<div><b>${label}:</b> ${escapeHtml(String(v))}</div>`);
+    }
+    add("Fecha", FIELD_FECHA);
+    add("Región", FIELD_REGION);
+    add("Municipio", FIELD_MUNICIPIO);
+    add("Área", FIELD_AREA);
+    add("Guardarrecursos", FIELD_GUARDA);
+    add("Tipo", FIELD_TIPO);
+    add("Actividad ilegal", FIELD_ILEGAL);
+    add("Ubicación", FIELD_UBIC);
+    return `<div style="font-size:12px;line-height:1.25">${items.join("")}</div>`;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  function initTable() {
+    const tableEl = $("tabla");
+    if (!tableEl) return;
+
+    const keys = rawData.length ? Object.keys(rawData[0]).filter(k => !k.startsWith("_")) : [];
+    const columns = keys.map(k => ({
+      title: k,
+      field: k,
+      headerFilter: "input",
+      headerFilterPlaceholder: "Filtrar…",
+      formatter: (cell) => {
+        const v = cell.getValue();
+        if (v == null) return "";
+        return String(v);
       }
+    }));
 
-      if (!pts.length) {
-        mapWrap.style.display = "none";
+    table = new Tabulator("#tabla", {
+      data: filteredData,
+      layout: "fitDataFill",
+      pagination: "local",
+      paginationSize: 25,
+      movableColumns: true,
+      columns: columns
+    });
+  }
+
+  function updateTable() {
+    if (!table) return;
+    table.replaceData(filteredData);
+  }
+
+  // -----------------------------
+  // Buttons/actions
+  // -----------------------------
+  function resetFilters() {
+    ["f-anio","f-mes","f-region","f-municipio","f-area","f-guarda","f-tipo","f-ilegal","f-ubicacion","f-buscar"].forEach(id => {
+      const el = $(id);
+      if (el) el.value = "";
+    });
+    updateMesOptions();
+    applyFilters();
+  }
+
+  function downloadCSV() {
+    if (!table) return;
+    table.download("csv", "AC192_patrullajes_filtrados.csv");
+  }
+
+  function downloadXLSX() {
+    if (!table || !window.XLSX) return;
+    const rows = filteredData.map(r => {
+      const out = {};
+      Object.keys(r).forEach(k => { if (!k.startsWith("_")) out[k] = r[k]; });
+      return out;
+    });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "AC192");
+    XLSX.writeFile(wb, "AC192_patrullajes_filtrados.xlsx");
+  }
+
+  function downloadGeoJSON() {
+    const coords = getValidCoords(filteredData).ok;
+    const features = coords.map(p => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [p.lon, p.lat] },
+      properties: buildProperties(p.row)
+    }));
+    const gj = { type: "FeatureCollection", features };
+    const blob = new Blob([JSON.stringify(gj, null, 2)], { type: "application/geo+json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "AC192_patrullajes_filtrados.geojson";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function buildProperties(row) {
+    const props = {};
+    Object.keys(row).forEach(k => { if (!k.startsWith("_")) props[k] = row[k]; });
+    return props;
+  }
+
+  function centerMap() {
+    updateMap(); // recalcula bounds
+    showToast("Mapa centrado");
+  }
+
+  function removeChartFilter() {
+    $("f-tipo").value = "";
+    applyFilters();
+  }
+
+  function exportPDFLight() {
+    // Crea contenedor temporal
+    const tmp = document.createElement("div");
+    tmp.style.padding = "10px";
+    tmp.style.fontFamily = "Arial, sans-serif";
+
+    const top = filteredData.slice(0, 15).map(r => {
+      const fecha = r[FIELD_FECHA] || "";
+      const mun = r[FIELD_MUNICIPIO] || "";
+      const area = r[FIELD_AREA] || "";
+      const tipo = r[FIELD_TIPO] || "";
+      return `<tr><td>${escapeHtml(String(fecha))}</td><td>${escapeHtml(String(mun))}</td><td>${escapeHtml(String(area))}</td><td>${escapeHtml(String(tipo))}</td></tr>`;
+    }).join("");
+
+    tmp.innerHTML = `
+      <h2 style="margin:0 0 6px 0">AC192 · Patrullajes (reporte liviano)</h2>
+      <div style="font-size:12px;margin-bottom:8px">
+        <b>Registros:</b> ${escapeHtml($("kpi-registros").textContent)} ·
+        <b>Rango:</b> ${escapeHtml($("kpi-rango").textContent)} ·
+        <b>Con coords:</b> ${escapeHtml($("kpi-coords").textContent)}
+      </div>
+      <div style="font-size:12px;margin-bottom:8px"><b>Filtros:</b> ${escapeHtml(($("chips-filtros").textContent || "Sin filtros").trim() || "Sin filtros")}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr>
+          <th style="border:1px solid #ddd;padding:4px;text-align:left">Fecha</th>
+          <th style="border:1px solid #ddd;padding:4px;text-align:left">Municipio</th>
+          <th style="border:1px solid #ddd;padding:4px;text-align:left">Área</th>
+          <th style="border:1px solid #ddd;padding:4px;text-align:left">Tipo</th>
+        </tr></thead>
+        <tbody>${top || ""}</tbody>
+      </table>
+      <div style="font-size:10px;margin-top:8px;color:#555">Generado: ${new Date().toLocaleString("es-GT")}</div>
+    `;
+
+    document.body.appendChild(tmp);
+
+    const opt = {
+      margin: 10,
+      filename: "AC192_patrullajes_reporte_liviano.pdf",
+      image: { type: "jpeg", quality: 0.95 },
+      html2canvas: { scale: 1.6, useCORS: true },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    };
+
+    html2pdf().set(opt).from(tmp).save().then(() => {
+      tmp.remove();
+    }).catch(() => {
+      tmp.remove();
+    });
+  }
+
+  function initEvents() {
+    // cambios de filtros
+    const ids = ["f-anio","f-mes","f-region","f-municipio","f-area","f-guarda","f-tipo","f-ilegal","f-ubicacion"];
+    ids.forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      el.addEventListener("change", () => {
+        if (id === "f-anio") updateMesOptions();
+        applyFilters();
+      });
+    });
+
+    $("f-buscar").addEventListener("input", () => applyFilters());
+    $("btn-reset").addEventListener("click", resetFilters);
+    $("btn-csv").addEventListener("click", downloadCSV);
+    $("btn-xlsx").addEventListener("click", downloadXLSX);
+    $("btn-geojson").addEventListener("click", downloadGeoJSON);
+    $("btn-centrar").addEventListener("click", centerMap);
+    $("btn-clear-chart").addEventListener("click", removeChartFilter);
+    $("btn-pdf").addEventListener("click", exportPDFLight);
+  }
+
+  // -----------------------------
+  // Main load
+  // -----------------------------
+  async function loadData() {
+    setEstado("Cargando librerías…");
+    await ensureDependencies();
+
+    setEstado("Cargando datos…");
+    try {
+      const { url, buffer } = await fetchFirstOk(CSV_CANDIDATES);
+      const csvText = decodeSmartCsv(buffer);
+      const delimiter = detectarDelimitador(csvText);
+
+      const parsed = Papa.parse(csvText, {
+        header: true,
+        skipEmptyLines: true,
+        delimiter: delimiter,
+        transformHeader: (h) => String(h || "").trim()
+      });
+
+      rawData = (parsed.data || []).filter(r => r && Object.keys(r).some(k => String(r[k] || "").trim() !== ""));
+      if (!rawData.length) {
+        setEstado("No se encontraron datos en el CSV.", true);
         return;
       }
-      mapWrap.style.display = "";
 
-      if (!map) initMap();
-      // Leaflet a veces necesita invalidar tamaño cuando el contenedor acaba de renderizar
-      setTimeout(() => { try { map.invalidateSize(); } catch(_) {} }, 50);
-      if (!markersLayer) return;
+      prepararHintsFechas(rawData);
+      rawData.forEach(r => {
+        const dt = parseFechaFlexible(r[FIELD_FECHA], r._dateHint);
+        r._fechaObj = dt;
+        r._anio = dt ? dt.getFullYear() : null;
+        r._monthKey = dt ? monthKey(dt) : null;
+      });
 
-      markersLayer.clearLayers();
-      for (const p of pts.slice(0, 3000)) {
-        const lat = p.ll[0], lon = p.ll[1];
-        const popup = `
-          <b>${escapeHtml(getFieldValue(p.r, FIELD_GUARDA) || "Patrullaje")}</b><br/>
-          <b>Fecha:</b> ${escapeHtml(p.r[FIELD_FECHA] || "")}<br/>
-          <b>Región:</b> ${escapeHtml(getFieldValue(p.r, FIELD_REGION))}<br/>
-          <b>Municipio:</b> ${escapeHtml(getFieldValue(p.r, FIELD_MUNICIPIO))}<br/>
-          <b>Tipo:</b> ${escapeHtml(getFieldValue(p.r, FIELD_TIPO))}<br/>
-          <b>Ubicación:</b> ${escapeHtml(getFieldValue(p.r, FIELD_UBIC))}
-        `;
-        const m = L.circleMarker([lat, lon], { radius: 5, weight: 1 }).bindPopup(popup);
-        markersLayer.addLayer(m);
-      }
+      initFilters();
+      initTable();
+      initEvents();
+      applyFilters();
 
-      const layers = markersLayer.getLayers();
-      if (layers && layers.length) {
-        const bounds = L.latLngBounds(layers.map(l => l.getLatLng()));
-        try { map.fitBounds(bounds.pad(0.2)); } catch(_) {}
-      }
-
-      const note = $("map-note");
-      if (note) note.textContent = `Mostrando ${pts.length.toLocaleString("es-GT")} puntos (máx. 3000 marcadores por rendimiento).` + (skipped ? ` Se ignoraron ${skipped.toLocaleString("es-GT")} registros con coordenadas inválidas.` : "");
+      setEstado("Listo · CSV: " + url.replace(/\?.*$/,""));
+      showToast("Datos cargados");
+    } catch (e) {
+      console.error(e);
+      setEstado("Error al cargar datos: " + e.message, true);
     }
+  }
 
-    function updateTable() {
-      if (!tabla) return;
-      tabla.replaceData(filteredData);
-    }
-
-    function initTable() {
-      const columns = Object.keys(rawData[0] || {}).filter(k => !k.startsWith("_")).map((field) => {
-        return {
-          title: field,
-          field: field,
-          headerFilter: "input",
-          headerFilterPlaceholder: "Filtrar…",
-          headerSort: true,
-          tooltip: true
-        };
-      });
-
-      tabla = new Tabulator("#tabla", {
-        data: filteredData,
-        layout: "fitDataStretch",
-        pagination: "local",
-        paginationSize: 20,
-        paginationSizeSelector: [10, 20, 50, 100],
-        movableColumns: true,
-        columns: columns
-      });
-    }
-
-    function initEvents() {
-      const ids = ["f-anio","f-mes","f-region","f-municipio","f-area","f-guarda","f-tipo","f-ilegal","f-ubicacion"];
-      ids.forEach(id => { const el = $(id); if (el) el.addEventListener("change", applyFilters); });
-
-      $("f-buscar").addEventListener("input", () => {
-        clearTimeout(window.__tSearch);
-        window.__tSearch = setTimeout(applyFilters, 150);
-      });
-
-      $("btn-reset").addEventListener("click", () => {
-        chartFilter.monthKey = null;
-        chartFilter.tipoValue = null;
-        ids.forEach(id => { if ($(id)) $(id).value = ""; });
-        $("f-buscar").value = "";
-        applyFilters();
-        showToast("Filtros limpios");
-      });
-
-      $("btn-clear-chart").addEventListener("click", () => {
-        chartFilter.monthKey = null;
-        chartFilter.tipoValue = null;
-        applyFilters();
-        showToast("Filtro de gráficos limpio");
-      });
-
-      $("btn-csv").addEventListener("click", () => { if (tabla) tabla.download("csv", "ac192_patrullajes_filtrado.csv"); });
-      $("btn-xlsx").addEventListener("click", () => { if (tabla) tabla.download("xlsx", "ac192_patrullajes_filtrado.xlsx", { sheetName: "AC192" }); });
-
-      $("btn-centrar").addEventListener("click", () => {
-        if (!map || !markersLayer) return;
-        const layers = markersLayer.getLayers();
-        if (!layers.length) return;
-        const bounds = L.latLngBounds(layers.map(l => l.getLatLng()));
-        try { map.fitBounds(bounds.pad(0.2)); showToast("Mapa centrado"); } catch(_) {}
-      });
-
-      $("btn-geojson").addEventListener("click", () => {
-        const features = [];
-        for (const r of filteredData) {
-          const ll = getLatLng(r);
-          if (!ll) continue;
-          const props = {};
-          for (const k in r) {
-            if (!Object.prototype.hasOwnProperty.call(r, k)) continue;
-            if (k.startsWith("_")) continue;
-            props[k] = r[k];
-          }
-          features.push({
-            type: "Feature",
-            geometry: { type: "Point", coordinates: [ll[1], ll[0]] },
-            properties: props
-          });
-        }
-        const fc = { type: "FeatureCollection", features };
-        const blob = new Blob([JSON.stringify(fc, null, 2)], { type: "application/geo+json;charset=utf-8" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "ac192_patrullajes_filtrado.geojson";
-        a.click();
-        URL.revokeObjectURL(a.href);
-        showToast("GeoJSON descargado");
-      });
-
-      $("btn-pdf").addEventListener("click", async () => {
-        try {
-          if (!window.html2pdf) {
-            alert("No se pudo cargar la librería de PDF (html2pdf). Revise su conexión o el enlace CDN.");
-            return;
-          }
-
-          const tmp = document.createElement("div");
-          tmp.style.padding = "14px";
-          tmp.style.fontFamily = "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-
-          const h = document.createElement("h2");
-          h.textContent = "AC192 · Informe liviano de patrullajes (filtrado)";
-          h.style.margin = "0 0 6px";
-          tmp.appendChild(h);
-
-          const p = document.createElement("p");
-          p.textContent = `Registros: ${filteredData.length.toLocaleString("es-GT")} (de ${rawData.length.toLocaleString("es-GT")}).`;
-          p.style.margin = "0 0 10px";
-          tmp.appendChild(p);
-
-          const chips = document.createElement("p");
-          chips.style.margin = "0 0 10px";
-          chips.textContent = "Filtros: " + Array.from(document.querySelectorAll("#chips-filtros .chip")).map(x => x.textContent).join(" · ");
-          tmp.appendChild(chips);
-
-          const ul = document.createElement("ul");
-          ul.style.margin = "0 0 10px 18px";
-          const items = [
-            ["Rango", $("kpi-rango").textContent],
-            ["Regiones", $("kpi-regiones").textContent],
-            ["Municipios", $("kpi-municipios").textContent],
-            ["Áreas", $("kpi-areas").textContent],
-            ["Con coordenadas", $("kpi-coords").textContent]
-          ];
-          for (const [k,v] of items) { const li = document.createElement("li"); li.textContent = `${k}: ${v}`; ul.appendChild(li); }
-          tmp.appendChild(ul);
-
-          if (chartTiempo) { const img = document.createElement("img"); img.src = chartTiempo.toBase64Image(); img.style.width = "100%"; img.style.marginBottom = "10px"; tmp.appendChild(img); }
-          if (chartTipo) { const img2 = document.createElement("img"); img2.src = chartTipo.toBase64Image(); img2.style.width = "100%"; img2.style.marginBottom = "10px"; tmp.appendChild(img2); }
-
-          const table = document.createElement("table");
-          table.style.width = "100%";
-          table.style.borderCollapse = "collapse";
-          table.style.fontSize = "10px";
-
-          const keys = Object.keys(rawData[0] || {}).filter(k => !k.startsWith("_")).slice(0, 8);
-          const thead = document.createElement("thead");
-          const trh = document.createElement("tr");
-          keys.forEach(k => { const th = document.createElement("th"); th.textContent = k; th.style.borderBottom = "1px solid #999"; th.style.textAlign = "left"; th.style.padding = "4px"; trh.appendChild(th); });
-          thead.appendChild(trh);
-          table.appendChild(thead);
-
-          const tbody = document.createElement("tbody");
-          filteredData.slice(0, 25).forEach(r => {
-            const tr = document.createElement("tr");
-            keys.forEach(k => { const td = document.createElement("td"); td.textContent = String(r[k] ?? ""); td.style.borderBottom = "1px solid #ddd"; td.style.padding = "4px"; tr.appendChild(td); });
-            tbody.appendChild(tr);
-          });
-          table.appendChild(tbody);
-          tmp.appendChild(table);
-
-          const filename = "ac192_informe_patrullajes_filtrado.pdf";
-
-          await html2pdf().set({
-            margin: 8,
-            filename,
-            image: { type: "jpeg", quality: 0.92 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-          }).from(tmp).save();
-
-          showToast("PDF generado");
-        } catch (e) {
-          console.error(e);
-          alert("No se pudo generar el PDF: " + e);
-        }
-      });
-    }
-
-    function initFilters() {
-      showOrHide("wrap-region", hasField(FIELD_REGION));
-      showOrHide("wrap-municipio", hasField(FIELD_MUNICIPIO));
-      showOrHide("wrap-area", hasField(FIELD_AREA));
-      showOrHide("wrap-guarda", hasField(FIELD_GUARDA));
-      showOrHide("wrap-tipo", hasField(FIELD_TIPO));
-      showOrHide("wrap-ilegal", hasField(FIELD_ILEGAL));
-      showOrHide("wrap-ubicacion", hasField(FIELD_UBIC));
-
-      const years = Array.from(new Set(rawData.map(r => r._anio).filter(Boolean))).sort((a,b)=>a-b);
-      const months = ["01","02","03","04","05","06","07","08","09","10","11","12"];
-
-      fillSelect($("f-anio"), years.map(String), "Todos");
-      fillSelect($("f-mes"), months, "Todos");
-
-      if (hasField(FIELD_REGION)) fillSelect($("f-region"), uniqueValues(rawData, FIELD_REGION), "Todas");
-      if (hasField(FIELD_MUNICIPIO)) fillSelect($("f-municipio"), uniqueValues(rawData, FIELD_MUNICIPIO), "Todos");
-      if (hasField(FIELD_AREA)) fillSelect($("f-area"), uniqueValues(rawData, FIELD_AREA), "Todas");
-      if (hasField(FIELD_GUARDA)) fillSelect($("f-guarda"), uniqueValues(rawData, FIELD_GUARDA), "Todos");
-      if (hasField(FIELD_TIPO)) fillSelect($("f-tipo"), uniqueValues(rawData, FIELD_TIPO), "Todos");
-      if (hasField(FIELD_ILEGAL)) fillSelect($("f-ilegal"), uniqueValues(rawData, FIELD_ILEGAL), "Todas");
-      if (hasField(FIELD_UBIC)) fillSelect($("f-ubicacion"), uniqueValues(rawData, FIELD_UBIC).slice(0, 500), "Todas");
-    }
-
-    async function loadData() {
-      setEstado("Cargando datos…");
-      try {
-        const res = await fetch(CSV_URL, { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
-
-        const buffer = await res.arrayBuffer();
-        const csvText = decodeSmartCsv(buffer);
-
-        const parsed = Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: true,
-          delimiter: detectarDelimitador(csvText),
-          transformHeader: (h) => String(h || "").trim()
-        });
-
-        rawData = (parsed.data || []).filter(r => r && Object.keys(r).some(k => String(r[k] || "").trim() !== ""));
-        if (!rawData.length) {
-          setEstado("No se encontraron datos en datos_patrullaje.csv.");
-          return;
-        }
-
-        prepararHintsFechas(rawData);
-        for (const r of rawData) {
-          const dt = extraerFechaCompleta(r[FIELD_FECHA], r._dateHint);
-          r._fechaObj = dt;
-          r._anio = dt ? dt.getFullYear() : null;
-          r._mes = dt ? String(dt.getMonth()+1).padStart(2,"0") : null;
-          r._monthKey = dt ? monthKey(dt) : null;
-        }
-
-        initFilters();
-        filteredData = rawData.slice();
-
-        initTable();
-        initEvents();
-        applyFilters();
-
-        showToast("Datos cargados");
-      } catch (e) {
-        console.error(e);
-        setEstado("Error al cargar datos: " + e.message);
-        alert("Error al cargar datos_patrullaje.csv: " + e.message + "\n\nVerifique que el archivo exista en la misma carpeta del módulo.");
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", loadData);
-  })();
-  </script>
+  document.addEventListener("DOMContentLoaded", () => {
+    loadData().catch(err => {
+      console.error(err);
+      setEstado("Error inicial: " + err.message, true);
+    });
+  });
+})();
+</script>
 </body>
 </html>

@@ -209,6 +209,61 @@
     let datosPatrullajes = [];
     let mapaMeses = new Map(); // "YYYY-MM" -> { anio, mes }
 
+    // Fuentes posibles del CSV (local y respaldo en raw GitHub)
+    const CSV_CANDIDATES = [
+      "./datos_patrullaje.csv",
+      "datos_patrullaje.csv",
+      "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/datos_patrullaje.csv"
+    ];
+
+    function countReplacementChars(s) {
+      let c = 0;
+      for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) === 0xFFFD) c++;
+      return c;
+    }
+
+    // Decodifica mejor entre UTF-8 y Windows-1252 (evita caracteres raros por acentos)
+    function decodeSmartCsv(buffer) {
+      try {
+        const utf8 = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
+        let best = utf8;
+        let bestScore = countReplacementChars(utf8);
+
+        try {
+          const w1252 = new TextDecoder("windows-1252", { fatal: false }).decode(buffer);
+          const score2 = countReplacementChars(w1252);
+          if (score2 < bestScore) {
+            best = w1252;
+            bestScore = score2;
+          }
+        } catch (_) {}
+
+        return best;
+      } catch (_) {
+        const bytes = new Uint8Array(buffer);
+        let out = "";
+        for (let i = 0; i < bytes.length; i++) out += String.fromCharCode(bytes[i]);
+        return out;
+      }
+    }
+
+    async function fetchFirstOkCsvText(urls) {
+      let lastErr = null;
+      for (const base of urls) {
+        const url = base + (base.includes("?") ? "&" : "?") + "v=" + Date.now();
+        try {
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
+          const buf = await res.arrayBuffer();
+          return { url, csvText: decodeSmartCsv(buf) };
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      throw lastErr || new Error("No se pudo descargar el CSV.");
+    }
+
+
     // Pequeña función para crear nombres de archivo "limpios"
     function slugify(texto) {
       return String(texto || "")
@@ -1157,14 +1212,11 @@
       }
 
       // NOMBRE CORRECTO DEL CSV
-      fetch("./datos_patrullaje.csv", { cache: "no-store" })
-        .then(function (response) {
-          if (!response.ok) {
-            throw new Error("HTTP " + response.status + " " + response.statusText);
-          }
-          return response.text();
-        })
-        .then(function (csvText) {
+      fetchFirstOkCsvText(CSV_CANDIDATES)
+        .then(function (result) {
+          const csvText = result.csvText;
+          console.log("Fuente del CSV:", result.url);
+
           console.log("Contenido bruto de datos_patrullaje.csv (primeros 200 caracteres):");
           console.log(csvText.slice(0, 200));
 
