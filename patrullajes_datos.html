@@ -370,18 +370,7 @@
 
     // Crea una pista de formato por fila propagando hacia adelante/atrás
     function prepararHintsFechas(data) {
-      const hints = data.map(function (reg) {
-        return detectarFormatoFecha(reg["Fecha de patrullaje"]);
-      });
-
-      // Inferencia global: si aparece alguna fecha no ambigua DMY (ej. 13/08/2025),
-      // asumimos DMY para todas las fechas ambiguas (ej. 01/02/2026) porque es el
-      // formato más común en Guatemala. Si no hay DMY pero sí MDY, usamos MDY.
-      let globalHint = null;
-      if (hints.some(h => h === "YMD")) globalHint = "YMD";
-      if (hints.some(h => h === "DMY")) globalHint = "DMY";
-      else if (hints.some(h => h === "MDY")) globalHint = "MDY";
-      else globalHint = "DMY";
+      const hints = data.map(reg => detectarFormatoFecha(reg["Fecha de patrullaje"]));
 
       // forward fill
       let last = null;
@@ -398,7 +387,7 @@
       }
 
       for (let i = 0; i < data.length; i++) {
-        data[i]._dateHint = hints[i] || globalHint; // "MDY" | "DMY" | "YMD"
+        data[i]._dateHint = hints[i] || null; // "MDY" | "DMY" | "YMD" | null
       }
     }
 
@@ -465,12 +454,13 @@
       if (hint === "MDY" && dtMDY) return { anio: anio, mes: a, dia: b, _date: dtMDY };
       if (hint === "DMY" && dtDMY) return { anio: anio, mes: b, dia: a, _date: dtDMY };
 
-      // Sin hint: por defecto preferimos DMY (ej. 01/02/2026 = 1 de febrero)
+      // Si no hay hint, preferimos MDY por compatibilidad con la primera parte del CSV (agosto-septiembre)
+      // pero si MDY da un salto "raro" (por ejemplo, crea un mes inexistente en tu serie), DMY suele ser correcto
       if (dtMDY && dtDMY) {
-        return { anio: anio, mes: b, dia: a, _date: dtDMY };
+        return { anio: anio, mes: a, dia: b, _date: dtMDY };
       }
-      if (dtDMY) return { anio: anio, mes: b, dia: a, _date: dtDMY };
       if (dtMDY) return { anio: anio, mes: a, dia: b, _date: dtMDY };
+      if (dtDMY) return { anio: anio, mes: b, dia: a, _date: dtDMY };
 
       return null;
     }
@@ -1166,38 +1156,29 @@
         return;
       }
 
-            // NOMBRE CORRECTO DEL CSV
+      // NOMBRE CORRECTO DEL CSV
       fetch("./datos_patrullaje.csv", { cache: "no-store" })
         .then(function (response) {
           if (!response.ok) {
             throw new Error("HTTP " + response.status + " " + response.statusText);
           }
-          return response.arrayBuffer();
+          return response.text();
         })
-        .then(function (buf) {
-          // Decodificación robusta (evita símbolos raros por encoding)
-          var bytes = new Uint8Array(buf);
-          var csvText = "";
-          try {
-            csvText = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-          } catch (e) {
-            // windows-1252 suele funcionar cuando el CSV viene desde Excel/Windows
-            csvText = new TextDecoder("windows-1252").decode(bytes);
-          }
-
-          // Delimitador: preferimos ";" pero si no aparece, intentamos ","
-          var primeraLinea = (csvText.split(/?
-/)[0] || "");
-          var delim = (primeraLinea.split(";").length > primeraLinea.split(",").length) ? ";" : ",";
+        .then(function (csvText) {
+          console.log("Contenido bruto de datos_patrullaje.csv (primeros 200 caracteres):");
+          console.log(csvText.slice(0, 200));
 
           const parsed = Papa.parse(csvText, {
             header: true,
             skipEmptyLines: true,
-            delimiter: delim
+            delimiter: ";"
           });
 
+          console.log("Resultado de Papa.parse:", parsed);
+
           const data = parsed.data;
-if (!data || data.length === 0) {
+
+          if (!data || data.length === 0) {
             alert("No se encontraron datos en datos_patrullaje.csv (archivo vacío o encabezados incorrectos).");
             return;
           }
