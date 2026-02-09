@@ -1,22 +1,21 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>AC192 · Patrullajes - Tablero dinámico (CSV)</title>
-<!-- Tabulator local (repo) -->
-<link href="tabulator.min.css" rel="stylesheet"/>
-<!-- Chart.js (CDN) -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<!-- Leaflet (OSM) -->
-<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>AC192 · Patrullajes - Tablero dinámico (CSV)</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Leaflet (OSM) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
     :root{
       --verde-header:#34d399;
       --verde-header-2:#60a5fa;
-
       --azul-boton:#2563eb;
       --azul-boton-hover:#1d4ed8;
 
@@ -25,9 +24,7 @@
       --texto-secundario:#475569;
       --borde-suave: rgba(148,163,184,0.35);
       --card-radius:16px;
-
-      --chart-grid: rgba(2,6,23,0.08);
-      --chart-tick: rgba(15,23,42,0.85);
+      --shadow: 0 10px 30px rgba(15,23,42,0.08);
     }
 
     *{box-sizing:border-box}
@@ -38,56 +35,51 @@
       background:
         radial-gradient(circle at 10% 15%, rgba(52,211,153,0.28) 0, transparent 55%),
         radial-gradient(circle at 90% 30%, rgba(96,165,250,0.25) 0, transparent 55%),
-        radial-gradient(circle at 40% 95%, rgba(14,165,233,0.12) 0, transparent 60%),
-        linear-gradient(180deg, #f7fbff 0%, var(--gris-fondo) 45%, #f2fbf7 100%);
+        linear-gradient(180deg, #f8fbff 0%, #ffffff 40%, #f4f7fb 100%);
       min-height:100vh;
-      display:flex;
-      flex-direction:column;
     }
 
     header{
-      background: linear-gradient(90deg, rgba(16,185,129,0.95), rgba(59,130,246,0.95));
-      color:#fff;
-      padding:14px 20px 18px;
-      box-shadow:0 6px 24px rgba(15,23,42,.14);
-      position:sticky; top:0; z-index:50;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: linear-gradient(90deg, rgba(52,211,153,0.95), rgba(96,165,250,0.95));
+      color:white;
+      box-shadow: 0 6px 22px rgba(15,23,42,0.18);
     }
     .header-inner{
-      max-width:1100px; margin:0 auto;
-      display:flex; align-items:center; justify-content:space-between;
-      gap:16px; flex-wrap:wrap;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px 14px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      justify-content:space-between;
     }
-    .logo-group{
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-      background-color: rgba(255,255,255,0.12);
-      border-radius:999px; padding:6px 10px;
-      border:1px solid rgba(255,255,255,0.15);
-      backdrop-filter: blur(6px);
-    }
-    .logo-group img{
-      height:40px; max-width:130px; object-fit:contain;
-      background-color:#fff; border-radius:999px; padding:4px 8px;
-      box-shadow:0 2px 6px rgba(15,23,42,.18);
-    }
-    .title-group{ text-align:right; flex:1 1 260px;}
-    .title-group h1{ margin:0 0 2px; font-size:22px; letter-spacing:.02em;}
-    .title-group p{ margin:0; font-size:13px; opacity:.96; line-height:1.4;}
+    .logo-group{display:flex; gap:10px; align-items:center;}
+    .logo-group img{height:46px; width:auto; border-radius:10px; background:white; padding:6px; box-shadow: 0 6px 18px rgba(15,23,42,0.18);}
+    .title-group h1{margin:0; font-size:18px; letter-spacing:.2px;}
+    .title-group p{margin:2px 0 0; font-size:12px; opacity:.95;}
 
-    main{
-      max-width:1100px; width:100%;
-      margin:16px auto 0;
-      padding:0 20px 40px;
-      flex:1 0 auto;
+    main{max-width:1200px; margin:0 auto; padding: 16px 14px 40px;}
+
+    .page-header{
+      padding: 14px 14px 10px;
+      background: rgba(255,255,255,0.92);
+      border:1px solid var(--borde-suave);
+      border-radius: var(--card-radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
     }
-
-    .page-header{ margin-bottom:10px; }
-    .page-header h2{ margin:0 0 6px; font-size:20px;}
-    .page-header p{ margin:2px 0; font-size:14px; color:var(--texto-secundario);}
-
+    .page-header h2{margin:0 0 6px; font-size:20px;}
+    .page-header p{margin:0 0 8px; color:var(--texto-secundario); line-height:1.35;}
     .pill{
-      display:inline-block; margin-top:6px;
-      padding:3px 10px; font-size:11px; border-radius:999px;
-      background-color: rgba(37,99,235,0.08);
+      display:inline-block;
+      padding:6px 10px;
+      font-size:11px;
+      font-weight:800;
+      border-radius:999px;
+      background:#e0f2fe;
       color:#1d4ed8;
       border:1px solid rgba(191,219,254,0.9);
       text-transform:uppercase; letter-spacing:.08em;
@@ -103,14 +95,9 @@
       border: 1px solid rgba(148,163,184,0.35);
       background: rgba(255,255,255,0.92);
       backdrop-filter: blur(8px);
-      box-shadow: 0 10px 30px rgba(15,23,42,0.08);
+      box-shadow: var(--shadow);
     }
-
-    .tabs{
-      display:flex; flex-wrap:wrap; gap:8px;
-      justify-content:center;
-      margin:0;
-    }
+    .tabs{display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:0;}
     .tab{
       text-decoration:none;
       padding:8px 12px;
@@ -123,1307 +110,1287 @@
     }
     .tab:hover{ background:#eef6ff; border-color:rgba(59,130,246,0.35); }
     .tab.active{
-      background:var(--azul-boton);
-      border-color:transparent;
-      color:#fff;
-      box-shadow:0 1px 3px rgba(15,23,42,.16);
+      background: linear-gradient(90deg, rgba(52,211,153,0.18), rgba(96,165,250,0.18));
+      border-color: rgba(59,130,246,0.35);
     }
 
     .nav-actions{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      justify-content:center;
       margin-top:10px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+    .btn{
+      border:0;
+      cursor:pointer;
+      padding:10px 12px;
+      border-radius: 12px;
+      font-weight:800;
+      font-size:13px;
+      transition: transform .06s ease, background .15s ease;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn-primary{ background: var(--azul-boton); color:white; }
+    .btn-primary:hover{ background: var(--azul-boton-hover); }
+    .btn-ghost{ background: rgba(15,23,42,0.06); color:#0f172a; border:1px solid rgba(148,163,184,0.35); }
+    .btn-ghost:hover{ background: rgba(15,23,42,0.09); }
+    .btn-warn{ background: rgba(234,179,8,0.18); color:#713f12; border:1px solid rgba(234,179,8,0.35); }
+    .btn-warn:hover{ background: rgba(234,179,8,0.26); }
+
+    .infobox{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px dashed rgba(59,130,246,0.45);
+      background: rgba(239,246,255,0.78);
+      color:#0f172a;
+      font-size:13px;
+      line-height:1.35;
     }
 
-    .btn{
-      display:inline-flex; align-items:center; justify-content:center;
-      padding:8px 14px; font-size:14px;
-      border-radius:999px; text-decoration:none;
-      cursor:pointer; border:1px solid transparent;
-      font-weight:800;
-      transition: background-color .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-      user-select:none;
-      white-space:nowrap;
-    }
-    .btn-primary{
-      background-color:var(--azul-boton); color:#fff;
-      box-shadow:0 1px 3px rgba(15,23,42,.14);
-    }
-    .btn-primary:hover{
-      background-color:var(--azul-boton-hover);
-      transform:translateY(-1px);
-      box-shadow:0 6px 18px rgba(15,23,42,.16);
-    }
-    .btn-ghost{
-      background-color:rgba(255,255,255,.95);
-      color:#0f172a;
-      border-color: rgba(148,163,184,0.45);
-    }
-    .btn-ghost:hover{
-      background:#eef6ff;
-      border-color: rgba(59,130,246,0.35);
-      transform:translateY(-1px);
-      box-shadow:0 4px 12px rgba(15,23,42,.10);
-    }
-    .btn-warn{
-      background: rgba(16,185,129,0.95); color:#fff;
-      box-shadow:0 1px 3px rgba(15,23,42,.14);
-    }
-    .btn-warn:hover{
-      background: rgba(5,150,105,0.98);
-      transform:translateY(-1px);
-      box-shadow:0 6px 18px rgba(15,23,42,.14);
+    .grid{display:grid; gap:12px;}
+    .grid-2{grid-template-columns: repeat(2, minmax(0,1fr));}
+    .grid-3{grid-template-columns: repeat(3, minmax(0,1fr));}
+    .grid-4{grid-template-columns: repeat(4, minmax(0,1fr));}
+    @media (max-width: 980px){
+      .grid-4{grid-template-columns: repeat(2, minmax(0,1fr));}
+      .grid-3{grid-template-columns: repeat(1, minmax(0,1fr));}
+      .grid-2{grid-template-columns: repeat(1, minmax(0,1fr));}
     }
 
     .card{
-      background: rgba(255,255,255,0.92);
-      border-radius:var(--card-radius);
+      background: rgba(255,255,255,0.94);
       border:1px solid var(--borde-suave);
-      box-shadow:0 10px 30px rgba(15,23,42,.08);
-      padding:16px;
-      margin-bottom:14px;
-      overflow:hidden;
-      position:relative;
+      border-radius: var(--card-radius);
+      box-shadow: var(--shadow);
+      padding: 12px 12px;
+      backdrop-filter: blur(8px);
     }
-    .card.soft{
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(248,250,252,.98));
-    }
-
-    .subnote{ margin:0; color:var(--texto-secundario); font-size:13px; }
-
-    .infobox{
-      border:1px solid rgba(59,130,246,.18);
-      background: rgba(219,234,254,.40);
-      border-radius:14px;
-      padding:10px 12px;
-      color:#0f172a;
-      font-size:13px;
-      margin-top:10px;
-      text-align:center;
-    }
-
-    .chips{
-      display:flex;
-      flex-wrap:wrap;
-      gap:8px;
-      margin-top:8px;
-      justify-content:center;
-    }
-    .chip{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,0.45);
-      background: rgba(255,255,255,0.85);
+    .card h3{margin:0 0 8px; font-size:15px;}
+    .muted{color:var(--texto-secundario);}
+    .status{
       font-size:12px;
-      font-weight:700;
-      color:#0f172a;
+      color: var(--texto-secundario);
     }
-    .chip b{ font-weight:800; }
-
-    .filters{
-      display:grid;
-      grid-template-columns:repeat(12, 1fr);
-      gap:10px;
-      align-items:end;
+    .error{
       margin-top:10px;
+      padding:10px 12px;
+      border-radius: 14px;
+      background: rgba(239,68,68,0.10);
+      border:1px solid rgba(239,68,68,0.25);
+      color:#7f1d1d;
+      display:none;
+      white-space: pre-wrap;
+      font-size:13px;
+      line-height:1.35;
     }
-    .field{ grid-column: span 3; min-width:160px; }
-    .field.wide{ grid-column: span 4; }
+    .ok{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius: 14px;
+      background: rgba(34,197,94,0.10);
+      border:1px solid rgba(34,197,94,0.25);
+      color:#14532d;
+      display:none;
+      white-space: pre-wrap;
+      font-size:13px;
+      line-height:1.35;
+    }
 
-    label{
-      display:block; font-size:12px; color:var(--texto-secundario);
-      font-weight:900; margin-bottom:6px;
-    }
-    select, input{
+    label{font-size:12px; font-weight:800; color:#0f172a; display:block; margin-bottom:6px;}
+    select, input[type="text"]{
       width:100%;
-      padding:8px 10px;
-      border-radius:12px;
-      border:1px solid rgba(148,163,184,0.35);
-      background:#fff;
-      font-size:14px;
+      padding:10px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(148,163,184,0.45);
+      background:white;
+      font-size:13px;
       outline:none;
     }
-    input.small{
-      padding:7px 10px;
-      border-radius:12px;
-      background: rgba(241,245,249,.7);
-      margin-bottom:6px;
-    }
+    select:focus, input[type="text"]:focus{border-color: rgba(37,99,235,0.55); box-shadow:0 0 0 4px rgba(37,99,235,0.12);}
 
-    .kpis{
-      display:grid; grid-template-columns:repeat(12,1fr); gap:12px;
-    }
+    .kpis{display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:10px;}
+    @media (max-width: 980px){ .kpis{grid-template-columns: repeat(2, minmax(0,1fr));} }
     .kpi{
-      grid-column: span 2;
-      border:1px solid rgba(148,163,184,0.35);
-      border-radius:14px;
-      padding:12px;
-      background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(248,250,252,.98));
-      min-height:80px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(148,163,184,0.30);
+      background: rgba(248,250,252,0.80);
     }
-    .kpi .t{ font-size:12px; color:var(--texto-secundario); font-weight:950;}
-    .kpi .v{ font-size:18px; font-weight:950; margin-top:6px; }
-    .kpi .s{ font-size:12px; color:var(--texto-secundario); margin-top:2px; }
+    .kpi .num{font-size:22px; font-weight:900; line-height:1.1;}
+    .kpi .lab{font-size:12px; color:var(--texto-secundario); font-weight:800; margin-top:3px;}
 
-    .grid{ display:grid; grid-template-columns:repeat(12,1fr); gap:12px; }
-    .col-12{ grid-column:span 12; }
-    .col-6{ grid-column:span 6; }
+    .chartbox{height:320px;}
+    canvas{max-width:100%;}
+    #map{height: 380px; border-radius: 14px; border:1px solid rgba(148,163,184,0.35);}
 
-    .chartwrap{ height:240px; }
-    .chartwrap.tall{ height:260px; }
-    canvas{ width:100% !important; height:100% !important; }
-
-    #map{
+    .tablewrap{
+      border:1px solid rgba(148,163,184,0.35);
+      border-radius: 14px;
+      overflow:auto;
+      background:white;
+    }
+    table{
       width:100%;
-      height:420px;
-      min-height:320px;
-      max-height:520px;
-      border-radius:14px;
-      border:1px solid rgba(148,163,184,0.35);
-      overflow:hidden;
-      background:#fff;
-    }
-
-    .maprow{
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
-      margin-bottom:10px;
-    }
-    .mini-actions{
-      display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
-    }
-    .mini-btn{
-      padding:7px 10px;
+      border-collapse: collapse;
       font-size:13px;
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,0.45);
-      background: rgba(255,255,255,.95);
+      min-width: 980px;
+    }
+    thead th{
+      position: sticky;
+      top: 0;
+      background: #f8fafc;
+      border-bottom:1px solid rgba(148,163,184,0.45);
+      padding:10px 10px;
+      text-align:left;
+      font-weight:900;
+      white-space:nowrap;
       cursor:pointer;
-      font-weight:800;
+      user-select:none;
     }
-    .mini-btn:hover{
-      background:#eef6ff;
-      border-color: rgba(59,130,246,0.35);
-      box-shadow:0 3px 10px rgba(15,23,42,.10);
+    tbody td{
+      border-bottom:1px solid rgba(148,163,184,0.20);
+      padding:9px 10px;
+      vertical-align: top;
+      white-space:nowrap;
     }
+    tbody tr:hover{background:#f8fbff;}
+    .th-sort{
+      display:inline-flex; gap:6px; align-items:center;
+    }
+    .sort-ind{font-size:12px; opacity:.7;}
 
-    .tablewrap{ overflow:hidden; }
+    .pager{
+      display:flex; gap:8px; align-items:center; justify-content:space-between;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .pager-left{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+    .small{font-size:12px; color:var(--texto-secundario);}
+
     footer{
+      margin-top: 18px;
+      padding: 20px 8px 10px;
       text-align:center;
-      font-size:12px;
-      color:#64748b;
-      padding:10px 20px 18px;
-      border-top:1px solid rgba(148,163,184,0.25);
-      background-color:rgba(248,250,252,.9);
-      margin-top:auto;
+      color: rgba(15,23,42,0.6);
+      font-size: 12px;
     }
-
-    .toast{
-      position:fixed;
-      left:50%; bottom:18px;
-      transform:translateX(-50%);
-      background:rgba(15,23,42,.92);
-      color:#fff;
-      padding:10px 12px;
-      border-radius:999px;
-      font-size:13px;
-      box-shadow:0 10px 25px rgba(15,23,42,.30);
-      opacity:0; pointer-events:none;
-      transition: opacity .2s ease, transform .2s ease;
-      z-index:9999;
-    }
-    .toast.show{
-      opacity:1;
-      transform:translateX(-50%) translateY(-4px);
-    }
-
-    @media (max-width: 980px){
-      .field{ grid-column: span 12; min-width:unset; }
-      .field.wide{ grid-column: span 12; }
-      .kpi{ grid-column: span 6; }
-      .col-6{ grid-column: span 12; }
-      .title-group{ text-align:center; }
-      .header-inner{ justify-content:center; }
-      .topnav{ top: 116px; }
-      .chartwrap{ height: 230px; }
-      #map{ height: 300px; }
-    }
-  
-#tabla{ min-height:520px; }
-</style>
+  </style>
 </head>
+
 <body>
-<header>
-<div class="header-inner">
-<div class="logo-group">
-<img alt="Logo CONAP" src="conap_logo.jpg"/>
-<img alt="Logo Laboratorio SIG AALA" src="aala_logo.png"/>
-</div>
-<div class="title-group">
-<h1>Centro de consulta de datos</h1>
-<p>Sistema de monitoreo de actividades</p>
-<p>CONAP – Dirección Regional Altiplano Central</p>
-</div>
-</div>
-</header>
-<main>
-<section class="page-header">
-<h2>AC192 · Patrullajes de control y vigilancia · Tablero dinámico</h2>
-<p>Este tablero se genera automáticamente desde los datos extraídos de la boleta AC 192 y permite filtrar, graficar y generar un informe PDF liviano.</p>
-<span class="pill">Tablero dinámico · CSV</span>
-</section>
-<section aria-label="Navegación y acciones del módulo" class="topnav">
-<nav aria-label="Navegación del módulo" class="tabs">
-<a class="tab" href="patrullajes_dashboard.html">Dashboard geográfico</a>
-<a class="tab active" href="patrullajes_tablero.html">Tablero dinámico</a>
-<a class="tab" href="patrullajes_datos.html">Tabla de datos</a>
-</nav>
-<div class="nav-actions">
-<a class="btn btn-ghost" href="index.html">Inicio</a>
-<button class="btn btn-ghost" id="btn-reset" type="button">Limpiar filtros</button>
-<button class="btn btn-warn" id="btn-pdf" type="button">Generar informe PDF (liviano)</button>
-</div>
-<div class="infobox">
-<b>Sugerencia:</b> haga clic sobre la serie temporal o sobre el gráfico de barras para filtrar.
-        <div aria-label="Resumen de filtros" class="chips" id="chips-filtros"></div>
-</div>
-<p class="subnote" id="estado" style="margin-top:10px;">Cargando datos…</p>
-</section>
-<section aria-label="Filtros del tablero" class="card soft" id="card-filtros">
-<h3 style="margin:0 0 6px;">Filtros</h3>
-<p class="subnote">Los filtros se aplican a KPIs, gráficos, mapa y tabla. Si un filtro no aplica (campo inexistente), se oculta automáticamente.</p>
-<div class="filters" id="filters-grid">
-<div class="field" id="wrap-anio">
-<label for="f-anio">Año</label>
-<select id="f-anio"></select>
-</div>
-<div class="field" id="wrap-mes">
-<label for="f-mes">Mes</label>
-<select id="f-mes"></select>
-</div>
-<div class="field wide" id="wrap-region">
-<label for="f-region">Región</label>
-<select id="f-region"></select>
-</div>
-<div class="field wide" id="wrap-municipio">
-<label for="f-municipio">Municipio</label>
-<select id="f-municipio"></select>
-</div>
-<div class="field wide" id="wrap-area">
-<label for="f-area">Área protegida</label>
-<select id="f-area"></select>
-</div>
-<div class="field wide" id="wrap-guarda">
-<label for="f-guarda">Guardarrecursos responsable</label>
-<select id="f-guarda"></select>
-</div>
-<div class="field wide" id="wrap-tipo">
-<label for="f-tipo">Tipo de patrullaje</label>
-<select id="f-tipo"></select>
-</div>
-<div class="field wide" id="wrap-ilegal">
-<label for="f-ilegal">Actividad ilegal observada</label>
-<select id="f-ilegal"></select>
-</div>
-<div class="field wide" id="wrap-ubicacion">
-<label for="f-ubicacion">Ubicación</label>
-<select id="f-ubicacion"></select>
-</div>
-<div class="field" id="wrap-buscar">
-<label for="f-buscar">Buscar</label>
-<input id="f-buscar" placeholder="palabra clave (en cualquier campo)" type="text"/>
-</div>
-</div>
-</section>
-<section aria-label="Indicadores" class="card">
-<h3 style="margin:0 0 10px;">Indicadores</h3>
-<div class="kpis">
-<div class="kpi"><div class="t">Registros</div><div class="v" id="kpi-registros">–</div><div class="s" id="kpi-registros-s">Total</div></div>
-<div class="kpi"><div class="t">Rango de fechas</div><div class="v" id="kpi-rango">–</div><div class="s">Según “Fecha de patrullaje”</div></div>
-<div class="kpi"><div class="t">Regiones</div><div class="v" id="kpi-regiones">–</div><div class="s">Únicas</div></div>
-<div class="kpi"><div class="t">Municipios</div><div class="v" id="kpi-municipios">–</div><div class="s">Únicos</div></div>
-<div class="kpi"><div class="t">Áreas protegidas</div><div class="v" id="kpi-areas">–</div><div class="s">Únicas</div></div>
-<div class="kpi"><div class="t">Con coordenadas</div><div class="v" id="kpi-coords">–</div><div class="s">Para el mapa</div></div>
-</div>
-</section>
-<section aria-label="Gráficos" class="grid">
-<div class="card col-6">
-<h3 style="margin:0 0 8px;">Serie temporal (registros)</h3>
-<div class="chartwrap tall"><canvas id="chart-tiempo"></canvas></div>
-<p class="subnote" id="note-tiempo">Clic en un punto para filtrar por mes.</p>
-</div>
-<div class="card col-6">
-<div class="maprow">
-<h3 style="margin:0;">Distribución por tipo</h3>
-<div class="mini-actions">
-<button class="mini-btn" id="btn-clear-chart" type="button">Quitar filtro gráfico</button>
-</div>
-</div>
-<div class="chartwrap tall"><canvas id="chart-tipo"></canvas></div>
-<p class="subnote">Clic en una barra para filtrar por categoría.</p>
-</div>
-</section>
-<section aria-label="Mapa" class="card">
-<div class="maprow">
-<h3 style="margin:0;">Mapa (si hay coordenadas)</h3>
-<div class="mini-actions">
-<button class="mini-btn" id="btn-centrar" type="button">Centrar</button>
-<button class="mini-btn" id="btn-geojson" type="button">Descargar GeoJSON</button>
-</div>
-</div>
-<div id="map"></div>
-<p class="subnote" id="map-note">Si el CSV no incluye coordenadas, el mapa se ocultará automáticamente.</p>
-</section>
-<section aria-label="Tabla de registros" class="card">
-<div class="maprow">
-<h3 style="margin:0;">Tabla (Tabulator)</h3>
-<div class="mini-actions">
-<button class="mini-btn" id="btn-csv" type="button">Descargar CSV</button>
-<button class="mini-btn" id="btn-xlsx" type="button">Descargar Excel</button>
-</div>
-</div>
-<div class="tablewrap"><div id="tabla"></div></div>
-<p class="subnote">Tip: use el buscador superior y el filtro por columna (en encabezados) para refinar aún más.</p>
-</section>
-</main>
-<footer>
-<p>© 2026 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
-</footer>
-<div class="toast" id="toast">Listo</div>
-<!-- Librerías locales del repositorio -->
-<script src="papaparse.min.js"></script>
-<script src="tabulator.min.js"></script>
-<script src="xlsx.full.min.js"></script>
-<!-- PDF -->
-<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+  <header>
+    <div class="header-inner">
+      <div class="logo-group">
+        <img src="conap_logo.jpg" alt="Logo CONAP">
+        <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA">
+      </div>
+      <div class="title-group">
+        <h1>Centro de consulta de datos</h1>
+        <p>Sistema de monitoreo de actividades</p>
+        <p>CONAP – Dirección Regional Altiplano Central</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-header">
+      <h2>AC192 · Patrullajes de control y vigilancia · Tablero dinámico</h2>
+      <p>Este tablero se genera automáticamente desde el CSV <b>datos_patrullaje.csv</b>. Incluye filtros homogéneos, gráficos y mapa. (Sin Tabulator)</p>
+      <span class="pill">Tablero dinámico · CSV</span>
+    </section>
+
+    <section class="topnav" aria-label="Navegación y acciones del módulo">
+      <nav class="tabs" aria-label="Navegación del módulo">
+        <a class="tab" href="patrullajes_dashboard.html">Dashboard geográfico</a>
+        <a class="tab active" href="patrullajes_tablero.html">Tablero dinámico</a>
+        <a class="tab" href="patrullajes_datos.html">Tabla de datos</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a class="btn btn-ghost" href="index.html">Inicio</a>
+        <button class="btn btn-ghost" id="btn-reset" type="button">Limpiar filtros</button>
+        <button class="btn btn-primary" id="btn-csv" type="button">Descargar CSV filtrado</button>
+        <button class="btn btn-warn" id="btn-xlsx" type="button">Descargar Excel filtrado</button>
+        <button class="btn btn-ghost" id="btn-print" type="button">Imprimir / PDF</button>
+      </div>
+
+      <div class="infobox">
+        <b>Tip:</b> los filtros eliminan duplicados (acentos, mayúsculas y espacios). El mapa ignora coordenadas inválidas (0/0) o fuera de rango para Guatemala.
+      </div>
+
+      <div class="status" id="status">Cargando datos…</div>
+      <div class="error" id="errorBox"></div>
+      <div class="ok" id="okBox"></div>
+    </section>
+
+    <section class="grid grid-1">
+      <div class="card">
+        <h3>Filtros</h3>
+        <div class="grid grid-4">
+          <div>
+            <label for="fYear">Año</label>
+            <select id="fYear"><option value="">Todos</option></select>
+          </div>
+          <div>
+            <label for="fMonth">Mes</label>
+            <select id="fMonth"><option value="">Todos</option></select>
+          </div>
+          <div>
+            <label for="fRegion">Región</label>
+            <select id="fRegion"><option value="">Todas</option></select>
+          </div>
+          <div>
+            <label for="fMunicipio">Municipio</label>
+            <select id="fMunicipio"><option value="">Todos</option></select>
+          </div>
+        </div>
+
+        <div class="grid grid-4" style="margin-top:10px;">
+          <div>
+            <label for="fArea">Área protegida</label>
+            <select id="fArea"><option value="">Todas</option></select>
+          </div>
+          <div>
+            <label for="fGuarda">Guardarrecursos responsable</label>
+            <select id="fGuarda"><option value="">Todos</option></select>
+          </div>
+          <div>
+            <label for="fTipo">Tipo de patrullaje</label>
+            <select id="fTipo"><option value="">Todos</option></select>
+          </div>
+          <div>
+            <label for="fActividad">Actividad ilegal observada</label>
+            <select id="fActividad"><option value="">Todas</option></select>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <label for="fSearch">Buscar (en todos los campos)</label>
+          <input id="fSearch" type="text" placeholder="Ej. Santiago Atitlán, RUMCLA, control y vigilancia…">
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Resumen</h3>
+        <div class="kpis">
+          <div class="kpi"><div class="num" id="kpiReg">0</div><div class="lab">Registros</div></div>
+          <div class="kpi"><div class="num" id="kpiMun">0</div><div class="lab">Municipios (únicos)</div></div>
+          <div class="kpi"><div class="num" id="kpiGuar">0</div><div class="lab">Guardarrecursos (únicos)</div></div>
+          <div class="kpi"><div class="num" id="kpiMes">0</div><div class="lab">Meses con datos</div></div>
+        </div>
+        <div class="small" style="margin-top:8px;" id="countLabel">Mostrando 0 de 0 registros</div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Registros por mes</h3>
+          <div class="chartbox"><canvas id="chMes"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Patrullajes por tipo (Top)</h3>
+          <div class="chartbox"><canvas id="chTipo"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>Registros por municipio (Top 10)</h3>
+          <div class="chartbox"><canvas id="chMun"></canvas></div>
+        </div>
+        <div class="card">
+          <h3>Mapa de ubicaciones</h3>
+          <div id="map"></div>
+          <div class="small" style="margin-top:8px;" id="mapNote"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Registros (tabla simple)</h3>
+        <div class="tablewrap">
+          <table id="tbl">
+            <thead><tr id="tblHead"></tr></thead>
+            <tbody id="tblBody"></tbody>
+          </table>
+        </div>
+
+        <div class="pager">
+          <div class="pager-left">
+            <button class="btn btn-ghost" id="btnPrev" type="button">← Anterior</button>
+            <button class="btn btn-ghost" id="btnNext" type="button">Siguiente →</button>
+            <span class="small" id="pageInfo">Página 1/1</span>
+          </div>
+          <div class="pager-left">
+            <span class="small">Filas por página</span>
+            <select id="pageSize" style="width:130px; padding:8px 10px;">
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span class="small" id="sortInfo"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      © 2026 · Laboratorio SIG AALA · CONAP · AC192 Patrullajes
+    </footer>
+  </main>
+
 <script>
-(function () {
-  // -----------------------------
-  // Config
-  // -----------------------------
-  const CSV_CANDIDATES = [
-    "./datos_patrullaje.csv",
-    "datos_patrullaje.csv",
-    // Fallback: raw GitHub (sirve aunque Pages esté apuntando a /docs u otra carpeta)
-    "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/datos_patrullaje.csv"
+(function(){
+  // ========= Utilidades (texto/normalización) =========
+  function normText(v){
+    if(v === null || v === undefined) return "";
+    var s = String(v).trim();
+    s = s.replace(/\s+/g, " ");
+    // quitar acentos
+    try{
+      s = s.normalize("NFKD").replace(/[\u0300-\u036f]/g,"");
+    }catch(e){}
+    return s.toLowerCase();
+  }
+  function cleanSpaces(v){
+    if(v === null || v === undefined) return "";
+    return String(v).replace(/\s+/g," ").trim();
+  }
+  function toNumber(v){
+    if(v === null || v === undefined) return NaN;
+    var s = String(v).trim().replace(",", ".");
+    if(!s) return NaN;
+    var n = parseFloat(s);
+    return isFinite(n) ? n : NaN;
+  }
+
+  // ========= Carga de scripts (PapaParse / XLSX) =========
+  function loadScriptSequential(urls){
+    return new Promise(function(resolve, reject){
+      var i = 0;
+      function tryNext(){
+        if(i >= urls.length) return reject(new Error("No se pudo cargar ninguna librería: " + urls.join(", ")));
+        var url = urls[i++];
+        var s = document.createElement("script");
+        s.src = url;
+        s.async = true;
+        s.onload = function(){ resolve(url); };
+        s.onerror = function(){ tryNext(); };
+        document.head.appendChild(s);
+      }
+      tryNext();
+    });
+  }
+
+  // ========= Carga y decodificación del CSV =========
+  var CSV_NAME = "datos_patrullaje.csv";
+  var RAW_FALLBACK = "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/" + CSV_NAME;
+
+  var PATHS = [
+    "./" + CSV_NAME,
+    CSV_NAME,
+    "./data/" + CSV_NAME,
+    "data/" + CSV_NAME,
+    RAW_FALLBACK
   ];
 
-  // Campos esperados (según AC192). Se usan si existen en el CSV.
-  const FIELD_FECHA = "Fecha de patrullaje";
-  const FIELD_REGION = "Region";
-  const FIELD_MUNICIPIO = "Municipio";
-  const FIELD_AREA = "Area protegida";
-  const FIELD_GUARDA = "Guarda recursos responsable";
-  const FIELD_TIPO = "Tipo de patrullaje";
-  const FIELD_ILEGAL = "Actividad ilegal observada";
-  const FIELD_UBIC = "Ubicacion";
-
-  // Coordenadas (según tu CSV)
-  const FIELD_LAT = "Latitud";
-  const FIELD_LON = "Longitud";
-
-  // Rangos razonables para Guatemala (evita que un outlier arruine el zoom)
-  const GT_BOUNDS = { minLat: 13.0, maxLat: 18.6, minLon: -93.5, maxLon: -88.0 };
-
-  // -----------------------------
-  // Helpers UI
-  // -----------------------------
-  const $ = (id) => document.getElementById(id);
-
-  function setEstado(msg, isError) {
-    const el = $("estado");
-    if (!el) return;
-    el.textContent = msg;
-    el.style.color = isError ? "#b91c1c" : "#1f2937";
-  }
-
-  function showToast(msg) {
-    const t = $("toast");
-    if (!t) return;
-    t.textContent = msg;
-    t.classList.add("show");
-    setTimeout(() => t.classList.remove("show"), 1500);
-  }
-
-  function showOrHide(wrapperId, show) {
-    const el = $(wrapperId);
-    if (!el) return;
-    el.style.display = show ? "" : "none";
-  }
-
-  function fillSelect(selectEl, values, placeholder) {
-    if (!selectEl) return;
-    selectEl.innerHTML = "";
-    const opt0 = document.createElement("option");
-    opt0.value = "";
-    opt0.textContent = placeholder || "Todos";
-    selectEl.appendChild(opt0);
-
-    (values || []).forEach(v => {
-      const o = document.createElement("option");
-      o.value = v;
-      o.textContent = v;
-      selectEl.appendChild(o);
-    });
-  }
-
-  function fillSelectPairs(selectEl, pairs, placeholder) {
-    if (!selectEl) return;
-    selectEl.innerHTML = "";
-    const opt0 = document.createElement("option");
-    opt0.value = "";
-    opt0.textContent = placeholder || "Todos";
-    selectEl.appendChild(opt0);
-
-    (pairs || []).forEach(p => {
-      const o = document.createElement("option");
-      o.value = p.value;
-      o.textContent = p.label;
-      selectEl.appendChild(o);
-    });
-  }
-
-  // -----------------------------
-  // Robust loading of libs
-  // -----------------------------
-  function loadScript(url) {
-    return new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = url;
-      s.async = true;
-      s.onload = () => resolve(url);
-      s.onerror = () => reject(new Error("No se pudo cargar: " + url));
-      document.head.appendChild(s);
-    });
-  }
-
-  async function ensureLib(name, testFn, urls) {
-    try {
-      if (testFn()) return { name, url: "preload" };
-    } catch (_) {}
-    for (const u of urls) {
-      try {
-        await loadScript(u);
-        if (testFn()) return { name, url: u };
-      } catch (e) { /* try next */ }
-    }
-    throw new Error("Falta librería: " + name);
-  }
-
-  async function ensureDependencies() {
-    // Si tus archivos locales existen, se usarán primero; si no, cae a CDN.
-    await ensureLib("PapaParse", () => !!window.Papa, [
-      "papaparse.min.js",
-      "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"
-    ]);
-    await ensureLib("Tabulator", () => !!window.Tabulator, [
-      "tabulator.min.js",
-      "https://cdn.jsdelivr.net/npm/tabulator-tables@6.2.5/dist/js/tabulator.min.js"
-    ]);
-    await ensureLib("XLSX", () => !!window.XLSX, [
-      "xlsx.full.min.js",
-      "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
-    ]);
-    await ensureLib("Chart.js", () => !!window.Chart, [
-      "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
-    ]);
-    await ensureLib("Leaflet", () => !!window.L, [
-      "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    ]);
-    await ensureLib("html2pdf", () => !!window.html2pdf, [
-      "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"
-    ]);
-  }
-
-  // -----------------------------
-  // CSV decoding / parsing
-  // -----------------------------
-  function countReplacementChars(s) {
-    let c = 0;
-    for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) === 0xFFFD) c++;
-    return c;
-  }
-
-  function decodeSmartCsv(buffer) {
-    // Intenta UTF-8 vs Windows-1252 (muy común en CSV exportados en Windows)
-    try {
-      const utf8 = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
-      let best = utf8;
-      let bestScore = countReplacementChars(utf8);
-
-      try {
-        const w1252 = new TextDecoder("windows-1252", { fatal: false }).decode(buffer);
-        const score2 = countReplacementChars(w1252);
-        if (score2 < bestScore) {
-          best = w1252;
-          bestScore = score2;
-        }
-      } catch (_) { /* ignore */ }
-
-      return best;
-    } catch (_) {
-      // Último recurso: convertir a string de bytes
-      const bytes = new Uint8Array(buffer);
-      let out = "";
-      for (let i = 0; i < bytes.length; i++) out += String.fromCharCode(bytes[i]);
-      return out;
-    }
-  }
-
-  function detectarDelimitador(csvText) {
-    const lines = csvText.split(/\r?\n/).slice(0, 15).join("\n");
-    const cSemi = (lines.match(/;/g) || []).length;
-    const cComma = (lines.match(/,/g) || []).length;
-    const cTab = (lines.match(/\t/g) || []).length;
-    if (cSemi >= cComma && cSemi >= cTab) return ";";
-    if (cComma >= cSemi && cComma >= cTab) return ",";
-    return "\t";
-  }
-
-  async function fetchFirstOk(urls) {
-    let lastErr = null;
-    for (const base of urls) {
-      const url = base + (base.includes("?") ? "&" : "?") + "v=" + Date.now();
-      try {
-        const res = await fetch(url, { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
-        const buffer = await res.arrayBuffer();
-        return { url, buffer };
-      } catch (e) {
+  async function fetchArrayBufferAny(paths){
+    var lastErr = null;
+    for(var i=0;i<paths.length;i++){
+      var p = paths[i];
+      try{
+        var res = await fetch(p, {cache:"no-store"});
+        if(!res.ok) throw new Error("HTTP " + res.status + " al cargar " + p);
+        return {buf: await res.arrayBuffer(), used:p};
+      }catch(e){
         lastErr = e;
       }
     }
-    throw lastErr || new Error("No se pudo descargar el CSV.");
+    throw lastErr || new Error("No se pudo cargar el CSV.");
   }
 
-  // -----------------------------
-  // Date parsing (DD/MM vs MM/DD)
-  // -----------------------------
-  function prepararHintsFechas(rows) {
-    let seenDayFirst = 0;
-    let seenMonthFirst = 0;
-
-    const sample = rows.slice(0, 250).map(r => (r && r[FIELD_FECHA]) ? String(r[FIELD_FECHA]).trim() : "").filter(Boolean);
-    for (const s of sample) {
-      const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-      if (!m) continue;
-      const a = parseInt(m[1], 10);
-      const b = parseInt(m[2], 10);
-      if (a > 12 && b <= 12) seenDayFirst++;
-      if (b > 12 && a <= 12) seenMonthFirst++;
+  function decodeSmart(buf){
+    // Intento UTF-8 primero, si hay muchos reemplazos, usar Windows-1252
+    var utf8 = new TextDecoder("utf-8", {fatal:false}).decode(buf);
+    var bad = (utf8.match(/�/g) || []).length;
+    if(bad > 0){
+      try{
+        return new TextDecoder("windows-1252", {fatal:false}).decode(buf);
+      }catch(e){
+        return utf8;
+      }
     }
-
-    const dayFirst = seenDayFirst >= seenMonthFirst; // tie -> dayFirst
-    rows.forEach(r => { r._dateHint = { dayFirst }; });
+    return utf8;
   }
 
-  function parseFechaFlexible(s, hint) {
-    if (!s) return null;
-    const str = String(s).trim();
-    if (!str) return null;
+  // ========= Parser CSV =========
+  function parseWithPapa(text){
+    return new Promise(function(resolve, reject){
+      try{
+        Papa.parse(text, {
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: false,
+          complete: function(r){ resolve(r.data || []); },
+          error: function(err){ reject(err); }
+        });
+      }catch(e){
+        reject(e);
+      }
+    });
+  }
+
+  function detectDelimiter(text){
+    var line = (text.split(/\r?\n/).find(function(l){ return l && l.indexOf(";")>-1 || l.indexOf(",")>-1; }) || "");
+    var semi = (line.match(/;/g) || []).length;
+    var comma = (line.match(/,/g) || []).length;
+    return semi >= comma ? ";" : ",";
+  }
+
+  function parseSimpleCSV(text){
+    // Parser simple (sin comillas complejas). Sirve como fallback.
+    var delim = detectDelimiter(text);
+    var lines = text.split(/\r?\n/).filter(function(l){return l.trim().length>0;});
+    if(lines.length < 2) return [];
+    var headers = lines[0].split(delim).map(function(h){return h.trim();});
+    var out = [];
+    for(var i=1;i<lines.length;i++){
+      var parts = lines[i].split(delim);
+      var row = {};
+      for(var j=0;j<headers.length;j++){
+        row[headers[j]] = parts[j] !== undefined ? parts[j].trim() : "";
+      }
+      out.push(row);
+    }
+    return out;
+  }
+
+  // ========= Fechas =========
+  function inferDayFirst(rows, field){
+    var dayFirstScore = 0;
+    var monthFirstScore = 0;
+    for(var i=0;i<Math.min(rows.length, 250);i++){
+      var v = cleanSpaces(rows[i][field]);
+      if(!v) continue;
+      var m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if(!m) continue;
+      var a = parseInt(m[1],10), b = parseInt(m[2],10);
+      if(a>12) dayFirstScore++;
+      else if(b>12) monthFirstScore++;
+    }
+    return dayFirstScore >= monthFirstScore; // prefer dayfirst si empata
+  }
+
+  function parseDateSmart(v, preferDayFirst){
+    v = cleanSpaces(v);
+    if(!v) return null;
 
     // YYYY-MM-DD
-    let m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-    if (m) {
-      const y = parseInt(m[1],10), mo = parseInt(m[2],10), d = parseInt(m[3],10);
-      const dt = new Date(y, mo-1, d);
+    var iso = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if(iso){
+      var y = parseInt(iso[1],10), mo = parseInt(iso[2],10)-1, d = parseInt(iso[3],10);
+      var dt = new Date(y, mo, d);
       return isNaN(dt.getTime()) ? null : dt;
     }
 
     // DD/MM/YYYY o MM/DD/YYYY
-    m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
-    if (m) {
-      let p1 = parseInt(m[1],10), p2 = parseInt(m[2],10), y = parseInt(m[3],10);
-      if (y < 100) y += 2000;
-      const dayFirst = hint && hint.dayFirst;
-      const d = dayFirst ? p1 : p2;
-      const mo = dayFirst ? p2 : p1;
-      const dt = new Date(y, mo-1, d);
-      return isNaN(dt.getTime()) ? null : dt;
+    var sl = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(sl){
+      var p1 = parseInt(sl[1],10), p2 = parseInt(sl[2],10), y2 = parseInt(sl[3],10);
+      var dayFirst = preferDayFirst;
+      if(p1>12) dayFirst = true;
+      else if(p2>12) dayFirst = false;
+
+      var d2 = dayFirst ? p1 : p2;
+      var m2 = dayFirst ? p2 : p1;
+      var dt2 = new Date(y2, m2-1, d2);
+      return isNaN(dt2.getTime()) ? null : dt2;
     }
 
-    return null;
+    // fallback Date parse (último recurso)
+    var dt3 = new Date(v);
+    return isNaN(dt3.getTime()) ? null : dt3;
   }
 
-  function monthKey(dt) {
-    const y = dt.getFullYear();
-    const m = String(dt.getMonth()+1).padStart(2,"0");
-    return y + "-" + m;
+  var MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  function monthKey(dt){
+    var y = dt.getFullYear();
+    var m = (dt.getMonth()+1);
+    return y + "-" + String(m).padStart(2,"0");
+  }
+  function monthLabel(key){
+    var parts = key.split("-");
+    var y = parseInt(parts[0],10);
+    var m = parseInt(parts[1],10);
+    return (MONTHS_ES[m-1] || key) + " " + y;
   }
 
-  const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-  function labelMonthKey(k) {
-    const parts = String(k).split("-");
-    if (parts.length !== 2) return k;
-    const y = parts[0];
-    const m = parseInt(parts[1],10);
-    const name = (m>=1 && m<=12) ? MONTHS_ES[m-1] : parts[1];
-    return name + " " + y;
+  // ========= UI refs =========
+  var elStatus = document.getElementById("status");
+  var elError = document.getElementById("errorBox");
+  var elOk = document.getElementById("okBox");
+
+  function showError(msg){
+    elError.style.display="block";
+    elError.textContent = msg;
+  }
+  function showOk(msg){
+    elOk.style.display="block";
+    elOk.textContent = msg;
+  }
+  function clearMsgs(){
+    elError.style.display="none"; elError.textContent="";
+    elOk.style.display="none"; elOk.textContent="";
   }
 
-  // -----------------------------
-  // Data, filters, charts, map, table
-  // -----------------------------
-  let rawData = [];
-  let filteredData = [];
-  let table = null;
+  // ========= Data state =========
+  var ALL = [];
+  var FILTERED = [];
+  var preferDayFirst = true;
 
-  let chartTiempo = null;
-  let chartTipo = null;
+  var state = {
+    page: 1,
+    pageSize: 25,
+    sortCol: "__date",
+    sortDir: "desc"
+  };
 
-  let map = null;
-  let markersLayer = null;
+  // ========= Filtros (campos) =========
+  var FIELDS = {
+    year: {id:"fYear", type:"year"},
+    month: {id:"fMonth", type:"month"},
+    region: {id:"fRegion", col:"Region"},
+    municipio: {id:"fMunicipio", col:"Municipio"},
+    area: {id:"fArea", col:"Area protegida"},
+    guarda: {id:"fGuarda", col:"Guarda recursos responsable"},
+    tipo: {id:"fTipo", col:"Tipo de patrullaje"},
+    actividad: {id:"fActividad", col:"Actividad ilegal observada"}
+  };
 
-  function hasField(fieldName) {
-    return rawData.length && Object.prototype.hasOwnProperty.call(rawData[0], fieldName);
-  }
-
-  // Normalización para evitar duplicados (acentos / mayúsculas / espacios)
-  const _STOP_WORDS = new Set(["y","de","del","la","las","los","el","al","a","en","por","con","sin"]);
-  function canonText(v) {
-    const s = String(v ?? "").trim().replace(/\s+/g, " ");
-    if (!s) return "";
-    return s.normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-  function applyAlias(field, canon) {
-    if (!canon) return "";
-    let c = canon;
-    if (field === "region") {
-      if (c === "altiplano centraln") c = "altiplano central";
-      // "Reginal" -> "Regional"
-      c = c.replace(/\breginal\b/g, "regional");
+  function uniqueCanonOptions(rows, col){
+    // retorna array de {value: canon, label: mejor etiqueta, count}
+    var map = Object.create(null); // canon -> {labelCounts}
+    var counts = Object.create(null); // canon -> total
+    for(var i=0;i<rows.length;i++){
+      var raw = cleanSpaces(rows[i][col]);
+      if(!raw) continue;
+      var canon = normText(raw);
+      if(!canon) continue;
+      counts[canon] = (counts[canon]||0) + 1;
+      if(!map[canon]) map[canon] = Object.create(null);
+      map[canon][raw] = (map[canon][raw]||0) + 1;
     }
-    return c;
-  }
-  function canonField(v, field) {
-    return applyAlias(field, canonText(v));
-  }
-  function accentScore(s) {
-    return (String(s||"").match(/[áéíóúÁÉÍÓÚñÑüÜ]/g) || []).length;
-  }
-  function bestVariant(list) {
-    const arr = (list || []).map(x => String(x||"").trim()).filter(Boolean);
-    if (!arr.length) return "";
-    arr.sort((a,b) => {
-      const dAcc = accentScore(b) - accentScore(a);
-      if (dAcc) return dAcc;
-      const dLen = b.length - a.length;
-      if (dLen) return dLen;
-      return a.localeCompare(b, "es");
+    var out = [];
+    for(var c in counts){
+      var best = "";
+      var bestN = -1;
+      for(var lab in map[c]){
+        var n = map[c][lab];
+        if(n > bestN || (n===bestN && lab.length > best.length)){
+          bestN = n; best = lab;
+        }
+      }
+      out.push({value:c, label:best, count:counts[c]});
+    }
+    out.sort(function(a,b){
+      return a.label.localeCompare(b.label, "es", {sensitivity:"base"});
     });
-    return arr[0];
-  }
-  function prettyLabel(raw) {
-    const s = String(raw||"").trim().replace(/\s+/g, " ");
-    if (!s) return "";
-    // Mantener siglas cortas (ej. RUMCLA)
-    if (/^[A-ZÁÉÍÓÚÑÜ0-9]{2,10}$/.test(s)) return s;
-    const words = s.toLocaleLowerCase("es").split(" ");
-    return words.map((w,i) => {
-      if (i>0 && _STOP_WORDS.has(w)) return w;
-      return w.charAt(0).toLocaleUpperCase("es") + w.slice(1);
-    }).join(" ");
-  }
-  function uniquePairs(rows, field, canonKey, canonFieldName) {
-    const map = new Map(); // canon -> variants[]
-    rows.forEach(r => {
-      const raw = (r && r[field] != null) ? String(r[field]).trim() : "";
-      const c = (r && r[canonKey]) ? String(r[canonKey]) : canonField(raw, canonFieldName || "");
-      if (!raw || !c) return;
-      if (!map.has(c)) map.set(c, []);
-      map.get(c).push(raw);
-    });
-    const pairs = Array.from(map.entries()).map(([value, variants]) => ({
-      value,
-      label: prettyLabel(bestVariant(variants))
-    }));
-    pairs.sort((a,b)=>a.label.localeCompare(b.label, "es"));
-    return pairs;
-  }
-function numFromAny(v) {
-    if (v == null) return null;
-    const s = String(v).trim();
-    if (!s) return null;
-    const clean = s.replace(",", ".");
-    const n = parseFloat(clean);
-    return Number.isFinite(n) ? n : null;
+    return out;
   }
 
-  function isCoordInGT(lat, lon) {
-    if (lat == null || lon == null) return false;
-    if (Math.abs(lat) < 0.000001 && Math.abs(lon) < 0.000001) return false; // 0,0
-    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return false;
-    return (lat >= GT_BOUNDS.minLat && lat <= GT_BOUNDS.maxLat && lon >= GT_BOUNDS.minLon && lon <= GT_BOUNDS.maxLon);
+  function fillSelect(id, options, allLabel){
+    var sel = document.getElementById(id);
+    sel.innerHTML = "";
+    var opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = allLabel || "Todos";
+    sel.appendChild(opt0);
+    for(var i=0;i<options.length;i++){
+      var o = document.createElement("option");
+      o.value = options[i].value;
+      o.textContent = options[i].label;
+      sel.appendChild(o);
+    }
   }
 
-  function getValidCoords(rows) {
-    let ok = [];
-    let ignored = 0;
-    rows.forEach(r => {
-      const lat = numFromAny(r[FIELD_LAT]);
-      const lon = numFromAny(r[FIELD_LON]);
-      if (isCoordInGT(lat, lon)) ok.push({ lat, lon, row: r });
-      else ignored++;
-    });
-    return { ok, ignored };
+  function fillYearMonth(rows){
+    var years = Object.create(null);
+    var months = Object.create(null); // key -> count
+    for(var i=0;i<rows.length;i++){
+      var dt = rows[i].__date;
+      if(!dt) continue;
+      years[dt.getFullYear()] = true;
+      var mk = rows[i].__monthKey;
+      months[mk] = (months[mk]||0) + 1;
+    }
+    var yList = Object.keys(years).map(function(x){return parseInt(x,10);}).sort(function(a,b){return a-b;});
+    var yOpts = yList.map(function(y){ return {value:String(y), label:String(y)}; });
+    fillSelect("fYear", yOpts, "Todos");
+
+    var mList = Object.keys(months).sort(); // YYYY-MM sorts
+    var mOpts = mList.map(function(k){ return {value:k, label: monthLabel(k)}; });
+    fillSelect("fMonth", mOpts, "Todos");
   }
 
-  function initFilters() {
-    showOrHide("wrap-region", hasField(FIELD_REGION));
-    showOrHide("wrap-municipio", hasField(FIELD_MUNICIPIO));
-    showOrHide("wrap-area", hasField(FIELD_AREA));
-    showOrHide("wrap-guarda", hasField(FIELD_GUARDA));
-    showOrHide("wrap-tipo", hasField(FIELD_TIPO));
-    showOrHide("wrap-ilegal", hasField(FIELD_ILEGAL));
-    showOrHide("wrap-ubicacion", hasField(FIELD_UBIC));
-
-    const years = Array.from(new Set(rawData.map(r => r._anio).filter(Boolean))).sort((a,b)=>a-b);
-    fillSelect($("f-anio"), years.map(String), "Todos");
-
-    // Mes depende del año seleccionado
-    updateMesOptions();
-
-    if (hasField(FIELD_REGION)) fillSelectPairs($("f-region"), uniquePairs(rawData, FIELD_REGION, "_c_region", "region"), "Todas");
-    if (hasField(FIELD_MUNICIPIO)) fillSelectPairs($("f-municipio"), uniquePairs(rawData, FIELD_MUNICIPIO, "_c_municipio", "municipio"), "Todos");
-    if (hasField(FIELD_AREA)) fillSelectPairs($("f-area"), uniquePairs(rawData, FIELD_AREA, "_c_area", "area"), "Todas");
-    if (hasField(FIELD_GUARDA)) fillSelectPairs($("f-guarda"), uniquePairs(rawData, FIELD_GUARDA, "_c_guarda", "guarda"), "Todos");
-    if (hasField(FIELD_TIPO)) fillSelectPairs($("f-tipo"), uniquePairs(rawData, FIELD_TIPO, "_c_tipo", "tipo"), "Todos");
-    if (hasField(FIELD_ILEGAL)) fillSelectPairs($("f-ilegal"), uniquePairs(rawData, FIELD_ILEGAL, "_c_ilegal", "ilegal"), "Todas");
-    if (hasField(FIELD_UBIC)) fillSelectPairs($("f-ubicacion"), uniquePairs(rawData, FIELD_UBIC, "_c_ubic", "ubic"), "Todas");
+  // ========= Aplicar filtros =========
+  function getSel(id){
+    return document.getElementById(id).value;
   }
 
-  function updateMesOptions() {
-    const anioEl = $("f-anio");
-    const mesEl = $("f-mes");
-    if (!anioEl || !mesEl) return;
+  function applyFilters(){
+    var fy = getSel("fYear");
+    var fm = getSel("fMonth");
+    var fr = getSel("fRegion");
+    var fmu = getSel("fMunicipio");
+    var fa = getSel("fArea");
+    var fg = getSel("fGuarda");
+    var ft = getSel("fTipo");
+    var fac = getSel("fActividad");
+    var q = normText(document.getElementById("fSearch").value);
 
-    const anio = anioEl.value;
-    const keys = new Set();
-    rawData.forEach(r => {
-      if (!r._monthKey) return;
-      if (anio && String(r._anio) !== String(anio)) return;
-      keys.add(r._monthKey);
-    });
-    const ordered = Array.from(keys).sort(); // YYYY-MM ordena bien lexicográficamente
-    const pairs = ordered.map(k => ({ value: k, label: labelMonthKey(k) }));
-    const current = mesEl.value;
-    fillSelectPairs(mesEl, pairs, "Todos");
-    if (current && ordered.includes(current)) mesEl.value = current;
-  }
+    FILTERED = ALL.filter(function(r){
+      if(fy && String(r.__year) !== fy) return false;
+      if(fm && r.__monthKey !== fm) return false;
+      if(fr && r.__canonRegion !== fr) return false;
+      if(fmu && r.__canonMunicipio !== fmu) return false;
+      if(fa && r.__canonArea !== fa) return false;
+      if(fg && r.__canonGuarda !== fg) return false;
+      if(ft && r.__canonTipo !== ft) return false;
+      if(fac && r.__canonActividad !== fac) return false;
 
-  function applyFilters() {
-    const anio = $("f-anio").value;
-    const mesKey = $("f-mes").value;
-    const region = $("f-region").value;
-    const municipio = $("f-municipio").value;
-    const area = $("f-area").value;
-    const guarda = $("f-guarda").value;
-    const tipo = $("f-tipo").value;
-    const ilegal = $("f-ilegal").value;
-    const ubic = $("f-ubicacion").value;
-    const q = ($("f-buscar").value || "").trim().toLowerCase();
-
-    filteredData = rawData.filter(r => {
-      if (anio && String(r._anio) !== String(anio)) return false;
-      if (mesKey && r._monthKey !== mesKey) return false;
-
-      if (region && (r._c_region || "") !== region) return false;
-      if (municipio && (r._c_municipio || "") !== municipio) return false;
-      if (area && (r._c_area || "") !== area) return false;
-      if (guarda && (r._c_guarda || "") !== guarda) return false;
-      if (tipo && (r._c_tipo || "") !== tipo) return false;
-      if (ilegal && (r._c_ilegal || "") !== ilegal) return false;
-      if (ubic && (r._c_ubic || "") !== ubic) return false;
-
-      if (q) {
-        const hay = Object.keys(r).some(k => {
-          if (k.startsWith("_")) return false;
-          const v = r[k];
-          return v != null && String(v).toLowerCase().includes(q);
-        });
-        if (!hay) return false;
+      if(q){
+        return r.__search.indexOf(q) !== -1;
       }
       return true;
     });
 
-    updateKpis();
-    updateCharts();
-    updateMap();
-    updateTable();
-    updateChips();
+    // sort
+    sortFiltered();
+    state.page = 1;
+    updateAllViews();
   }
 
-  function selectedLabel(id) {
-    const el = $(id);
-    if (!el) return "";
-    const opt = el.options[el.selectedIndex];
-    if (!opt || !opt.value) return "";
-    return opt.textContent || "";
-  }
-
-  function updateChips() {
-    const chips = $("chips-filtros");
-    if (!chips) return;
-    chips.innerHTML = "";
-    const mapping = [
-      ["Año", $("f-anio").value],
-      ["Mes", $("f-mes").value ? labelMonthKey($("f-mes").value) : ""],
-      ["Región", selectedLabel("f-region")],
-      ["Municipio", selectedLabel("f-municipio")],
-      ["Área", selectedLabel("f-area")],
-      ["Guardarrecursos", selectedLabel("f-guarda")],
-      ["Tipo", selectedLabel("f-tipo")],
-      ["Actividad ilegal", selectedLabel("f-ilegal")],
-      ["Ubicación", selectedLabel("f-ubicacion")],
-      ["Buscar", ($("f-buscar").value || "").trim()]
-    ];
-
-    mapping.forEach(([label, value]) => {
-      if (!value) return;
-      const el = document.createElement("span");
-      el.className = "chip";
-      el.innerHTML = `<b>${label}:</b> ${escapeHtml(String(value))}`;
-      chips.appendChild(el);
-    });
-  }
-
-  function updateKpis() {
-    const total = filteredData.length;
-    $("kpi-registros").textContent = total.toLocaleString("es-GT");
-
-    // rango fechas
-    const dates = filteredData.map(r => r._fechaObj).filter(Boolean).sort((a,b)=>a-b);
-    if (!dates.length) {
-      $("kpi-rango").textContent = "–";
-    } else {
-      const fmt = (d) => String(d.getDate()).padStart(2,"0") + "/" + String(d.getMonth()+1).padStart(2,"0") + "/" + d.getFullYear();
-      $("kpi-rango").textContent = fmt(dates[0]) + " — " + fmt(dates[dates.length-1]);
-    }
-
-    // únicos
-    const reg = hasField(FIELD_REGION) ? new Set(filteredData.map(r => (r._c_region||"")).filter(Boolean)).size : 0;
-    const mun = hasField(FIELD_MUNICIPIO) ? new Set(filteredData.map(r => (r._c_municipio||"")).filter(Boolean)).size : 0;
-    const ar = hasField(FIELD_AREA) ? new Set(filteredData.map(r => (r._c_area||"")).filter(Boolean)).size : 0;
-
-    $("kpi-regiones").textContent = reg ? String(reg) : "–";
-    $("kpi-municipios").textContent = mun ? String(mun) : "–";
-    $("kpi-areas").textContent = ar ? String(ar) : "–";
-
-    const coords = getValidCoords(filteredData);
-    $("kpi-coords").textContent = coords.ok.length ? String(coords.ok.length) : "–";
-
-    // Nota bajo el mapa (también sirve de diagnóstico de outliers)
-    const note = $("map-note");
-    if (note) {
-      if (!hasField(FIELD_LAT) || !hasField(FIELD_LON)) {
-        note.textContent = "Si el CSV no incluye coordenadas, el mapa se ocultará automáticamente.";
-      } else if (coords.ignored) {
-        note.textContent = `Mostrando puntos válidos. Se ignoraron ${coords.ignored} por inválidos/outliers.`;
-      } else {
-        note.textContent = "Mostrando puntos válidos del CSV.";
+  function sortFiltered(){
+    var col = state.sortCol;
+    var dir = state.sortDir === "asc" ? 1 : -1;
+    FILTERED.sort(function(a,b){
+      var av = a[col], bv = b[col];
+      // date
+      if(col === "__date"){
+        var at = av ? av.getTime() : 0;
+        var bt = bv ? bv.getTime() : 0;
+        return (at - bt) * dir;
       }
-    }
-  }
-
-  function groupCount(rows, keyFn) {
-    const m = new Map();
-    rows.forEach(r => {
-      const k = keyFn(r);
-      if (!k) return;
-      m.set(k, (m.get(k) || 0) + 1);
+      // numeric?
+      if(typeof av === "number" || typeof bv === "number"){
+        var an = (typeof av==="number") ? av : toNumber(av);
+        var bn = (typeof bv==="number") ? bv : toNumber(bv);
+        if(isNaN(an) && isNaN(bn)) return 0;
+        if(isNaN(an)) return 1;
+        if(isNaN(bn)) return -1;
+        return (an - bn) * dir;
+      }
+      var as = cleanSpaces(av);
+      var bs = cleanSpaces(bv);
+      return as.localeCompare(bs, "es", {sensitivity:"base"}) * dir;
     });
-    return m;
+
+    document.getElementById("sortInfo").textContent = "Orden: " + prettyCol(col) + " (" + (state.sortDir==="asc"?"asc":"desc") + ")";
   }
 
-  function updateCharts() {
-    // Serie temporal por mes (YYYY-MM)
-    const byMonth = groupCount(filteredData, r => r._monthKey);
-    const keys = Array.from(byMonth.keys()).sort();
-    const counts = keys.map(k => byMonth.get(k));
-    const prettyLabels = keys.map(labelMonthKey);
+  function prettyCol(c){
+    if(c==="__date") return "Fecha";
+    if(c==="Municipio") return "Municipio";
+    if(c==="Guarda recursos responsable") return "Guardarrecursos";
+    if(c==="Region") return "Región";
+    if(c==="Area protegida") return "Área";
+    if(c==="Tipo de patrullaje") return "Tipo";
+    return c;
+  }
 
-    const ctx1 = $("chart-tiempo");
-    if (ctx1) {
-      if (chartTiempo) chartTiempo.destroy();
-      chartTiempo = new Chart(ctx1, {
-        type: "line",
-        data: {
-          labels: prettyLabels,
-          datasets: [{ label: "Registros", data: counts, tension: 0.2 }]
-        },
+  // ========= KPIs =========
+  function setText(id, t){ document.getElementById(id).textContent = t; }
+
+  function updateKPIs(){
+    setText("kpiReg", String(FILTERED.length));
+
+    var mun = Object.create(null), guar = Object.create(null), mes = Object.create(null);
+    for(var i=0;i<FILTERED.length;i++){
+      if(FILTERED[i].__canonMunicipio) mun[FILTERED[i].__canonMunicipio] = true;
+      if(FILTERED[i].__canonGuarda) guar[FILTERED[i].__canonGuarda] = true;
+      if(FILTERED[i].__monthKey) mes[FILTERED[i].__monthKey] = true;
+    }
+    setText("kpiMun", String(Object.keys(mun).length));
+    setText("kpiGuar", String(Object.keys(guar).length));
+    setText("kpiMes", String(Object.keys(mes).length));
+
+    document.getElementById("countLabel").textContent =
+      "Mostrando " + FILTERED.length + " de " + ALL.length + " registros";
+  }
+
+  // ========= Charts =========
+  var chMes=null, chTipo=null, chMun=null;
+
+  function countBy(rows, keyFn){
+    var c = Object.create(null);
+    for(var i=0;i<rows.length;i++){
+      var k = keyFn(rows[i]);
+      if(!k) continue;
+      c[k] = (c[k]||0) + 1;
+    }
+    return c;
+  }
+
+  function topEntries(counter, topN){
+    var arr = [];
+    for(var k in counter){ arr.push([k, counter[k]]); }
+    arr.sort(function(a,b){ return b[1]-a[1]; });
+    return arr.slice(0, topN);
+  }
+
+  function ensureCharts(){
+    var ctxMes = document.getElementById("chMes");
+    var ctxTipo = document.getElementById("chTipo");
+    var ctxMun = document.getElementById("chMun");
+
+    if(!chMes){
+      chMes = new Chart(ctxMes, {
+        type: "bar",
+        data: {labels: [], datasets: [{label:"Registros", data: []}]},
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          onClick: (evt, elements) => {
-            if (!elements || !elements.length) return;
-            const idx = elements[0].index;
-            const k = keys[idx];
-            if (k) {
-              $("f-mes").value = k;
-              applyFilters();
-            }
-          },
-          scales: { y: { beginAtZero: true } }
+          plugins:{ legend:{display:false} },
+          scales:{
+            x:{ ticks:{ maxRotation:0, autoSkip:true } },
+            y:{ beginAtZero:true, ticks:{ precision:0 } }
+          }
         }
       });
     }
-
-    // Distribución por tipo (top 10)
-    const tipoFieldExists = hasField(FIELD_TIPO);
-    const ctx2 = $("chart-tipo");
-    if (ctx2) {
-      if (chartTipo) chartTipo.destroy();
-      if (!tipoFieldExists) {
-        ctx2.parentElement.style.display = "none";
-      } else {
-        ctx2.parentElement.style.display = "";
-        const byTipo = groupCount(filteredData, r => String(r[FIELD_TIPO] || "").trim());
-        const entries = Array.from(byTipo.entries()).sort((a,b)=>b[1]-a[1]).slice(0,10);
-        const lbl = entries.map(e=>e[0] || "(vacío)");
-        const dat = entries.map(e=>e[1]);
-        chartTipo = new Chart(ctx2, {
-          type: "bar",
-          data: { labels: lbl, datasets: [{ label: "Registros", data: dat }] },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            onClick: (evt, elements) => {
-              if (!elements || !elements.length) return;
-              const idx = elements[0].index;
-              const cat = lbl[idx];
-              if (cat) {
-                $("f-tipo").value = cat === "(vacío)" ? "" : cat;
-                applyFilters();
-              }
-            },
-            scales: { y: { beginAtZero: true } }
+    if(!chTipo){
+      chTipo = new Chart(ctxTipo, {
+        type: "bar",
+        data: {labels: [], datasets: [{label:"Registros", data: []}]},
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins:{ legend:{display:false} },
+          scales:{
+            x:{ ticks:{ maxRotation:0, autoSkip:true } },
+            y:{ beginAtZero:true, ticks:{ precision:0 } }
           }
-        });
-      }
+        }
+      });
+    }
+    if(!chMun){
+      chMun = new Chart(ctxMun, {
+        type: "bar",
+        data: {labels: [], datasets: [{label:"Registros", data: []}]},
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins:{ legend:{display:false} },
+          scales:{
+            x:{ beginAtZero:true, ticks:{ precision:0 } },
+            y:{ ticks:{ autoSkip:false } }
+          }
+        }
+      });
     }
   }
 
-  function ensureMap() {
-    const mapEl = $("map");
-    if (!mapEl) return;
+  function updateCharts(){
+    ensureCharts();
 
-    if (!map) {
-      map = L.map("map", { scrollWheelZoom: false });
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap"
-      }).addTo(map);
-      markersLayer = L.layerGroup().addTo(map);
+    // por mes (orden natural)
+    var cm = countBy(FILTERED, function(r){ return r.__monthKey; });
+    var labels = Object.keys(cm).sort(); // YYYY-MM
+    var data = labels.map(function(k){ return cm[k]; });
+    chMes.data.labels = labels.map(monthLabel);
+    chMes.data.datasets[0].data = data;
+    chMes.update();
 
-      // altura estable
-      mapEl.style.height = "340px";
-    }
-    setTimeout(() => { try { map.invalidateSize(); } catch (_) {} }, 50);
+    // por tipo (top 8)
+    var ct = countBy(FILTERED, function(r){ return r.__labelTipo; });
+    var topT = topEntries(ct, 8);
+    chTipo.data.labels = topT.map(function(x){ return x[0]; });
+    chTipo.data.datasets[0].data = topT.map(function(x){ return x[1]; });
+    chTipo.update();
+
+    // por municipio (top 10)
+    var cmun = countBy(FILTERED, function(r){ return r.__labelMunicipio; });
+    var topM = topEntries(cmun, 10);
+    chMun.data.labels = topM.map(function(x){ return x[0]; });
+    chMun.data.datasets[0].data = topM.map(function(x){ return x[1]; });
+    chMun.update();
   }
 
-  function updateMap() {
-    const mapCard = $("map") ? $("map").closest(".card") : null;
+  // ========= Map =========
+  var map=null, markers=null;
+  function ensureMap(){
+    if(map) return;
+    map = L.map("map", {scrollWheelZoom:true});
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+    markers = L.layerGroup().addTo(map);
 
-    // Solo mostrar mapa si existe lat/lon en el CSV
-    const hasCoords = hasField(FIELD_LAT) && hasField(FIELD_LON);
-    if (!hasCoords) {
-      if (mapCard) mapCard.style.display = "none";
-      return;
-    }
-    if (mapCard) mapCard.style.display = "";
+    // vista inicial cerca de Atitlán
+    map.setView([14.7, -91.2], 10);
+  }
 
+  function isGuatemala(lat, lon){
+    // rango amplio para Guatemala
+    return (lat >= 13.0 && lat <= 18.5 && lon >= -93.5 && lon <= -88.0);
+  }
+
+  function updateMap(){
     ensureMap();
-    if (!map || !markersLayer) return;
+    markers.clearLayers();
 
-    markersLayer.clearLayers();
-
-    const coords = getValidCoords(filteredData);
-    const pts = coords.ok;
-
-    if (!pts.length) {
-      try { map.setView([15.5, -90.5], 7); } catch (_) {}
-      return;
-    }
-
-    const bounds = [];
-    pts.forEach(p => {
-      const m = L.circleMarker([p.lat, p.lon], { radius: 5, weight: 1 });
-      m.bindPopup(buildPopupHtml(p.row));
-      m.addTo(markersLayer);
-      bounds.push([p.lat, p.lon]);
-    });
-
-    try {
-      map.fitBounds(bounds, { padding: [20, 20] });
-    } catch (_) {}
-  }
-
-  function buildPopupHtml(row) {
-    const items = [];
-    function add(label, field) {
-      if (!field) return;
-      const v = row[field];
-      if (v == null || String(v).trim() === "") return;
-      items.push(`<div><b>${label}:</b> ${escapeHtml(String(v))}</div>`);
-    }
-    add("Fecha", FIELD_FECHA);
-    add("Región", FIELD_REGION);
-    add("Municipio", FIELD_MUNICIPIO);
-    add("Área", FIELD_AREA);
-    add("Guardarrecursos", FIELD_GUARDA);
-    add("Tipo", FIELD_TIPO);
-    add("Actividad ilegal", FIELD_ILEGAL);
-    add("Ubicación", FIELD_UBIC);
-    return `<div style="font-size:12px;line-height:1.25">${items.join("")}</div>`;
-  }
-
-  function escapeHtml(s) {
-    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  }
-
-  function initTable() {
-    const tableEl = $("tabla");
-    if (!tableEl) return;
-
-    const keys = rawData.length ? Object.keys(rawData[0]).filter(k => !k.startsWith("_")) : [];
-    const columns = keys.map(k => ({
-      title: k,
-      field: k,
-      headerFilter: "input",
-      headerFilterPlaceholder: "Filtrar…",
-      formatter: (cell) => {
-        const v = cell.getValue();
-        if (v == null) return "";
-        return String(v);
+    var valid = 0, ignored = 0;
+    var bounds = [];
+    for(var i=0;i<FILTERED.length;i++){
+      var r = FILTERED[i];
+      var lat = r.__lat, lon = r.__lon;
+      if(!isFinite(lat) || !isFinite(lon) || (lat===0 && lon===0)){
+        ignored++; continue;
       }
-    }));
+      // evitar outliers fuera de GT
+      if(!isGuatemala(lat, lon)){ ignored++; continue; }
 
-    table = new Tabulator("#tabla", {
-      data: filteredData,
-      layout: "fitColumns",
-      height: "520px",
-      placeholder: "No hay registros para los filtros seleccionados.",
-      pagination: "local",
-      paginationSize: 25,
-      movableColumns: true,
-      columns: columns
+      valid++;
+      var tip = "<b>Fecha:</b> " + (r["Fecha de patrullaje"]||"") +
+                "<br><b>Municipio:</b> " + (r.__labelMunicipio||"") +
+                "<br><b>Tipo:</b> " + (r.__labelTipo||"") +
+                "<br><b>Área:</b> " + (r.__labelArea||"") +
+                "<br><b>Guardarrecursos:</b> " + (r.__labelGuarda||"");
+
+      L.circleMarker([lat, lon], {radius:5, weight:1, fillOpacity:0.7}).bindPopup(tip).addTo(markers);
+      bounds.push([lat, lon]);
+    }
+
+    var note = document.getElementById("mapNote");
+    note.textContent = "Puntos: " + valid + " · Ignorados: " + ignored + " (inválidos / fuera de rango)";
+
+    if(bounds.length){
+      try{
+        map.fitBounds(bounds, {padding:[20,20]});
+      }catch(e){}
+      // fuerza render
+      setTimeout(function(){ map.invalidateSize(true); }, 120);
+    }
+  }
+
+  // ========= Tabla simple =========
+  var DISPLAY_COLS = [
+    "Fecha de patrullaje",
+    "Municipio",
+    "Guarda recursos responsable",
+    "Region",
+    "Area protegida",
+    "Tipo de patrullaje",
+    "Actividad ilegal observada",
+    "Ubicacion",
+    "Longitud",
+    "Latitud"
+  ];
+
+  function buildTableHeader(){
+    var tr = document.getElementById("tblHead");
+    tr.innerHTML = "";
+    DISPLAY_COLS.forEach(function(c){
+      var th = document.createElement("th");
+      var wrap = document.createElement("span");
+      wrap.className = "th-sort";
+      wrap.textContent = c;
+      var ind = document.createElement("span");
+      ind.className = "sort-ind";
+      ind.textContent = "";
+      wrap.appendChild(ind);
+      th.appendChild(wrap);
+
+      th.addEventListener("click", function(){
+        if(state.sortCol === c){
+          state.sortDir = (state.sortDir === "asc") ? "desc" : "asc";
+        }else{
+          state.sortCol = c;
+          state.sortDir = "asc";
+        }
+        sortFiltered();
+        state.page = 1;
+        renderTable();
+      });
+      tr.appendChild(th);
     });
+    // Fecha por defecto desc
+    document.getElementById("sortInfo").textContent = "Orden: Fecha (desc)";
   }
 
-  function updateTable() {
-    if (!table) return;
-    table.replaceData(filteredData);
-    try { table.redraw(true); } catch (_) {}
+  function renderTable(){
+    var body = document.getElementById("tblBody");
+    body.innerHTML = "";
+
+    var ps = state.pageSize;
+    var totalPages = Math.max(1, Math.ceil(FILTERED.length / ps));
+    if(state.page > totalPages) state.page = totalPages;
+
+    var start = (state.page - 1) * ps;
+    var end = Math.min(FILTERED.length, start + ps);
+    for(var i=start;i<end;i++){
+      var r = FILTERED[i];
+      var tr = document.createElement("tr");
+      for(var j=0;j<DISPLAY_COLS.length;j++){
+        var c = DISPLAY_COLS[j];
+        var td = document.createElement("td");
+        td.textContent = (r[c] === null || r[c] === undefined) ? "" : String(r[c]);
+        tr.appendChild(td);
+      }
+      body.appendChild(tr);
+    }
+
+    document.getElementById("pageInfo").textContent = "Página " + state.page + "/" + totalPages + " (" + FILTERED.length + " registros)";
+    document.getElementById("btnPrev").disabled = (state.page <= 1);
+    document.getElementById("btnNext").disabled = (state.page >= totalPages);
   }
 
-  // -----------------------------
-  // Buttons/actions
-  // -----------------------------
-  function resetFilters() {
-    ["f-anio","f-mes","f-region","f-municipio","f-area","f-guarda","f-tipo","f-ilegal","f-ubicacion","f-buscar"].forEach(id => {
-      const el = $(id);
-      if (el) el.value = "";
+  // ========= Export CSV/XLSX =========
+  function rowsToCSV(rows){
+    var cols = Object.keys(rows[0] || {}).filter(function(k){
+      return k.indexOf("__") !== 0; // no campos internos
     });
-    updateMesOptions();
-    applyFilters();
+
+    // mantén un orden amigable si existen
+    var preferred = [
+      "Guarda recursos responsable","Municipio","Fecha de patrullaje",
+      "Hora de Inicio del patrullaje","Hora de finalizacion de patrullaje",
+      "Region","Ubicacion","Area protegida","Tipo de patrullaje",
+      "Hay mas instituciones involucradas en el patrullaje",
+      "Instituciones involucradas","Otra (especifique)","Actividad ilegal observada",
+      "Fecha de creacion de registro","Fecha de modificacion de registro",
+      "Longitud","Latitud","X","Y"
+    ];
+    cols.sort(function(a,b){
+      var ia = preferred.indexOf(a); var ib = preferred.indexOf(b);
+      if(ia === -1 && ib === -1) return a.localeCompare(b);
+      if(ia === -1) return 1;
+      if(ib === -1) return -1;
+      return ia - ib;
+    });
+
+    var delim = ";";
+    function esc(v){
+      v = (v === null || v === undefined) ? "" : String(v);
+      if(v.indexOf('"')>-1) v = v.replace(/"/g,'""');
+      if(v.indexOf(delim)>-1 || v.indexOf("\n")>-1 || v.indexOf('"')>-1) v = '"' + v + '"';
+      return v;
+    }
+    var lines = [];
+    lines.push(cols.map(esc).join(delim));
+    for(var i=0;i<rows.length;i++){
+      var r = rows[i];
+      lines.push(cols.map(function(c){ return esc(r[c]); }).join(delim));
+    }
+    return "\uFEFF" + lines.join("\n"); // BOM para Excel
   }
 
-  function downloadCSV() {
-    if (!table) return;
-    table.download("csv", "AC192_patrullajes_filtrados.csv");
+  function downloadBlob(filename, content, mime){
+    var blob = new Blob([content], {type: mime || "text/plain;charset=utf-8"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){
+      URL.revokeObjectURL(url);
+      a.remove();
+    }, 200);
   }
 
-  function downloadXLSX() {
-    if (!table || !window.XLSX) return;
-    const rows = filteredData.map(r => {
-      const out = {};
-      Object.keys(r).forEach(k => { if (!k.startsWith("_")) out[k] = r[k]; });
+  async function ensureXLSX(){
+    if(window.XLSX) return;
+    try{
+      await loadScriptSequential([
+        "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+        "https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js",
+        "xlsx.full.min.js"
+      ]);
+    }catch(e){
+      // si no se puede, se queda solo CSV
+      throw e;
+    }
+  }
+
+  async function downloadXLSX(){
+    if(FILTERED.length === 0) return;
+    await ensureXLSX();
+    var rows = FILTERED.map(function(r){
+      var o = {};
+      for(var k in r){
+        if(k.indexOf("__")===0) continue;
+        o[k] = r[k];
+      }
+      return o;
+    });
+    var ws = XLSX.utils.json_to_sheet(rows);
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "AC192");
+    var out = XLSX.write(wb, {bookType:"xlsx", type:"array"});
+    downloadBlob("AC192_patrullajes_filtrado.xlsx", out, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  }
+
+  // ========= Update everything =========
+  function updateAllViews(){
+    updateKPIs();
+    updateCharts();
+    updateMap();
+    renderTable();
+  }
+
+  // ========= Init =========
+  async function init(){
+    clearMsgs();
+    elStatus.textContent = "Cargando CSV…";
+
+    // PapaParse (para parsear bien)
+    try{
+      if(!window.Papa){
+        await loadScriptSequential([
+          "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js",
+          "https://unpkg.com/papaparse@5.4.1/papaparse.min.js",
+          "papaparse.min.js"
+        ]);
+      }
+    }catch(e){
+      // Papa no está: seguimos con parser simple
+    }
+
+    var fetched = await fetchArrayBufferAny(PATHS);
+    var text = decodeSmart(fetched.buf);
+
+    var rows = [];
+    try{
+      if(window.Papa){
+        rows = await parseWithPapa(text);
+      }else{
+        rows = parseSimpleCSV(text);
+      }
+    }catch(e){
+      // fallback parser simple
+      rows = parseSimpleCSV(text);
+    }
+
+    if(!rows || rows.length === 0){
+      throw new Error("El CSV se cargó pero no se pudieron leer registros. Verifica el separador y la codificación.");
+    }
+
+    preferDayFirst = inferDayFirst(rows, "Fecha de patrullaje");
+
+    // procesar y preparar campos internos
+    ALL = rows.map(function(r){
+      // normaliza strings
+      var out = {};
+      for(var k in r){
+        out[k] = cleanSpaces(r[k]);
+      }
+
+      // fecha
+      var dt = parseDateSmart(out["Fecha de patrullaje"], preferDayFirst);
+      out.__date = dt;
+      out.__year = dt ? dt.getFullYear() : "";
+      out.__monthKey = dt ? monthKey(dt) : "";
+
+      // canonical values
+      out.__canonRegion = normText(out["Region"]);
+      out.__canonMunicipio = normText(out["Municipio"]);
+      out.__canonArea = normText(out["Area protegida"]);
+      out.__canonGuarda = normText(out["Guarda recursos responsable"]);
+      out.__canonTipo = normText(out["Tipo de patrullaje"]);
+      out.__canonActividad = normText(out["Actividad ilegal observada"]);
+
+      // coords (en español)
+      out.__lon = toNumber(out["Longitud"]);
+      out.__lat = toNumber(out["Latitud"]);
+
+      // search string
+      var blob = [];
+      for(var kk in out){
+        if(kk.indexOf("__")===0) continue;
+        var v = out[kk];
+        if(v) blob.push(v);
+      }
+      out.__search = normText(blob.join(" "));
+
       return out;
     });
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "AC192");
-    XLSX.writeFile(wb, "AC192_patrullajes_filtrados.xlsx");
-  }
 
-  function downloadGeoJSON() {
-    const coords = getValidCoords(filteredData).ok;
-    const features = coords.map(p => ({
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [p.lon, p.lat] },
-      properties: buildProperties(p.row)
-    }));
-    const gj = { type: "FeatureCollection", features };
-    const blob = new Blob([JSON.stringify(gj, null, 2)], { type: "application/geo+json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "AC192_patrullajes_filtrados.geojson";
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
+    // construir etiquetas "bonitas" por canon (para evitar duplicados)
+    function labelFromMap(col, canonKey){
+      if(!canonKey) return "";
+      return canonLabelMaps[col] && canonLabelMaps[col][canonKey] ? canonLabelMaps[col][canonKey] : "";
+    }
 
-  function buildProperties(row) {
-    const props = {};
-    Object.keys(row).forEach(k => { if (!k.startsWith("_")) props[k] = row[k]; });
-    return props;
-  }
-
-  function centerMap() {
-    updateMap(); // recalcula bounds
-    showToast("Mapa centrado");
-  }
-
-  function removeChartFilter() {
-    $("f-tipo").value = "";
-    applyFilters();
-  }
-
-  function exportPDFLight() {
-    // Crea contenedor temporal
-    const tmp = document.createElement("div");
-    tmp.style.padding = "10px";
-    tmp.style.fontFamily = "Arial, sans-serif";
-
-    const top = filteredData.slice(0, 15).map(r => {
-      const fecha = r[FIELD_FECHA] || "";
-      const mun = r[FIELD_MUNICIPIO] || "";
-      const area = r[FIELD_AREA] || "";
-      const tipo = r[FIELD_TIPO] || "";
-      return `<tr><td>${escapeHtml(String(fecha))}</td><td>${escapeHtml(String(mun))}</td><td>${escapeHtml(String(area))}</td><td>${escapeHtml(String(tipo))}</td></tr>`;
-    }).join("");
-
-    tmp.innerHTML = `
-      <h2 style="margin:0 0 6px 0">AC192 · Patrullajes (reporte liviano)</h2>
-      <div style="font-size:12px;margin-bottom:8px">
-        <b>Registros:</b> ${escapeHtml($("kpi-registros").textContent)} ·
-        <b>Rango:</b> ${escapeHtml($("kpi-rango").textContent)} ·
-        <b>Con coords:</b> ${escapeHtml($("kpi-coords").textContent)}
-      </div>
-      <div style="font-size:12px;margin-bottom:8px"><b>Filtros:</b> ${escapeHtml(($("chips-filtros").textContent || "Sin filtros").trim() || "Sin filtros")}</div>
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead><tr>
-          <th style="border:1px solid #ddd;padding:4px;text-align:left">Fecha</th>
-          <th style="border:1px solid #ddd;padding:4px;text-align:left">Municipio</th>
-          <th style="border:1px solid #ddd;padding:4px;text-align:left">Área</th>
-          <th style="border:1px solid #ddd;padding:4px;text-align:left">Tipo</th>
-        </tr></thead>
-        <tbody>${top || ""}</tbody>
-      </table>
-      <div style="font-size:10px;margin-top:8px;color:#555">Generado: ${new Date().toLocaleString("es-GT")}</div>
-    `;
-
-    document.body.appendChild(tmp);
-
-    const opt = {
-      margin: 10,
-      filename: "AC192_patrullajes_reporte_liviano.pdf",
-      image: { type: "jpeg", quality: 0.95 },
-      html2canvas: { scale: 1.6, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+    // maps canon -> label
+    var canonLabelMaps = {
+      "Region": Object.create(null),
+      "Municipio": Object.create(null),
+      "Area protegida": Object.create(null),
+      "Guarda recursos responsable": Object.create(null),
+      "Tipo de patrullaje": Object.create(null),
+      "Actividad ilegal observada": Object.create(null)
     };
 
-    html2pdf().set(opt).from(tmp).save().then(() => {
-      tmp.remove();
-    }).catch(() => {
-      tmp.remove();
-    });
-  }
-
-  function initEvents() {
-    // cambios de filtros
-    const ids = ["f-anio","f-mes","f-region","f-municipio","f-area","f-guarda","f-tipo","f-ilegal","f-ubicacion"];
-    ids.forEach(id => {
-      const el = $(id);
-      if (!el) return;
-      el.addEventListener("change", () => {
-        if (id === "f-anio") updateMesOptions();
-        applyFilters();
-      });
-    });
-
-    $("f-buscar").addEventListener("input", () => applyFilters());
-    $("btn-reset").addEventListener("click", resetFilters);
-    $("btn-csv").addEventListener("click", downloadCSV);
-    $("btn-xlsx").addEventListener("click", downloadXLSX);
-    $("btn-geojson").addEventListener("click", downloadGeoJSON);
-    $("btn-centrar").addEventListener("click", centerMap);
-    $("btn-clear-chart").addEventListener("click", removeChartFilter);
-    $("btn-pdf").addEventListener("click", exportPDFLight);
-  }
-
-  // -----------------------------
-  // Main load
-  // -----------------------------
-  async function loadData() {
-    setEstado("Cargando librerías…");
-    await ensureDependencies();
-
-    setEstado("Cargando datos…");
-    try {
-      const { url, buffer } = await fetchFirstOk(CSV_CANDIDATES);
-      const csvText = decodeSmartCsv(buffer);
-      const delimiter = detectarDelimitador(csvText);
-
-      const parsed = Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        delimiter: delimiter,
-        transformHeader: (h) => String(h || "").trim()
-      });
-
-      rawData = (parsed.data || []).filter(r => r && Object.keys(r).some(k => String(r[k] || "").trim() !== ""));
-      if (!rawData.length) {
-        setEstado("No se encontraron datos en el CSV.", true);
-        return;
+    function computeCanonLabels(col){
+      var labelCounts = Object.create(null); // canon -> {label->count}
+      var canonTotals = Object.create(null);
+      for(var i=0;i<ALL.length;i++){
+        var raw = cleanSpaces(ALL[i][col]);
+        if(!raw) continue;
+        var c = normText(raw);
+        if(!c) continue;
+        canonTotals[c] = (canonTotals[c]||0) + 1;
+        if(!labelCounts[c]) labelCounts[c] = Object.create(null);
+        labelCounts[c][raw] = (labelCounts[c][raw]||0) + 1;
       }
-
-      prepararHintsFechas(rawData);
-      rawData.forEach(r => {
-        const dt = parseFechaFlexible(r[FIELD_FECHA], r._dateHint);
-        r._fechaObj = dt;
-        r._anio = dt ? dt.getFullYear() : null;
-        r._monthKey = dt ? monthKey(dt) : null;
-        // campos canónicos (para deduplicar filtros)
-        r._c_region = canonField(r[FIELD_REGION], "region");
-        r._c_municipio = canonField(r[FIELD_MUNICIPIO], "municipio");
-        r._c_area = canonField(r[FIELD_AREA], "area");
-        r._c_guarda = canonField(r[FIELD_GUARDA], "guarda");
-        r._c_tipo = canonField(r[FIELD_TIPO], "tipo");
-        r._c_ilegal = canonField(r[FIELD_ILEGAL], "ilegal");
-        r._c_ubic = canonField(r[FIELD_UBIC], "ubic");
-
-      });
-
-      initFilters();
-      initTable();
-      initEvents();
-      applyFilters();
-
-      setEstado("Listo · CSV: " + url.replace(/\?.*$/,""));
-      showToast("Datos cargados");
-    } catch (e) {
-      console.error(e);
-      setEstado("Error al cargar datos: " + e.message, true);
+      for(var ckey in canonTotals){
+        var bestLab = "";
+        var bestN = -1;
+        for(var lab in labelCounts[ckey]){
+          var n = labelCounts[ckey][lab];
+          if(n > bestN || (n===bestN && lab.length > bestLab.length)){
+            bestN = n; bestLab = lab;
+          }
+        }
+        canonLabelMaps[col][ckey] = bestLab;
+      }
     }
+
+    Object.keys(canonLabelMaps).forEach(computeCanonLabels);
+
+    // guardar label en cada fila para gráficos/tabla
+    ALL.forEach(function(r){
+      r.__labelRegion = labelFromMap("Region", r.__canonRegion) || r["Region"] || "";
+      r.__labelMunicipio = labelFromMap("Municipio", r.__canonMunicipio) || r["Municipio"] || "";
+      r.__labelArea = labelFromMap("Area protegida", r.__canonArea) || r["Area protegida"] || "";
+      r.__labelGuarda = labelFromMap("Guarda recursos responsable", r.__canonGuarda) || r["Guarda recursos responsable"] || "";
+      r.__labelTipo = labelFromMap("Tipo de patrullaje", r.__canonTipo) || r["Tipo de patrullaje"] || "";
+      r.__labelActividad = labelFromMap("Actividad ilegal observada", r.__canonActividad) || r["Actividad ilegal observada"] || "";
+    });
+
+    // llenar selects (sin duplicados)
+    fillYearMonth(ALL);
+    fillSelect("fRegion", uniqueCanonOptions(ALL, "Region"), "Todas");
+    fillSelect("fMunicipio", uniqueCanonOptions(ALL, "Municipio"), "Todos");
+    fillSelect("fArea", uniqueCanonOptions(ALL, "Area protegida"), "Todas");
+    fillSelect("fGuarda", uniqueCanonOptions(ALL, "Guarda recursos responsable"), "Todos");
+    fillSelect("fTipo", uniqueCanonOptions(ALL, "Tipo de patrullaje"), "Todos");
+    fillSelect("fActividad", uniqueCanonOptions(ALL, "Actividad ilegal observada"), "Todas");
+
+    buildTableHeader();
+
+    FILTERED = ALL.slice();
+    // sort default: fecha desc
+    state.sortCol = "__date";
+    state.sortDir = "desc";
+    sortFiltered();
+
+    updateAllViews();
+
+    elStatus.textContent = "Listo. Fuente: " + fetched.used;
+    showOk("Cargados " + ALL.length + " registros. Formato fecha: " + (preferDayFirst ? "DD/MM" : "MM/DD") + ".");
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    loadData().catch(err => {
-      console.error(err);
-      setEstado("Error inicial: " + err.message, true);
+  // ========= Eventos =========
+  function wire(){
+    function onChange(){
+      clearMsgs();
+      applyFilters();
+    }
+    ["fYear","fMonth","fRegion","fMunicipio","fArea","fGuarda","fTipo","fActividad"].forEach(function(id){
+      document.getElementById(id).addEventListener("change", onChange);
     });
+    document.getElementById("fSearch").addEventListener("input", function(){
+      clearMsgs();
+      applyFilters();
+    });
+
+    document.getElementById("btn-reset").addEventListener("click", function(){
+      clearMsgs();
+      ["fYear","fMonth","fRegion","fMunicipio","fArea","fGuarda","fTipo","fActividad"].forEach(function(id){
+        document.getElementById(id).value = "";
+      });
+      document.getElementById("fSearch").value = "";
+      applyFilters();
+    });
+
+    document.getElementById("pageSize").addEventListener("change", function(e){
+      state.pageSize = parseInt(e.target.value,10) || 25;
+      state.page = 1;
+      renderTable();
+    });
+
+    document.getElementById("btnPrev").addEventListener("click", function(){
+      state.page = Math.max(1, state.page - 1);
+      renderTable();
+    });
+    document.getElementById("btnNext").addEventListener("click", function(){
+      var totalPages = Math.max(1, Math.ceil(FILTERED.length / state.pageSize));
+      state.page = Math.min(totalPages, state.page + 1);
+      renderTable();
+    });
+
+    document.getElementById("btn-csv").addEventListener("click", function(){
+      if(FILTERED.length === 0) return;
+      var rows = FILTERED.map(function(r){
+        var o = {};
+        for(var k in r){
+          if(k.indexOf("__")===0) continue;
+          o[k] = r[k];
+        }
+        return o;
+      });
+      var csv = rowsToCSV(rows);
+      downloadBlob("AC192_patrullajes_filtrado.csv", csv, "text/csv;charset=utf-8");
+    });
+
+    document.getElementById("btn-xlsx").addEventListener("click", async function(){
+      try{
+        await downloadXLSX();
+      }catch(e){
+        showError("No se pudo generar Excel. Intenta descargar CSV.\nDetalle: " + e.message);
+      }
+    });
+
+    document.getElementById("btn-print").addEventListener("click", function(){
+      window.print();
+    });
+
+    // Si cambia tamaño, re-ajustar mapa para evitar render raro
+    window.addEventListener("resize", function(){
+      if(map) setTimeout(function(){ map.invalidateSize(true); }, 120);
+    });
+  }
+
+  wire();
+  init().catch(function(e){
+    elStatus.textContent = "Error";
+    showError("No se pudo cargar el tablero.\n\n" +
+      "Causas comunes:\n" +
+      "• El CSV no está en la misma carpeta del HTML (datos_patrullaje.csv)\n" +
+      "• GitHub Pages publica desde otra carpeta (por eso se usa fallback RAW)\n" +
+      "• El navegador bloqueó la petición por caché/actualización\n\n" +
+      "Detalle técnico: " + (e && e.message ? e.message : String(e)));
+    console.error(e);
   });
+
 })();
 </script>
 </body>
