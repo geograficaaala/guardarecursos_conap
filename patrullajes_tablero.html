@@ -314,8 +314,32 @@
       box-shadow:0 3px 10px rgba(15,23,42,.10);
     }
 
-    .tablewrap{ overflow-x:auto; }
-    footer{
+    /* Tabla (Tabulator) */
+    .card.card-table{ overflow: visible; } /* permite scroll interno sin que el card lo recorte */
+
+    .tablewrap{
+      width:100%;
+      overflow:auto;                 /* scroll horizontal/vertical si hace falta */
+      -webkit-overflow-scrolling: touch;
+      border:1px solid rgba(148,163,184,0.35);
+      border-radius:14px;
+      background:#fff;
+      padding:6px;                   /* evita que el scroll toque el borde */
+    }
+
+    #tabla{ width:100%; }
+
+    /* Inputs de filtros en encabezados (mejor tamaño en móvil) */
+    .tabulator .tabulator-header .tabulator-col .tabulator-header-filter input{
+      width:100%;
+      box-sizing:border-box;
+      padding:4px 6px;
+      border-radius:8px;
+      border:1px solid rgba(148,163,184,0.55);
+      font-size:12px;
+    }
+
+footer{
       text-align:center;
       font-size:12px;
       color:#64748b;
@@ -501,7 +525,7 @@
       <p class="subnote" id="map-note">Si el CSV no incluye coordenadas, el mapa se ocultará automáticamente.</p>
     </section>
 
-    <section class="card" aria-label="Tabla de registros">
+    <section class="card card-table" aria-label="Tabla de registros">
       <div class="maprow">
         <h3 style="margin:0;">Tabla (Tabulator)</h3>
         <div class="mini-actions">
@@ -1172,12 +1196,33 @@
 
     table = new Tabulator("#tabla", {
       data: filteredData,
-      layout: "fitDataFill",
+      layout: "fitColumns",
+      height: "520px",
+      autoResize: true,
       pagination: "local",
       paginationSize: 25,
+      paginationSizeSelector: [25, 50, 100],
       movableColumns: true,
+      resizableColumnFit: true,
+      responsiveLayout: "collapse",
+      responsiveLayoutCollapseStartOpen: false,
+      responsiveLayoutCollapseFormatter: function(data){
+        // Muestra campos ocultos en pantallas pequeñas
+        const rows = Object.keys(data).map(function(k){
+          const v = (data[k] === null || data[k] === undefined) ? "" : String(data[k]);
+          return '<tr><td style="padding:2px 6px;border-bottom:1px solid #eef2f7;vertical-align:top"><b>' +
+            escapeHtml(String(k)) + '</b></td><td style="padding:2px 6px;border-bottom:1px solid #eef2f7">' +
+            escapeHtml(v) + '</td></tr>';
+        }).join("");
+        return '<div style="padding:8px 10px"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
+          rows + '</table></div>';
+      },
+      placeholder: "Sin registros para mostrar",
       columns: columns
     });
+
+    // Asegura que se renderice correctamente dentro de contenedores con scroll
+    setTimeout(function(){ try{ table.redraw(true); }catch(e){} }, 0);
   }
 
   function updateTable() {
@@ -1373,6 +1418,13 @@
       setEstado("Error inicial: " + err.message, true);
     });
   });
+
+  // Redibujar componentes en resize (evita cortes en Tabulator/Leaflet)
+  window.addEventListener("resize", function(){
+    try{ if (table) table.redraw(true); }catch(e){}
+    try{ if (map) map.invalidateSize(); }catch(e){}
+  });
+
 })();
 </script>
 </body>
