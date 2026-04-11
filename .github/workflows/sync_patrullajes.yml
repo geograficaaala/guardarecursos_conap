@@ -1,0 +1,201 @@
+# .github/workflows/sync_patrullajes.yml
+#
+# Sincroniza datos de AC192 (Survey123) → docs/datos/datos_patrullaje.csv
+#
+# Se ejecuta dos veces al día en hora Guatemala (UTC-6):
+#   • 12:00 mediodía   → 18:00 UTC
+#   • 00:00 medianoche → 06:00 UTC
+#
+# También puede dispararse manualmente desde:
+#   GitHub → Actions → "Sincronizar AC192 Patrullajes" → Run workflow
+
+name: Sincronizar AC192 Patrullajes
+
+on:
+  schedule:
+    - cron: "0 18 * * *"   # 12:00 mediodía Guatemala
+    - cron: "0 6 * * *"    # 00:00 medianoche Guatemala
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Descargar y actualizar CSV de patrullajes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install requests pandas
+
+      - name: Sincronizar datos de ArcGIS Online
+        env:
+          AGOL_USERNAME: ${{ secrets.AGOL_USERNAME }}
+          AGOL_PASSWORD: ${{ secrets.AGOL_PASSWORD }}
+          AGOL_ORG_URL:  ${{ secrets.AGOL_ORG_URL }}
+        run: |
+          python3 << 'PYEOF'
+          import os, sys, requests, pandas as pd
+
+          ORG_URL  = os.environ["AGOL_ORG_URL"].rstrip("/")
+          USERNAME = os.environ["AGOL_USERNAME"]
+          PASSWORD = os.environ["AGOL_PASSWORD"]
+
+          ITEM_ID    = "45a58997e27b4e4799792025bfab58bb"
+          OUTPUT_CSV = "docs/datos/datos_patrullaje.csv"
+          PAGE_SIZE  = 1000
+
+          # Guardas que ingresan código en lugar de nombre
+          FIX_GUARDAS = {
+              "1":  "Antonio Federico Tzaj Y Tzaj",
+              "5":  "Juan Marcos Saquic",
+              "9":  "Heriberto Chavez Chavez",
+              "14": "Manuel Guarcas Calel",
+              "25": "Emilio Alfonso Chox Can",
+          }
+
+          COLS = [
+              "Guarda recursos responsable", "Municipio", "Fecha de patrullaje",
+              "Hora de Inicio del patrullaje", "Hora de finalizacion de patrullaje",
+              "Region", "Ubicacion", "Area protegida", "Tipo de patrullaje",
+              "Hay mas instituciones involucradas en el patrullaje",
+              "Instituciones involucradas", "Otra (especifique)",
+              "Actividad ilegal observada", "Fecha de creacion de registro",
+              "Fecha de modificacion de registro", "Longitud", "Latitud",
+          ]
+
+          # ── Autenticación ──────────────────────────────────────────────
+          print("Autenticando en ArcGIS Online...")
+          r = requests.post(f"{ORG_URL}/sharing/rest/generateToken", data={
+              "username": USERNAME, "password": PASSWORD,
+              "referer": "https://www.arcgis.com", "expiration": 120, "f": "json",
+          }, timeout=30)
+          r.raise_for_status()
+          data = r.json()
+          if "error" in data:
+              print(f"ERROR de autenticación: {data['error']}")
+              sys.exit(1)
+          token = data["token"]
+          print("✓ Autenticado")
+
+          # ── URL del servicio ───────────────────────────────────────────
+          r = requests.get(f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}",
+              params={"f": "json", "token": token}, timeout=30)
+          service_url = r.json()["url"].rstrip("/")
+          print(f"✓ Servicio: {service_url}")
+
+          # ── Total de registros ─────────────────────────────────────────
+          r = requests.get(f"{service_url}/0/query",
+              params={"where": "1=1", "returnCountOnly": "true", "f": "json", "token": token},
+              timeout=30)
+          total = r.json().get("count", 0)
+          print(f"✓ Registros en ArcGIS: {total}")
+
+          # ── Descarga paginada ──────────────────────────────────────────
+          pages, offset = [], 0
+          while True:
+              r = requests.get(f"{service_url}/0/query", params={
+                  "where": "1=1", "outFields": "*",
+                  "resultOffset": offset, "resultRecordCount": PAGE_SIZE,
+                  "f": "json", "token": token,
+              }, timeout=60)
+              features = r.json().get("features", [])
+              if not features:
+                  break
+              pages.append(pd.DataFrame([f["attributes"] for f in features]))
+              offset += len(features)
+              print(f"  Descargados: {offset}/{total}", end="\r")
+              if not r.json().get("exceededTransferLimit", False):
+                  break
+          print()
+
+          df_new = pd.concat(pages, ignore_index=True) if pages else pd.DataFrame()
+          if df_new.empty:
+              print("Sin registros. Abortando.")
+              sys.exit(0)
+
+          # ── Renombrar columnas ─────────────────────────────────────────
+          df_new = df_new.rename(columns={
+              "Hora de finalización de patrullaje":                     "Hora de finalizacion de patrullaje",
+              "Región":                                                  "Region",
+              "Ubicación":                                               "Ubicacion",
+              "Área protegida":                                          "Area protegida",
+              "¿Existe otra institución involucrada en el patrullaje?": "Hay mas instituciones involucradas en el patrullaje",
+              "¿Cuál o cuáles son?":                                    "Instituciones involucradas",
+              "¿Observó Actividad ilegal?":                             "Actividad ilegal observada",
+              "CreationDate":                                            "Fecha de creacion de registro",
+              "EditDate":                                                "Fecha de modificacion de registro",
+              "x": "Longitud", "y": "Latitud",
+          })
+
+          # ── Correcciones ───────────────────────────────────────────────
+          df_new["Guarda recursos responsable"] = (
+              df_new["Guarda recursos responsable"].astype(str).str.strip().replace(FIX_GUARDAS)
+          )
+          df_new["Region"] = df_new["Region"].astype(str).str.strip().replace({
+              "Altiplano Centra":       "Altiplano Central",
+              "Altiplano Central DRAC": "Altiplano Central",
+              "Altiplano Central0":     "Altiplano Central",
+              "Altiplano Centralm":     "Altiplano Central",
+          })
+
+          # Fechas (ArcGIS entrega milisegundos Unix)
+          for col in ["Fecha de patrullaje", "Fecha de creacion de registro", "Fecha de modificacion de registro"]:
+              if col in df_new.columns:
+                  if pd.api.types.is_numeric_dtype(df_new[col]):
+                      df_new[col] = pd.to_datetime(df_new[col], unit="ms", errors="coerce")
+                  else:
+                      df_new[col] = pd.to_datetime(df_new[col], errors="coerce")
+                  df_new[col] = df_new[col].dt.strftime("%d/%m/%Y")
+
+          for c in COLS:
+              if c not in df_new.columns:
+                  df_new[c] = None
+          df_new = df_new[COLS]
+
+          # ── Merge con histórico ────────────────────────────────────────
+          try:
+              df_old = pd.read_csv(OUTPUT_CSV, sep=";", encoding="utf-8-sig")
+              print(f"✓ Histórico existente: {len(df_old)} registros")
+              combined = pd.concat([df_old, df_new], ignore_index=True)
+          except FileNotFoundError:
+              print("Sin histórico previo, se crea desde cero.")
+              combined = df_new
+
+          # Deduplicar por guarda + fecha + hora inicio
+          combined["_key"] = (
+              combined["Guarda recursos responsable"].astype(str).str.strip().str.lower() + "|" +
+              pd.to_datetime(combined["Fecha de patrullaje"], dayfirst=True, errors="coerce").dt.strftime("%Y-%m-%d") + "|" +
+              combined["Hora de Inicio del patrullaje"].astype(str).str.strip()
+          )
+          antes = len(combined)
+          combined = combined.drop_duplicates(subset="_key", keep="last").drop(columns="_key")
+          print(f"✓ Duplicados eliminados: {antes - len(combined)}")
+
+          # Ordenar por fecha
+          combined["_sort"] = pd.to_datetime(combined["Fecha de patrullaje"], dayfirst=True, errors="coerce")
+          combined = combined.sort_values("_sort").drop(columns="_sort").reset_index(drop=True)
+
+          combined.to_csv(OUTPUT_CSV, index=False, sep=";", encoding="utf-8-sig")
+          print(f"✓ CSV guardado: {OUTPUT_CSV} ({len(combined)} registros totales)")
+          PYEOF
+
+      - name: Publicar cambios al repositorio
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/datos/datos_patrullaje.csv
+
+          if git diff --staged --quiet; then
+            echo "Sin registros nuevos. No se necesita commit."
+          else
+            FECHA=$(TZ="America/Guatemala" date '+%d/%m/%Y %H:%M GT')
+            git commit -m "🔄 AC192 Patrullajes · $FECHA"
+            git push
+          fi
