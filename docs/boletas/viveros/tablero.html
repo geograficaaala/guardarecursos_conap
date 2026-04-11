@@ -87,8 +87,8 @@
 <header>
 <div class="header-inner">
 <div class="logo-group">
-<img alt="Logo CONAP" src="conap_logo.jpg"/>
-<img alt="Logo Laboratorio SIG AALA" src="aala_logo.png"/>
+<img alt="Logo CONAP" src="../../assets/conap_logo.jpg"/>
+<img alt="Logo Laboratorio SIG AALA" src="../../assets/aala_logo.png"/>
 </div>
 <div class="title-group">
 <h1>Centro de consulta de datos</h1>
@@ -101,9 +101,9 @@
 <section class="page-header">
 <h2>AC210 · Asistencia técnica a viveros · Tablero dinámico</h2>
 </section><section aria-label="Navegación y acciones del módulo" class="topnav"><nav aria-label="Navegación del módulo" class="tabs">
-<a class="tab" href="ac210_dashboard.html">Dashboard geográfico</a>
+<a class="tab" href="dashboard.html">Dashboard geográfico</a>
 <a class="tab active" href="ac210_tablero.html">Tablero dinámico</a>
-<a class="tab" href="ac210_datos.html">Tabla de datos</a>
+<a class="tab" href="datos.html">Tabla de datos</a>
 </nav><div class="nav-actions"><a class="btn btn-ghost" href="index.html">Inicio</a><button class="btn btn-ghost" id="btn-reset" type="button">Limpiar filtros</button><button class="btn btn-ghost" id="btn-dl-csv" type="button">Descargar CSV</button><button class="btn btn-ghost" id="btn-dl-xlsx" type="button">Descargar Excel</button><button class="btn btn-warn" id="btn-pdf" type="button">Generar informe PDF (liviano)</button></div><div class="infobox"><b>Sugerencia:</b> use filtros para explorar y haga clic en barras de los gráficos para filtrar.<div aria-label="Resumen de filtros" class="chips" id="chips-filtros"></div><div class="subnote" id="estado" style="margin-top:8px;">Cargando datos…</div><div class="subnote" id="meta"></div></div></section>
 <section class="card soft">
 <!-- Filtros (misma estructura que AC192, adaptada a AC210) -->
@@ -281,8 +281,8 @@
   // Config AC210
   // =========================
   const CSV_CANDIDATES = [
-    "./base2_datos.csv",
-    "base2_datos.csv",
+    "../../datos/base2_datos.csv",
+    "../../datos/base2_datos.csv",
     "./data/base2_datos.csv",
   ];
 

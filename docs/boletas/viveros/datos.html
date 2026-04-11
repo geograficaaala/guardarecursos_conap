@@ -156,7 +156,7 @@
     }
   </style>
 <!-- CSS de Tabulator LOCAL -->
-<link href="tabulator.min.css" rel="stylesheet"/>
+<link href="../../assets/tabulator.min.css" rel="stylesheet"/>
 </head>
 <body>
 <header class="header-bar">
@@ -187,14 +187,14 @@
 <button disabled="" id="generate-monthly-report-word">Generar informe mensual (Word)</button>
 <button disabled="" id="generate-monthly-report-pdf">Generar informe mensual (PDF)</button>
 </div>
-<div class="back-container"><a class="back-link" href="index.html">← Volver al inicio</a><a class="back-link" href="ac210_dashboard.html" style="margin-left:12px;">Dashboard geográfico</a><a class="back-link" href="ac210_tablero.html" style="margin-left:12px;">Tablero dinámico</a></div>
+<div class="back-container"><a class="back-link" href="index.html">← Volver al inicio</a><a class="back-link" href="dashboard.html" style="margin-left:12px;">Dashboard geográfico</a><a class="back-link" href="ac210_tablero.html" style="margin-left:12px;">Tablero dinámico</a></div>
 <!-- Solo la tabla aquí -->
 <div id="tabla"></div>
 </main>
 <!-- Librerías JS necesarias (LOCALES) -->
-<script src="tabulator.min.js"></script>
-<script src="papaparse.min.js"></script>
-<script src="xlsx.full.min.js"></script>
+<script src="../../assets/tabulator.min.js"></script>
+<script src="../../assets/papaparse.min.js"></script>
+<script src="../../assets/xlsx.full.min.js"></script>
 <!-- Librería para generar PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
@@ -1205,7 +1205,7 @@
         return;
       }
 
-      fetch("./base2_datos.csv", { cache: "no-store" })
+      fetch("../../datos/base2_datos.csv", { cache: "no-store" })
         .then(function (response) {
           if (!response.ok) {
             throw new Error("HTTP " + response.status + " " + response.statusText);

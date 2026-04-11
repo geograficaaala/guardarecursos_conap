@@ -91,8 +91,8 @@
 <header>
   <div class="header-inner">
     <div class="logo-group">
-      <img src="conap_logo.jpg" alt="Logo CONAP"/>
-      <img src="aala_logo.png" alt="Logo Laboratorio SIG AALA"/>
+      <img src="../../assets/conap_logo.jpg" alt="Logo CONAP"/>
+      <img src="../../assets/aala_logo.png" alt="Logo Laboratorio SIG AALA"/>
     </div>
     <div class="title-group">
       <h1>Centro de consulta de datos</h1>
@@ -109,9 +109,9 @@
 
   <section class="topnav" aria-label="Navegación y acciones del módulo">
     <nav class="tabs" aria-label="Navegación del módulo">
-      <a class="tab" href="patrullajes_dashboard.html">Dashboard geográfico</a>
+      <a class="tab" href="dashboard.html">Dashboard geográfico</a>
       <a class="tab active" href="patrullajes_tablero.html">Tablero dinámico</a>
-      <a class="tab" href="patrullajes_datos.html">Tabla de datos</a>
+      <a class="tab" href="datos.html">Tabla de datos</a>
     </nav>
     <div class="nav-actions">
       <a class="btn btn-ghost" href="index.html">Inicio</a>
@@ -494,12 +494,12 @@ function hideIfMissing(fieldKey){
 ========================= */
 async function loadCSV(){
   const candidates = [
-    "./datos_patrullaje.csv",
-    "datos_patrullaje.csv",
-    "./data/datos_patrullaje.csv",
-    "data/datos_patrullaje.csv",
-    "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/datos_patrullaje.csv",
-    "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/master/datos_patrullaje.csv"
+    "../../datos/datos_patrullaje.csv",
+    "../../datos/datos_patrullaje.csv",
+    "../../datos/datos_patrullaje.csv",
+    "../../datos/datos_patrullaje.csv",
+    "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/datos_patrullaje.csv",
+    "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/datos_patrullaje.csv"
   ];
 
   let lastErr = null;

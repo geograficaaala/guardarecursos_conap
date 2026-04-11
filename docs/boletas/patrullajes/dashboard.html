@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
-<meta charset="utf-8"/>
-<title>AC210 · Asistencia técnica a viveros - Dashboard geográfico</title>
-<style>
+  <meta charset="UTF-8" />
+  <title>Patrullajes de control y vigilancia - Dashboard</title>
+
+  <style>
     :root {
       --verde-header: #0f766e;
       --azul-boton: #1d9bf0;
@@ -360,50 +360,73 @@
   </style>
 </head>
 <body>
-<header>
-<div class="header-inner">
-<div class="logo-group">
-<img alt="Logo CONAP" src="conap_logo.jpg"/>
-<img alt="Logo Laboratorio SIG AALA" src="aala_logo.png"/>
-</div>
-<div class="title-group">
-<h1>Centro de consulta de datos</h1>
-<p>Sistema de monitoreo de actividades</p>
-<p>CONAP – Dirección Regional Altiplano Central</p>
-<div class="chip-version">
-<span class="chip-dot"></span>
-<span>Módulo AC210 · Viveros</span>
-</div>
-</div>
-</div>
-</header>
-<main>
-<section class="page-header">
-<h2>Asistencia técnica a viveros</h2><p>Panel geográfico de asistencia técnica a viveros.</p><p>Use los filtros del visor para explorar espacialmente los registros del formulario.</p>
+  <header>
+    <div class="header-inner">
+      <div class="logo-group">
+        <img src="../../assets/conap_logo.jpg" alt="Logo CONAP">
+        <img src="../../assets/aala_logo.png" alt="Logo Laboratorio SIG AALA">
+      </div>
+      <div class="title-group">
+        <h1>Centro de consulta de datos</h1>
+        <p>Sistema de monitoreo de actividades</p>
+        <p>CONAP – Dirección Regional Altiplano Central</p>
+        <div class="chip-version">
+          <span class="chip-dot"></span>
+          <span>Módulo de patrullajes</span>
+        </div>
+      </div>
+    </div>
+  </header>
 
+  <main>
+    <section class="page-header">
+      <h2>Patrullajes de control y vigilancia</h2>
+      <p>Panel geográfico de patrullajes de guardarecursos.</p>
+      <p>Use los filtros del visor para explorar espacialmente los registros del formulario.</p>
+      <span class="pill">Dashboard geográfico · ArcGIS Experience</span>
+    </section>
 
-<span class="pill">Dashboard geográfico · ArcGIS Experience</span>
-</section>
-<section id="dashboard">
-<div class="card">
-<div class="card-header-row">
-<h3 class="card-title"><span class="emoji">🗺️</span> Dashboard geográfico de viveros</h3>
-</div>
-<p class="card-subtitle">Visor geográfico (ArcGIS Experience) con los registros de asistencia técnica a viveros (AC210).</p>
-<div class="embed-container">
-<iframe allowfullscreen="" src="https://experience.arcgis.com/experience/f6fc7c0301a6408294ce81e2941a6f99/"></iframe>
-</div>
-</div>
-</section>
-<div class="actions">
-<a class="btn btn-ghost" href="index.html"><span class="icon">←</span> Volver al inicio</a>
-<!-- ✅ NUEVO (único cambio necesario): botón al tablero dinámico -->
-<a class="btn btn-primary" href="ac210_tablero.html"><span class="icon">📈</span> Tablero dinámico (CSV)</a>
-<a class="btn btn-primary" href="ac210_datos.html"><span class="icon">📊</span> Ver tabla de datos de viveros</a>
-</div>
-</main>
-<footer>
-<p>© 2026 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
-</footer>
+    <section id="dashboard">
+      <div class="card">
+        <div class="card-header-row">
+          <h3 class="card-title">
+            <span class="emoji">🗺️</span>
+            Dashboard geográfico de patrullajes
+          </h3>
+        </div>
+        <p class="card-subtitle">
+          El visor muestra los patrullajes registrados por el cuerpo de guardarecursos. Puede activar capas, filtrar por periodos y consultar el detalle de cada registro.
+        </p>
+        <div class="embed-container">
+          <iframe
+            src="https://experience.arcgis.com/experience/f6fc7c0301a6408294ce81e2941a6f99/"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <a href="index.html" class="btn btn-ghost">
+        <span class="icon">←</span>
+        Volver al inicio
+      </a>
+
+      <!-- ✅ NUEVO (único cambio necesario): botón al tablero dinámico -->
+      <a href="tablero.html" class="btn btn-primary">
+        <span class="icon">📈</span>
+        Tablero dinámico (CSV)
+      </a>
+
+      <a href="datos.html" class="btn btn-primary">
+        <span class="icon">📊</span>
+        Ver tabla de datos de patrullajes
+      </a>
+    </div>
+  </main>
+
+  <footer>
+    <p>© 2025 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
+  </footer>
 </body>
 </html>
