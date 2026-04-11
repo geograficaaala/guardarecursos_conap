@@ -159,18 +159,25 @@ jobs:
               print("Sin registros. Abortando.")
               sys.exit(0)
 
-          # ── Renombrar columnas ─────────────────────────────────────────
+          # ── Renombrar columnas (nombres internos → nombres del CSV) ───
           df_new = df_new.rename(columns={
-              "Hora de finalización de patrullaje":                     "Hora de finalizacion de patrullaje",
-              "Región":                                                  "Region",
-              "Ubicación":                                               "Ubicacion",
-              "Área protegida":                                          "Area protegida",
-              "¿Existe otra institución involucrada en el patrullaje?": "Hay mas instituciones involucradas en el patrullaje",
-              "¿Cuál o cuáles son?":                                    "Instituciones involucradas",
-              "¿Observó Actividad ilegal?":                             "Actividad ilegal observada",
-              "CreationDate":                                            "Fecha de creacion de registro",
-              "EditDate":                                                "Fecha de modificacion de registro",
-              "x": "Longitud", "y": "Latitud",
+              "equipo":            "Guarda recursos responsable",
+              "municipio":         "Municipio",
+              "fecha_patrullaje":  "Fecha de patrullaje",
+              "hora_inicio":       "Hora de Inicio del patrullaje",
+              "hora_fin":          "Hora de finalizacion de patrullaje",
+              "region":            "Region",
+              "en_rumcla":         "Ubicacion",
+              "area_protegida":    "Area protegida",
+              "tipo_patrullaje":   "Tipo de patrullaje",
+              "otras_inst":        "Hay mas instituciones involucradas en el patrullaje",
+              "inst_involucradas": "Instituciones involucradas",
+              "inst_otra":         "Otra (especifique)",
+              "obs_ilegal":        "Actividad ilegal observada",
+              "CreationDate":      "Fecha de creacion de registro",
+              "EditDate":          "Fecha de modificacion de registro",
+              "x":                 "Longitud",
+              "y":                 "Latitud",
           })
 
           # ── Correcciones ───────────────────────────────────────────────
