@@ -87,7 +87,46 @@ jobs:
           # ── URL del servicio ───────────────────────────────────────────
           r = requests.get(f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}",
               params={"f": "json", "token": token}, timeout=30)
-          service_url = r.json()["url"].rstrip("/")
+          item_data = r.json()
+          print(f"  Item type: {item_data.get('type')} | typeKeywords: {item_data.get('typeKeywords','')[:80]}")
+
+          # Intentar obtener URL directa del item
+          service_url = item_data.get("url")
+
+          # Si no tiene URL directa (Survey123 a veces no la tiene),
+          # buscarla en los items relacionados (el Feature Service vinculado)
+          if not service_url:
+              print("  URL directa no encontrada, buscando Feature Service relacionado...")
+              r2 = requests.get(f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}/relatedItems",
+                  params={"relationshipType": "Survey2Service", "direction": "forward",
+                          "f": "json", "token": token}, timeout=30)
+              related = r2.json().get("relatedItems", [])
+              print(f"  Items relacionados (Survey2Service): {len(related)}")
+              for rel in related:
+                  if rel.get("url"):
+                      service_url = rel["url"]
+                      print(f"  Encontrado: {service_url}")
+                      break
+
+          # Si aún no hay URL, construirla a partir del typeKeyword o itemId conocido
+          if not service_url:
+              print("  Intentando buscar Feature Service por nombre en contenido del usuario...")
+              r3 = requests.get(f"{ORG_URL}/sharing/rest/search",
+                  params={"q": f"owner:{USERNAME} type:'Feature Service' tags:survey",
+                          "num": 20, "f": "json", "token": token}, timeout=30)
+              results = r3.json().get("results", [])
+              for res in results:
+                  if ITEM_ID[:8] in res.get("id","") or "patrullaje" in res.get("title","").lower() or "192" in res.get("title",""):
+                      service_url = res.get("url","")
+                      print(f"  Encontrado por búsqueda: {service_url}")
+                      break
+
+          if not service_url:
+              print("ERROR: No se pudo encontrar la URL del Feature Service.")
+              print("Respuesta del item:", item_data)
+              sys.exit(1)
+
+          service_url = service_url.rstrip("/")
           print(f"✓ Servicio: {service_url}")
 
           # ── Total de registros ─────────────────────────────────────────
