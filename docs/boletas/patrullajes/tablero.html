@@ -1,936 +1,888 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>AC192 · Patrullajes - Tablero dinámico</title>
-
-  <!-- Chart.js (CDN) -->
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>AC192 · Tablero dinámico · Patrullajes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- Leaflet (OSM) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- html2pdf (optional) -->
-  <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
-
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     :root{
-      --bg:#f4f6f8; --card:#fff; --ink:#0f172a; --muted:#64748b;
-      --line:#e2e8f0; --brand:#1f6feb; --warn:#b91c1c;
-      --radius:14px;
+      --verde-oscuro:#0a3d2b;
+      --verde-medio:#1a5c3a;
+      --azul:#1e40af;
+      --azul-m:#2563eb;
+      --azul-c:#3b82f6;
+      --crema:#f5f0e8;
+      --bg:#f0f4f2;
+      --blanco:#ffffff;
+      --ink:#0d1f15;
+      --muted:#6b7280;
+      --borde:#e2e8e4;
+      --sombra:rgba(10,61,43,0.09);
+      /* colores gráficas */
+      --c1:#2563eb; --c2:#16a34a; --c3:#ea580c;
+      --c4:#7c3aed; --c5:#0891b2; --c6:#be185d;
     }
-    *{box-sizing:border-box}
-    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif; background:var(--bg); color:var(--ink)}
-    a{color:inherit; text-decoration:none}
-    header{background:#fff; border-bottom:1px solid var(--line)}
-    .header-inner{max-width:1200px; margin:0 auto; padding:14px 16px; display:flex; gap:16px; align-items:center}
-    .logo-group{display:flex; gap:10px; align-items:center}
-    .logo-group img{height:46px; width:auto; object-fit:contain}
-    .title-group h1{margin:0; font-size:18px}
-    .title-group p{margin:2px 0 0; color:var(--muted); font-size:13px}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family:'DM Sans',sans-serif;
+      background:var(--bg);
+      color:var(--ink);
+      display:flex;flex-direction:column;
+      min-height:100vh;
+      opacity:0;animation:fadeIn .35s ease forwards;
+    }
+    @keyframes fadeIn{to{opacity:1}}
+    @media(prefers-reduced-motion:reduce){body{animation:none;opacity:1}}
 
-    main{max-width:1200px; margin:0 auto; padding:16px}
-    .page-header{margin:4px 0 10px}
-    .page-header h2{margin:0; font-size:18px}
+    /* ── HEADER ── */
+    header{
+      background:linear-gradient(90deg,var(--verde-oscuro),var(--verde-medio));
+      color:#fff;padding:12px 20px 14px;
+      position:sticky;top:0;z-index:200;
+      box-shadow:0 2px 16px rgba(0,0,0,.28);
+    }
+    .header-inner{
+      max-width:1400px;margin:0 auto;
+      display:flex;align-items:center;justify-content:space-between;
+      gap:14px;flex-wrap:wrap;
+    }
+    .logo-group{
+      display:flex;align-items:center;gap:8px;
+      background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+      border-radius:999px;padding:5px 10px;
+    }
+    .logo-group img{
+      height:34px;max-width:110px;object-fit:contain;
+      background:#fff;border-radius:999px;padding:3px 7px;
+      box-shadow:0 2px 6px rgba(0,0,0,.2);
+    }
+    .header-right{text-align:right;flex:1}
+    .header-right h1{font-size:17px;font-weight:600;margin-bottom:1px}
+    .header-right p{font-size:11.5px;opacity:.7;font-weight:300}
+    .header-chip{
+      display:inline-flex;align-items:center;gap:5px;margin-top:5px;
+      padding:2px 9px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);
+      font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+    }
+    .chip-dot{width:5px;height:5px;border-radius:50%;background:#86efac;animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-    .topnav{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center}
-    .tabs{display:flex; gap:8px; flex-wrap:wrap}
-    .tab{padding:8px 10px; border:1px solid var(--line); border-radius:999px; font-size:13px; color:var(--muted); background:#fff}
-    .tab.active{border-color:var(--brand); color:var(--brand); font-weight:600}
-    .nav-actions{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap}
-    .btn{border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 10px; font-size:13px; cursor:pointer}
-    .btn:hover{border-color:#cbd5e1}
-    .btn-warn{border-color:#fecaca; background:#fff5f5; color:var(--warn)}
-    .btn-ghost{background:#fff}
-    .infobox{flex-basis:100%; padding:8px 10px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:12px; color:var(--muted); font-size:13px}
-    .chips{margin-top:8px; display:flex; flex-wrap:wrap; gap:6px}
-    .chip{background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; padding:4px 8px; border-radius:999px; font-size:12px}
+    /* ── NAV MÓDULO ── */
+    .module-nav{
+      background:var(--blanco);border-bottom:1px solid var(--borde);
+      padding:0 20px;box-shadow:0 1px 4px rgba(0,0,0,.06);
+    }
+    .module-nav-inner{
+      max-width:1400px;margin:0 auto;
+      display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none;
+    }
+    .module-nav-inner::-webkit-scrollbar{display:none}
+    .nav-back{
+      display:flex;align-items:center;gap:6px;padding:12px 16px 12px 0;
+      text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);
+      border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap;
+      transition:color .2s;
+    }
+    .nav-back:hover{color:var(--verde-medio)}
+    .nav-tab{
+      display:flex;align-items:center;gap:7px;padding:0 18px;
+      text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);
+      border-bottom:3px solid transparent;white-space:nowrap;
+      transition:color .2s,border-color .2s;height:48px;
+    }
+    .nav-tab:hover{color:var(--azul-m);border-bottom-color:rgba(37,99,235,.25)}
+    .nav-tab.active{color:var(--azul-m);border-bottom-color:var(--azul-m);font-weight:600}
 
-    .subnote{color:var(--muted); font-size:13px; margin:8px 2px 0}
+    /* ── LAYOUT PRINCIPAL ── */
+    .page{max-width:1400px;width:100%;margin:0 auto;padding:20px 20px 40px;flex:1}
 
-    .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:12px 12px; box-shadow:0 1px 0 rgba(15,23,42,.02)}
-    .card.soft{background:#fbfdff}
-    .grid{display:grid; grid-template-columns:repeat(12,1fr); gap:12px; margin-top:12px}
-    .col-12{grid-column:span 12}
-    .col-6{grid-column:span 6}
-    .col-4{grid-column:span 4}
-    .col-8{grid-column:span 8}
-    @media (max-width: 960px){
-      .col-6,.col-4,.col-8{grid-column:span 12}
-      .nav-actions{margin-left:0}
-      .logo-group img{height:40px}
+    /* ── FILTROS ── */
+    .filtros-bar{
+      background:var(--blanco);border:1px solid var(--borde);
+      border-radius:14px;padding:16px 20px;
+      box-shadow:0 2px 10px var(--sombra);
+      display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;
+      margin-bottom:20px;
+    }
+    .filtro-group{display:flex;flex-direction:column;gap:4px;min-width:140px;flex:1}
+    .filtro-group label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+    .filtro-group select,.filtro-group input{
+      border:1px solid var(--borde);border-radius:8px;
+      padding:7px 10px;font-size:13px;font-family:inherit;
+      background:var(--bg);color:var(--ink);
+      transition:border-color .2s,box-shadow .2s;outline:none;
+    }
+    .filtro-group select:focus,.filtro-group input:focus{
+      border-color:var(--azul-m);
+      box-shadow:0 0 0 3px rgba(37,99,235,.12);
+    }
+    .filtro-acciones{display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+    .btn-reset{
+      padding:7px 16px;border-radius:8px;border:1px solid var(--borde);
+      background:var(--blanco);font-size:13px;font-weight:500;
+      font-family:inherit;cursor:pointer;color:var(--muted);
+      transition:border-color .2s,color .2s;
+    }
+    .btn-reset:hover{border-color:#94a3b8;color:var(--ink)}
+
+    .chips-wrap{
+      display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;min-height:0;
+    }
+    .chip{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:4px 10px;border-radius:999px;
+      background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);
+      font-size:11.5px;font-weight:500;color:var(--azul-m);
     }
 
-    .filters{display:grid; grid-template-columns:repeat(12,1fr); gap:10px; margin-top:8px}
-    .field{grid-column:span 3; min-width:160px}
-    .field.wide{grid-column:span 6}
-    .field label{display:block; font-size:12px; color:var(--muted); margin-bottom:4px}
-    select,input{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:10px; font-size:13px; background:#fff}
-    input::placeholder{color:#94a3b8}
-    .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:10px}
-    @media (max-width: 960px){ .kpis{grid-template-columns:repeat(2,1fr)} }
-    .kpi{border:1px solid var(--line); border-radius:14px; padding:10px 10px; background:#fff}
-    .kpi .t{font-size:12px; color:var(--muted)}
-    .kpi .v{font-size:20px; font-weight:700; margin-top:4px}
-    .kpi .s{font-size:12px; color:var(--muted); margin-top:2px}
+    /* ── KPIs ── */
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:12px;margin-bottom:20px;
+    }
+    @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:480px){.kpis{grid-template-columns:1fr}}
 
-    .chartwrap{height:320px}
-    canvas{width:100%; height:100%}
+    .kpi{
+      background:var(--blanco);border:1px solid var(--borde);
+      border-radius:14px;padding:16px 18px;
+      box-shadow:0 2px 8px var(--sombra);
+      position:relative;overflow:hidden;
+    }
+    .kpi::before{
+      content:'';position:absolute;top:-16px;right:-16px;
+      width:64px;height:64px;border-radius:50%;
+      opacity:.08;
+    }
+    .kpi-0::before{background:var(--c1)}
+    .kpi-1::before{background:var(--c2)}
+    .kpi-2::before{background:var(--c3)}
+    .kpi-3::before{background:var(--c4)}
+    .kpi-4::before{background:var(--c5)}
 
-    /* MAPA: altura fija para que NO desproporcione el layout */
-    #map{height:340px; min-height:340px; max-height:340px; border-radius:12px; border:1px solid var(--line); overflow:hidden}
-    .mapnote{margin-top:8px; color:var(--muted); font-size:13px}
+    .kpi-label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
+    .kpi-value{
+      font-family:'Playfair Display',serif;
+      font-size:28px;font-weight:700;line-height:1;
+      color:var(--ink);margin-bottom:4px;
+    }
+    .kpi-sub{font-size:11.5px;color:var(--muted);font-weight:300}
 
-    .error{color:var(--warn); font-weight:700}
+    /* ── GRID GRÁFICAS ── */
+    .charts-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px;margin-bottom:16px;
+    }
+    @media(max-width:800px){.charts-grid{grid-template-columns:1fr}}
+
+    .chart-card{
+      background:var(--blanco);border:1px solid var(--borde);
+      border-radius:14px;padding:20px;
+      box-shadow:0 2px 10px var(--sombra);
+    }
+    .chart-card.full{grid-column:span 2}
+    @media(max-width:800px){.chart-card.full{grid-column:span 1}}
+
+    .chart-title{
+      font-family:'Playfair Display',serif;
+      font-size:16px;font-weight:700;color:var(--ink);
+      margin-bottom:4px;
+    }
+    .chart-hint{font-size:12px;color:var(--muted);font-weight:300;margin-bottom:14px}
+    .chart-wrap{position:relative;height:260px}
+    .chart-wrap.tall{height:320px}
+
+    /* ── MAPA ── */
+    .map-card{
+      background:var(--blanco);border:1px solid var(--borde);
+      border-radius:14px;overflow:hidden;
+      box-shadow:0 2px 10px var(--sombra);margin-bottom:16px;
+    }
+    .map-card-header{padding:16px 20px 12px}
+    #map{height:380px}
+    .map-note{padding:10px 20px;font-size:12px;color:var(--muted);border-top:1px solid var(--borde)}
+
+    /* ── ESTADO ── */
+    .estado-bar{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:16px;flex-wrap:wrap;gap:8px;
+    }
+    .estado-txt{font-size:13px;color:var(--muted);font-weight:300}
+    .estado-txt.error{color:#dc2626;font-weight:600}
+
+    /* ── FOOTER ── */
+    footer{
+      background:var(--verde-oscuro);color:rgba(255,255,255,.45);
+      text-align:center;padding:14px 20px;
+      font-size:11.5px;font-weight:300;letter-spacing:.03em;
+    }
+    footer strong{color:rgba(255,255,255,.75);font-weight:500}
   </style>
 </head>
-
 <body>
+
+<!-- HEADER -->
 <header>
   <div class="header-inner">
     <div class="logo-group">
-      <img src="../../assets/conap_logo.jpg" alt="Logo CONAP"/>
-      <img src="../../assets/aala_logo.png" alt="Logo Laboratorio SIG AALA"/>
+      <img src="../../assets/conap_logo.jpg" alt="CONAP">
+      <img src="../../assets/aala_logo.png" alt="AALA">
     </div>
-    <div class="title-group">
+    <div class="header-right">
       <h1>Centro de consulta de datos</h1>
-      <p>Sistema de monitoreo de actividades</p>
-      <p>CONAP – Dirección Regional Altiplano Central</p>
+      <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
+      <div class="header-chip"><span class="chip-dot"></span>AC192 · Tablero dinámico</div>
     </div>
   </div>
 </header>
 
-<main>
-  <section class="page-header">
-    <h2>AC192 · Patrullajes de control y vigilancia · Tablero dinámico</h2>
-  </section>
+<!-- NAV -->
+<nav class="module-nav">
+  <div class="module-nav-inner">
+    <a href="../../index.html" class="nav-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Inicio
+    </a>
+    <a href="dashboard.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      Mapa geográfico
+    </a>
+    <a href="tablero.html" class="nav-tab active">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Tablero dinámico
+    </a>
+    <a href="datos.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      Tabla de datos
+    </a>
+    <a href="analitica.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Analítica
+    </a>
+  </div>
+</nav>
 
-  <section class="topnav" aria-label="Navegación y acciones del módulo">
-    <nav class="tabs" aria-label="Navegación del módulo">
-      <a class="tab" href="dashboard.html">Dashboard geográfico</a>
-      <a class="tab active" href="patrullajes_tablero.html">Tablero dinámico</a>
-      <a class="tab" href="datos.html">Tabla de datos</a>
-    </nav>
-    <div class="nav-actions">
-      <a class="btn btn-ghost" href="index.html">Inicio</a>
-      <button class="btn btn-ghost" id="btn-reset" type="button">Limpiar filtros</button>
-      <button class="btn btn-warn" id="btn-pdf" type="button">Generar informe PDF (liviano)</button>
+<!-- PÁGINA -->
+<div class="page">
+
+  <!-- FILTROS -->
+  <div class="filtros-bar">
+    <div class="filtro-group">
+      <label>Año</label>
+      <select id="f-anio"><option value="">Todos</option></select>
+    </div>
+    <div class="filtro-group">
+      <label>Mes</label>
+      <select id="f-mes"><option value="">Todos</option></select>
+    </div>
+    <div class="filtro-group">
+      <label>Municipio</label>
+      <select id="f-municipio"><option value="">Todos</option></select>
+    </div>
+    <div class="filtro-group">
+      <label>Guardarecursos</label>
+      <select id="f-guarda"><option value="">Todos</option></select>
+    </div>
+    <div class="filtro-group">
+      <label>Actividad ilegal</label>
+      <select id="f-ilegal"><option value="">Todas</option></select>
+    </div>
+    <div class="filtro-acciones">
+      <button class="btn-reset" id="btn-reset">Limpiar filtros</button>
+    </div>
+  </div>
+
+  <!-- CHIPS DE FILTROS ACTIVOS -->
+  <div class="chips-wrap" id="chips-wrap"></div>
+
+  <!-- ESTADO -->
+  <div class="estado-bar">
+    <span class="estado-txt" id="estado">Cargando datos…</span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi kpi-0">
+      <div class="kpi-label">Patrullajes</div>
+      <div class="kpi-value" id="kpi-total">–</div>
+      <div class="kpi-sub">registros filtrados</div>
+    </div>
+    <div class="kpi kpi-1">
+      <div class="kpi-label">Guardarecursos</div>
+      <div class="kpi-value" id="kpi-guardas">–</div>
+      <div class="kpi-sub">activos en período</div>
+    </div>
+    <div class="kpi kpi-2">
+      <div class="kpi-label">Municipios</div>
+      <div class="kpi-value" id="kpi-municipios">–</div>
+      <div class="kpi-sub">con cobertura</div>
+    </div>
+    <div class="kpi kpi-3">
+      <div class="kpi-label">Con actividad ilegal</div>
+      <div class="kpi-value" id="kpi-ilegales">–</div>
+      <div class="kpi-sub">reportaron incidente</div>
+    </div>
+    <div class="kpi kpi-4">
+      <div class="kpi-label">Rango de fechas</div>
+      <div class="kpi-value" style="font-size:16px" id="kpi-rango">–</div>
+      <div class="kpi-sub">período activo</div>
+    </div>
+  </div>
+
+  <!-- GRÁFICAS -->
+  <div class="charts-grid">
+
+    <!-- Tendencia mensual (ancho completo) -->
+    <div class="chart-card full">
+      <div class="chart-title">Tendencia mensual de patrullajes</div>
+      <div class="chart-hint">Registros totales por mes en el período seleccionado</div>
+      <div class="chart-wrap tall"><canvas id="c-mes"></canvas></div>
     </div>
 
-    <div class="infobox">
-      <b>Sugerencia:</b> use filtros para explorar, y haga clic en barras del gráfico “Tipo” para filtrar.
-      <div class="chips" id="chips-filtros" aria-label="Resumen de filtros"></div>
-      <div class="subnote" id="estado" style="margin-top:8px;">Cargando datos…</div>
-    </div>
-  </section>
-
-  <section class="card soft" id="card-filtros" aria-label="Filtros del tablero" style="margin-top:12px;">
-    <h3 style="margin:0 0 6px;">Filtros</h3>
-    <p class="subnote" style="margin:0;">Los filtros se aplican a indicadores, gráficos y mapa.</p>
-
-    <div class="filters" id="filters-grid">
-      <div class="field" id="wrap-anio">
-        <label for="f-anio">Año</label>
-        <select id="f-anio"></select>
-      </div>
-
-      <div class="field" id="wrap-mes">
-        <label for="f-mes">Mes</label>
-        <select id="f-mes"></select>
-      </div>
-
-      <div class="field wide" id="wrap-region">
-        <label for="f-region">Región</label>
-        <select id="f-region"></select>
-      </div>
-
-      <div class="field wide" id="wrap-municipio">
-        <label for="f-municipio">Municipio</label>
-        <select id="f-municipio"></select>
-      </div>
-
-      <div class="field wide" id="wrap-area">
-        <label for="f-area">Área protegida</label>
-        <select id="f-area"></select>
-      </div>
-
-      <div class="field wide" id="wrap-guarda">
-        <label for="f-guarda">Guardarrecursos responsable</label>
-        <select id="f-guarda"></select>
-      </div>
-
-      <div class="field wide" id="wrap-tipo">
-        <label for="f-tipo">Tipo de patrullaje</label>
-        <select id="f-tipo"></select>
-      </div>
-
-      <div class="field wide" id="wrap-ilegal">
-        <label for="f-ilegal">Actividad ilegal observada</label>
-        <select id="f-ilegal"></select>
-      </div>
-
-      <div class="field wide" id="wrap-ubicacion">
-        <label for="f-ubicacion">Ubicación</label>
-        <select id="f-ubicacion"></select>
-      </div>
-
-      <div class="field" id="wrap-buscar">
-        <label for="f-buscar">Buscar</label>
-        <input id="f-buscar" type="text" placeholder="palabra clave (en cualquier campo)"/>
-      </div>
-    </div>
-  </section>
-
-  <section class="card" aria-label="Indicadores" style="margin-top:12px;">
-    <h3 style="margin:0 0 10px;">Indicadores</h3>
-    <div class="kpis">
-      <div class="kpi"><div class="t">Registros</div><div class="v" id="kpi-registros">–</div><div class="s">Filtrados</div></div>
-      <div class="kpi"><div class="t">Rango de fechas</div><div class="v" id="kpi-rango">–</div><div class="s">Según “Fecha de patrullaje”</div></div>
-      <div class="kpi"><div class="t">Regiones</div><div class="v" id="kpi-regiones">–</div><div class="s">Únicas</div></div>
-      <div class="kpi"><div class="t">Municipios</div><div class="v" id="kpi-municipios">–</div><div class="s">Únicos</div></div>
-      <div class="kpi"><div class="t">Áreas protegidas</div><div class="v" id="kpi-areas">–</div><div class="s">Únicas</div></div>
-      <div class="kpi"><div class="t">Puntos (Guatemala)</div><div class="v" id="kpi-coords">–</div><div class="s">Para el mapa</div></div>
-    </div>
-  </section>
-
-  <section class="grid" aria-label="Gráficos">
-    <div class="card col-6">
-      <h3 style="margin:0 0 8px;">Patrullajes por mes</h3>
-      <div class="chartwrap"><canvas id="c-mes"></canvas></div>
-      <p class="subnote" style="margin:8px 0 0;">Muestra el total de registros por mes (solo meses existentes en el CSV).</p>
+    <!-- Municipios top -->
+    <div class="chart-card">
+      <div class="chart-title">Top municipios</div>
+      <div class="chart-hint">Los 10 con más patrullajes registrados · haz clic para filtrar</div>
+      <div class="chart-wrap tall"><canvas id="c-municipio"></canvas></div>
     </div>
 
-    <div class="card col-6">
-      <h3 style="margin:0 0 8px;">Distribución por tipo</h3>
-      <div class="chartwrap"><canvas id="c-tipo"></canvas></div>
-      <p class="subnote" style="margin:8px 0 0;">Clic en una barra para filtrar por ese tipo.</p>
+    <!-- Guardarecursos top -->
+    <div class="chart-card">
+      <div class="chart-title">Top guardarecursos</div>
+      <div class="chart-hint">Los 10 con más patrullajes · haz clic para filtrar</div>
+      <div class="chart-wrap tall"><canvas id="c-guarda"></canvas></div>
     </div>
 
-    <div class="card col-6">
-      <h3 style="margin:0 0 8px;">Top municipios</h3>
-      <div class="chartwrap"><canvas id="c-municipio"></canvas></div>
+    <!-- Actividad ilegal -->
+    <div class="chart-card">
+      <div class="chart-title">Actividad ilegal observada</div>
+      <div class="chart-hint">Patrullajes con y sin incidentes reportados</div>
+      <div class="chart-wrap"><canvas id="c-ilegal"></canvas></div>
     </div>
 
-    <div class="card col-6">
-      <h3 style="margin:0 0 8px;">Top guardarrecursos</h3>
-      <div class="chartwrap"><canvas id="c-guarda"></canvas></div>
+    <!-- Tipo de patrullaje -->
+    <div class="chart-card">
+      <div class="chart-title">Tipo de patrullaje</div>
+      <div class="chart-hint">Distribución por tipo de formulario</div>
+      <div class="chart-wrap"><canvas id="c-tipo"></canvas></div>
     </div>
-  </section>
 
-  <section class="card" aria-label="Mapa" style="margin-top:12px;">
-    <h3 style="margin:0 0 8px;">Mapa (solo puntos en Guatemala)</h3>
-    <div id="map" role="application" aria-label="Mapa con puntos de patrullaje"></div>
-    <div class="mapnote" id="mapnote">—</div>
-  </section>
+  </div>
 
-  <footer style="text-align:center; padding:18px 8px; color:var(--muted); font-size:12px;">
-    © 2026 · Centro de consulta de datos
-  </footer>
-</main>
+  <!-- MAPA -->
+  <div class="map-card">
+    <div class="map-card-header">
+      <div class="chart-title">Distribución espacial</div>
+      <div class="chart-hint">Puntos de patrullaje en el área protegida</div>
+    </div>
+    <div id="map"></div>
+    <div class="map-note" id="map-note">Cargando mapa…</div>
+  </div>
+
+</div><!-- /page -->
+
+<footer>
+  <p><strong>CONAP · Dirección Regional Altiplano Central</strong> · Laboratorio SIG AALA · © 2026</p>
+</footer>
 
 <script>
-/* =========================
-   Utilidades: texto/canon
-========================= */
-function normStr(v){
-  if(v === null || v === undefined) return "";
-  let s = String(v).trim();
-  s = s.replace(/\s+/g, " ");
-  return s;
-}
-function canon(v){
-  const s = normStr(v);
-  if(!s) return "";
-  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-}
-function prefersAccents(s){
-  // retorna true si contiene letras con acento/ñ
-  return /[áéíóúüñÁÉÍÓÚÜÑ]/.test(String(s || ""));
-}
-function bestLabel(prev, cand){
-  const a = normStr(prev), b = normStr(cand);
-  if(!a) return b;
-  if(!b) return a;
-  // preferir etiqueta con acentos si la otra no tiene
-  if(prefersAccents(b) && !prefersAccents(a)) return b;
-  // preferir la más larga si difieren
-  if(b.length > a.length) return b;
-  return a;
+/* ─────────────────────────────────────────────
+   UTILIDADES
+───────────────────────────────────────────── */
+const norm = v => v == null ? "" : String(v).trim().replace(/\s+/g," ");
+const canon = v => norm(v).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const prefersAccent = s => /[áéíóúüñÁÉÍÓÚÜÑ]/.test(String(s||""));
+function bestLabel(a,b){
+  a=norm(a); b=norm(b);
+  if(!a) return b; if(!b) return a;
+  if(prefersAccent(b)&&!prefersAccent(a)) return b;
+  return b.length>a.length ? b : a;
 }
 
-/* =========================
-   Decodificación robusta
-========================= */
-async function fetchArrayBuffer(url){
-  const res = await fetch(url, {cache:"no-store"});
-  if(!res.ok) throw new Error("HTTP " + res.status + " al cargar " + url);
-  return await res.arrayBuffer();
-}
-function decodeSmart(buf){
-  const u8 = new Uint8Array(buf);
-  // 1) intentar UTF-8
-  let t1 = new TextDecoder("utf-8", {fatal:false}).decode(u8);
-  const rep1 = (t1.match(/\uFFFD/g)||[]).length;
-
-  // 2) intentar Windows-1252
-  let t2 = new TextDecoder("windows-1252", {fatal:false}).decode(u8);
-  const rep2 = (t2.match(/\uFFFD/g)||[]).length;
-
-  // elegir el que tenga menos reemplazos
-  if(rep2 < rep1) return t2;
-  return t1;
-}
-
-/* =========================
-   CSV parser (sin librerías)
-========================= */
-function detectDelimiter(text){
-  const firstLine = (text.split(/\r?\n/).find(l => l.trim().length) || "");
-  const counts = {
-    ";": (firstLine.match(/;/g)||[]).length,
-    ",": (firstLine.match(/,/g)||[]).length,
-    "\t": (firstLine.match(/\t/g)||[]).length
-  };
-  let best = ";", max = counts[";"];
-  if(counts[","] > max){ best=","; max=counts[","]; }
-  if(counts["\t"] > max){ best="\t"; max=counts["\t"]; }
-  return best;
-}
-function parseCSV(text){
-  const delim = detectDelimiter(text);
-  const rows = [];
-  let i=0, field="", row=[], inQuotes=false;
-
-  function pushField(){
-    row.push(field);
-    field="";
-  }
-  function pushRow(){
-    if(row.length===0) return;
-    rows.push(row);
-    row=[];
-  }
-
-  while(i < text.length){
-    const c = text[i];
-
-    if(inQuotes){
-      if(c === '"'){
-        if(text[i+1] === '"'){ field += '"'; i += 2; continue; }
-        inQuotes = false; i++; continue;
-      } else {
-        field += c; i++; continue;
-      }
-    } else {
-      if(c === '"'){ inQuotes = true; i++; continue; }
-      if(delim !== "\t" && c === delim){ pushField(); i++; continue; }
-      if(delim === "\t" && c === "\t"){ pushField(); i++; continue; }
-      if(c === "\n"){ pushField(); pushRow(); i++; continue; }
-      if(c === "\r"){ // CRLF
-        if(text[i+1] === "\n"){ i += 2; pushField(); pushRow(); continue; }
-        i++; pushField(); pushRow(); continue;
-      }
-      field += c; i++; continue;
-    }
-  }
-  // final
-  pushField(); pushRow();
-
-  if(rows.length < 2) return {data:[], headers:[]};
-
-  const headers = rows[0].map(h => normStr(h));
-  const data = [];
-  for(let r=1; r<rows.length; r++){
-    if(rows[r].every(v => String(v||"").trim()==="")) continue;
-    const obj = {};
-    for(let c=0; c<headers.length; c++){
-      obj[headers[c]] = rows[r][c] !== undefined ? normStr(rows[r][c]) : "";
-    }
-    data.push(obj);
-  }
-  return {data, headers};
-}
-
-/* =========================
-   Fecha: DD/MM vs MM/DD
-========================= */
-function inferDayFirst(samples){
-  // si hay algún caso con primer número > 12 -> dayfirst
-  // si hay algún caso con segundo número > 12 -> monthfirst
-  let seenDayFirst = 0, seenMonthFirst = 0;
-  for(const s of samples){
-    const v = normStr(s);
-    if(!v || !v.includes("/")) continue;
-    const parts = v.split("/");
-    if(parts.length < 3) continue;
-    const a = parseInt(parts[0],10);
-    const b = parseInt(parts[1],10);
-    if(!isNaN(a) && a > 12) seenDayFirst++;
-    if(!isNaN(b) && b > 12) seenMonthFirst++;
-  }
-  if(seenDayFirst > 0 && seenMonthFirst === 0) return true;
-  if(seenMonthFirst > 0 && seenDayFirst === 0) return false;
-  // por defecto Guatemala: dayfirst
-  return true;
-}
-function parseDateSmart(s, dayFirst){
-  const v = normStr(s);
-  if(!v) return null;
-  // YYYY-MM-DD
-  const m1 = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if(m1){
-    const y = +m1[1], mo = +m1[2], d = +m1[3];
-    const dt = new Date(Date.UTC(y, mo-1, d));
-    return isNaN(dt.getTime()) ? null : dt;
-  }
-  // DD/MM/YYYY o MM/DD/YYYY
-  if(v.includes("/")){
-    const p = v.split("/");
-    if(p.length>=3){
-      let a = parseInt(p[0],10), b = parseInt(p[1],10), y = parseInt(p[2],10);
-      if(isNaN(a)||isNaN(b)||isNaN(y)) return null;
-      let d, mo;
-      if(dayFirst){ d=a; mo=b; } else { mo=a; d=b; }
-      const dt = new Date(Date.UTC(y, mo-1, d));
-      return isNaN(dt.getTime()) ? null : dt;
-    }
-  }
-  // fallback
-  const dt = new Date(v);
-  return isNaN(dt.getTime()) ? null : dt;
-}
-function monthKey(dt){
-  const y = dt.getUTCFullYear();
-  const m = dt.getUTCMonth()+1;
-  return String(y) + "-" + String(m).padStart(2,"0");
-}
-const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-function monthLabel(key){
-  const [y,m]=key.split("-");
-  const idx = parseInt(m,10)-1;
-  return (MONTHS_ES[idx] || m) + " " + y;
-}
-
-/* =========================
-   Guatemala: filtro de puntos
-========================= */
-// Bounding box Guatemala (amplio)
-function inGuatemalaBBox(lat, lon){
-  return (lat >= 13.6 && lat <= 18.1 && lon >= -92.6 && lon <= -88.0);
-}
-// Polígono simplificado Guatemala (lon,lat). Suficiente para excluir outliers.
-const GT_POLY = [
-  [-92.23, 14.55], [-92.10, 14.30], [-91.95, 14.05], [-91.70, 13.90],
-  [-91.30, 13.72], [-90.70, 13.70], [-90.00, 13.74], [-89.55, 13.74],
-  [-89.25, 13.74], [-88.95, 14.10], [-88.60, 14.55], [-88.40, 15.05],
-  [-88.25, 15.55], [-88.20, 16.10], [-88.20, 17.82], [-89.10, 17.82],
-  [-90.00, 17.82], [-91.45, 17.82], [-91.85, 17.25], [-92.17, 16.50],
-  [-92.30, 15.50], [-92.23, 14.55]
-];
-function pointInPoly(lon, lat, poly){
-  // ray casting
-  let inside = false;
-  for(let i=0, j=poly.length-1; i<poly.length; j=i++){
-    const xi = poly[i][0], yi = poly[i][1];
-    const xj = poly[j][0], yj = poly[j][1];
-    const intersect = ((yi > lat) !== (yj > lat)) &&
-      (lon < (xj - xi) * (lat - yi) / ((yj - yi) || 1e-12) + xi);
-    if(intersect) inside = !inside;
-  }
-  return inside;
-}
-function inGuatemala(lat, lon){
-  if(!inGuatemalaBBox(lat, lon)) return false;
-  return pointInPoly(lon, lat, GT_POLY);
-}
-
-/* =========================
-   Estado global
-========================= */
-let RAW = [];          // filas originales
-let ROWS = [];         // filas enriquecidas (canon + fecha)
-let HEADERS = [];      // headers
-let dayFirst = true;
-
-const FIELD_MAP = {
-  anio:  { id:"f-anio",      col:null },
-  mes:   { id:"f-mes",       col:null },
-  region:{ id:"f-region",    col:"Region" },
-  muni:  { id:"f-municipio", col:"Municipio" },
-  area:  { id:"f-area",      col:"Area protegida" },
-  guarda:{ id:"f-guarda",    col:"Guarda recursos responsable" },
-  tipo:  { id:"f-tipo",      col:"Tipo de patrullaje" },
-  ilegal:{ id:"f-ilegal",    col:"Actividad ilegal observada" },
-  ubic:  { id:"f-ubicacion", col:"Ubicacion" }
-};
-
-// mapeo etiqueta bonita por cada campo (canon -> label)
-const LABELS = {
-  region:new Map(), muni:new Map(), area:new Map(), guarda:new Map(), tipo:new Map(), ilegal:new Map(), ubic:new Map()
-};
-
-function setEstado(msg, isErr=false){
-  const el = document.getElementById("estado");
-  el.textContent = msg;
-  el.className = isErr ? "subnote error" : "subnote";
-}
-
-function hideIfMissing(fieldKey){
-  const wrapId = {
-    region:"wrap-region", muni:"wrap-municipio", area:"wrap-area", guarda:"wrap-guarda",
-    tipo:"wrap-tipo", ilegal:"wrap-ilegal", ubic:"wrap-ubicacion"
-  }[fieldKey];
-  if(!wrapId) return;
-  const col = FIELD_MAP[fieldKey].col;
-  if(!HEADERS.includes(col)){
-    document.getElementById(wrapId).style.display = "none";
-  }
-}
-
-/* =========================
-   Carga CSV
-========================= */
+/* ─────────────────────────────────────────────
+   CSV
+───────────────────────────────────────────── */
 async function loadCSV(){
-  const candidates = [
+  const urls = [
     "../../datos/datos_patrullaje.csv",
-    "../../datos/datos_patrullaje.csv",
-    "../../datos/datos_patrullaje.csv",
-    "../../datos/datos_patrullaje.csv",
-    "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/datos_patrullaje.csv",
     "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/datos_patrullaje.csv"
   ];
-
-  let lastErr = null;
-  for(const url of candidates){
+  for(const url of urls){
     try{
-      const buf = await fetchArrayBuffer(url);
-      const text = decodeSmart(buf);
+      const r = await fetch(url,{cache:"no-store"});
+      if(!r.ok) continue;
+      const buf = await r.arrayBuffer();
+      const u8 = new Uint8Array(buf);
+      const t1 = new TextDecoder("utf-8",{fatal:false}).decode(u8);
+      const t2 = new TextDecoder("windows-1252",{fatal:false}).decode(u8);
+      const text = (t2.match(/\uFFFD/g)||[]).length < (t1.match(/\uFFFD/g)||[]).length ? t2 : t1;
       const parsed = parseCSV(text);
-      if(parsed.data.length){
-        return { url, ...parsed };
-      }
-      lastErr = new Error("CSV vacío en " + url);
-    } catch(e){
-      lastErr = e;
-    }
+      if(parsed.data.length) return parsed;
+    }catch(e){}
   }
-  throw lastErr || new Error("No se pudo cargar el CSV.");
+  throw new Error("No se pudo cargar el CSV de patrullajes.");
 }
 
-/* =========================
-   Preparación de datos
-========================= */
-function enrichRows(data){
-  // inferir dayFirst usando muestra
-  const sampleDates = data.slice(0, 200).map(r => r["Fecha de patrullaje"]);
-  dayFirst = inferDayFirst(sampleDates);
-
-  const out = [];
-  for(const r of data){
-    const rr = {...r};
-
-    // Fix común de typo observado: "Reginal" -> "Regional"
-    if(rr["Region"] && canon(rr["Region"]) === "reginal"){
-      rr["Region"] = "Regional";
+function parseCSV(text){
+  const delim = [";",",","\t"].sort((a,b)=>
+    (text.split("\n")[0].split(b).length)-(text.split("\n")[0].split(a).length))[0];
+  const rows=[]; let i=0,field="",row=[],inQ=false;
+  const pF=()=>{row.push(field);field=""};
+  const pR=()=>{if(row.length){rows.push(row);row=[]}};
+  while(i<text.length){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){if(text[i+1]==='"'){field+='"';i+=2;continue}inQ=false;i++;continue}
+      field+=c;i++;continue;
     }
-
-    // parse fecha patrullaje
-    const dt = parseDateSmart(rr["Fecha de patrullaje"], dayFirst);
-    rr.__dt = dt;
-    rr.__anio = dt ? String(dt.getUTCFullYear()) : "";
-    rr.__mes = dt ? monthKey(dt) : "";
-
-    // canon por campo para filtros
-    rr.__c_region = canon(rr["Region"]);
-    rr.__c_muni = canon(rr["Municipio"]);
-    rr.__c_area = canon(rr["Area protegida"]);
-    rr.__c_guarda = canon(rr["Guarda recursos responsable"]);
-    rr.__c_tipo = canon(rr["Tipo de patrullaje"]);
-    rr.__c_ilegal = canon(rr["Actividad ilegal observada"]);
-    rr.__c_ubic = canon(rr["Ubicacion"]);
-
-    // coords
-    const lon = parseFloat(String(rr["Longitud"] || "").replace(",", "."));
-    const lat = parseFloat(String(rr["Latitud"] || "").replace(",", "."));
-    rr.__lon = isFinite(lon) ? lon : null;
-    rr.__lat = isFinite(lat) ? lat : null;
-
-    out.push(rr);
-
-    // labels bonitos
-    if(rr.__c_region) LABELS.region.set(rr.__c_region, bestLabel(LABELS.region.get(rr.__c_region), rr["Region"]));
-    if(rr.__c_muni) LABELS.muni.set(rr.__c_muni, bestLabel(LABELS.muni.get(rr.__c_muni), rr["Municipio"]));
-    if(rr.__c_area) LABELS.area.set(rr.__c_area, bestLabel(LABELS.area.get(rr.__c_area), rr["Area protegida"]));
-    if(rr.__c_guarda) LABELS.guarda.set(rr.__c_guarda, bestLabel(LABELS.guarda.get(rr.__c_guarda), rr["Guarda recursos responsable"]));
-    if(rr.__c_tipo) LABELS.tipo.set(rr.__c_tipo, bestLabel(LABELS.tipo.get(rr.__c_tipo), rr["Tipo de patrullaje"]));
-    if(rr.__c_ilegal) LABELS.ilegal.set(rr.__c_ilegal, bestLabel(LABELS.ilegal.get(rr.__c_ilegal), rr["Actividad ilegal observada"]));
-    if(rr.__c_ubic) LABELS.ubic.set(rr.__c_ubic, bestLabel(LABELS.ubic.get(rr.__c_ubic), rr["Ubicacion"]));
+    if(c==='"'){inQ=true;i++;continue}
+    if(c===delim){pF();i++;continue}
+    if(c==="\n"){pF();pR();i++;continue}
+    if(c==="\r"){if(text[i+1]==="\n")i++;pF();pR();i++;continue}
+    field+=c;i++;
   }
-  return out;
+  pF();pR();
+  if(rows.length<2) return{data:[],headers:[]};
+  const headers=rows[0].map(h=>norm(h));
+  const data=rows.slice(1)
+    .filter(r=>!r.every(v=>!norm(v)))
+    .map(r=>{const o={};headers.forEach((h,i)=>o[h]=norm(r[i]||""));return o});
+  return{data,headers};
 }
 
-function fillSelect(selectEl, options, placeholder="Todos"){
-  selectEl.innerHTML = "";
-  const opt0 = document.createElement("option");
-  opt0.value = "";
-  opt0.textContent = placeholder;
-  selectEl.appendChild(opt0);
-  for(const {value,label} of options){
-    const o = document.createElement("option");
-    o.value = value;
-    o.textContent = label;
-    selectEl.appendChild(o);
+/* ─────────────────────────────────────────────
+   FECHAS
+───────────────────────────────────────────── */
+const MESES=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MESES_FULL=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+function parseDate(s){
+  const v=norm(s); if(!v) return null;
+  let m=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
+  if(v.includes("/")){
+    const p=v.split("/");
+    if(p.length>=3){
+      // detectar day-first
+      const a=+p[0],b=+p[1],y=+p[2];
+      const df = a>12 || (b<=12&&a<=12); // asumir día primero (Guatemala)
+      const dt = new Date(Date.UTC(y, df?b-1:a-1, df?a:b));
+      return isNaN(dt)?null:dt;
+    }
   }
+  return null;
+}
+
+function fmtDate(dt){
+  if(!dt) return "–";
+  return String(dt.getUTCDate()).padStart(2,"0")+"/"+String(dt.getUTCMonth()+1).padStart(2,"0")+"/"+dt.getUTCFullYear();
+}
+
+function monthKey(dt){
+  return dt.getUTCFullYear()+"-"+String(dt.getUTCMonth()+1).padStart(2,"0");
+}
+
+function monthLabel(k){
+  const [y,m]=k.split("-");
+  return MESES_FULL[+m-1]+" "+y;
+}
+
+function monthShort(k){
+  const [y,m]=k.split("-");
+  return MESES[+m-1]+" '"+String(y).slice(2);
+}
+
+/* ─────────────────────────────────────────────
+   GUATEMALA BBOX
+───────────────────────────────────────────── */
+function inGuatemala(lat,lon){
+  return lat>=13.6&&lat<=18.1&&lon>=-92.6&&lon<=-88.0;
+}
+
+/* ─────────────────────────────────────────────
+   ESTADO GLOBAL
+───────────────────────────────────────────── */
+let ROWS=[];
+const LABELS={muni:new Map(),guarda:new Map(),ilegal:new Map(),tipo:new Map()};
+
+function enrich(data){
+  return data.map(r=>{
+    const rr={...r};
+    rr.__dt  = parseDate(r["Fecha de patrullaje"]);
+    rr.__anio= rr.__dt?String(rr.__dt.getUTCFullYear()):"";
+    rr.__mes = rr.__dt?monthKey(rr.__dt):"";
+    rr.__cm  = canon(r["Municipio"]);
+    rr.__cg  = canon(r["Guarda recursos responsable"]);
+    rr.__ci  = canon(r["Actividad ilegal observada"]);
+    rr.__ct  = canon(r["Tipo de patrullaje"]);
+    const lon=parseFloat(r["Longitud"]);
+    const lat=parseFloat(r["Latitud"]);
+    rr.__lon = isFinite(lon)?lon:null;
+    rr.__lat = isFinite(lat)?lat:null;
+    // labels
+    if(rr.__cm) LABELS.muni.set(rr.__cm, bestLabel(LABELS.muni.get(rr.__cm),r["Municipio"]));
+    if(rr.__cg) LABELS.guarda.set(rr.__cg, bestLabel(LABELS.guarda.get(rr.__cg),r["Guarda recursos responsable"]));
+    if(rr.__ci) LABELS.ilegal.set(rr.__ci, bestLabel(LABELS.ilegal.get(rr.__ci),r["Actividad ilegal observada"]));
+    if(rr.__ct) LABELS.tipo.set(rr.__ct, bestLabel(LABELS.tipo.get(rr.__ct),r["Tipo de patrullaje"]));
+    return rr;
+  });
+}
+
+/* ─────────────────────────────────────────────
+   FILTROS
+───────────────────────────────────────────── */
+function fillSelect(id,opts,placeholder="Todos"){
+  const el=document.getElementById(id);
+  el.innerHTML=`<option value="">${placeholder}</option>`;
+  opts.forEach(({v,l})=>{
+    const o=document.createElement("option");
+    o.value=v; o.textContent=l; el.appendChild(o);
+  });
 }
 
 function initFilters(){
-  // ocultar campos inexistentes
-  hideIfMissing("region");
-  hideIfMissing("muni");
-  hideIfMissing("area");
-  hideIfMissing("guarda");
-  hideIfMissing("tipo");
-  hideIfMissing("ilegal");
-  hideIfMissing("ubic");
-
-  // Año (desde filas con fecha)
-  const years = Array.from(new Set(ROWS.map(r => r.__anio).filter(Boolean))).sort();
-  fillSelect(document.getElementById("f-anio"), years.map(y => ({value:y, label:y})));
-
-  // Mes (solo meses existentes)
-  const months = Array.from(new Set(ROWS.map(r => r.__mes).filter(Boolean))).sort();
-  fillSelect(document.getElementById("f-mes"), months.map(k => ({value:k, label:monthLabel(k)})));
-
-  // Otros campos (canon->label)
-  function optionsFromMap(map){
-    const keys = Array.from(map.keys());
-    // ordenar por etiqueta bonita
-    keys.sort((a,b) => (map.get(a)||"").localeCompare(map.get(b)||"", "es", {sensitivity:"base"}));
-    return keys.map(k => ({value:k, label: map.get(k)}));
+  const years=[...new Set(ROWS.map(r=>r.__anio).filter(Boolean))].sort();
+  fillSelect("f-anio",years.map(y=>({v:y,l:y})));
+  const months=[...new Set(ROWS.map(r=>r.__mes).filter(Boolean))].sort();
+  fillSelect("f-mes",months.map(k=>({v:k,l:monthLabel(k)})));
+  function fromMap(m){
+    return [...m.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));
   }
-  fillSelect(document.getElementById("f-region"), optionsFromMap(LABELS.region));
-  fillSelect(document.getElementById("f-municipio"), optionsFromMap(LABELS.muni));
-  fillSelect(document.getElementById("f-area"), optionsFromMap(LABELS.area));
-  fillSelect(document.getElementById("f-guarda"), optionsFromMap(LABELS.guarda));
-  fillSelect(document.getElementById("f-tipo"), optionsFromMap(LABELS.tipo));
-  fillSelect(document.getElementById("f-ilegal"), optionsFromMap(LABELS.ilegal));
-  fillSelect(document.getElementById("f-ubicacion"), optionsFromMap(LABELS.ubic));
+  fillSelect("f-municipio",fromMap(LABELS.muni));
+  fillSelect("f-guarda",fromMap(LABELS.guarda));
+  fillSelect("f-ilegal",fromMap(LABELS.ilegal),"Todas");
 }
 
-function getFilterState(){
-  return {
+function getFilters(){
+  return{
     anio: document.getElementById("f-anio").value,
-    mes: document.getElementById("f-mes").value,
-    region: document.getElementById("f-region").value,
+    mes:  document.getElementById("f-mes").value,
     muni: document.getElementById("f-municipio").value,
-    area: document.getElementById("f-area").value,
-    guarda: document.getElementById("f-guarda").value,
-    tipo: document.getElementById("f-tipo").value,
-    ilegal: document.getElementById("f-ilegal").value,
-    ubic: document.getElementById("f-ubicacion").value,
-    buscar: canon(document.getElementById("f-buscar").value)
+    guar: document.getElementById("f-guarda").value,
+    ileg: document.getElementById("f-ilegal").value,
   };
 }
 
-function matchesFilters(r, f){
-  if(f.anio && r.__anio !== f.anio) return false;
-  if(f.mes && r.__mes !== f.mes) return false;
-  if(f.region && r.__c_region !== f.region) return false;
-  if(f.muni && r.__c_muni !== f.muni) return false;
-  if(f.area && r.__c_area !== f.area) return false;
-  if(f.guarda && r.__c_guarda !== f.guarda) return false;
-  if(f.tipo && r.__c_tipo !== f.tipo) return false;
-  if(f.ilegal && r.__c_ilegal !== f.ilegal) return false;
-  if(f.ubic && r.__c_ubic !== f.ubic) return false;
-  if(f.buscar){
-    const joined = canon(Object.values(r).join(" "));
-    if(!joined.includes(f.buscar)) return false;
-  }
-  return true;
+function applyFilters(f){
+  return ROWS.filter(r=>{
+    if(f.anio && r.__anio!==f.anio) return false;
+    if(f.mes  && r.__mes !==f.mes)  return false;
+    if(f.muni && r.__cm  !==f.muni) return false;
+    if(f.guar && r.__cg  !==f.guar) return false;
+    if(f.ileg && r.__ci  !==f.ileg) return false;
+    return true;
+  });
 }
 
 function renderChips(f){
-  const chips = document.getElementById("chips-filtros");
-  chips.innerHTML = "";
-  const items = [];
-
-  if(f.anio) items.push(["Año", f.anio]);
-  if(f.mes) items.push(["Mes", monthLabel(f.mes)]);
-  if(f.region) items.push(["Región", LABELS.region.get(f.region) || f.region]);
-  if(f.muni) items.push(["Municipio", LABELS.muni.get(f.muni) || f.muni]);
-  if(f.area) items.push(["Área", LABELS.area.get(f.area) || f.area]);
-  if(f.guarda) items.push(["Guarda", LABELS.guarda.get(f.guarda) || f.guarda]);
-  if(f.tipo) items.push(["Tipo", LABELS.tipo.get(f.tipo) || f.tipo]);
-  if(f.ilegal) items.push(["Ilegal", LABELS.ilegal.get(f.ilegal) || f.ilegal]);
-  if(f.ubic) items.push(["Ubicación", LABELS.ubic.get(f.ubic) || f.ubic]);
-  if(f.buscar) items.push(["Buscar", document.getElementById("f-buscar").value]);
-
-  for(const [k,v] of items){
-    const s = document.createElement("span");
-    s.className = "chip";
-    s.textContent = k + ": " + v;
-    chips.appendChild(s);
-  }
+  const wrap=document.getElementById("chips-wrap");
+  wrap.innerHTML="";
+  const items=[];
+  if(f.anio) items.push("Año: "+f.anio);
+  if(f.mes)  items.push("Mes: "+monthLabel(f.mes));
+  if(f.muni) items.push("Municipio: "+(LABELS.muni.get(f.muni)||f.muni));
+  if(f.guar) items.push("Guardarecursos: "+(LABELS.guarda.get(f.guar)||f.guar));
+  if(f.ileg) items.push("Ilegal: "+(LABELS.ilegal.get(f.ileg)||f.ileg));
+  items.forEach(txt=>{
+    const s=document.createElement("span");
+    s.className="chip"; s.textContent=txt;
+    wrap.appendChild(s);
+  });
 }
 
-/* =========================
+/* ─────────────────────────────────────────────
    KPIs
-========================= */
-function fmtDate(dt){
-  if(!dt) return "–";
-  const y = dt.getUTCFullYear();
-  const m = String(dt.getUTCMonth()+1).padStart(2,"0");
-  const d = String(dt.getUTCDate()).padStart(2,"0");
-  return d + "/" + m + "/" + y;
-}
-function updateKPIs(filtered){
-  document.getElementById("kpi-registros").textContent = String(filtered.length);
-
-  const dates = filtered.map(r => r.__dt).filter(Boolean).sort((a,b)=>a-b);
-  const rango = dates.length ? (fmtDate(dates[0]) + " → " + fmtDate(dates[dates.length-1])) : "—";
-  document.getElementById("kpi-rango").textContent = rango;
-
-  const uniq = (arr) => new Set(arr.filter(Boolean)).size;
-  document.getElementById("kpi-regiones").textContent = String(uniq(filtered.map(r => r.__c_region)));
-  document.getElementById("kpi-municipios").textContent = String(uniq(filtered.map(r => r.__c_muni)));
-  document.getElementById("kpi-areas").textContent = String(uniq(filtered.map(r => r.__c_area)));
-
-  const pts = filtered.filter(r => r.__lat !== null && r.__lon !== null && r.__lat !== 0 && r.__lon !== 0 && inGuatemala(r.__lat, r.__lon));
-  document.getElementById("kpi-coords").textContent = String(pts.length);
+───────────────────────────────────────────── */
+function updateKPIs(rows){
+  document.getElementById("kpi-total").textContent=rows.length.toLocaleString("es");
+  document.getElementById("kpi-guardas").textContent=new Set(rows.map(r=>r.__cg).filter(Boolean)).size;
+  document.getElementById("kpi-municipios").textContent=new Set(rows.map(r=>r.__cm).filter(Boolean)).size;
+  const ileg=rows.filter(r=>r.__ci&&r.__ci!=="no"&&r.__ci!=="").length;
+  document.getElementById("kpi-ilegales").textContent=ileg;
+  const dates=rows.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
+  document.getElementById("kpi-rango").textContent=
+    dates.length ? fmtDate(dates[0])+" – "+fmtDate(dates[dates.length-1]) : "–";
 }
 
-/* =========================
-   Charts
-========================= */
-let CH_MES=null, CH_TIPO=null, CH_MUNI=null, CH_GUARDA=null;
+/* ─────────────────────────────────────────────
+   CHART HELPERS
+───────────────────────────────────────────── */
+const PALETTE=["#2563eb","#16a34a","#ea580c","#7c3aed","#0891b2","#be185d","#854d0e","#065f46"];
 
-function destroyChart(ch){
-  if(ch){ try{ ch.destroy(); }catch(e){} }
-}
-function countByKey(rows, keyFn){
-  const m = new Map();
-  for(const r of rows){
-    const k = keyFn(r);
-    if(!k) continue;
-    m.set(k, (m.get(k)||0) + 1);
-  }
+function countBy(rows,fn){
+  const m=new Map();
+  rows.forEach(r=>{const k=fn(r);if(k)m.set(k,(m.get(k)||0)+1)});
   return m;
 }
-function topN(map, n){
-  const arr = Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0,n);
-  return {labels: arr.map(x=>x[0]), values: arr.map(x=>x[1])};
+function topN(m,n){
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n);
 }
 
-function updateCharts(filtered){
-  // por mes
-  const mMes = countByKey(filtered, r => r.__mes);
-  const keys = Array.from(mMes.keys()).sort();
-  const labelsMes = keys.map(k => monthLabel(k));
-  const valuesMes = keys.map(k => mMes.get(k));
+const CHARTS={};
+function mkChart(id,cfg){
+  if(CHARTS[id]) CHARTS[id].destroy();
+  CHARTS[id]=new Chart(document.getElementById(id),cfg);
+}
 
-  destroyChart(CH_MES);
-  CH_MES = new Chart(document.getElementById("c-mes"), {
+Chart.defaults.font.family="'DM Sans', sans-serif";
+Chart.defaults.color="#6b7280";
+
+/* ─────────────────────────────────────────────
+   GRÁFICAS
+───────────────────────────────────────────── */
+function updateCharts(rows){
+
+  /* 1. Tendencia mensual — área */
+  const mMes=countBy(rows,r=>r.__mes);
+  const mesKeys=[...mMes.keys()].sort();
+  mkChart("c-mes",{
     type:"line",
-    data:{ labels: labelsMes, datasets:[{ label:"Registros", data: valuesMes, tension:0.25 }]},
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+    data:{
+      labels:mesKeys.map(monthShort),
+      datasets:[{
+        label:"Patrullajes",
+        data:mesKeys.map(k=>mMes.get(k)),
+        fill:true,
+        tension:0.4,
+        borderColor:"#2563eb",
+        backgroundColor:"rgba(37,99,235,0.1)",
+        borderWidth:2.5,
+        pointBackgroundColor:"#2563eb",
+        pointRadius:4,
+        pointHoverRadius:6,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:"index",intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:"rgba(10,61,43,0.9)",
+          titleFont:{size:13,weight:"600"},
+          bodyFont:{size:12},
+          padding:10,
+          callbacks:{label:ctx=>" "+ctx.parsed.y+" patrullajes"}
+        }
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11}}},
+        y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}
+      }
+    }
   });
 
-  // por tipo (clic filtra)
-  const mTipo = countByKey(filtered, r => r.__c_tipo);
-  const tipoSorted = Array.from(mTipo.entries()).sort((a,b)=>b[1]-a[1]);
-  const tipoLabels = tipoSorted.map(([k]) => LABELS.tipo.get(k) || k);
-  const tipoValues = tipoSorted.map(([,v]) => v);
-
-  destroyChart(CH_TIPO);
-  CH_TIPO = new Chart(document.getElementById("c-tipo"), {
+  /* 2. Top municipios — barras horizontales */
+  const muniTop=topN(countBy(rows,r=>r.__cm),10);
+  mkChart("c-municipio",{
     type:"bar",
-    data:{ labels: tipoLabels, datasets:[{ label:"Registros", data: tipoValues }]},
+    data:{
+      labels:muniTop.map(([k])=>LABELS.muni.get(k)||k),
+      datasets:[{
+        data:muniTop.map(([,v])=>v),
+        backgroundColor:PALETTE,
+        borderRadius:6,
+        borderSkipped:false,
+      }]
+    },
     options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:true}},
-      onClick:(evt, elements)=>{
-        if(!elements || !elements.length) return;
-        const idx = elements[0].index;
-        const pickedLabel = tipoLabels[idx];
-        // encontrar canon para esa etiqueta
-        let pickedCanon = null;
-        for(const [k,v] of LABELS.tipo.entries()){
-          if(v === pickedLabel){ pickedCanon = k; break; }
+      indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:"rgba(10,61,43,0.9)",
+          callbacks:{label:ctx=>" "+ctx.parsed.x+" patrullajes"}
         }
-        if(!pickedCanon && tipoSorted[idx]) pickedCanon = tipoSorted[idx][0];
-        if(pickedCanon){
-          document.getElementById("f-tipo").value = pickedCanon;
-          applyAll();
+      },
+      scales:{
+        x:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}},
+        y:{grid:{display:false},ticks:{font:{size:11}}}
+      },
+      onClick:(evt,els)=>{
+        if(!els.length) return;
+        const [k]=muniTop[els[0].index];
+        document.getElementById("f-municipio").value=k;
+        applyAll();
+      }
+    }
+  });
+
+  /* 3. Top guardarecursos — barras horizontales */
+  const guarTop=topN(countBy(rows,r=>r.__cg),10);
+  mkChart("c-guarda",{
+    type:"bar",
+    data:{
+      labels:guarTop.map(([k])=>LABELS.guarda.get(k)||k),
+      datasets:[{
+        data:guarTop.map(([,v])=>v),
+        backgroundColor:PALETTE.slice().reverse(),
+        borderRadius:6,
+        borderSkipped:false,
+      }]
+    },
+    options:{
+      indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:"rgba(10,61,43,0.9)",
+          callbacks:{label:ctx=>" "+ctx.parsed.x+" patrullajes"}
+        }
+      },
+      scales:{
+        x:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}},
+        y:{grid:{display:false},ticks:{font:{size:11}}}
+      },
+      onClick:(evt,els)=>{
+        if(!els.length) return;
+        const [k]=guarTop[els[0].index];
+        document.getElementById("f-guarda").value=k;
+        applyAll();
+      }
+    }
+  });
+
+  /* 4. Actividad ilegal — donut */
+  const si=rows.filter(r=>r.__ci&&r.__ci!=="no"&&r.__ci!=="").length;
+  const no=rows.length-si;
+  mkChart("c-ilegal",{
+    type:"doughnut",
+    data:{
+      labels:["Sin actividad ilegal","Con actividad ilegal"],
+      datasets:[{
+        data:[no,si],
+        backgroundColor:["#dcfce7","#fecaca"],
+        borderColor:["#16a34a","#dc2626"],
+        borderWidth:2,
+        hoverOffset:8,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      cutout:"65%",
+      plugins:{
+        legend:{position:"bottom",labels:{font:{size:12},padding:14}},
+        tooltip:{
+          backgroundColor:"rgba(10,61,43,0.9)",
+          callbacks:{label:ctx=>" "+ctx.parsed+" patrullajes"}
         }
       }
     }
   });
 
-  // top municipio
-  const mMuni = countByKey(filtered, r => r.__c_muni);
-  const muniTop = topN(mMuni, 10);
-  const muniLabels = muniTop.labels.map(k => LABELS.muni.get(k) || k);
-  destroyChart(CH_MUNI);
-  CH_MUNI = new Chart(document.getElementById("c-municipio"), {
-    type:"bar",
-    data:{ labels: muniLabels, datasets:[{ label:"Registros", data: muniTop.values }]},
-    options:{ indexAxis:"y", responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}} }
-  });
-
-  // top guarda
-  const mG = countByKey(filtered, r => r.__c_guarda);
-  const gTop = topN(mG, 10);
-  const gLabels = gTop.labels.map(k => LABELS.guarda.get(k) || k);
-  destroyChart(CH_GUARDA);
-  CH_GUARDA = new Chart(document.getElementById("c-guarda"), {
-    type:"bar",
-    data:{ labels: gLabels, datasets:[{ label:"Registros", data: gTop.values }]},
-    options:{ indexAxis:"y", responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}} }
+  /* 5. Tipo de patrullaje — donut */
+  const tipoMap=countBy(rows,r=>r.__ct);
+  const tipoEntries=[...tipoMap.entries()].sort((a,b)=>b[1]-a[1]);
+  mkChart("c-tipo",{
+    type:"doughnut",
+    data:{
+      labels:tipoEntries.map(([k])=>LABELS.tipo.get(k)||k||"Sin tipo"),
+      datasets:[{
+        data:tipoEntries.map(([,v])=>v),
+        backgroundColor:PALETTE,
+        borderWidth:2,
+        hoverOffset:8,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      cutout:"65%",
+      plugins:{
+        legend:{position:"bottom",labels:{font:{size:11},padding:12}},
+        tooltip:{
+          backgroundColor:"rgba(10,61,43,0.9)",
+          callbacks:{label:ctx=>" "+ctx.parsed+" patrullajes"}
+        }
+      }
+    }
   });
 }
 
-/* =========================
-   Mapa
-========================= */
+/* ─────────────────────────────────────────────
+   MAPA
+───────────────────────────────────────────── */
 let MAP=null, LAYER=null;
 
 function initMap(){
-  MAP = L.map("map", {scrollWheelZoom:false});
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "© OpenStreetMap"
+  MAP=L.map("map",{scrollWheelZoom:false,zoomControl:true});
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{
+    attribution:"© OpenStreetMap © CARTO",maxZoom:19
   }).addTo(MAP);
-  LAYER = L.layerGroup().addTo(MAP);
-
-  // vista base Atitlán
-  MAP.setView([14.69, -91.15], 10);
+  LAYER=L.layerGroup().addTo(MAP);
+  MAP.setView([14.69,-91.15],10);
 }
 
-function updateMap(filtered){
+function updateMap(rows){
   if(!MAP) initMap();
   LAYER.clearLayers();
-
-  let kept=0, dropped=0;
-  const latlngs = [];
-
-  for(const r of filtered){
-    const lat = r.__lat, lon = r.__lon;
-    if(lat === null || lon === null){ dropped++; continue; }
-    if(lat === 0 || lon === 0){ dropped++; continue; }
-    if(!inGuatemala(lat, lon)){ dropped++; continue; }
-
-    kept++;
-    const ll = [lat, lon];
-    latlngs.push(ll);
-
-    const muni = LABELS.muni.get(r.__c_muni) || r["Municipio"] || "";
-    const area = LABELS.area.get(r.__c_area) || r["Area protegida"] || "";
-    const fecha = r.__dt ? fmtDate(r.__dt) : (r["Fecha de patrullaje"] || "");
-    const tipo = LABELS.tipo.get(r.__c_tipo) || r["Tipo de patrullaje"] || "";
-
-    L.circleMarker(ll, {radius:5, weight:1, fillOpacity:0.7})
-      .bindPopup("<b>" + (muni || "Sin municipio") + "</b><br/>" +
-                 (area ? (area + "<br/>") : "") +
-                 (tipo ? (tipo + "<br/>") : "") +
-                 (fecha ? ("<i>" + fecha + "</i>") : ""))
-      .addTo(LAYER);
+  let ok=0,bad=0;
+  const bounds=[];
+  rows.forEach(r=>{
+    const lat=r.__lat,lon=r.__lon;
+    if(!lat||!lon||!isFinite(lat)||!isFinite(lon)||lat===0||lon===0){bad++;return}
+    if(!inGuatemala(lat,lon)){bad++;return}
+    ok++;
+    bounds.push([lat,lon]);
+    const popup=`<b>${LABELS.muni.get(r.__cm)||r["Municipio"]||"–"}</b><br>
+      ${r["Area protegida"]||""}<br>
+      <i>${r["Fecha de patrullaje"]||""}</i>`;
+    L.circleMarker([lat,lon],{
+      radius:5,fillColor:"#2563eb",color:"#1e40af",
+      weight:1,fillOpacity:0.75
+    }).bindPopup(popup).addTo(LAYER);
+  });
+  document.getElementById("map-note").textContent=
+    `${ok} puntos en mapa · ${bad} ignorados (sin coordenadas válidas)`;
+  if(bounds.length){
+    MAP.fitBounds(L.latLngBounds(bounds),{padding:[20,20],maxZoom:12});
   }
-
-  const note = document.getElementById("mapnote");
-  note.textContent = "Puntos en Guatemala: " + kept + " · Ignorados (inválidos o fuera de Guatemala): " + dropped;
-
-  if(latlngs.length){
-    const b = L.latLngBounds(latlngs);
-    MAP.fitBounds(b, {padding:[18,18], maxZoom:12});
-  } else {
-    MAP.setView([14.69, -91.15], 10);
-  }
-  setTimeout(()=>MAP.invalidateSize(true), 120);
+  setTimeout(()=>MAP.invalidateSize(),100);
 }
 
-/* =========================
-   Aplicar todo
-========================= */
+/* ─────────────────────────────────────────────
+   RENDER COMPLETO
+───────────────────────────────────────────── */
 function applyAll(){
-  const f = getFilterState();
+  const f=getFilters();
   renderChips(f);
-  const filtered = ROWS.filter(r => matchesFilters(r, f));
-
-  updateKPIs(filtered);
-  updateCharts(filtered);
-  updateMap(filtered);
-
-  setEstado("Mostrando " + filtered.length + " de " + ROWS.length + " registros.");
+  const rows=applyFilters(f);
+  updateKPIs(rows);
+  updateCharts(rows);
+  updateMap(rows);
+  document.getElementById("estado").textContent=
+    `Mostrando ${rows.length.toLocaleString("es")} de ${ROWS.length.toLocaleString("es")} registros`;
 }
 
-function resetFilters(){
-  document.getElementById("f-anio").value = "";
-  document.getElementById("f-mes").value = "";
-  document.getElementById("f-region").value = "";
-  document.getElementById("f-municipio").value = "";
-  document.getElementById("f-area").value = "";
-  document.getElementById("f-guarda").value = "";
-  document.getElementById("f-tipo").value = "";
-  document.getElementById("f-ilegal").value = "";
-  document.getElementById("f-ubicacion").value = "";
-  document.getElementById("f-buscar").value = "";
+function resetAll(){
+  ["f-anio","f-mes","f-municipio","f-guarda","f-ilegal"].forEach(id=>
+    document.getElementById(id).value="");
   applyAll();
 }
 
-/* =========================
-   PDF liviano
-========================= */
-function exportPDF(){
-  const el = document.querySelector("main");
-  const opt = {
-    margin: 6,
-    filename: "AC192_patrullajes_informe.pdf",
-    image: { type: "jpeg", quality: 0.92 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-  };
-  if(window.html2pdf){
-    window.html2pdf().set(opt).from(el).save();
-  } else {
-    alert("No se pudo cargar html2pdf.");
-  }
-}
-
-/* =========================
-   Inicio
-========================= */
-(async function(){
+/* ─────────────────────────────────────────────
+   INICIO
+───────────────────────────────────────────── */
+(async()=>{
   try{
-    const loaded = await loadCSV();
-    RAW = loaded.data;
-    HEADERS = loaded.headers;
-
-    // enriquecer
-    ROWS = enrichRows(RAW);
-
+    const {data}=await loadCSV();
+    ROWS=enrich(data);
     initFilters();
-
-    // listeners
-    const ids = ["f-anio","f-mes","f-region","f-municipio","f-area","f-guarda","f-tipo","f-ilegal","f-ubicacion"];
-    for(const id of ids){
-      const el = document.getElementById(id);
-      if(el) el.addEventListener("change", applyAll);
-    }
-    document.getElementById("f-buscar").addEventListener("input", ()=>{
-      // debounce simple
-      clearTimeout(window.__tBuscar);
-      window.__tBuscar = setTimeout(applyAll, 180);
-    });
-    document.getElementById("btn-reset").addEventListener("click", resetFilters);
-    document.getElementById("btn-pdf").addEventListener("click", exportPDF);
-
+    ["f-anio","f-mes","f-municipio","f-guarda","f-ilegal"].forEach(id=>
+      document.getElementById(id).addEventListener("change",applyAll));
+    document.getElementById("btn-reset").addEventListener("click",resetAll);
     applyAll();
-  } catch(e){
-    console.error(e);
-    setEstado("Error al cargar datos: " + (e && e.message ? e.message : e), true);
+  }catch(e){
+    const el=document.getElementById("estado");
+    el.textContent="Error al cargar datos: "+(e.message||e);
+    el.className="estado-txt error";
   }
 })();
 </script>
