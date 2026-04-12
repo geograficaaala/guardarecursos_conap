@@ -321,6 +321,66 @@ let tablaPatrullajes;
 let datosPatrullajes = [];
 let mapaMeses = new Map();
 
+/* ══════════════════════════════════════════════════════
+   PROYECCIÓN GTM · Guatemala Transversa Mercator
+   IGN Resolución Normativa IGN-01/99
+   Elipsoide: WGS84  |  Meridiano central: 90°30'W
+   Falso Este: 500 000 m  |  Factor escala: 0.9998
+══════════════════════════════════════════════════════ */
+function latLonAGTM(lat, lon) {
+  if (!isFinite(lat) || !isFinite(lon)) return { GTM_X: null, GTM_Y: null };
+  // Parámetros WGS84
+  const a   = 6378137.0;
+  const f   = 1 / 298.257223563;
+  const e2  = 2*f - f*f;
+  const ep2 = e2 / (1 - e2);
+  // Parámetros GTM
+  const k0   = 0.9998;
+  const lon0 = -90.5 * Math.PI / 180;   // meridiano central 90°30'W
+  const E0   = 500000;
+  const N0   = 0;
+
+  const phi  = lat * Math.PI / 180;
+  const lam  = lon * Math.PI / 180;
+  const sp   = Math.sin(phi), cp = Math.cos(phi), tp = Math.tan(phi);
+  const N    = a / Math.sqrt(1 - e2 * sp * sp);
+  const T    = tp * tp;
+  const C    = ep2 * cp * cp;
+  const A    = cp * (lam - lon0);
+  // Arco meridional (phi0 = 0 → M0 = 0)
+  const M    = a * (
+    (1 - e2/4 - 3*e2*e2/64 - 5*e2*e2*e2/256)    * phi
+    - (3*e2/8 + 3*e2*e2/32 + 45*e2*e2*e2/1024)   * Math.sin(2*phi)
+    + (15*e2*e2/256 + 45*e2*e2*e2/1024)           * Math.sin(4*phi)
+    - (35*e2*e2*e2/3072)                          * Math.sin(6*phi)
+  );
+  const X = E0 + k0 * N * (
+    A + (1-T+C)*Math.pow(A,3)/6
+      + (5-18*T+T*T+72*C-58*ep2)*Math.pow(A,5)/120
+  );
+  const Y = N0 + k0 * (
+    M + N*tp*(
+      Math.pow(A,2)/2
+      + (5-T+9*C+4*C*C)*Math.pow(A,4)/24
+      + (61-58*T+T*T+600*C-330*ep2)*Math.pow(A,6)/720
+    )
+  );
+  return { GTM_X: Math.round(X*100)/100, GTM_Y: Math.round(Y*100)/100 };
+}
+
+function enriquecerConGTM(datos) {
+  return datos.map(r => {
+    const lat = parseFloat(String(r["Latitud"]  || "").replace(",", "."));
+    const lon = parseFloat(String(r["Longitud"] || "").replace(",", "."));
+    const gtm = (isFinite(lat) && isFinite(lon)) ? latLonAGTM(lat, lon) : { GTM_X: "", GTM_Y: "" };
+    return {
+      ...r,
+      "GTM_X (m)": gtm.GTM_X !== null ? gtm.GTM_X : "",
+      "GTM_Y (m)": gtm.GTM_Y !== null ? gtm.GTM_Y : ""
+    };
+  });
+}
+
 const MESES_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 const PALETTE  = ["#0ea5e9","#10b981","#f59e0b","#8b5cf6","#ef4444","#14b8a6","#f97316","#6366f1"];
 
@@ -522,6 +582,7 @@ function generarInformeRegistro(formato){
   const hayInst=(r["Hay mas instituciones involucradas en el patrullaje"]||"").toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const inst=r["Instituciones involucradas"]||"",otra=r["Otra (especifique)"]||"",ai=r["Actividad ilegal observada"]||"";
   const fc=r["Fecha de creacion de registro"]||"",fm=r["Fecha de modificacion de registro"]||"";
+  const lat=r["Latitud"]||"",lon=r["Longitud"]||"",gtmX=r["GTM_X (m)"]||"",gtmY=r["GTM_Y (m)"]||"";
   const fec=fe.toString().includes(" ")?fe.toString().split(" ")[0]:fe;
   let tInst=(hayInst==="si"||hayInst==="sí")?"En este patrullaje participaron además: "+(inst||"(sin detalle)")+"."+(otra?" Otras: "+otra+".":" "):"No se registró participación de otras instituciones.";
   const ci=canonIlegal(ai);let tIleg=ci==="si"?"Se registró actividad ilegal: "+ai+".":"No se registró actividad ilegal durante el patrullaje.";
@@ -531,7 +592,7 @@ function generarInformeRegistro(formato){
   h+="<div class='informe-seccion'><h2>2. Descripción</h2><p>En fecha "+escapeHtml(fec||"(sin fecha)")+" el guarda recursos "+escapeHtml(gu||"(sin nombre)")+" realizó un patrullaje de tipo "+escapeHtml(tp||"(sin tipo)")+" en el municipio de "+escapeHtml(mu||"(sin municipio)")+" ("+escapeHtml(reg||"-")+"), específicamente en "+escapeHtml(ub||"-")+" dentro de "+escapeHtml(ap||"(sin área protegida)")+". El patrullaje inició a las "+escapeHtml(hI||"(no registrada)")+" y finalizó a las "+escapeHtml(hF||"(no registrada)")+".</p></div>";
   h+="<div class='informe-seccion'><h2>3. Participación institucional</h2><p>"+escapeHtml(tInst)+"</p></div>";
   h+="<div class='informe-seccion'><h2>4. Actividad ilegal observada</h2><p>"+escapeHtml(tIleg)+"</p></div>";
-  h+="<div class='informe-seccion'><h2>5. Metadatos del registro</h2><p><strong>Fecha de creación:</strong> "+escapeHtml(fc||"-")+"</p><p><strong>Última modificación:</strong> "+escapeHtml(fm||"-")+"</p></div>";
+  h+="<div class='informe-seccion'><h2>5. Metadatos del registro</h2><p><strong>Fecha de creación:</strong> "+escapeHtml(fc||"-")+"</p><p><strong>Última modificación:</strong> "+escapeHtml(fm||"-")+"</p>"+(lat||lon?"<p><strong>Coordenadas geográficas (WGS84):</strong> Latitud "+escapeHtml(lat)+" · Longitud "+escapeHtml(lon)+"</p>":"")+(gtmX||gtmY?"<p><strong>Coordenadas proyectadas (GTM · IGN-01/99):</strong> X = "+escapeHtml(String(gtmX))+" m · Y = "+escapeHtml(String(gtmY))+" m</p>":"")+"</div>";
   h+="<div class='informe-seccion'><h2>6. Firmas</h2><p>______________________________<br/>Guarda recursos / Responsable</p><p>______________________________<br/>Supervisión</p></div>";
   h+="</div>";
   const base="informe_patrullaje_"+slugify(gu)+"_"+slugify(fec);
@@ -666,7 +727,17 @@ document.addEventListener("DOMContentLoaded",function(){
       if(!parsed.data||!parsed.data.length){document.getElementById("estado-registros").textContent="CSV vacío o sin encabezados.";return}
       datosPatrullajes=parsed.data;
       prepararHintsFechas(datosPatrullajes);
-      const cols=Object.keys(datosPatrullajes[0]).map(f=>({title:f,field:f,headerFilter:"input"}));
+      // Enriquecer con coordenadas GTM
+      datosPatrullajes = enriquecerConGTM(datosPatrullajes);
+      // Construir columnas: las del CSV primero, luego GTM_X y GTM_Y al final
+      const camposBase = Object.keys(parsed.data[0] || {});
+      const cols = [
+        ...camposBase.map(f=>({title:f, field:f, headerFilter:"input"})),
+        {title:"GTM_X (m)", field:"GTM_X (m)", headerFilter:"input", width:130,
+         formatter: c => { const v=c.getValue(); return v!==""?`<span style="font-family:monospace;font-size:11px">${Number(v).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:"<span style='color:#d1d5db'>—</span>"; }},
+        {title:"GTM_Y (m)", field:"GTM_Y (m)", headerFilter:"input", width:130,
+         formatter: c => { const v=c.getValue(); return v!==""?`<span style="font-family:monospace;font-size:11px">${Number(v).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:"<span style='color:#d1d5db'>—</span>"; }},
+      ];
       tablaPatrullajes=new Tabulator("#tabla-registros",{data:datosPatrullajes,layout:"fitDataStretch",pagination:"local",paginationSize:20,paginationSizeSelector:[10,20,50,100],columns:cols,movableColumns:true,selectableRows:1});
       document.getElementById("download-csv").addEventListener("click",()=>tablaPatrullajes.download("csv","patrullajes_control_vigilancia.csv"));
       document.getElementById("download-xlsx").addEventListener("click",()=>tablaPatrullajes.download("xlsx","patrullajes_control_vigilancia.xlsx",{sheetName:"Datos"}));
