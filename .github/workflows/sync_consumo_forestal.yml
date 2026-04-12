@@ -1,0 +1,334 @@
+# .github/workflows/sync_consumo_forestal.yml
+#
+# Sincroniza datos de AC297 Consumo Forestal Familiar (Survey123)
+# → docs/datos/base3_datos.csv
+#
+# Cadencia — dos veces al día hora Guatemala (UTC-6),
+# 30 min después de patrullajes para no solapar runners:
+#   • 12:30 mediodía   → 18:30 UTC
+#   • 00:30 medianoche → 06:30 UTC
+#
+# Disparo manual:
+#   GitHub → Actions → "Sincronizar AC297 Consumo Forestal" → Run workflow
+
+name: Sincronizar AC297 Consumo Forestal
+
+on:
+  schedule:
+    - cron: "30 18 * * *"   # 12:30 mediodía Guatemala
+    - cron: "30 6 * * *"    # 00:30 medianoche Guatemala
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Descargar y actualizar CSV de consumo forestal
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install requests pandas
+
+      - name: Sincronizar datos de ArcGIS Online
+        env:
+          AGOL_USERNAME: ${{ secrets.AGOL_USERNAME }}
+          AGOL_PASSWORD: ${{ secrets.AGOL_PASSWORD }}
+          AGOL_ORG_URL:  ${{ secrets.AGOL_ORG_URL }}
+        run: |
+          python3 << 'PYEOF'
+          import os, sys, requests, pandas as pd
+
+          ORG_URL  = os.environ["AGOL_ORG_URL"].rstrip("/")
+          USERNAME = os.environ["AGOL_USERNAME"]
+          PASSWORD = os.environ["AGOL_PASSWORD"]
+
+          # Item ID del Survey123 de Consumo Forestal Familiar
+          # https://aala.maps.arcgis.com/home/item.html?id=d657a19e2ec04a2e8040fb6a143d84f7
+          ITEM_ID    = "d657a19e2ec04a2e8040fb6a143d84f7"
+          OUTPUT_CSV = "docs/datos/base3_datos.csv"
+          PAGE_SIZE  = 1000
+
+          # Columnas finales del CSV (orden canónico de base3_datos.csv)
+          COLS = [
+              "Nombre del guardarecursos",
+              "Region",
+              "Area protegida",
+              "Municipio",
+              "Nombre del usuario",
+              "Referencia de ubicacion",
+              "Cantidad total de arboles a talar",
+              "Especies a talar",
+              "Especifique otra especie",
+              "Fecha",
+              "Hora",
+              "Observaciones",
+              "CreationDate",
+              "EditDate",
+              "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?",
+              "Nombre del guardarecurso",
+              "Municipio del guardarecurso",
+              "Cantidad de Pino (Pinus pseudostrobus)",
+              "Cantidad de Cipres (Cupressus lusitanica)",
+              "Cantidad de Aliso (Alnus jorullensis)",
+              "Cantidad de Encino (Quercus sp)",
+              "Cantidad de Palo Blanco (Vernonia patens)",
+              "Cantidad de Cajete (Heliocarpus donnellsmithii)",
+              "Cantidad de Madron (Arbutus xalapensis)",
+              "Cantidad de Mano de mono (Oreopanax xalapensis)",
+              "Cantidad de Matilisguate (Tabebuia rosea)",
+              "Cantidad de Aguacate (Persea americana)",
+              "Cantidad de Casuarina (Casuarina equisetifolia)",
+              "Cantidad de Otro",
+              "X",
+              "Y",
+          ]
+
+          # Mapeo exacto: nombre interno ArcGIS → nombre columna CSV
+          # Derivado del XLSForm AC297_Consumo_forestal_familiar.xlsx (hoja survey, columna name)
+          RENAME = {
+              "nombre_guardarecurso":  "Nombre del guardarecursos",
+              "region":                "Region",
+              "area_protegida":        "Area protegida",
+              "municipio":             "Municipio",
+              "nombre_usuario":        "Nombre del usuario",
+              "referencia_ubicacion":  "Referencia de ubicacion",
+              "cantidad_arboles":      "Cantidad total de arboles a talar",
+              "especies_talar":        "Especies a talar",
+              "especie_otro":          "Especifique otra especie",
+              "fecha":                 "Fecha",
+              "hora":                  "Hora",
+              "observaciones":         "Observaciones",
+              "CreationDate":          "CreationDate",
+              "EditDate":              "EditDate",
+              "consumo_fuera_comp":    "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?",
+              "guardarecurso":         "Nombre del guardarecurso",
+              "municipio_comp":        "Municipio del guardarecurso",
+              "cant_pino":             "Cantidad de Pino (Pinus pseudostrobus)",
+              "cant_cipres":           "Cantidad de Cipres (Cupressus lusitanica)",
+              "cant_aliso":            "Cantidad de Aliso (Alnus jorullensis)",
+              "cant_encino":           "Cantidad de Encino (Quercus sp)",
+              "cant_palo_blanco":      "Cantidad de Palo Blanco (Vernonia patens)",
+              "cant_cajete":           "Cantidad de Cajete (Heliocarpus donnellsmithii)",
+              "cant_madron":           "Cantidad de Madron (Arbutus xalapensis)",
+              "cant_mano_mono":        "Cantidad de Mano de mono (Oreopanax xalapensis)",
+              "cant_matilisguate":     "Cantidad de Matilisguate (Tabebuia rosea)",
+              "cant_aguacate":         "Cantidad de Aguacate (Persea americana)",
+              "cant_casuarina":        "Cantidad de Casuarina (Casuarina equisetifolia)",
+              "cant_otro":             "Cantidad de Otro",
+              # Coordenadas: ArcGIS saca x/y del geopoint como campos separados
+              "x":                     "X",
+              "y":                     "Y",
+          }
+
+          # Corrección: códigos internos de area_protegida → etiquetas legibles
+          FIX_AREA = {
+              "rumcla":       "RUMCLA",
+              "fuera_rumcla": "Fuera de RUMCLA",
+          }
+
+          # ── Autenticación ──────────────────────────────────────────────
+          print("Autenticando en ArcGIS Online...")
+          r = requests.post(f"{ORG_URL}/sharing/rest/generateToken", data={
+              "username": USERNAME, "password": PASSWORD,
+              "referer": "https://www.arcgis.com", "expiration": 120, "f": "json",
+          }, timeout=30)
+          r.raise_for_status()
+          data = r.json()
+          if "error" in data:
+              print(f"ERROR de autenticación: {data['error']}")
+              sys.exit(1)
+          token = data["token"]
+          print("✓ Autenticado")
+
+          # ── URL del Feature Service ────────────────────────────────────
+          r = requests.get(f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}",
+              params={"f": "json", "token": token}, timeout=30)
+          item_data = r.json()
+          print(f"  Item: '{item_data.get('title')}' | tipo: {item_data.get('type')}")
+
+          service_url = item_data.get("url")
+
+          if not service_url:
+              print("  URL directa no encontrada — buscando Feature Service (Survey2Service)...")
+              r2 = requests.get(f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}/relatedItems",
+                  params={"relationshipType": "Survey2Service", "direction": "forward",
+                          "f": "json", "token": token}, timeout=30)
+              related = r2.json().get("relatedItems", [])
+              print(f"  Items relacionados: {len(related)}")
+              for rel in related:
+                  if rel.get("url"):
+                      service_url = rel["url"]
+                      print(f"  Encontrado: {service_url}")
+                      break
+
+          if not service_url:
+              print("  Buscando Feature Service por nombre en contenido del usuario...")
+              r3 = requests.get(f"{ORG_URL}/sharing/rest/search",
+                  params={"q": f"owner:{USERNAME} type:'Feature Service' tags:survey",
+                          "num": 20, "f": "json", "token": token}, timeout=30)
+              for res in r3.json().get("results", []):
+                  title = res.get("title", "").lower()
+                  if any(k in title for k in ["consumo", "forestal", "ac297", "297"]):
+                      service_url = res.get("url", "")
+                      print(f"  Encontrado por búsqueda: {service_url}")
+                      break
+
+          if not service_url:
+              print("ERROR: No se pudo encontrar la URL del Feature Service.")
+              print("Respuesta del item:", item_data)
+              sys.exit(1)
+
+          service_url = service_url.rstrip("/")
+          print(f"✓ Servicio: {service_url}")
+
+          # ── Diagnóstico: listar campos disponibles ─────────────────────
+          r_fields = requests.get(f"{service_url}/0",
+              params={"f": "json", "token": token}, timeout=30)
+          campos_agol = [f["name"] for f in r_fields.json().get("fields", [])]
+          print(f"  Campos disponibles en ArcGIS ({len(campos_agol)}): {campos_agol}")
+          sin_mapeo = [c for c in campos_agol if c not in RENAME and c.lower() not in RENAME]
+          if sin_mapeo:
+              print(f"  ⚠ Campos sin mapeo (se descartan): {sin_mapeo}")
+
+          # ── Total de registros ─────────────────────────────────────────
+          r = requests.get(f"{service_url}/0/query",
+              params={"where": "1=1", "returnCountOnly": "true", "f": "json", "token": token},
+              timeout=30)
+          total = r.json().get("count", 0)
+          print(f"✓ Registros en ArcGIS: {total}")
+
+          # ── Descarga paginada ──────────────────────────────────────────
+          pages, offset = [], 0
+          while True:
+              r = requests.get(f"{service_url}/0/query", params={
+                  "where": "1=1", "outFields": "*",
+                  "resultOffset": offset, "resultRecordCount": PAGE_SIZE,
+                  "returnGeometry": "true",
+                  "f": "json", "token": token,
+              }, timeout=60)
+              rj = r.json()
+              features = rj.get("features", [])
+              if not features:
+                  break
+              rows_page = []
+              for feat in features:
+                  attrs = dict(feat.get("attributes", {}))
+                  geo   = feat.get("geometry") or {}
+                  # Geopoint → x/y en geometry si no están en attributes
+                  if "x" not in attrs and geo.get("x") is not None:
+                      attrs["x"] = geo["x"]
+                  if "y" not in attrs and geo.get("y") is not None:
+                      attrs["y"] = geo["y"]
+                  rows_page.append(attrs)
+              pages.append(pd.DataFrame(rows_page))
+              offset += len(features)
+              print(f"  Descargados: {offset}/{total}", end="\r")
+              if not rj.get("exceededTransferLimit", False):
+                  break
+          print()
+
+          df_new = pd.concat(pages, ignore_index=True) if pages else pd.DataFrame()
+          if df_new.empty:
+              print("Sin registros. Abortando.")
+              sys.exit(0)
+
+          # ── Renombrar columnas ─────────────────────────────────────────
+          df_new = df_new.rename(columns=RENAME)
+
+          # ── Correcciones de valores ────────────────────────────────────
+          # Area protegida: código interno → etiqueta legible
+          if "Area protegida" in df_new.columns:
+              df_new["Area protegida"] = (
+                  df_new["Area protegida"].astype(str).str.strip().replace(FIX_AREA)
+              )
+
+          # Región siempre fija (campo calculate en el formulario)
+          df_new["Region"] = "Altiplano Central"
+
+          # Fechas del sistema ArcGIS (milisegundos Unix)
+          for col in ["CreationDate", "EditDate"]:
+              if col in df_new.columns:
+                  if pd.api.types.is_numeric_dtype(df_new[col]):
+                      df_new[col] = pd.to_datetime(df_new[col], unit="ms", errors="coerce")
+                  else:
+                      df_new[col] = pd.to_datetime(df_new[col], errors="coerce")
+                  df_new[col] = df_new[col].dt.strftime("%m/%d/%Y %H:%M:%S.%f")
+
+          # Fecha del formulario (campo date Survey123)
+          if "Fecha" in df_new.columns:
+              if pd.api.types.is_numeric_dtype(df_new["Fecha"]):
+                  df_new["Fecha"] = pd.to_datetime(df_new["Fecha"], unit="ms", errors="coerce")
+              else:
+                  df_new["Fecha"] = pd.to_datetime(df_new["Fecha"], errors="coerce")
+              df_new["Fecha"] = df_new["Fecha"].dt.strftime("%-m/%-d/%Y %H:%M")
+
+          # Especies a talar: select_multiple → ArcGIS usa espacio como separador,
+          # el CSV histórico usa coma
+          if "Especies a talar" in df_new.columns:
+              df_new["Especies a talar"] = (
+                  df_new["Especies a talar"].astype(str).str.strip()
+                  .str.replace(" ", ",", regex=False)
+                  .replace("nan", "")
+              )
+
+          # Si/No del campo consumo_fuera_comp
+          col_fuera = "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"
+          if col_fuera in df_new.columns:
+              df_new[col_fuera] = (
+                  df_new[col_fuera].astype(str).str.strip()
+                  .replace({"si": "si", "sí": "si", "no": "no", "None": "", "nan": ""})
+              )
+
+          # Asegurar que existan todas las columnas esperadas
+          for c in COLS:
+              if c not in df_new.columns:
+                  df_new[c] = None
+          df_new = df_new[COLS]
+
+          # ── Merge con histórico ────────────────────────────────────────
+          try:
+              df_old = pd.read_csv(OUTPUT_CSV, sep=";", encoding="utf-8-sig")
+              print(f"✓ Histórico existente: {len(df_old)} registros")
+              combined = pd.concat([df_old, df_new], ignore_index=True)
+          except FileNotFoundError:
+              print("Sin histórico previo — se crea desde cero.")
+              combined = df_new
+
+          # Deduplicar: guardarecurso + fecha + nombre usuario
+          combined["_key"] = (
+              combined["Nombre del guardarecursos"].astype(str).str.strip().str.lower() + "|" +
+              combined["Fecha"].astype(str).str.strip() + "|" +
+              combined["Nombre del usuario"].astype(str).str.strip().str.lower()
+          )
+          antes = len(combined)
+          combined = combined.drop_duplicates(subset="_key", keep="last").drop(columns="_key")
+          print(f"✓ Duplicados eliminados: {antes - len(combined)}")
+
+          # Ordenar por fecha de creación
+          combined["_sort"] = pd.to_datetime(combined["CreationDate"], errors="coerce")
+          combined = combined.sort_values("_sort").drop(columns="_sort").reset_index(drop=True)
+
+          combined.to_csv(OUTPUT_CSV, index=False, sep=";", encoding="utf-8-sig")
+          print(f"✓ CSV guardado: {OUTPUT_CSV} ({len(combined)} registros totales)")
+          PYEOF
+
+      - name: Publicar cambios al repositorio
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/datos/base3_datos.csv
+
+          if git diff --staged --quiet; then
+            echo "Sin registros nuevos. No se necesita commit."
+          else
+            FECHA=$(TZ="America/Guatemala" date '+%d/%m/%Y %H:%M GT')
+            git commit -m "🔄 AC297 Consumo Forestal · $FECHA"
+            git push
+          fi
