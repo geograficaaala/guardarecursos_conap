@@ -3,8 +3,8 @@
 # Sincroniza datos de AC192 (Survey123) → docs/datos/datos_patrullaje.csv
 #
 # Se ejecuta dos veces al día en hora Guatemala (UTC-6):
-#   • 12:00 mediodía   → 18:00 UTC
-#   • 00:00 medianoche → 06:00 UTC
+#   • ~12:05 mediodía   → 18:05 UTC
+#   • ~00:05 medianoche → 06:05 UTC
 #
 # También puede dispararse manualmente desde:
 #   GitHub → Actions → "Sincronizar AC192 Patrullajes" → Run workflow
@@ -13,9 +13,14 @@ name: Sincronizar AC192 Patrullajes
 
 on:
   schedule:
-    - cron: "0 18 * * *"   # 12:00 mediodía Guatemala
-    - cron: "0 6 * * *"    # 00:00 medianoche Guatemala
+    - cron: "5 18 * * *"   # ~12:05 mediodía Guatemala (18:05 UTC)
+    - cron: "5 6 * * *"    # ~00:05 medianoche Guatemala (06:05 UTC)
   workflow_dispatch:
+
+# Evita que runs simultáneos se pisen entre sí
+concurrency:
+  group: sync-patrullajes
+  cancel-in-progress: false
 
 jobs:
   sync:
