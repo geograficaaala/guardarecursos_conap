@@ -294,8 +294,15 @@ jobs:
 
           # ── Merge con histórico ────────────────────────────────────────
           try:
-              df_old = pd.read_csv(OUTPUT_CSV, sep=";", encoding="utf-8-sig")
-              print(f"✓ Histórico existente: {len(df_old)} registros")
+              # Intenta utf-8-sig primero; si el CSV histórico tiene tildes en
+              # latin-1/windows-1252 (byte 0xe9, etc.) cae al segundo intento.
+              for enc in ("utf-8-sig", "latin-1"):
+                  try:
+                      df_old = pd.read_csv(OUTPUT_CSV, sep=";", encoding=enc)
+                      print(f"✓ Histórico existente: {len(df_old)} registros (encoding: {enc})")
+                      break
+                  except UnicodeDecodeError:
+                      continue
               combined = pd.concat([df_old, df_new], ignore_index=True)
           except FileNotFoundError:
               print("Sin histórico previo — se crea desde cero.")
