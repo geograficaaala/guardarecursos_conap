@@ -181,7 +181,12 @@
     <!-- 6. Radar guardas -->
     <div class="cc">
       <div class="cc-title">Radar de actividad por guardarecursos</div>
-      <div class="cc-hint">Top 6 guardas en 5 dimensiones normalizadas al 100 · permite comparar perfiles de actividad</div>
+      <div class="cc-hint">Selecciona un guardarecurso para ver su perfil vs. la media global · sin selección muestra el top 6</div>
+      <div style="margin-bottom:10px">
+        <select id="f-radar-guarda" style="border:1px solid var(--borde);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--ink);width:100%;outline:none">
+          <option value="">— Mostrar top 6 —</option>
+        </select>
+      </div>
       <div class="cw tall"><canvas id="c-radar"></canvas></div>
     </div>
 
@@ -204,6 +209,33 @@
       <div class="cc-title">Incidentes por municipio</div>
       <div class="cc-hint">Patrullajes con actividad ilegal vs. sin incidente por municipio · haz clic en una barra para filtrar</div>
       <div class="cw tall"><canvas id="c-ilegalMuni"></canvas></div>
+    </div>
+
+    <!-- 9. Área protegida -->
+    <div class="cc full">
+      <div class="cc-title">Patrullajes por área protegida</div>
+      <div class="cc-hint">Distribución de patrullajes según el área protegida cubierta · muestra la carga de trabajo por zona</div>
+      <div class="cw" style="height:380px"><canvas id="c-areaProt"></canvas></div>
+    </div>
+
+    <!-- 10. Tipo de patrullaje + Día de semana -->
+    <div class="cc">
+      <div class="cc-title">Tipo de patrullaje</div>
+      <div class="cc-hint">Distribución por modalidad de patrullaje registrada</div>
+      <div class="cw"><canvas id="c-tipoPat"></canvas></div>
+    </div>
+
+    <div class="cc">
+      <div class="cc-title">Patrullajes por día de la semana</div>
+      <div class="cc-hint">Volumen acumulado según el día en que se realiza el patrullaje</div>
+      <div class="cw"><canvas id="c-diaSem"></canvas></div>
+    </div>
+
+    <!-- 11. Ranking guardarecursos -->
+    <div class="cc full">
+      <div class="cc-title">Ranking de guardarecursos · volumen e incidentes</div>
+      <div class="cc-hint">Total de patrullajes por guardarecurso (barras) e incidentes reportados (puntos rojos) · todos los activos en el período filtrado</div>
+      <div class="cw" style="height:380px"><canvas id="c-rankGuarda"></canvas></div>
     </div>
 
   </div>
@@ -295,7 +327,7 @@ function dowMon(dt){return(dt.getUTCDay()+6)%7}
 /* ══════════════════════════════════
    ENRIQUECIMIENTO
 ══════════════════════════════════ */
-const LABELS={muni:new Map(),guarda:new Map(),ubic:new Map()};
+const LABELS={muni:new Map(),guarda:new Map(),ubic:new Map(),ap:new Map(),tp:new Map()};
 function canonU(v){const c=canon(v);if(c.includes("fuera"))return"fuera";if(c.includes("rumcla")||c.includes("dentro"))return"rumcla";return c}
 function canonI(v){const c=canon(v);if(c==="si"||c==="sí")return"si";if(c==="no")return"no";return""}
 
@@ -312,8 +344,13 @@ function enrich(data){
     rr.__cg  =canon(r["Guarda recursos responsable"]);
     rr.__cu  =canonU(r["Ubicacion"]);
     rr.__ci  =canonI(r["Actividad ilegal observada"]);
+    rr.__cap =canon(r["Area protegida"]);
+    rr.__ctp =canon(r["Tipo de patrullaje"]);
+    rr.__cin =canonI(r["Hay mas instituciones involucradas en el patrullaje"]);
     if(rr.__cm)LABELS.muni.set(rr.__cm,bestL(LABELS.muni.get(rr.__cm),r["Municipio"]));
     if(rr.__cg)LABELS.guarda.set(rr.__cg,bestL(LABELS.guarda.get(rr.__cg),r["Guarda recursos responsable"]));
+    if(rr.__cap)LABELS.ap.set(rr.__cap,bestL(LABELS.ap.get(rr.__cap),r["Area protegida"]));
+    if(rr.__ctp)LABELS.tp.set(rr.__ctp,bestL(LABELS.tp.get(rr.__ctp),r["Tipo de patrullaje"]));
     LABELS.ubic.set("rumcla","Dentro RUMCLA");LABELS.ubic.set("fuera","Fuera RUMCLA");
     return rr;
   });
@@ -334,6 +371,10 @@ function initFilters(){
   fillSel("f-municipio",fm(LABELS.muni));
   fillSel("f-guarda",fm(LABELS.guarda));
   fillSel("f-ubic",[{v:"rumcla",l:"Dentro RUMCLA"},{v:"fuera",l:"Fuera RUMCLA"}],"Todas");
+  // poblar selector del radar con todos los guardarecursos
+  const rSel=document.getElementById("f-radar-guarda");
+  rSel.innerHTML='<option value="">— Mostrar top 6 —</option>';
+  [...LABELS.guarda.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).forEach(([k,l])=>{const o=document.createElement("option");o.value=k;o.textContent=l;rSel.appendChild(o)});
 }
 function getF(){return{anio:document.getElementById("f-anio").value,mes:document.getElementById("f-mes").value,muni:document.getElementById("f-municipio").value,guar:document.getElementById("f-guarda").value,ubic:document.getElementById("f-ubic").value}}
 function applyF(f){return ROWS.filter(r=>{if(f.anio&&r.__anio!==f.anio)return false;if(f.mes&&r.__mes!==f.mes)return false;if(f.muni&&r.__cm!==f.muni)return false;if(f.guar&&r.__cg!==f.guar)return false;if(f.ubic&&r.__cu!==f.ubic)return false;return true})}
@@ -463,27 +504,65 @@ function g5(rows){
 
 /* ══════════════════════════════════
    G6 — Radar por guardarecursos
+   (top6 sin selección · seleccionado vs media con selección)
 ══════════════════════════════════ */
 function g6(rows){
-  const gc=countBy(rows,r=>r.__cg);
-  const top6=topN(gc,6).map(([k])=>k);
-  const nrm=(v,max)=>max?Math.round(v/max*100):0;
-  const maxP=Math.max(...top6.map(g=>rows.filter(r=>r.__cg===g).length),1);
-  const maxM=Math.max(...top6.map(g=>uniq(rows.filter(r=>r.__cg===g).map(r=>r.__cm)).length),1);
-  const maxD=Math.max(...top6.map(g=>{const d=rows.filter(r=>r.__cg===g).map(r=>r.__dur).filter(v=>v!==null);return d.length?avg(d):0}),0.1);
-  const maxDi=Math.max(...top6.map(g=>uniq(rows.filter(r=>r.__cg===g).map(r=>r.__mes)).length),1);
-  const maxI=Math.max(...top6.map(g=>rows.filter(r=>r.__cg===g&&r.__ci==="si").length),1);
-  const datasets=top6.map((cg,i)=>{
-    const s=rows.filter(r=>r.__cg===cg);
+  const sel=document.getElementById("f-radar-guarda").value;
+  const allG=uniq(ROWS.map(r=>r.__cg)).filter(Boolean);
+
+  // métricas normalizadas
+  const metricOf=(cg,src)=>{
+    const s=src.filter(r=>r.__cg===cg);
     const d=s.map(r=>r.__dur).filter(v=>v!==null);
-    return{label:(LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),
-      data:[nrm(s.length,maxP),nrm(uniq(s.map(r=>r.__cm)).length,maxM),nrm(d.length?avg(d):0,maxD),nrm(uniq(s.map(r=>r.__mes)).length,maxDi),nrm(s.filter(r=>r.__ci==="si").length,maxI)],
-      backgroundColor:PALETTE[i]+"33",borderColor:PALETTE[i],borderWidth:2,pointBackgroundColor:PALETTE[i],pointRadius:3};
-  });
-  mkChart("c-radar",{type:"radar",data:{labels:["Volumen","Municipios\ncubiertos","Duración\nmedia","Meses\nactivos","Incidentes"],datasets},
-    options:{responsive:true,maintainAspectRatio:false,
-    plugins:{legend:{position:"bottom",labels:{font:{size:10},padding:8,usePointStyle:true}},tooltip:{...TT}},
-    scales:{r:{beginAtZero:true,max:100,ticks:{display:false,stepSize:25},grid:{color:"rgba(0,0,0,0.08)"},pointLabels:{font:{size:10}}}}}});
+    return{p:s.length,m:uniq(s.map(r=>r.__cm)).length,d:d.length?avg(d):0,mes:uniq(s.map(r=>r.__mes)).length,i:s.filter(r=>r.__ci==="si").length};
+  };
+  const nrm=(v,max)=>max?Math.round(v/max*100):0;
+  const AXES=["Volumen","Municipios\ncubiertos","Duración\nmedia","Meses\nactivos","Incidentes"];
+
+  if(sel){
+    // modo comparación: guardarecurso seleccionado vs media global
+    const mOf=cg=>metricOf(cg,ROWS);
+    const allM=allG.map(mOf);
+    const globalAvg={
+      p:avg(allM.map(x=>x.p)),m:avg(allM.map(x=>x.m)),
+      d:avg(allM.map(x=>x.d)),mes:avg(allM.map(x=>x.mes)),i:avg(allM.map(x=>x.i))
+    };
+    const selM=mOf(sel);
+    const maxP=Math.max(...allM.map(x=>x.p),1);
+    const maxM=Math.max(...allM.map(x=>x.m),1);
+    const maxD=Math.max(...allM.map(x=>x.d),0.1);
+    const maxMes=Math.max(...allM.map(x=>x.mes),1);
+    const maxI=Math.max(...allM.map(x=>x.i),1);
+    const toArr=o=>[nrm(o.p,maxP),nrm(o.m,maxM),nrm(o.d,maxD),nrm(o.mes,maxMes),nrm(o.i,maxI)];
+    const label=(LABELS.guarda.get(sel)||sel).split(" ").slice(0,2).join(" ");
+    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:[
+      {label:label,data:toArr(selM),backgroundColor:"rgba(14,165,233,0.18)",borderColor:"#0ea5e9",borderWidth:2.5,pointBackgroundColor:"#0ea5e9",pointRadius:4},
+      {label:"Media global",data:toArr(globalAvg),backgroundColor:"rgba(239,68,68,0.12)",borderColor:"rgba(239,68,68,0.7)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(239,68,68,0.7)",pointRadius:3}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:"bottom",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.r}`}}},
+      scales:{r:{beginAtZero:true,max:100,ticks:{display:false,stepSize:25},grid:{color:"rgba(0,0,0,0.08)"},pointLabels:{font:{size:10}}}}}});
+  } else {
+    // modo top6 original
+    const gc=countBy(rows,r=>r.__cg);
+    const top6=topN(gc,6).map(([k])=>k);
+    const srcM=cg=>metricOf(cg,rows);
+    const allTop=top6.map(srcM);
+    const maxP=Math.max(...allTop.map(x=>x.p),1);
+    const maxM=Math.max(...allTop.map(x=>x.m),1);
+    const maxD=Math.max(...allTop.map(x=>x.d),0.1);
+    const maxMes=Math.max(...allTop.map(x=>x.mes),1);
+    const maxI=Math.max(...allTop.map(x=>x.i),1);
+    const datasets=top6.map((cg,i)=>{
+      const o=srcM(cg);
+      return{label:(LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),
+        data:[nrm(o.p,maxP),nrm(o.m,maxM),nrm(o.d,maxD),nrm(o.mes,maxMes),nrm(o.i,maxI)],
+        backgroundColor:PALETTE[i]+"33",borderColor:PALETTE[i],borderWidth:2,pointBackgroundColor:PALETTE[i],pointRadius:3};
+    });
+    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets},
+      options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:"bottom",labels:{font:{size:10},padding:8,usePointStyle:true}},tooltip:{...TT}},
+      scales:{r:{beginAtZero:true,max:100,ticks:{display:false,stepSize:25},grid:{color:"rgba(0,0,0,0.08)"},pointLabels:{font:{size:10}}}}}});
+  }
 }
 
 /* ══════════════════════════════════
@@ -519,13 +598,75 @@ function g8(rows){
 }
 
 /* ══════════════════════════════════
+   G9 — Área protegida (barra horizontal)
+══════════════════════════════════ */
+function g9(rows){
+  const mc=countBy(rows,r=>r.__cap);
+  const sorted=topN(mc,12);
+  const labels=sorted.map(([k])=>LABELS.ap.get(k)||k).map(l=>l.length>40?l.slice(0,38)+"…":l);
+  const vals=sorted.map(([,v])=>v);
+  const ctx=document.getElementById("c-areaProt").getContext("2d");
+  const g=ctx.createLinearGradient(400,0,0,0);g.addColorStop(0,"rgba(16,185,129,0.85)");g.addColorStop(1,"rgba(14,165,233,0.65)");
+  mkChart("c-areaProt",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:vals,backgroundColor:g,borderColor:"#059669",borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} patrullajes`}}},
+      scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
+}
+
+/* ══════════════════════════════════
+   G10 — Tipo de patrullaje (donut)
+══════════════════════════════════ */
+function g10(rows){
+  const mc=countBy(rows,r=>r.__ctp);
+  const sorted=topN(mc,6);
+  const labels=sorted.map(([k])=>{const l=LABELS.tp.get(k)||k;return l.length>35?l.slice(0,33)+"…":l});
+  const vals=sorted.map(([,v])=>v);
+  const colors=PALETTE.slice(0,vals.length);
+  mkChart("c-tipoPat",{type:"doughnut",data:{labels,datasets:[{data:vals,backgroundColor:colors.map(c=>c+"cc"),borderColor:colors,borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"55%",
+      plugins:{legend:{position:"bottom",labels:{font:{size:10},padding:8,usePointStyle:true}},
+      tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+}
+
+/* ══════════════════════════════════
+   G11 — Patrullajes por día de semana
+══════════════════════════════════ */
+function g11(rows){
+  const counts=new Array(7).fill(0);
+  rows.forEach(r=>{if(r.__dow!==null)counts[r.__dow]++});
+  const ctx=document.getElementById("c-diaSem").getContext("2d");
+  const g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,"rgba(99,102,241,0.85)");g.addColorStop(1,"rgba(99,102,241,0.35)");
+  mkChart("c-diaSem",{type:"bar",data:{labels:DIAS,datasets:[{label:"Patrullajes",data:counts,backgroundColor:g,borderColor:"#4f46e5",borderWidth:1,borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} patrullajes`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}}}});
+}
+
+/* ══════════════════════════════════
+   G12 — Ranking guardarecursos
+══════════════════════════════════ */
+function g12(rows){
+  const gc=countBy(rows,r=>r.__cg);
+  const sorted=[...gc.entries()].sort((a,b)=>b[1]-a[1]);
+  const labels=sorted.map(([k])=>(LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
+  const totales=sorted.map(([,v])=>v);
+  const ilegales=sorted.map(([k])=>rows.filter(r=>r.__cg===k&&r.__ci==="si").length);
+  mkChart("c-rankGuarda",{type:"bar",data:{labels,datasets:[
+    {label:"Patrullajes",data:totales,backgroundColor:"rgba(14,165,233,0.7)",borderColor:"#0284c7",borderWidth:1,borderRadius:4,borderSkipped:false,order:2},
+    {label:"Incidentes",data:ilegales,type:"line",borderColor:"#ef4444",backgroundColor:"rgba(239,68,68,0.9)",borderWidth:2,pointRadius:5,pointHoverRadius:7,pointStyle:"circle",tension:0,fill:false,order:1}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}},tooltip:{...TT}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:10},maxRotation:35}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}}}});
+}
+
+/* ══════════════════════════════════
    RENDER & RESET
 ══════════════════════════════════ */
 function applyAll(){
   const f=getF();renderChips(f);
   const rows=applyF(f);
   updateKPIs(rows);
-  g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);
+  g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);g9(rows);g10(rows);g11(rows);g12(rows);
   document.getElementById("estado").textContent=`Mostrando ${rows.length.toLocaleString("es")} de ${ROWS.length.toLocaleString("es")} registros`;
 }
 
@@ -540,6 +681,7 @@ function resetAll(){["f-anio","f-mes","f-municipio","f-guarda","f-ubic"].forEach
     ROWS=enrich(data);
     initFilters();
     ["f-anio","f-mes","f-municipio","f-guarda","f-ubic"].forEach(id=>document.getElementById(id).addEventListener("change",applyAll));
+    document.getElementById("f-radar-guarda").addEventListener("change",()=>g6(applyF(getF())));
     document.getElementById("btn-reset").addEventListener("click",resetAll);
     applyAll();
   }catch(e){
