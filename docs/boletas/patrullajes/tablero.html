@@ -126,8 +126,8 @@
   <div class="filtros-bar">
     <div class="fg"><label>Año</label><select id="f-anio"><option value="">Todos</option></select></div>
     <div class="fg"><label>Mes</label><select id="f-mes"><option value="">Todos</option></select></div>
-    <div class="fg"><label>Desde</label><input type="date" id="f-desde" title="Fecha inicio del rango"/></div>
-    <div class="fg"><label>Hasta</label><input type="date" id="f-hasta" title="Fecha fin del rango"/></div>
+    <div class="fg"><label>Desde</label><input type="date" id="f-desde"/></div>
+    <div class="fg"><label>Hasta</label><input type="date" id="f-hasta"/></div>
     <div class="fg"><label>Municipio</label><select id="f-municipio"><option value="">Todos</option></select></div>
     <div class="fg"><label>Guardarecursos</label><select id="f-guarda"><option value="">Todos</option></select></div>
     <div class="fg"><label>Ubicación</label><select id="f-ubic"><option value="">Todas</option></select></div>
@@ -236,24 +236,8 @@
 
     <!-- 11. Ranking guardarecursos -->
     <div class="cc full">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:4px">
-        <div>
-          <div class="cc-title">Ranking de guardarecursos · volumen e incidentes</div>
-          <div class="cc-hint">Cada barra tiene su propio color · número sobre la barra = total de patrullajes · línea roja = incidentes reportados</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <div class="fg" style="min-width:0;flex:0 0 auto">
-            <label style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px;display:block">Rango específico</label>
-            <div style="display:flex;gap:6px;align-items:center">
-              <input type="date" id="f-desde-r" style="border:1px solid var(--borde);border-radius:8px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--ink);outline:none" title="Desde"/>
-              <span style="font-size:11px;color:var(--muted)">–</span>
-              <input type="date" id="f-hasta-r" style="border:1px solid var(--borde);border-radius:8px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--ink);outline:none" title="Hasta"/>
-              <button id="btn-aplicar-rango" style="padding:5px 12px;border-radius:8px;border:1px solid var(--borde);background:var(--verde-oscuro);color:#fff;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer">Aplicar</button>
-              <button id="btn-limpiar-rango" style="padding:5px 10px;border-radius:8px;border:1px solid var(--borde);background:var(--blanco);color:var(--muted);font-size:12px;font-family:inherit;cursor:pointer">✕</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="cc-title">Ranking de guardarecursos · volumen e incidentes</div>
+      <div class="cc-hint">Total de patrullajes por guardarecurso (barras) e incidentes reportados (puntos rojos) · todos los activos en el período filtrado</div>
       <div class="cw" style="height:420px"><canvas id="c-rankGuarda"></canvas></div>
     </div>
 
@@ -279,16 +263,12 @@ function bestL(a,b){a=norm(a);b=norm(b);if(!a)return b;if(!b)return a;if(pA(b)&&
 const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MESES_F=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 const DIAS=["Lunes","Martes","Miérc.","Jueves","Viernes","Sábado","Dom."];
-const PALETTE=["#2d8a4e","#0891b2","#d97706","#7c3aed","#be123c","#0e7490","#65a30d","#9333ea","#b45309","#0f766e"];
+const PALETTE=["#0ea5e9","#10b981","#f59e0b","#8b5cf6","#ef4444","#14b8a6","#f97316","#6366f1","#be185d","#65a30d"];
 const TT={backgroundColor:"rgba(10,61,43,0.92)",titleFont:{size:13,weight:"600"},bodyFont:{size:12},padding:10,cornerRadius:8};
 
 Chart.defaults.font.family="'DM Sans',sans-serif";
 Chart.defaults.color="#6b7280";
-// Registrar plugin datalabels; desactivado globalmente, se activa solo en G12
-if(typeof ChartDataLabels!=="undefined"){
-  Chart.register(ChartDataLabels);
-  Chart.defaults.set("plugins.datalabels",{display:false});
-}
+if(typeof ChartDataLabels!=="undefined"){Chart.register(ChartDataLabels);Chart.defaults.set("plugins.datalabels",{display:false});}
 
 const CHARTS={};
 function mkChart(id,cfg){if(CHARTS[id])CHARTS[id].destroy();CHARTS[id]=new Chart(document.getElementById(id),cfg)}
@@ -441,9 +421,9 @@ function g1(rows){
   const mean=avg(vals);
   const ctx=document.getElementById("c-tendencia").getContext("2d");
   const grad=ctx.createLinearGradient(0,0,0,300);
-  grad.addColorStop(0,"rgba(45,138,78,0.30)");grad.addColorStop(1,"rgba(45,138,78,0.02)");
+  grad.addColorStop(0,"rgba(14,165,233,0.3)");grad.addColorStop(1,"rgba(14,165,233,0.01)");
   mkChart("c-tendencia",{type:"line",data:{labels:keys.map(mShort),datasets:[
-    {label:"Patrullajes",data:vals,fill:true,tension:0.4,borderColor:"#2d8a4e",backgroundColor:grad,borderWidth:2.5,pointBackgroundColor:"#2d8a4e",pointRadius:5,pointHoverRadius:7},
+    {label:"Patrullajes",data:vals,fill:true,tension:0.4,borderColor:"#0ea5e9",backgroundColor:grad,borderWidth:2.5,pointBackgroundColor:"#0ea5e9",pointRadius:5,pointHoverRadius:7},
     {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(239,68,68,0.55)",borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false,tension:0}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}}}});
 }
@@ -492,8 +472,8 @@ function g3(rows){
   durs.forEach(d=>{const i=Math.floor(d/bs);if(i>=0&&i<nB)bins[i]++});
   const labels=Array.from({length:nB},(_,i)=>i%2===0?(i*bs)+"h":"");
   const ctx=document.getElementById("c-duracion").getContext("2d");
-  const g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,"rgba(45,138,78,.85)");g.addColorStop(1,"rgba(45,138,78,.35)");
-  mkChart("c-duracion",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:bins,backgroundColor:g,borderColor:"#2d8a4e",borderWidth:1,borderRadius:4,borderSkipped:false}]},
+  const g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,"rgba(16,185,129,.9)");g.addColorStop(1,"rgba(16,185,129,.3)");
+  mkChart("c-duracion",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:bins,backgroundColor:g,borderColor:"#059669",borderWidth:1,borderRadius:4,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].dataIndex*bs}h – ${(c[0].dataIndex+1)*bs}h`,label:c=>` ${c.parsed.y} patrullajes`}}},
     scales:{x:{grid:{display:false},ticks:{font:{size:10}},title:{display:true,text:"Duración (horas)",font:{size:11}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}},title:{display:true,text:"Frecuencia",font:{size:11}}}}}});
 }
@@ -503,7 +483,7 @@ function g3(rows){
 ══════════════════════════════════ */
 function g4(rows){
   const pts=rows.filter(r=>r.__hora!==null&&r.__dur!==null).map(r=>({x:r.__hora,y:r.__dur,m:LABELS.muni.get(r.__cm)||r["Municipio"]||""}));
-  mkChart("c-scatter",{type:"scatter",data:{datasets:[{label:"Patrullaje",data:pts,backgroundColor:"rgba(8,145,178,0.35)",borderColor:"rgba(8,145,178,0.8)",borderWidth:1,pointRadius:4,pointHoverRadius:6}]},
+  mkChart("c-scatter",{type:"scatter",data:{datasets:[{label:"Patrullaje",data:pts,backgroundColor:"rgba(139,92,246,0.4)",borderColor:"rgba(139,92,246,0.8)",borderWidth:1,pointRadius:4,pointHoverRadius:6}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>[` Inicio: ${Math.floor(c.parsed.x)}h${Math.round((c.parsed.x%1)*60).toString().padStart(2,"0")}`,` Duración: ${c.parsed.y.toFixed(1)}h`,` ${c.raw.m}`]}}},
     scales:{x:{min:5,max:19,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:10},callback:v=>`${v}h`},title:{display:true,text:"Hora de inicio",font:{size:11}}},y:{min:0,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}},title:{display:true,text:"Duración (h)",font:{size:11}}}}}});
 }
@@ -598,9 +578,9 @@ function g7(rows){
   const sd=rows.length-ru-fu;
   const donutOpts=(labels,data,colors,borders)=>({type:"doughnut",data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2,hoverOffset:8}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
-  mkChart("c-rumcla",donutOpts(["Dentro RUMCLA","Fuera RUMCLA","Sin dato"].slice(0,sd>0?3:2),[ru,fu,...(sd>0?[sd]:[])],["#2d8a4e","#0891b2","#e5e7eb"],["#1a5c3a","#0e7490","#d1d5db"]));
+  mkChart("c-rumcla",donutOpts(["Dentro RUMCLA","Fuera RUMCLA","Sin dato"].slice(0,sd>0?3:2),[ru,fu,...(sd>0?[sd]:[])],["#0ea5e9","#f59e0b","#e5e7eb"],["#0284c7","#d97706","#d1d5db"]));
   const si=rows.filter(r=>r.__ci==="si").length;const no=rows.filter(r=>r.__ci==="no").length;
-  mkChart("c-ilegal",donutOpts(["Sin incidente","Con incidente"],[no,si],["#dcfce7","#fee2e2"],["#2d8a4e","#dc2626"]));
+  mkChart("c-ilegal",donutOpts(["Sin incidente","Con incidente"],[no,si],["#dcfce7","#fee2e2"],["#16a34a","#dc2626"]));
 }
 
 /* ══════════════════════════════════
@@ -613,7 +593,7 @@ function g8(rows){
   const si=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="si").length);
   const no=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="no").length);
   mkChart("c-ilegalMuni",{type:"bar",data:{labels,datasets:[
-    {label:"Sin incidente",data:no,backgroundColor:"rgba(45,138,78,0.65)",borderColor:"#2d8a4e",borderWidth:1,borderRadius:4,borderSkipped:false},
+    {label:"Sin incidente",data:no,backgroundColor:"rgba(16,185,129,0.7)",borderColor:"#059669",borderWidth:1,borderRadius:4,borderSkipped:false},
     {label:"Con incidente",data:si,backgroundColor:"rgba(239,68,68,0.75)",borderColor:"#dc2626",borderWidth:1,borderRadius:4,borderSkipped:false},
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
     plugins:{legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}},tooltip:{...TT}},
@@ -630,7 +610,7 @@ function g9(rows){
   const labels=sorted.map(([k])=>LABELS.ap.get(k)||k).map(l=>l.length>40?l.slice(0,38)+"…":l);
   const vals=sorted.map(([,v])=>v);
   const ctx=document.getElementById("c-areaProt").getContext("2d");
-  const g=ctx.createLinearGradient(400,0,0,0);g.addColorStop(0,"rgba(45,138,78,0.85)");g.addColorStop(1,"rgba(8,145,178,0.55)");
+  const g=ctx.createLinearGradient(400,0,0,0);g.addColorStop(0,"rgba(16,185,129,0.85)");g.addColorStop(1,"rgba(14,165,233,0.65)");
   mkChart("c-areaProt",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:vals,backgroundColor:g,borderColor:"#059669",borderWidth:1,borderRadius:5,borderSkipped:false}]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} patrullajes`}}},
@@ -659,8 +639,8 @@ function g11(rows){
   const counts=new Array(7).fill(0);
   rows.forEach(r=>{if(r.__dow!==null)counts[r.__dow]++});
   const ctx=document.getElementById("c-diaSem").getContext("2d");
-  const g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,"rgba(124,58,237,0.75)");g.addColorStop(1,"rgba(124,58,237,0.30)");
-  mkChart("c-diaSem",{type:"bar",data:{labels:DIAS,datasets:[{label:"Patrullajes",data:counts,backgroundColor:g,borderColor:"#2d8a4e",borderWidth:1,borderRadius:6,borderSkipped:false}]},
+  const g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,"rgba(99,102,241,0.85)");g.addColorStop(1,"rgba(99,102,241,0.35)");
+  mkChart("c-diaSem",{type:"bar",data:{labels:DIAS,datasets:[{label:"Patrullajes",data:counts,backgroundColor:g,borderColor:"#4f46e5",borderWidth:1,borderRadius:6,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} patrullajes`}}},
       scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}}}});
@@ -668,36 +648,19 @@ function g11(rows){
 
 /* ══════════════════════════════════
    G12 — Ranking guardarecursos
-   · color único por guarda
-   · etiquetas de valor sobre cada barra
-   · línea de incidentes
+   · color distinto por guarda
+   · etiquetas sobre barras
+   · número de incidentes sobre cada punto
 ══════════════════════════════════ */
 function g12(rows){
-  // Aplicar rango específico si está definido
-  if(G12_DESDE||G12_HASTA){
-    rows=rows.filter(r=>{
-      if(!r.__dt)return false;
-      if(G12_DESDE&&r.__dt<G12_DESDE)return false;
-      if(G12_HASTA&&r.__dt>G12_HASTA)return false;
-      return true;
-    });
-  }
   const gc=countBy(rows,r=>r.__cg);
   const sorted=[...gc.entries()].sort((a,b)=>b[1]-a[1]);
-  const labels=sorted.map(([k])=>{
-    const full=(LABELS.guarda.get(k)||k).split(" ");
-    // Mostrar primeras 2 palabras del apellido+nombre para legibilidad
-    return full.slice(0,3).join(" ");
-  });
+  const labels=sorted.map(([k])=>(LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
   const totales=sorted.map(([,v])=>v);
   const ilegales=sorted.map(([k])=>rows.filter(r=>r.__cg===k&&r.__ci==="si").length);
-
-  // Paleta extendida — un color distinto por guarda
-  // G12: color distinto por guarda — paleta equilibrada
   const PAL_EXT=["#2d8a4e","#0891b2","#d97706","#7c3aed","#be123c","#0e7490","#65a30d","#9333ea","#b45309","#0f766e","#15803d","#0369a1","#a16207","#6d28d9","#9f1239","#047857","#0284c7","#92400e","#7e22ce","#881337","#166534","#075985","#78350f","#4c1d95","#b91c1c","#0f766e","#0c4a6e","#854d0e","#581c87","#9f1239"];
   const bgColors=sorted.map((_,i)=>PAL_EXT[i%PAL_EXT.length]+"cc");
   const bdColors=sorted.map((_,i)=>PAL_EXT[i%PAL_EXT.length]);
-
   mkChart("c-rankGuarda",{type:"bar",data:{labels,datasets:[
     {
       label:"Patrullajes",
@@ -707,7 +670,14 @@ function g12(rows){
       borderWidth:1.5,
       borderRadius:5,
       borderSkipped:false,
-      order:2
+      order:2,
+      datalabels:{
+        display:ctx=>!!(ctx.parsed&&ctx.parsed.y>0),
+        anchor:"end",align:"top",offset:2,
+        color:"#0d1f15",
+        font:{size:10,weight:"700",family:"'DM Sans',sans-serif"},
+        formatter:v=>v>0?v:""
+      }
     },
     {
       label:"Incidentes",
@@ -716,59 +686,33 @@ function g12(rows){
       borderColor:"#dc2626",
       backgroundColor:"rgba(220,38,38,0.9)",
       borderWidth:2.5,
-      pointRadius:7,
-      pointHoverRadius:9,
+      pointRadius:6,
+      pointHoverRadius:8,
       pointStyle:"circle",
       pointBackgroundColor:"#dc2626",
       pointBorderColor:"#fff",
-      pointBorderWidth:2,
-      tension:0,
-      fill:false,
-      order:1,
+      pointBorderWidth:1.5,
+      tension:0,fill:false,order:1,
       datalabels:{
-        display:ctx=>ctx.parsed.y>0,
-        anchor:"top",
-        align:"top",
-        offset:4,
+        display:ctx=>!!(ctx.parsed&&ctx.parsed.y>0),
+        anchor:"top",align:"top",offset:4,
         color:"#b91c1c",
         font:{size:10,weight:"700",family:"'DM Sans',sans-serif"},
         formatter:v=>v>0?v:""
       }
     }
   ]},options:{
-    responsive:true,
-    maintainAspectRatio:false,
+    responsive:true,maintainAspectRatio:false,
     interaction:{mode:"index",intersect:false},
     plugins:{
       legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}},
-      tooltip:{...TT,callbacks:{
-        label:c=>c.dataset.label==="Patrullajes"
-          ?` Patrullajes: ${c.parsed.y}`
-          :` Incidentes: ${c.parsed.y}`
-      }},
-      datalabels:{
-        display:ctx=>{
-          // Mostrar etiqueta en barras de patrullajes (encima)
-          // y en puntos de incidentes (solo si > 0)
-          if(ctx.dataset.label==="Patrullajes") return ctx.parsed.y>0;
-          if(ctx.dataset.label==="Incidentes") return ctx.parsed.y>0;
-          return false;
-        },
-        anchor:ctx=>ctx.dataset.label==="Patrullajes"?"end":"center",
-        align:ctx=>ctx.dataset.label==="Patrullajes"?"top":"bottom",
-        offset:ctx=>ctx.dataset.label==="Patrullajes"?2:6,
-        color:ctx=>ctx.dataset.label==="Patrullajes"?"#0d1f15":"#dc2626",
-        font:ctx=>ctx.dataset.label==="Patrullajes"
-          ?{size:10,weight:"700",family:"'DM Sans',sans-serif"}
-          :{size:10,weight:"900",family:"'DM Sans',sans-serif"},
-        formatter:v=>v>0?v:""
-      }
+      tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}}
     },
     scales:{
       x:{grid:{display:false},ticks:{font:{size:10},maxRotation:38,minRotation:30}},
       y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}
     }
-  }});
+  }}));
 }
 
 /* ══════════════════════════════════
@@ -785,26 +729,6 @@ function applyAll(){
 function resetAll(){["f-anio","f-mes","f-desde","f-hasta","f-municipio","f-guarda","f-ubic"].forEach(id=>document.getElementById(id).value="");applyAll()}
 
 /* ══════════════════════════════════
-   RANGO ESPECÍFICO G12
-══════════════════════════════════ */
-let G12_DESDE=null, G12_HASTA=null;
-function applyRangoG12(){
-  const d=document.getElementById("f-desde-r").value;
-  const h=document.getElementById("f-hasta-r").value;
-  G12_DESDE=d?new Date(d+"T00:00:00"):null;
-  G12_HASTA=h?new Date(h+"T23:59:59"):null;
-  const rows=applyF(getF());
-  g12(rows);
-}
-function limpiarRangoG12(){
-  document.getElementById("f-desde-r").value="";
-  document.getElementById("f-hasta-r").value="";
-  G12_DESDE=null;G12_HASTA=null;
-  const rows=applyF(getF());
-  g12(rows);
-}
-
-/* ══════════════════════════════════
    INICIO
 ══════════════════════════════════ */
 (async()=>{
@@ -817,8 +741,6 @@ function limpiarRangoG12(){
     document.getElementById("f-hasta").addEventListener("change",applyAll);
     document.getElementById("f-radar-guarda").addEventListener("change",()=>g6(applyF(getF())));
     document.getElementById("btn-reset").addEventListener("click",resetAll);
-    document.getElementById("btn-aplicar-rango").addEventListener("click",applyRangoG12);
-    document.getElementById("btn-limpiar-rango").addEventListener("click",limpiarRangoG12);
     applyAll();
   }catch(e){
     const el=document.getElementById("estado");
