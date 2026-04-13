@@ -19,6 +19,12 @@ on:
     - cron: "30 6 * * *"    # 00:30 medianoche Guatemala
   workflow_dispatch:
 
+# Evita que runs simultáneos (manual + automático) se pisen entre sí.
+# Si ya hay un run activo, el nuevo espera en cola.
+concurrency:
+  group: sync-consumo-forestal
+  cancel-in-progress: false
+
 jobs:
   sync:
     name: Descargar y actualizar CSV de consumo forestal
