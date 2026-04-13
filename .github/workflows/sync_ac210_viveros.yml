@@ -1,0 +1,373 @@
+name: Sincronizar AC210 Asistencia a Viveros
+
+on:
+  schedule:
+    - cron: "5 18 * * *"
+    - cron: "5 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-ac210-viveros
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Descargar y actualizar CSV de AC210
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install requests pandas
+
+      - name: Sincronizar datos de ArcGIS Online
+        env:
+          AGOL_USERNAME: ${{ secrets.AGOL_USERNAME }}
+          AGOL_PASSWORD: ${{ secrets.AGOL_PASSWORD }}
+          AGOL_ORG_URL:  ${{ secrets.AGOL_ORG_URL }}
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import sys
+          import requests
+          import pandas as pd
+
+          ORG_URL  = os.environ["AGOL_ORG_URL"].rstrip("/")
+          USERNAME = os.environ["AGOL_USERNAME"]
+          PASSWORD = os.environ["AGOL_PASSWORD"]
+
+          ITEM_ID    = "52551e400c394e8088c01ff3feeef3b7"
+          OUTPUT_CSV = "docs/datos/base2_datos.csv"
+          PAGE_SIZE  = 1000
+
+          COLS = [
+              "Nombre del guarda recurso",
+              "Municipio",
+              "Esta en apoyo a un vivero fuera de su municipio",
+              "Especifique el municipio o lugar de apoyo",
+              "Hora de inicio de actividades",
+              "Hora de finalizacion de actividades",
+              "Region",
+              "Area protegida",
+              "Especifique area (Fuera de RUMCLA)",
+              "Nombre del area y/o lugar del vivero establecido (Barrio, Caserio, Canton, Aldea, etc.)",
+              "Actividades realizadas",
+              "Especifique otra actividad",
+              "Observaciones",
+              "CreationDate",
+              "EditDate",
+              "X",
+              "Y",
+          ]
+
+          RENAME = {
+              "nombre_guardarecurso": "Nombre del guarda recurso",
+              "municipio": "Municipio",
+              "apoyo_fuera": "Esta en apoyo a un vivero fuera de su municipio",
+              "apoyo_fuera_detalle": "Especifique el municipio o lugar de apoyo",
+              "hora_inicio": "Hora de inicio de actividades",
+              "hora_fin": "Hora de finalizacion de actividades",
+              "region": "Region",
+              "area_protegida": "Area protegida",
+              "area_protegida_otro": "Especifique area (Fuera de RUMCLA)",
+              "nombre_area": "Nombre del area y/o lugar del vivero establecido (Barrio, Caserio, Canton, Aldea, etc.)",
+              "actividades": "Actividades realizadas",
+              "actividad_otro": "Especifique otra actividad",
+              "observaciones": "Observaciones",
+              "CreationDate": "CreationDate",
+              "EditDate": "EditDate",
+              "x": "X",
+              "y": "Y",
+          }
+
+          FIX_AREA = {
+              "rumcla": "RUMCLA",
+              "fuera_rumcla": "Fuera de RUMCLA",
+          }
+
+          FIX_APOYO = {
+              "si": "si",
+              "sí": "si",
+              "no": "no",
+              "nan": "",
+              "none": "",
+          }
+
+          def auth_token():
+              r = requests.post(
+                  f"{ORG_URL}/sharing/rest/generateToken",
+                  data={
+                      "username": USERNAME,
+                      "password": PASSWORD,
+                      "referer": "https://www.arcgis.com",
+                      "expiration": 120,
+                      "f": "json",
+                  },
+                  timeout=30,
+              )
+              r.raise_for_status()
+              data = r.json()
+              if "error" in data:
+                  print(f"ERROR de autenticación: {data['error']}")
+                  sys.exit(1)
+              return data["token"]
+
+          def resolve_service_url(token):
+              r = requests.get(
+                  f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}",
+                  params={"f": "json", "token": token},
+                  timeout=30,
+              )
+              r.raise_for_status()
+              item_data = r.json()
+              print(f"  Item: {item_data.get('title')} | tipo: {item_data.get('type')}")
+              service_url = item_data.get("url")
+
+              if not service_url:
+                  print("  URL directa no encontrada. Buscando relación Survey2Service...")
+                  r2 = requests.get(
+                      f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}/relatedItems",
+                      params={
+                          "relationshipType": "Survey2Service",
+                          "direction": "forward",
+                          "f": "json",
+                          "token": token,
+                      },
+                      timeout=30,
+                  )
+                  r2.raise_for_status()
+                  related = r2.json().get("relatedItems", [])
+                  print(f"  Items relacionados: {len(related)}")
+                  for rel in related:
+                      if rel.get("url"):
+                          service_url = rel["url"]
+                          print(f"  Encontrado: {service_url}")
+                          break
+
+              if not service_url:
+                  print("  Buscando Feature Service por nombre...")
+                  r3 = requests.get(
+                      f"{ORG_URL}/sharing/rest/search",
+                      params={
+                          "q": f"owner:{USERNAME} type:'Feature Service' tags:survey",
+                          "num": 50,
+                          "f": "json",
+                          "token": token,
+                      },
+                      timeout=30,
+                  )
+                  r3.raise_for_status()
+                  for res in r3.json().get("results", []):
+                      title = (res.get("title") or "").lower()
+                      if any(k in title for k in ["vivero", "viveros", "asistencia", "ac210", "210"]):
+                          service_url = res.get("url", "")
+                          print(f"  Encontrado por búsqueda: {service_url}")
+                          break
+
+              if not service_url:
+                  print("ERROR: No se pudo encontrar la URL del Feature Service.")
+                  sys.exit(1)
+
+              return service_url.rstrip("/")
+
+          def fmt_system_datetime(series):
+              if pd.api.types.is_numeric_dtype(series):
+                  dt = pd.to_datetime(series, unit="ms", errors="coerce")
+              else:
+                  dt = pd.to_datetime(series, errors="coerce")
+              return dt.dt.strftime("%m/%d/%Y %H:%M:%S.%f")
+
+          def fmt_time_only(series):
+              if pd.api.types.is_numeric_dtype(series):
+                  dt = pd.to_datetime(series, unit="ms", errors="coerce")
+                  return dt.dt.strftime("%H:%M")
+              s = series.astype(str).str.strip()
+              s = s.replace({"nan": "", "None": ""})
+              s = s.str.replace(r"^(\d{1,2}:\d{2}):\d{2}$", r"\1", regex=True)
+              return s
+
+          print("Autenticando en ArcGIS Online...")
+          token = auth_token()
+          print("✓ Autenticado")
+
+          service_url = resolve_service_url(token)
+          print(f"✓ Servicio: {service_url}")
+
+          r_fields = requests.get(f"{service_url}/0", params={"f": "json", "token": token}, timeout=30)
+          r_fields.raise_for_status()
+          field_names = [f["name"] for f in r_fields.json().get("fields", [])]
+          print(f"  Campos en ArcGIS ({len(field_names)}): {field_names}")
+
+          r_count = requests.get(
+              f"{service_url}/0/query",
+              params={"where": "1=1", "returnCountOnly": "true", "f": "json", "token": token},
+              timeout=30,
+          )
+          r_count.raise_for_status()
+          total = r_count.json().get("count", 0)
+          print(f"✓ Registros en ArcGIS: {total}")
+
+          pages = []
+          offset = 0
+          while True:
+              r = requests.get(
+                  f"{service_url}/0/query",
+                  params={
+                      "where": "1=1",
+                      "outFields": "*",
+                      "resultOffset": offset,
+                      "resultRecordCount": PAGE_SIZE,
+                      "returnGeometry": "true",
+                      "f": "json",
+                      "token": token,
+                  },
+                  timeout=60,
+              )
+              r.raise_for_status()
+              rj = r.json()
+              features = rj.get("features", [])
+              if not features:
+                  break
+
+              rows_page = []
+              for feat in features:
+                  attrs = dict(feat.get("attributes", {}))
+                  geo = feat.get("geometry") or {}
+                  if "x" not in attrs and geo.get("x") is not None:
+                      attrs["x"] = geo["x"]
+                  if "y" not in attrs and geo.get("y") is not None:
+                      attrs["y"] = geo["y"]
+                  rows_page.append(attrs)
+
+              pages.append(pd.DataFrame(rows_page))
+              offset += len(features)
+              print(f"  Descargados: {offset}/{total}", end="\r")
+              if not rj.get("exceededTransferLimit", False):
+                  break
+          print()
+
+          df_new = pd.concat(pages, ignore_index=True) if pages else pd.DataFrame()
+          if df_new.empty:
+              print("Sin registros. Abortando.")
+              sys.exit(0)
+
+          id_candidates = [c for c in ["globalid", "GlobalID", "OBJECTID", "objectid"] if c in df_new.columns]
+          if id_candidates:
+              df_new["_source_id"] = df_new[id_candidates[0]].astype(str).str.strip()
+          else:
+              df_new["_source_id"] = ""
+
+          df_new = df_new.rename(columns=RENAME)
+
+          if "Area protegida" in df_new.columns:
+              df_new["Area protegida"] = (
+                  df_new["Area protegida"]
+                  .astype(str)
+                  .str.strip()
+                  .str.lower()
+                  .replace(FIX_AREA)
+              )
+
+          if "Esta en apoyo a un vivero fuera de su municipio" in df_new.columns:
+              df_new["Esta en apoyo a un vivero fuera de su municipio"] = (
+                  df_new["Esta en apoyo a un vivero fuera de su municipio"]
+                  .astype(str)
+                  .str.strip()
+                  .str.lower()
+                  .replace(FIX_APOYO)
+              )
+
+          if "Region" in df_new.columns:
+              df_new["Region"] = df_new["Region"].fillna("Altiplano Central").astype(str).str.strip()
+              df_new.loc[df_new["Region"] == "", "Region"] = "Altiplano Central"
+          else:
+              df_new["Region"] = "Altiplano Central"
+
+          if "CreationDate" in df_new.columns:
+              df_new["CreationDate"] = fmt_system_datetime(df_new["CreationDate"])
+
+          if "EditDate" in df_new.columns:
+              df_new["EditDate"] = fmt_system_datetime(df_new["EditDate"])
+
+          for col in ["Hora de inicio de actividades", "Hora de finalizacion de actividades"]:
+              if col in df_new.columns:
+                  df_new[col] = fmt_time_only(df_new[col])
+
+          if "Actividades realizadas" in df_new.columns:
+              df_new["Actividades realizadas"] = (
+                  df_new["Actividades realizadas"]
+                  .astype(str)
+                  .str.strip()
+                  .str.replace(" ", ",", regex=False)
+                  .replace({"nan": "", "None": ""})
+              )
+
+          for c in COLS:
+              if c not in df_new.columns:
+                  df_new[c] = None
+
+          keep_cols = COLS + ["_source_id"]
+          df_new = df_new[keep_cols]
+
+          try:
+              df_old = None
+              for enc in ("utf-8-sig", "latin-1", "cp1252"):
+                  try:
+                      df_old = pd.read_csv(OUTPUT_CSV, sep=";", encoding=enc)
+                      print(f"✓ Histórico existente: {len(df_old)} registros (encoding: {enc})")
+                      break
+                  except UnicodeDecodeError:
+                      continue
+              if df_old is None:
+                  raise FileNotFoundError
+
+              if "_source_id" not in df_old.columns:
+                  df_old["_source_id"] = ""
+
+              combined = pd.concat([df_old, df_new], ignore_index=True)
+          except FileNotFoundError:
+              print("Sin histórico previo. Se crea desde cero.")
+              combined = df_new
+
+          combined["_source_id"] = combined["_source_id"].fillna("").astype(str).str.strip()
+          with_source = combined["_source_id"] != ""
+          dedup_source = combined[with_source].drop_duplicates(subset="_source_id", keep="last")
+          dedup_nosource = combined[~with_source].copy()
+
+          dedup_nosource["_key"] = (
+              dedup_nosource["Nombre del guarda recurso"].astype(str).str.strip().str.lower() + "|" +
+              dedup_nosource["CreationDate"].astype(str).str.strip() + "|" +
+              dedup_nosource["Nombre del area y/o lugar del vivero establecido (Barrio, Caserio, Canton, Aldea, etc.)"].astype(str).str.strip().str.lower() + "|" +
+              dedup_nosource["Hora de inicio de actividades"].astype(str).str.strip()
+          )
+          dedup_nosource = dedup_nosource.drop_duplicates(subset="_key", keep="last").drop(columns="_key")
+
+          combined = pd.concat([dedup_source, dedup_nosource], ignore_index=True)
+
+          combined["_sort"] = pd.to_datetime(combined["CreationDate"], errors="coerce")
+          combined = combined.sort_values("_sort").drop(columns=["_sort", "_source_id"], errors="ignore").reset_index(drop=True)
+
+          combined.to_csv(OUTPUT_CSV, index=False, sep=";", encoding="utf-8-sig")
+          print(f"✓ CSV guardado: {OUTPUT_CSV} ({len(combined)} registros totales)")
+          PYEOF
+
+      - name: Publicar cambios al repositorio
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/datos/base2_datos.csv
+
+          if git diff --staged --quiet; then
+            echo "Sin cambios. No se necesita commit."
+          else
+            FECHA=$(TZ="America/Guatemala" date '+%d/%m/%Y %H:%M GT')
+            git commit -m "sync: actualizar AC210 asistencia viveros (${FECHA})"
+            git push
+          fi
