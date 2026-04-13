@@ -1,1492 +1,683 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AC297 Consumo forestal familiar - Tablero dinámico</title>
-
-  <!-- Tabulator CSS (LOCAL) -->
-  <link rel="stylesheet" href="../../assets/tabulator.min.css">
-
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>AC297 · Tablero dinámico · Consumo Forestal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root{
-      --verde1:#0f766e;
-      --verde2:#0e7490;
-      --azul:#1d9bf0;
-      --azul2:#0f80cc;
-      --texto:#0f172a;
-      --muted:#6b7280;
-      --borde:#e5e7eb;
-      --bg:#f5f7fa;
-      --card:14px;
+      --verde-oscuro:#0a3d2b;--verde-medio:#1a5c3a;
+      --bg:#f0f4f2;--blanco:#ffffff;
+      --ink:#0d1f15;--muted:#6b7280;--borde:#e2e8e4;
+      --sombra:rgba(10,61,43,0.08);--azul-m:#2563eb;
+      --p0:#0ea5e9;--p1:#10b981;--p2:#f59e0b;--p3:#8b5cf6;
+      --p4:#ef4444;--p5:#14b8a6;--p6:#f97316;--p7:#6366f1;
     }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;opacity:0;animation:fadeIn .35s ease forwards}
+    @keyframes fadeIn{to{opacity:1}}
+    @media(prefers-reduced-motion:reduce){body{animation:none;opacity:1}}
 
-    *{ box-sizing:border-box; }
-    html{ scroll-behavior:smooth; }
+    header{background:linear-gradient(90deg,var(--verde-oscuro),var(--verde-medio));color:#fff;padding:12px 20px 14px;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.28)}
+    .header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:5px 10px}
+    .logo-group img{height:34px;max-width:110px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 7px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+    .header-right{text-align:right;flex:1}
+    .header-right h1{font-size:17px;font-weight:600;margin-bottom:1px}
+    .header-right p{font-size:11.5px;opacity:.7;font-weight:300}
+    .header-chip{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:2px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+    .chip-dot{width:5px;height:5px;border-radius:50%;background:#86efac;animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-      color:var(--texto);
-      background:
-        radial-gradient(circle at top left, #dbeafe 0, transparent 55%),
-        radial-gradient(circle at bottom right, #bbf7d0 0, transparent 55%),
-        linear-gradient(180deg, #e5f3f0 0%, var(--bg) 35%, #eef2ff 100%);
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
-      opacity:0;
-      animation:fadeIn .35s ease-out forwards;
-    }
-    @keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+    .module-nav{background:var(--blanco);border-bottom:1px solid var(--borde);padding:0 20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .module-nav-inner{max-width:1400px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+    .module-nav-inner::-webkit-scrollbar{display:none}
+    .nav-back{display:flex;align-items:center;gap:6px;padding:12px 16px 12px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap;transition:color .2s}
+    .nav-back:hover{color:var(--verde-medio)}
+    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;height:48px}
+    .nav-tab:hover{color:var(--azul-m);border-bottom-color:rgba(37,99,235,.25)}
+    .nav-tab.active{color:var(--azul-m);border-bottom-color:var(--azul-m);font-weight:600}
 
-    @media (prefers-reduced-motion: reduce){
-      html{ scroll-behavior:auto; }
-      body{ animation:none; opacity:1; }
-      .btn, .card{ transition:none !important; }
-    }
+    .page{max-width:1400px;width:100%;margin:0 auto;padding:20px 20px 48px;flex:1}
 
-    /* Header institucional */
-    header{
-      background:linear-gradient(90deg,var(--verde1),var(--verde2));
-      color:#fff;
-      padding:14px 20px 18px;
-      box-shadow:0 2px 10px rgba(15,23,42,.25);
-      position:sticky;
-      top:0;
-      z-index:10;
-    }
-    .header-inner{
-      max-width:1100px;
-      margin:0 auto;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:16px;
-      flex-wrap:wrap;
-    }
-    .logo-group{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      background-color:rgba(255,255,255,.12);
-      border-radius:999px;
-      padding:6px 10px;
-      border:1px solid rgba(255,255,255,.15);
-      backdrop-filter:blur(4px);
-    }
-    .logo-group img{
-      height:40px;
-      max-width:130px;
-      object-fit:contain;
-      background:#fff;
-      border-radius:999px;
-      padding:4px 8px;
-      box-shadow:0 2px 6px rgba(15,23,42,.25);
-    }
-    .title-group{
-      text-align:right;
-      flex:1 1 260px;
-    }
-    .title-group h1{
-      margin:0 0 2px 0;
-      font-size:22px;
-      letter-spacing:.02em;
-    }
-    .title-group p{
-      margin:0;
-      font-size:13px;
-      opacity:.96;
-      line-height:1.4;
-    }
-    .chip-version{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      margin-top:6px;
-      padding:3px 9px;
-      border-radius:999px;
-      border:1px solid rgba(248,250,252,.4);
-      font-size:11px;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      background-color:rgba(15,23,42,.18);
-    }
-    .chip-dot{
-      width:7px;height:7px;border-radius:999px;
-      background:#bbf7d0;
-      box-shadow:0 0 0 4px rgba(34,197,94,.18);
-    }
+    .filtros-bar{background:var(--blanco);border:1px solid var(--borde);border-radius:14px;padding:16px 20px;box-shadow:0 2px 10px var(--sombra);display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:16px}
+    .fg{display:flex;flex-direction:column;gap:4px;min-width:130px;flex:1}
+    .fg label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase}
+    .fg select,.fg input{border:1px solid var(--borde);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--ink);transition:border-color .2s,box-shadow .2s;outline:none}
+    .fg select:focus,.fg input:focus{border-color:var(--azul-m);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+    .btn-reset{padding:7px 16px;border-radius:8px;border:1px solid var(--borde);background:var(--blanco);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .2s;align-self:flex-end}
+    .btn-reset:hover{border-color:#94a3b8;color:var(--ink)}
 
-    main{
-      max-width:1100px;
-      width:100%;
-      margin:18px auto 0;
-      padding:0 20px 40px;
-      flex:1 0 auto;
-    }
+    .chips-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+    .chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);font-size:11.5px;font-weight:500;color:var(--azul-m)}
 
-    /* Tabs */
-    .tabs{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:center;
-      margin:10px 0 16px;
-    }
-    .tab{
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 14px;
-      border-radius:999px;
-      border:1px solid #cbd5f5;
-      background:rgba(255,255,255,.9);
-      color:#0f172a;
-      font-weight:700;
-      font-size:13px;
-      box-shadow:0 1px 3px rgba(15,23,42,.12);
-    }
-    .tab:hover{ background:#e5edff; border-color:#93c5fd; }
-    .tab.active{
-      background:var(--azul);
-      border-color:var(--azul);
-      color:#fff;
-    }
+    .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+    .kpi{background:var(--blanco);border:1px solid var(--borde);border-top:3px solid transparent;border-radius:14px;padding:16px 18px;box-shadow:0 2px 8px var(--sombra)}
+    .kpi-0{border-top-color:var(--p0)}.kpi-1{border-top-color:var(--p1)}.kpi-2{border-top-color:var(--p2)}.kpi-3{border-top-color:var(--p4)}.kpi-4{border-top-color:var(--p3)}
+    .kpi-label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px}
+    .kpi-value{font-family:'Playfair Display',serif;font-size:30px;font-weight:700;line-height:1;color:var(--ink);margin-bottom:4px}
+    .kpi-sub{font-size:11.5px;color:var(--muted);font-weight:300}
 
-    .page-title{
-      margin:0 0 6px 0;
-      font-size:20px;
-    }
-    .page-sub{
-      margin:0 0 10px 0;
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.45;
-    }
+    .estado-bar{display:flex;align-items:center;margin-bottom:16px}
+    .estado-txt{font-size:13px;color:var(--muted);font-weight:300}
+    .estado-txt.error{color:#dc2626;font-weight:600}
 
-    .card{
-      background:#fff;
-      border-radius:var(--card);
-      border:1px solid var(--borde);
-      box-shadow:0 2px 10px rgba(15,23,42,.1);
-      padding:16px 16px 18px;
-      margin-bottom:16px;
-      position:relative;
-      overflow:hidden;
-    }
-    .card::before{
-      content:"";
-      position:absolute;
-      left:-40px; top:-40px;
-      width:120px; height:120px;
-      border-radius:999px;
-      background:radial-gradient(circle, rgba(59,130,246,.14), transparent 65%);
-      pointer-events:none;
-    }
-    .cardhead{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-bottom:10px;
-    }
-    .cardhead h3{
-      margin:0 0 4px 0;
-      font-size:16px;
-    }
-    .subnote{
-      margin:0;
-      color:var(--muted);
-      font-size:13px;
-    }
-    .mini-actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-    .mini-btn{
-      border:1px solid #cbd5f5;
-      background:#fff;
-      color:#0f172a;
-      border-radius:999px;
-      padding:6px 10px;
-      font-size:12px;
-      cursor:pointer;
-      font-weight:700;
-    }
-    .mini-btn:hover{ background:#eef2ff; border-color:#93c5fd; }
+    .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media(max-width:800px){.charts-grid{grid-template-columns:1fr}}
+    .cc{background:var(--blanco);border:1px solid var(--borde);border-radius:16px;padding:22px;box-shadow:0 2px 12px var(--sombra)}
+    .cc.full{grid-column:span 2}
+    @media(max-width:800px){.cc.full{grid-column:span 1}}
+    .cc-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:3px}
+    .cc-hint{font-size:12px;color:var(--muted);font-weight:300;margin-bottom:16px;line-height:1.5}
+    .cw{position:relative;height:260px}
+    .cw.tall{height:320px}
+    .cw.short{height:190px}
 
-    /* Filtros */
-    .filters{
-      display:grid;
-      grid-template-columns:repeat(12,1fr);
-      gap:10px;
-      margin-top:8px;
-    }
-    .field{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-      min-width:0;
-    }
-    .field label{
-      font-size:12px;
-      font-weight:800;
-      color:#0f172a;
-    }
-    select, input[type="date"], input[type="week"], input[type="text"]{
-      width:100%;
-      padding:8px 10px;
-      border-radius:10px;
-      border:1px solid #cbd5f5;
-      font-size:13px;
-      outline:none;
-      background:#fff;
-    }
-    select:focus, input:focus{ border-color:#60a5fa; box-shadow:0 0 0 3px rgba(96,165,250,.18); }
-
-    .col-12{ grid-column:span 12; }
-    .col-6{ grid-column:span 6; }
-    .col-4{ grid-column:span 4; }
-    .col-3{ grid-column:span 3; }
-    .col-2{ grid-column:span 2; }
-
-    @media (max-width: 900px){
-      .col-6{ grid-column:span 12; }
-      .col-4{ grid-column:span 12; }
-      .col-3{ grid-column:span 6; }
-      .col-2{ grid-column:span 6; }
-    }
-    @media (max-width: 520px){
-      .col-3,.col-2{ grid-column:span 12; }
-      .title-group{ text-align:center; }
-      .header-inner{ justify-content:center; }
-    }
-
-    .row-actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:10px;
-      justify-content:flex-end;
-    }
-
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      padding:8px 14px;
-      border-radius:999px;
-      border:1px solid transparent;
-      cursor:pointer;
-      font-weight:800;
-      font-size:13px;
-      transition:background-color .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-      text-decoration:none;
-    }
-    .btn-primary{ background:var(--azul); color:#fff; box-shadow:0 1px 3px rgba(15,23,42,.2); }
-    .btn-primary:hover{ background:var(--azul2); transform:translateY(-1px); box-shadow:0 4px 10px rgba(15,23,42,.28); }
-    .btn-ghost{ background:rgba(255,255,255,.95); color:#0f172a; border-color:#cbd5f5; }
-    .btn-ghost:hover{ background:#e5edff; border-color:#93c5fd; transform:translateY(-1px); box-shadow:0 2px 8px rgba(15,23,42,.15); }
-    .btn-danger{ background:#ef4444; color:#fff; }
-    .btn-danger:hover{ filter:brightness(.95); transform:translateY(-1px); }
-
-    /* KPIs */
-    .kpis{
-      display:grid;
-      grid-template-columns:repeat(12,1fr);
-      gap:10px;
-    }
-    .kpi{
-      grid-column:span 2;
-      background:#ffffff;
-      border:1px solid var(--borde);
-      border-radius:14px;
-      padding:12px 12px 10px;
-      box-shadow:0 1px 4px rgba(15,23,42,.1);
-    }
-    .kpi .k{ font-size:22px; font-weight:900; margin:0; }
-    .kpi .l{ font-size:12px; color:var(--muted); margin:4px 0 0 0; font-weight:700; }
-    .kpi .s{ font-size:11px; color:var(--muted); margin:2px 0 0 0; }
-    @media (max-width: 900px){ .kpi{ grid-column:span 4; } }
-    @media (max-width: 520px){ .kpi{ grid-column:span 6; } }
-
-    /* Charts */
-    .chartwrap{
-      width:100%;
-      height:320px;
-      border:1px solid #e5e7eb;
-      border-radius:12px;
-      padding:10px;
-      background:#fff;
-    }
-    .chartwrap canvas{ width:100% !important; height:100% !important; }
-
-    .tablewrap{
-      width:100%;
-      overflow:auto;
-      border:1px solid #e5e7eb;
-      border-radius:12px;
-      padding:10px;
-      background:#fff;
-    }
-
-    .status{
-      font-size:13px;
-      color:var(--muted);
-      margin:0;
-    }
-
-    .toast{
-      position:fixed;
-      right:16px;
-      bottom:16px;
-      background:rgba(15,23,42,.92);
-      color:#fff;
-      padding:10px 12px;
-      border-radius:12px;
-      font-size:13px;
-      font-weight:800;
-      opacity:0;
-      transform:translateY(8px);
-      pointer-events:none;
-      transition:opacity .2s ease, transform .2s ease;
-      z-index:999;
-    }
-    .toast.show{ opacity:1; transform:translateY(0); }
-
-    footer{
-      text-align:center;
-      font-size:12px;
-      color:#6b7280;
-      padding:10px 20px 18px;
-      border-top:1px solid #e5e7eb;
-      background:rgba(248,250,252,.9);
-      margin-top:auto;
-    }
-    footer p{ margin:3px 0; }
-
-    /* Area PDF */
-    #pdf-area{
-      background:#fff;
-      padding:16px;
-      border-radius:12px;
-    }
-    .pdf-grid{
-      display:grid;
-      grid-template-columns:repeat(12,1fr);
-      gap:10px;
-      margin-top:10px;
-    }
-    .pdf-box{
-      grid-column:span 4;
-      border:1px solid #e5e7eb;
-      border-radius:12px;
-      padding:10px;
-    }
-    .pdf-box h4{ margin:0 0 6px 0; font-size:13px; }
-    .pdf-box p{ margin:0; font-size:12px; color:#334155; }
-    @media (max-width: 700px){ .pdf-box{ grid-column:span 12; } }
+    #heatmap-container{overflow-x:auto;padding-bottom:4px}
   </style>
 </head>
-
 <body>
-  <header>
-    <div class="header-inner">
-      <div class="logo-group">
-        <img src="../../assets/conap_logo.jpg" alt="Logo CONAP">
-        <img src="../../assets/aala_logo.png" alt="Logo Laboratorio SIG AALA">
+
+<header>
+  <div class="header-inner">
+    <div class="logo-group">
+      <img src="../../assets/conap_logo.jpg" alt="CONAP">
+      <img src="../../assets/aala_logo.png" alt="AALA">
+    </div>
+    <div class="header-right">
+      <h1>Centro de consulta de datos</h1>
+      <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
+      <div class="header-chip"><span class="chip-dot"></span>AC297 · Tablero dinámico</div>
+    </div>
+  </div>
+</header>
+
+<nav class="module-nav">
+  <div class="module-nav-inner">
+    <a href="../../index.html" class="nav-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Inicio
+    </a>
+    <a href="dashboard.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Mapa geográfico
+    </a>
+    <a href="tablero.html" class="nav-tab active">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Tablero dinámico
+    </a>
+    <a href="registros.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>Registros y análisis
+    </a>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="filtros-bar">
+    <div class="fg"><label>Año</label><select id="f-anio"><option value="">Todos</option></select></div>
+    <div class="fg"><label>Mes</label><select id="f-mes"><option value="">Todos</option></select></div>
+    <div class="fg"><label>Municipio</label><select id="f-municipio"><option value="">Todos</option></select></div>
+    <div class="fg"><label>Guardarecursos</label><select id="f-guarda"><option value="">Todos</option></select></div>
+    <div class="fg"><label>Área protegida</label><select id="f-area"><option value="">Todas</option></select></div>
+    <button class="btn-reset" id="btn-reset">Limpiar</button>
+  </div>
+  <div class="chips-wrap" id="chips-wrap"></div>
+  <div class="estado-bar"><span class="estado-txt" id="estado">Cargando datos…</span></div>
+
+  <div class="kpis">
+    <div class="kpi kpi-0"><div class="kpi-label">Consumos</div><div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub">registros filtrados</div></div>
+    <div class="kpi kpi-1"><div class="kpi-label">Guardarecursos</div><div class="kpi-value" id="kpi-guardas">–</div><div class="kpi-sub">activos en período</div></div>
+    <div class="kpi kpi-2"><div class="kpi-label">Árboles totales</div><div class="kpi-value" id="kpi-arboles">–</div><div class="kpi-sub">autorizados para tala</div></div>
+    <div class="kpi kpi-3"><div class="kpi-label">Prom. árboles</div><div class="kpi-value" id="kpi-prom">–</div><div class="kpi-sub">por consumo</div></div>
+    <div class="kpi kpi-4"><div class="kpi-label">Período</div><div class="kpi-value" style="font-size:15px" id="kpi-rango">–</div><div class="kpi-sub">rango activo</div></div>
+  </div>
+
+  <div class="charts-grid">
+
+    <!-- G1: Tendencia mensual -->
+    <div class="cc full">
+      <div class="cc-title">Tendencia mensual de consumos</div>
+      <div class="cc-hint">Consumos registrados por mes · barras = total · línea punteada = promedio del período</div>
+      <div class="cw tall"><canvas id="c-tendencia"></canvas></div>
+    </div>
+
+    <!-- G2: Heatmap mes × día de semana -->
+    <div class="cc full">
+      <div class="cc-title">Mapa de calor · día de semana × mes</div>
+      <div class="cc-hint">Intensidad de consumos según el día en que se registran · más oscuro = más registros</div>
+      <div id="heatmap-container"><svg id="heatmap-svg"></svg></div>
+    </div>
+
+    <!-- G3: Distribución de especies (donut) -->
+    <div class="cc">
+      <div class="cc-title">Distribución de especies</div>
+      <div class="cc-hint">Proporción de árboles autorizados por especie en el filtro actual</div>
+      <div class="cw"><canvas id="c-especies"></canvas></div>
+    </div>
+
+    <!-- G4: Árboles por especie (barra horizontal) -->
+    <div class="cc">
+      <div class="cc-title">Árboles por especie</div>
+      <div class="cc-hint">Total de árboles autorizados acumulados por especie · ordenado de mayor a menor</div>
+      <div class="cw"><canvas id="c-arbEsp"></canvas></div>
+    </div>
+
+    <!-- G5: Stacked municipios × mes -->
+    <div class="cc full">
+      <div class="cc-title">Evolución mensual por municipio (top 6)</div>
+      <div class="cc-hint">Distribución de consumos por municipio a lo largo del tiempo · identifica municipios con mayor demanda</div>
+      <div class="cw tall"><canvas id="c-muniMes"></canvas></div>
+    </div>
+
+    <!-- G6: Radar guardarecursos con selector -->
+    <div class="cc">
+      <div class="cc-title">Radar de actividad por guardarecursos</div>
+      <div class="cc-hint">Selecciona un guardarecursos para ver su perfil vs. la media global · sin selección muestra el top 6</div>
+      <div style="margin-bottom:10px">
+        <select id="f-radar-guarda" style="border:1px solid var(--borde);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--ink);width:100%;outline:none">
+          <option value="">— Mostrar top 6 —</option>
+        </select>
       </div>
-      <div class="title-group">
-        <h1>Centro de consulta de datos</h1>
-        <p>Sistema de monitoreo de actividades</p>
-        <p>CONAP – Dirección Regional Altiplano Central</p>
-        <div class="chip-version">
-          <span class="chip-dot"></span>
-          <span>Módulo AC297 · Consumo familiar</span>
-        </div>
+      <div class="cw tall"><canvas id="c-radar"></canvas></div>
+    </div>
+
+    <!-- G7: Donuts cobertura + intermunicipal -->
+    <div class="cc" style="display:flex;flex-direction:column;gap:20px">
+      <div>
+        <div class="cc-title">Cobertura territorial</div>
+        <div class="cc-hint">Consumos dentro vs. fuera de la RUMCLA</div>
+        <div class="cw short"><canvas id="c-rumcla"></canvas></div>
+      </div>
+      <div>
+        <div class="cc-title">Consumos intermunicipales</div>
+        <div class="cc-hint">Proporción de consumos cedidos entre guardarecursos de distintos municipios</div>
+        <div class="cw short"><canvas id="c-inter"></canvas></div>
       </div>
     </div>
-  </header>
 
-  <main>
-    <div class="tabs">
-      <a class="tab" href="dashboard.html">🗺️ Dashboard</a>
-      <a class="tab active" href="base3_tablero.html">📈 Tablero</a>
-      <a class="tab" href="datos.html">📊 Tabla</a>
+    <!-- G8: Mix de especies por mes (stacked) -->
+    <div class="cc full">
+      <div class="cc-title">Composición de especies por mes</div>
+      <div class="cc-hint">Árboles autorizados por especie en cada período · permite ver tendencias de demanda a lo largo del tiempo</div>
+      <div class="cw tall"><canvas id="c-mixEsp"></canvas></div>
     </div>
 
-    <h2 class="page-title">AC297 · Tablero dinámico (CSV)</h2>
-    <p class="page-sub">
-      Este tablero se alimenta de <strong>base3_datos.csv</strong> y permite filtrar, graficar, generar pivotes y exportar lo filtrado.
-      <br><span class="status" id="estado">Listo para cargar datos…</span>
-    </p>
+    <!-- G9: Top municipios por árboles -->
+    <div class="cc">
+      <div class="cc-title">Top municipios · árboles autorizados</div>
+      <div class="cc-hint">Municipios con más árboles totales autorizados · barras = total · línea = consumos</div>
+      <div class="cw" style="height:300px"><canvas id="c-topMuni"></canvas></div>
+    </div>
 
-    <!-- Filtros -->
-    <section class="card">
-      <div class="cardhead">
-        <div>
-          <h3 style="margin:0 0 4px;">Filtros</h3>
-          <p class="subnote">Tip: usa los buscadores para encontrar rápido valores en listas largas.</p>
-        </div>
-        <div class="mini-actions">
-          <button class="mini-btn" id="btn-copy" type="button">Copiar enlace</button>
-          <button class="mini-btn" id="btn-pdf" type="button">Reporte PDF</button>
-          <button class="mini-btn" id="btn-reset" type="button">Limpiar</button>
-        </div>
-      </div>
+    <!-- G10: Ranking guardarecursos -->
+    <div class="cc">
+      <div class="cc-title">Ranking de guardarecursos</div>
+      <div class="cc-hint">Consumos atendidos (barras) y árboles autorizados (línea roja) · todos los activos en el período</div>
+      <div class="cw" style="height:300px"><canvas id="c-rankGuarda"></canvas></div>
+    </div>
 
-      <div class="filters">
-        <div class="field col-3">
-          <label for="f-temporal">Temporal</label>
-          <select id="f-temporal">
-            <option value="mes">Mes</option>
-            <option value="semana">Semana</option>
-            <option value="rango">Rango</option>
-          </select>
-        </div>
+    <!-- G11: Histograma de árboles por consumo -->
+    <div class="cc">
+      <div class="cc-title">Distribución de árboles por consumo</div>
+      <div class="cc-hint">Histograma: ¿cuántos árboles se autorizan típicamente por visita? · detecta consumos atípicos</div>
+      <div class="cw"><canvas id="c-histArb"></canvas></div>
+    </div>
 
-        <div class="field col-3" id="wrap-mes">
-          <label for="f-mes">Mes</label>
-          <select id="f-mes"></select>
-        </div>
+    <!-- G12: Top usuarios beneficiarios -->
+    <div class="cc">
+      <div class="cc-title">Top usuarios beneficiarios</div>
+      <div class="cc-hint">Personas que más consumos han solicitado en el período filtrado</div>
+      <div class="cw"><canvas id="c-usuario"></canvas></div>
+    </div>
 
-        <div class="field col-3" id="wrap-semana" style="display:none;">
-          <label for="f-semana">Semana</label>
-          <input type="week" id="f-semana" />
-        </div>
+  </div>
+</div>
 
-        <div class="field col-3" id="wrap-desde" style="display:none;">
-          <label for="f-desde">Desde</label>
-          <input type="date" id="f-desde" />
-        </div>
+<footer style="background:var(--verde-oscuro);color:rgba(255,255,255,.45);text-align:center;padding:14px 20px;font-size:11.5px;font-weight:300">
+  <strong style="color:rgba(255,255,255,.75);font-weight:500">CONAP · Dirección Regional Altiplano Central</strong> · Laboratorio SIG AALA · © 2026
+</footer>
 
-        <div class="field col-3" id="wrap-hasta" style="display:none;">
-          <label for="f-hasta">Hasta</label>
-          <input type="date" id="f-hasta" />
-        </div>
+<script src="../../assets/papaparse.min.js"></script>
+<script>
+/* ══════════════════════════════════
+   CONFIG
+══════════════════════════════════ */
+const CSV_URLS = [
+  "../../datos/base3_datos.csv",
+  "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base3_datos.csv"
+];
 
-        <div class="field col-3">
-          <label for="s-guarda">Buscar guarda</label>
-          <input type="text" id="s-guarda" placeholder="Escribe para filtrar opciones…" />
-        </div>
-        <div class="field col-3">
-          <label for="f-guarda">Guardarecursos</label>
-          <select id="f-guarda"></select>
-        </div>
+const ESPECIES = [
+  {campo:"Cantidad de Pino (Pinus pseudostrobus)",    label:"Pino",        color:"#15803d"},
+  {campo:"Cantidad de Cipres (Cupressus lusitanica)", label:"Ciprés",      color:"#0369a1"},
+  {campo:"Cantidad de Aliso (Alnus jorullensis)",     label:"Aliso",       color:"#7c3aed"},
+  {campo:"Cantidad de Encino (Quercus sp)",           label:"Encino",      color:"#b45309"},
+  {campo:"Cantidad de Palo Blanco (Vernonia patens)", label:"Palo Blanco", color:"#be185d"},
+  {campo:"Cantidad de Cajete (Heliocarpus donnellsmithii)",label:"Cajete", color:"#0891b2"},
+  {campo:"Cantidad de Madron (Arbutus xalapensis)",   label:"Madrón",      color:"#dc2626"},
+  {campo:"Cantidad de Mano de mono (Oreopanax xalapensis)",label:"Mano de mono",color:"#65a30d"},
+  {campo:"Cantidad de Matilisguate (Tabebuia rosea)", label:"Matilisguate",color:"#ea580c"},
+  {campo:"Cantidad de Aguacate (Persea americana)",   label:"Aguacate",    color:"#16a34a"},
+  {campo:"Cantidad de Casuarina (Casuarina equisetifolia)",label:"Casuarina",color:"#6d28d9"},
+  {campo:"Cantidad de Otro",                          label:"Otro",        color:"#64748b"},
+];
 
-        <div class="field col-3">
-          <label for="s-muni">Buscar municipio</label>
-          <input type="text" id="s-muni" placeholder="Escribe para filtrar opciones…" />
-        </div>
-        <div class="field col-3">
-          <label for="f-muni">Municipio</label>
-          <select id="f-muni"></select>
-        </div>
+/* ══════════════════════════════════
+   UTILIDADES
+══════════════════════════════════ */
+const norm  = v => v==null?"":String(v).trim().replace(/\s+/g," ");
+const canon = v => norm(v).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const uniq  = arr => [...new Set(arr.filter(v=>v!=null&&v!==""))];
+const sum   = arr => arr.reduce((a,b)=>a+b,0);
+const avg   = arr => arr.length?sum(arr)/arr.length:0;
+const numV  = v => { const n=parseFloat(String(v||"").replace(",",".")); return isNaN(n)?0:n; };
+const pA    = s => /[áéíóúüñÁÉÍÓÚÜÑ]/.test(String(s||""));
+function bestL(a,b){a=norm(a);b=norm(b);if(!a)return b;if(!b)return a;if(pA(b)&&!pA(a))return b;return b.length>a.length?b:a}
 
-        <div class="field col-3">
-          <label for="s-region">Buscar región</label>
-          <input type="text" id="s-region" placeholder="Escribe para filtrar opciones…" />
-        </div>
-        <div class="field col-3">
-          <label for="f-region">Región</label>
-          <select id="f-region"></select>
-        </div>
+const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const DIAS=["Lunes","Martes","Miérc.","Jueves","Viernes","Sábado","Dom."];
+const PALETTE=["#0ea5e9","#10b981","#f59e0b","#8b5cf6","#ef4444","#14b8a6","#f97316","#6366f1","#be185d","#65a30d"];
+const TT={backgroundColor:"rgba(10,61,43,0.92)",titleFont:{size:13,weight:"600"},bodyFont:{size:12},padding:10,cornerRadius:8};
 
-        <div class="field col-3">
-          <label for="s-area">Buscar área protegida</label>
-          <input type="text" id="s-area" placeholder="Escribe para filtrar opciones…" />
-        </div>
-        <div class="field col-3">
-          <label for="f-area">Área protegida</label>
-          <select id="f-area"></select>
-        </div>
+Chart.defaults.font.family="'DM Sans',sans-serif";
+Chart.defaults.color="#6b7280";
 
-        <div class="field col-3">
-          <label for="f-inter">Intermunicipal</label>
-          <select id="f-inter">
-            <option value="todo">Todos</option>
-            <option value="si">Sí</option>
-            <option value="no">No</option>
-            <option value="sin">Sin dato</option>
-          </select>
-        </div>
+const CHARTS={};
+function mkChart(id,cfg){if(CHARTS[id])CHARTS[id].destroy();CHARTS[id]=new Chart(document.getElementById(id),cfg)}
 
-        <div class="field col-3">
-          <label for="f-agrupar">Agrupar en gráficas</label>
-          <select id="f-agrupar">
-            <option value="dia">Día</option>
-            <option value="semana">Semana</option>
-            <option value="mes" selected>Mes</option>
-          </select>
-        </div>
+const LABELS={muni:new Map(),guarda:new Map(),area:new Map()};
 
-        <div class="field col-3">
-          <label for="f-pivby">Pivote por</label>
-          <select id="f-pivby">
-            <option value="guarda" selected>Guardarecursos</option>
-            <option value="muni">Municipio</option>
-          </select>
-        </div>
-
-        <div class="field col-12">
-          <div class="row-actions">
-            <a class="btn btn-ghost" href="dashboard.html">← Dashboard</a>
-            <a class="btn btn-ghost" href="datos.html">📊 Tabla</a>
-            <button class="btn btn-primary" id="btn-aplicar" type="button">Aplicar</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- KPIs -->
-    <section class="card">
-      <div class="cardhead">
-        <div>
-          <h3 style="margin:0 0 4px;">Indicadores (según filtros)</h3>
-          <p class="subnote">Resumen rápido del subconjunto filtrado.</p>
-        </div>
-      </div>
-
-      <div class="kpis">
-        <div class="kpi">
-          <p class="k" id="k-total">—</p>
-          <p class="l">Registros</p>
-          <p class="s" id="k-total-s">—</p>
-        </div>
-        <div class="kpi">
-          <p class="k" id="k-munis">—</p>
-          <p class="l">Municipios</p>
-          <p class="s">únicos</p>
-        </div>
-        <div class="kpi">
-          <p class="k" id="k-guardas">—</p>
-          <p class="l">Guardas</p>
-          <p class="s">únicos</p>
-        </div>
-        <div class="kpi">
-          <p class="k" id="k-arboles">—</p>
-          <p class="l">Árboles</p>
-          <p class="s">suma total</p>
-        </div>
-        <div class="kpi">
-          <p class="k" id="k-inter">—</p>
-          <p class="l">Intermunicipal</p>
-          <p class="s">% “sí”</p>
-        </div>
-        <div class="kpi">
-          <p class="k" id="k-coord">—</p>
-          <p class="l">Coordenadas</p>
-          <p class="s">% válidas</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Charts -->
-    <section class="grid">
-      <div class="card col-12">
-        <div class="cardhead">
-          <div>
-            <h3 style="margin:0 0 6px;">Consumos en el tiempo</h3>
-            <p class="subnote">Serie según el agrupamiento seleccionado.</p>
-          </div>
-          <div class="mini-actions">
-            <button class="mini-btn" id="png-tiempo" type="button">PNG</button>
-          </div>
-        </div>
-        <div class="chartwrap"><canvas id="c-tiempo"></canvas></div>
-      </div>
-
-      <div class="card col-6">
-        <div class="cardhead">
-          <div>
-            <h3 style="margin:0 0 6px;">Top municipios</h3>
-            <p class="subnote">Top 10 por registros (filtro actual).</p>
-          </div>
-          <div class="mini-actions">
-            <button class="mini-btn" id="png-muni" type="button">PNG</button>
-          </div>
-        </div>
-        <div class="chartwrap"><canvas id="c-muni"></canvas></div>
-      </div>
-
-      <div class="card col-6">
-        <div class="cardhead">
-          <div>
-            <h3 style="margin:0 0 6px;">Top guardarecursos</h3>
-            <p class="subnote">Top 10 por registros (filtro actual).</p>
-          </div>
-          <div class="mini-actions">
-            <button class="mini-btn" id="png-guarda" type="button">PNG</button>
-          </div>
-        </div>
-        <div class="chartwrap"><canvas id="c-guarda"></canvas></div>
-      </div>
-    </section>
-
-    <!-- Pivote -->
-    <section class="card">
-      <div class="cardhead">
-        <div>
-          <h3 style="margin:0 0 6px;">Tabla pivote</h3>
-          <p class="subnote">Filas: Guarda o Municipio · Columnas: periodo (día/semana/mes) · Valores: conteo.</p>
-        </div>
-        <div class="mini-actions">
-          <button class="mini-btn" id="piv-csv" type="button">CSV</button>
-          <button class="mini-btn" id="piv-xlsx" type="button">Excel</button>
-        </div>
-      </div>
-      <div class="tablewrap">
-        <div id="tabla-pivote"></div>
-      </div>
-    </section>
-
-    <!-- Registros filtrados -->
-    <section class="card">
-      <div class="cardhead">
-        <div>
-          <h3 style="margin:0 0 6px;">Registros filtrados</h3>
-          <p class="subnote">Tabla completa filtrada (puedes exportar lo filtrado).</p>
-        </div>
-        <div class="mini-actions">
-          <button class="mini-btn" id="btn-dl-csv" type="button">CSV</button>
-          <button class="mini-btn" id="btn-dl-xlsx" type="button">Excel</button>
-          <button class="mini-btn" id="btn-dl-json" type="button">JSON</button>
-        </div>
-      </div>
-      <div class="tablewrap" style="margin-top:12px;">
-        <div id="tabla-registros"></div>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <p>© 2025 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
-  </footer>
-
-  <div class="toast" id="toast">Listo</div>
-
-  <!-- Librerías locales (repo) -->
-  <script src="../../assets/papaparse.min.js"></script>
-  <script src="../../assets/tabulator.min.js"></script>
-  <script src="../../assets/xlsx.full.min.js"></script>
-
-  <!-- Chart.js (CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- html2pdf (CDN) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-  <script>
-    // ===== CSV config =====
-    // (Coincide con base3_datos.html: fetch("../../datos/base3_datos.csv") + delimiter ";")
-    const CSV_URL = "../../datos/base3_datos.csv";
-    const DELIM = ";";
-
-    // Campos (según nombres usados en base3_datos.html)
-    const F = {
-      fecha: "Fecha",
-      hora: "Hora",
-      muni: "Municipio",
-      region: "Region",
-      area: "Area protegida",
-      guarda1: "Nombre del guardarecursos",
-      guarda2: "Nombre del guardarecurso",
-      totalArboles: "Cantidad total de arboles a talar",
-      lon: "Longitud",
-      lat: "Latitud",
-      inter: "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"
-    };
-
-    let DATA = [];
-    let chartTiempo = null, chartMuni = null, chartGuarda = null;
-    let tPivote = null, tRegistros = null;
-
-    // ===== DOM helpers =====
-    const $ = (id) => document.getElementById(id);
-
-    const estado = $("estado");
-
-    const fTemporal = $("f-temporal");
-    const wrapMes = $("wrap-mes");
-    const wrapSemana = $("wrap-semana");
-    const wrapDesde = $("wrap-desde");
-    const wrapHasta = $("wrap-hasta");
-
-    const fMes = $("f-mes");
-    const fSemana = $("f-semana");
-    const fDesde = $("f-desde");
-    const fHasta = $("f-hasta");
-
-    const fGuarda = $("f-guarda");
-    const fMuni = $("f-muni");
-    const fRegion = $("f-region");
-    const fArea = $("f-area");
-    const fInter = $("f-inter");
-    const fAgrupar = $("f-agrupar");
-    const fPivBy = $("f-pivby");
-
-    const sGuarda = $("s-guarda");
-    const sMuni = $("s-muni");
-    const sRegion = $("s-region");
-    const sArea = $("s-area");
-
-    // KPIs
-    const kTotal = $("k-total");
-    const kTotalS = $("k-total-s");
-    const kMunis = $("k-munis");
-    const kGuardas = $("k-guardas");
-    const kArboles = $("k-arboles");
-    const kInter = $("k-inter");
-    const kCoord = $("k-coord");
-
-    // Toast
-    const toast = $("toast");
-    let toastTimer = null;
-
-    function showToast(msg){
-      toast.textContent = msg;
-      toast.classList.add("show");
-      if(toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(()=>toast.classList.remove("show"), 1600);
-    }
-
-    // ===== Utils =====
-    const norm = (v) => String(v ?? "").trim();
-    const isNum = (v) => {
-      const n = parseFloat(String(v).replace(",", "."));
-      return !isNaN(n) && isFinite(n);
-    };
-    const num = (v) => {
-      const n = parseFloat(String(v ?? "").replace(",", "."));
-      return isNaN(n) ? 0 : n;
-    };
-    const pad2 = (n) => String(n).padStart(2,"0");
-
-    function uniqueSorted(arr){
-      return Array.from(new Set(arr)).filter(Boolean).sort((a,b)=>a.localeCompare(b,"es"));
-    }
-
-    // Fecha (misma lógica que base3_datos.html)
-    function extraerFechaCompleta(fechaRaw){
-      if(!fechaRaw) return null;
-      const str = String(fechaRaw).trim();
-      if(!str) return null;
-
-      const parteFecha = str.split(" ")[0];
-      const sep = parteFecha.includes("/") ? "/" : (parteFecha.includes("-") ? "-" : null);
-      if(!sep) return null;
-
-      const partes = parteFecha.split(sep);
-      if(partes.length < 3) return null;
-
-      const p1 = parseInt(partes[0], 10);
-      const p2 = parseInt(partes[1], 10);
-      const p3 = parseInt(partes[2], 10);
-      if([p1,p2,p3].some(isNaN)) return null;
-
-      const anio = p3;
-      let mes, dia;
-
-      // si p1 > 12 y p2 <=12 -> dd/mm/yyyy, sino -> mm/dd/yyyy
-      if (p1 > 12 && p2 >= 1 && p2 <= 12) {
-        dia = p1; mes = p2;
-      } else {
-        mes = p1; dia = p2;
+/* ══════════════════════════════════
+   CARGA CSV
+══════════════════════════════════ */
+async function loadCSV(){
+  for(const url of CSV_URLS){
+    try{
+      const r=await fetch(url,{cache:"no-store"});if(!r.ok)continue;
+      const buf=await r.arrayBuffer();const u8=new Uint8Array(buf);
+      const t1=new TextDecoder("utf-8",{fatal:false}).decode(u8);
+      const t2=new TextDecoder("windows-1252",{fatal:false}).decode(u8);
+      const text=(t2.match(/\uFFFD/g)||[]).length<(t1.match(/\uFFFD/g)||[]).length?t2:t1;
+      const parsed=Papa.parse(text,{header:true,skipEmptyLines:true,delimiter:";"});
+      // normalize BOM in first column
+      if(parsed.data.length&&parsed.data[0]){
+        const k0=Object.keys(parsed.data[0])[0];
+        if(k0&&k0.startsWith("\ufeff")){
+          const clean=k0.replace(/^\ufeff/,"");
+          parsed.data.forEach(r=>{r[clean]=r[k0];delete r[k0];});
+          parsed.meta.fields[0]=clean;
+        }
       }
-
-      if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
-
-      const d = new Date(anio, mes - 1, dia);
-      if (isNaN(d.getTime())) return null;
-
-      return { anio, mes, dia, date: d };
-    }
-
-    // ISO week key (YYYY-Www)
-    function isoWeekKey(d){
-      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-      const dayNum = date.getUTCDay() || 7;
-      date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-      const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
-      const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
-      return date.getUTCFullYear() + "-W" + String(weekNo).padStart(2,"0");
-    }
-
-    function pct(part, total){
-      if(!total) return 0;
-      return Math.round((part * 1000) / total) / 10;
-    }
-
-    function valorGuarda(r){
-      const g = norm(r[F.guarda1]) || norm(r[F.guarda2]);
-      return g || "(Sin guarda)";
-    }
-
-    function valorMuni(r){
-      return norm(r[F.muni]) || "(Sin municipio)";
-    }
-
-    function valorRegion(r){
-      return norm(r[F.region]) || "(Sin región)";
-    }
-
-    function valorArea(r){
-      return norm(r[F.area]) || "(Sin área)";
-    }
-
-    function valorInter(r){
-      const raw = norm(r[F.inter]).toLowerCase();
-      if(!raw) return "sin";
-      if(raw === "si" || raw === "sí") return "si";
-      if(raw === "no") return "no";
-      // si viene algo raro, lo dejamos como "no" o "sin"? Mejor "sin" para que se note
-      return "sin";
-    }
-
-    function coordOk(r){
-      const lon = num(r[F.lon]);
-      const lat = num(r[F.lat]);
-      return !!(lon && lat && isFinite(lon) && isFinite(lat));
-    }
-
-    function buildPeriodoKey(r, agrupar){
-      if(agrupar === "dia") return r.__yd || "";
-      if(agrupar === "semana") return r.__yw || "";
-      return r.__ym || ""; // mes
-    }
-
-    function llenarSelect(sel, values, labelAll){
-      sel.innerHTML = "";
-      sel.appendChild(new Option(labelAll, "todo"));
-      values.forEach(v => sel.appendChild(new Option(v, v)));
-    }
-
-    // buscadores: guarda copia original de opciones
-    const selectCache = new Map(); // selectId -> [{value,text}]
-    function cacheOptions(sel, labelAll){
-      const opts = Array.from(sel.options).map(o => ({value:o.value, text:o.textContent}));
-      selectCache.set(sel.id, {labelAll, opts});
-    }
-    function filterSelect(sel, query){
-      const data = selectCache.get(sel.id);
-      if(!data) return;
-
-      const q = (query || "").toLowerCase().trim();
-      const current = sel.value;
-
-      sel.innerHTML = "";
-      // siempre el "todo"
-      sel.appendChild(new Option(data.labelAll, "todo"));
-
-      data.opts.forEach(o=>{
-        if(o.value === "todo") return;
-        if(!q || o.text.toLowerCase().includes(q)){
-          sel.appendChild(new Option(o.text, o.value));
-        }
-      });
-
-      // reintentar conservar selección si existe
-      const exists = Array.from(sel.options).some(o => o.value === current);
-      sel.value = exists ? current : "todo";
-    }
-
-    // ===== URL state =====
-    function setURLFromState(){
-      const p = new URLSearchParams();
-
-      p.set("temporal", fTemporal.value);
-      p.set("mes", fMes.value);
-      p.set("semana", fSemana.value || "");
-      p.set("desde", fDesde.value || "");
-      p.set("hasta", fHasta.value || "");
-
-      p.set("guarda", fGuarda.value);
-      p.set("muni", fMuni.value);
-      p.set("region", fRegion.value);
-      p.set("area", fArea.value);
-      p.set("inter", fInter.value);
-
-      p.set("agrupar", fAgrupar.value);
-      p.set("pivby", fPivBy.value);
-
-      history.replaceState(null, "", location.pathname + "?" + p.toString());
-    }
-
-    function applyURLToState(){
-      const p = new URLSearchParams(location.search);
-
-      const temporal = p.get("temporal");
-      if(temporal) fTemporal.value = temporal;
-
-      const mes = p.get("mes");
-      const semana = p.get("semana");
-      const desde = p.get("desde");
-      const hasta = p.get("hasta");
-
-      if(mes) fMes.value = mes;
-      if(semana) fSemana.value = semana;
-      if(desde) fDesde.value = desde;
-      if(hasta) fHasta.value = hasta;
-
-      const guarda = p.get("guarda");
-      const muni = p.get("muni");
-      const region = p.get("region");
-      const area = p.get("area");
-      const inter = p.get("inter");
-      if(guarda) fGuarda.value = guarda;
-      if(muni) fMuni.value = muni;
-      if(region) fRegion.value = region;
-      if(area) fArea.value = area;
-      if(inter) fInter.value = inter;
-
-      const agrupar = p.get("agrupar");
-      const pivby = p.get("pivby");
-      if(agrupar) fAgrupar.value = agrupar;
-      if(pivby) fPivBy.value = pivby;
-    }
-
-    // ===== Filtrado principal =====
-    function currentFiltered(){
-      const temporal = fTemporal.value;
-      const mesSel = fMes.value;
-      const semanaSel = fSemana.value;
-      const desde = fDesde.value ? new Date(fDesde.value + "T00:00:00") : null;
-      const hasta = fHasta.value ? new Date(fHasta.value + "T23:59:59") : null;
-
-      const guardaSel = fGuarda.value;
-      const muniSel = fMuni.value;
-      const regionSel = fRegion.value;
-      const areaSel = fArea.value;
-      const interSel = fInter.value;
-
-      return DATA.filter(r=>{
-        // temporal
-        if(temporal === "mes"){
-          if(mesSel !== "todo" && r.__ym !== mesSel) return false;
-        }else if(temporal === "semana"){
-          if(semanaSel){
-            const wk = semanaSel.includes("-W") ? semanaSel : semanaSel.replace("W","-W");
-            if(r.__yw !== wk) return false;
-          }
-        }else if(temporal === "rango"){
-          if(desde && r.__date && r.__date < desde) return false;
-          if(hasta && r.__date && r.__date > hasta) return false;
-          // si no hay fecha parseable, fuera cuando se usa rango
-          if((desde || hasta) && !r.__date) return false;
-        }
-
-        // selects
-        if(guardaSel !== "todo" && r.__guarda !== guardaSel) return false;
-        if(muniSel !== "todo" && r.__muni !== muniSel) return false;
-        if(regionSel !== "todo" && r.__region !== regionSel) return false;
-        if(areaSel !== "todo" && r.__area !== areaSel) return false;
-
-        if(interSel !== "todo"){
-          if(interSel === "si" && r.__inter !== "si") return false;
-          if(interSel === "no" && r.__inter !== "no") return false;
-          if(interSel === "sin" && r.__inter !== "sin") return false;
-        }
-
-        return true;
-      });
-    }
-
-    function updateTemporalUI(){
-      const t = fTemporal.value;
-      wrapMes.style.display = (t === "mes") ? "" : "none";
-      wrapSemana.style.display = (t === "semana") ? "" : "none";
-      wrapDesde.style.display = (t === "rango") ? "" : "none";
-      wrapHasta.style.display = (t === "rango") ? "" : "none";
-    }
-
-    // ===== Charts =====
-    function destroyChart(c){
-      if(c){ try{ c.destroy(); }catch(e){} }
-      return null;
-    }
-
-    function exportChartPNG(chart, filename){
-      if(!chart) return;
-      const a = document.createElement("a");
-      a.href = chart.toBase64Image();
-      a.download = filename;
-      a.click();
-    }
-
-    function makeSeries(rows, agrupar){
-      const map = new Map();
-      rows.forEach(r=>{
-        const key = buildPeriodoKey(r, agrupar);
-        if(!key) return;
-        map.set(key, (map.get(key) || 0) + 1);
-      });
-      const labels = Array.from(map.keys()).sort((a,b)=>a.localeCompare(b));
-      const values = labels.map(l=>map.get(l));
-      return { labels, values };
-    }
-
-    function topCounts(rows, fieldKey, topN=10){
-      const map = new Map();
-      rows.forEach(r=>{
-        const k = r[fieldKey] || "";
-        map.set(k, (map.get(k) || 0) + 1);
-      });
-      const sorted = Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).slice(0, topN);
-      return { labels: sorted.map(x=>x[0]), values: sorted.map(x=>x[1]) };
-    }
-
-    function renderCharts(rows){
-      if(typeof Chart === "undefined"){
-        estado.textContent = "No se cargó Chart.js (CDN).";
-        return;
-      }
-
-      Chart.defaults.devicePixelRatio = 2;
-
-      const agrupar = fAgrupar.value;
-
-      // tiempo
-      const s = makeSeries(rows, agrupar);
-      chartTiempo = destroyChart(chartTiempo);
-      chartTiempo = new Chart($("c-tiempo"), {
-        type:"line",
-        data:{
-          labels:s.labels,
-          datasets:[{ label:"Registros", data:s.values, tension:0.2 }]
-        },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{ legend:{ display:false } },
-          scales:{
-            x:{ ticks:{ maxRotation:0, autoSkip:true } },
-            y:{ beginAtZero:true }
-          }
-        }
-      });
-
-      // muni
-      const tm = topCounts(rows, "__muni", 10);
-      chartMuni = destroyChart(chartMuni);
-      chartMuni = new Chart($("c-muni"), {
-        type:"bar",
-        data:{ labels:tm.labels, datasets:[{ label:"Registros", data:tm.values }] },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{ legend:{ display:false } },
-          scales:{ y:{ beginAtZero:true } }
-        }
-      });
-
-      // guarda
-      const tg = topCounts(rows, "__guarda", 10);
-      chartGuarda = destroyChart(chartGuarda);
-      chartGuarda = new Chart($("c-guarda"), {
-        type:"bar",
-        data:{ labels:tg.labels, datasets:[{ label:"Registros", data:tg.values }] },
-        options:{
-          responsive:true,
-          maintainAspectRatio:false,
-          plugins:{ legend:{ display:false } },
-          scales:{ y:{ beginAtZero:true } }
-        }
-      });
-    }
-
-    // ===== KPIs =====
-    function renderKPIs(rows){
-      const total = rows.length;
-      const totalAll = DATA.length;
-
-      const munis = new Set(rows.map(r=>r.__muni)).size;
-      const guardas = new Set(rows.map(r=>r.__guarda)).size;
-
-      const sumArboles = rows.reduce((acc,r)=>acc + (r.__arboles || 0), 0);
-
-      const interSi = rows.filter(r=>r.__inter === "si").length;
-      const interValid = rows.filter(r=>r.__inter !== "sin").length;
-      const pctInter = interValid ? pct(interSi, interValid) : 0;
-
-      const coordOkN = rows.filter(r=>r.__coordOk).length;
-      const pctCoord = total ? pct(coordOkN, total) : 0;
-
-      kTotal.textContent = total.toLocaleString("es");
-      kTotalS.textContent = "de " + totalAll.toLocaleString("es") + " totales";
-      kMunis.textContent = munis.toLocaleString("es");
-      kGuardas.textContent = guardas.toLocaleString("es");
-      kArboles.textContent = Math.round(sumArboles).toLocaleString("es");
-      kInter.textContent = pctInter.toLocaleString("es") + "%";
-      kCoord.textContent = pctCoord.toLocaleString("es") + "%";
-    }
-
-    // ===== Pivote =====
-    function buildPivot(rows){
-      const agrupar = fAgrupar.value;
-      const pivby = fPivBy.value; // guarda | muni
-
-      const rowKey = (pivby === "muni") ? "__muni" : "__guarda";
-
-      // periodos
-      const periodos = uniqueSorted(rows.map(r=>buildPeriodoKey(r, agrupar)).filter(Boolean));
-
-      // filas
-      const filas = uniqueSorted(rows.map(r=>r[rowKey] || "(Sin)").filter(Boolean));
-
-      // matriz
-      const mapa = new Map(); // fila -> Map(periodo->count)
-      filas.forEach(f=>mapa.set(f, new Map()));
-
-      rows.forEach(r=>{
-        const f = r[rowKey] || "(Sin)";
-        const p = buildPeriodoKey(r, agrupar);
-        if(!p) return;
-        const m = mapa.get(f) || new Map();
-        m.set(p, (m.get(p) || 0) + 1);
-        mapa.set(f, m);
-      });
-
-      const data = filas.map(f=>{
-        const obj = { Fila: f, Total: 0 };
-        periodos.forEach(p=>{
-          const c = (mapa.get(f)?.get(p)) || 0;
-          obj[p] = c;
-          obj.Total += c;
-        });
-        return obj;
-      });
-
-      // columnas Tabulator
-      const cols = [
-        { title: (pivby === "muni" ? "Municipio" : "Guardarecursos"), field:"Fila", frozen:true, headerFilter:"input", width:260 },
-        { title:"Total", field:"Total", hozAlign:"right", width:90 }
-      ].concat(periodos.map(p=>({
-        title:p, field:p, hozAlign:"right", width:95
-      })));
-
-      if(tPivote){ try{ tPivote.destroy(); }catch(e){} }
-      tPivote = new Tabulator("#tabla-pivote", {
-        data,
-        columns: cols,
-        layout:"fitDataStretch",
-        height:"420px",
-        movableColumns:true
-      });
-    }
-
-    // ===== Tabla principal =====
-    function buildRegistros(rows){
-      // columnas desde el primer registro original (todas)
-      const keys = rows.length ? Object.keys(rows[0]).filter(k=>!k.startsWith("__")) : (DATA[0] ? Object.keys(DATA[0]).filter(k=>!k.startsWith("__")) : []);
-      const cols = keys.map(k=>({ title:k, field:k, headerFilter:"input" }));
-
-      if(tRegistros){ try{ tRegistros.destroy(); }catch(e){} }
-
-      tRegistros = new Tabulator("#tabla-registros", {
-        data: rows.map(r=>{
-          // ocultamos metadata, pero dejamos data original intacta
-          const o = {};
-          Object.keys(r).forEach(k=>{
-            if(!k.startsWith("__")) o[k] = r[k];
-          });
-          return o;
-        }),
-        columns: cols,
-        layout:"fitDataStretch",
-        height:"520px",
-        pagination:"local",
-        paginationSize:20,
-        paginationSizeSelector:[10,20,50,100],
-        movableColumns:true
-      });
-    }
-
-    // ===== Reporte PDF =====
-    function generarReportePDF(){
-      if(typeof html2pdf === "undefined"){
-        showToast("No se cargó html2pdf.js");
-        return;
-      }
-      const rows = currentFiltered();
-
-      const wrap = document.createElement("div");
-      wrap.id = "pdf-area";
-
-      const now = new Date();
-      const ts = now.toLocaleString("es-GT");
-
-      const filtrosTxt = [
-        "Temporal: " + fTemporal.value,
-        (fTemporal.value==="mes" ? ("Mes: " + fMes.value) : ""),
-        (fTemporal.value==="semana" ? ("Semana: " + (fSemana.value||"(todas)")) : ""),
-        (fTemporal.value==="rango" ? ("Rango: " + (fDesde.value||"—") + " a " + (fHasta.value||"—")) : ""),
-        "Guarda: " + fGuarda.value,
-        "Municipio: " + fMuni.value,
-        "Región: " + fRegion.value,
-        "Área: " + fArea.value,
-        "Intermunicipal: " + fInter.value,
-        "Agrupar: " + fAgrupar.value,
-        "Pivote: " + fPivBy.value
-      ].filter(Boolean).join(" · ");
-
-      wrap.innerHTML = `
-        <div style="text-align:center;">
-          <h2 style="margin:0 0 6px;">Informe de tablero AC297</h2>
-          <p style="margin:0; color:#475569; font-size:12px;">
-            Generado: <strong>${ts}</strong>
-          </p>
-          <p style="margin:8px 0 0; color:#334155; font-size:12px;">${filtrosTxt}</p>
-          <hr style="margin:10px 0; border:none; border-top:1px solid #e5e7eb;">
-        </div>
-
-        <div class="pdf-grid">
-          <div class="pdf-box">
-            <h4>Registros</h4>
-            <p><strong>${kTotal.textContent}</strong> (${kTotalS.textContent})</p>
-          </div>
-          <div class="pdf-box">
-            <h4>Municipios únicos</h4>
-            <p><strong>${kMunis.textContent}</strong></p>
-          </div>
-          <div class="pdf-box">
-            <h4>Guardarecursos únicos</h4>
-            <p><strong>${kGuardas.textContent}</strong></p>
-          </div>
-          <div class="pdf-box">
-            <h4>Árboles (suma)</h4>
-            <p><strong>${kArboles.textContent}</strong></p>
-          </div>
-          <div class="pdf-box">
-            <h4>Intermunicipal (% sí)</h4>
-            <p><strong>${kInter.textContent}</strong></p>
-          </div>
-          <div class="pdf-box">
-            <h4>Coordenadas válidas</h4>
-            <p><strong>${kCoord.textContent}</strong></p>
-          </div>
-        </div>
-
-        <p style="margin:12px 0 0; color:#475569; font-size:12px;">
-          Nota: este PDF resume KPIs del subconjunto filtrado. Para exportar datos completos filtrados usa los botones CSV/Excel/JSON.
-        </p>
-      `;
-
-      document.body.appendChild(wrap);
-
-      const opt = {
-        margin: 10,
-        filename: "ac297_tablero_reporte.pdf",
-        image: { type:"jpeg", quality:0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit:"mm", format:"a4", orientation:"portrait" }
-      };
-
-      html2pdf().set(opt).from(wrap).save().then(()=>{
-        document.body.removeChild(wrap);
-        showToast("PDF generado");
-      }).catch(()=>{
-        document.body.removeChild(wrap);
-        showToast("No se pudo generar PDF");
-      });
-    }
-
-    // ===== Apply pipeline =====
-    function aplicar(){
-      updateTemporalUI();
-
-      const rows = currentFiltered();
-      setURLFromState();
-
-      renderKPIs(rows);
-      renderCharts(rows);
-      buildPivot(rows);
-      buildRegistros(rows);
-
-      estado.textContent = "Mostrando " + rows.length.toLocaleString("es") + " registro(s) filtrados.";
-      showToast("Actualizado");
-    }
-
-    function reset(){
-      fTemporal.value = "mes";
-      fMes.value = "todo";
-      fSemana.value = "";
-      fDesde.value = "";
-      fHasta.value = "";
-
-      fGuarda.value = "todo";
-      fMuni.value = "todo";
-      fRegion.value = "todo";
-      fArea.value = "todo";
-      fInter.value = "todo";
-
-      fAgrupar.value = "mes";
-      fPivBy.value = "guarda";
-
-      sGuarda.value = "";
-      sMuni.value = "";
-      sRegion.value = "";
-      sArea.value = "";
-
-      // restaurar opciones completas
-      filterSelect(fGuarda, "");
-      filterSelect(fMuni, "");
-      filterSelect(fRegion, "");
-      filterSelect(fArea, "");
-
-      aplicar();
-    }
-
-    // ===== Load =====
-    async function load(){
-      if(typeof Papa === "undefined"){
-        estado.textContent = "No se cargó papaparse.min.js (debe existir en el repo).";
-        return;
-      }
-      if(typeof Tabulator === "undefined"){
-        estado.textContent = "No se cargó tabulator.min.js (debe existir en el repo).";
-        return;
-      }
-
-      estado.textContent = "Leyendo base3_datos.csv…";
-      const res = await fetch(CSV_URL, { cache: "no-store" });
-      if(!res.ok) throw new Error("HTTP " + res.status + " " + res.statusText);
-      const csvText = await res.text();
-
-      const parsed = Papa.parse(csvText, { header:true, skipEmptyLines:true, delimiter: DELIM });
-      const rows = (parsed.data || []).filter(r => r && Object.keys(r).some(k => norm(r[k])));
-
-      DATA = rows.map(r=>{
-        const info = extraerFechaCompleta(r[F.fecha]);
-        const d = info ? info.date : null;
-
-        const ym = info ? (info.anio + "-" + pad2(info.mes)) : "";
-        const yd = info ? (info.anio + "-" + pad2(info.mes) + "-" + pad2(info.dia)) : "";
-        const yw = d ? isoWeekKey(d) : "";
-
-        r.__date = d;
-        r.__ym = ym;
-        r.__yd = yd;
-        r.__yw = yw;
-
-        r.__guarda = valorGuarda(r);
-        r.__muni = valorMuni(r);
-        r.__region = valorRegion(r);
-        r.__area = valorArea(r);
-        r.__inter = valorInter(r);
-
-        r.__arboles = num(r[F.totalArboles]);
-        r.__coordOk = coordOk(r);
-
-        return r;
-      });
-
-      // llenar selects
-      llenarSelect(fGuarda, uniqueSorted(DATA.map(r=>r.__guarda)), "Todos los guardas");
-      llenarSelect(fMuni, uniqueSorted(DATA.map(r=>r.__muni)), "Todos los municipios");
-      llenarSelect(fRegion, uniqueSorted(DATA.map(r=>r.__region)), "Todas las regiones");
-      llenarSelect(fArea, uniqueSorted(DATA.map(r=>r.__area)), "Todas las áreas");
-
-      cacheOptions(fGuarda, "Todos los guardas");
-      cacheOptions(fMuni, "Todos los municipios");
-      cacheOptions(fRegion, "Todas las regiones");
-      cacheOptions(fArea, "Todas las áreas");
-
-      // meses
-      const meses = uniqueSorted(DATA.map(r=>r.__ym).filter(Boolean));
-      fMes.innerHTML = "";
-      fMes.appendChild(new Option("Todos los meses", "todo"));
-      meses.forEach(m=>fMes.appendChild(new Option(m, m)));
-
-      // aplicar URL si hay
-      applyURLToState();
-      updateTemporalUI();
-
-      aplicar();
-    }
-
-    // ===== Events =====
-    function wire(){
-      fTemporal.addEventListener("change", ()=>{ updateTemporalUI(); });
-      $("btn-aplicar").addEventListener("click", aplicar);
-      $("btn-reset").addEventListener("click", reset);
-
-      // buscadores
-      sGuarda.addEventListener("input", ()=> filterSelect(fGuarda, sGuarda.value));
-      sMuni.addEventListener("input", ()=> filterSelect(fMuni, sMuni.value));
-      sRegion.addEventListener("input", ()=> filterSelect(fRegion, sRegion.value));
-      sArea.addEventListener("input", ()=> filterSelect(fArea, sArea.value));
-
-      // exports tabla registros
-      $("btn-dl-csv").addEventListener("click", ()=>{
-        if(!tRegistros) return;
-        tRegistros.download("csv", "ac297_filtrado.csv");
-      });
-      $("btn-dl-xlsx").addEventListener("click", ()=>{
-        if(!tRegistros) return;
-        tRegistros.download("xlsx", "ac297_filtrado.xlsx", { sheetName:"Filtrado" });
-      });
-      $("btn-dl-json").addEventListener("click", ()=>{
-        if(!tRegistros) return;
-        tRegistros.download("json", "ac297_filtrado.json");
-      });
-
-      // exports pivote
-      $("piv-csv").addEventListener("click", ()=>{
-        if(!tPivote) return;
-        tPivote.download("csv", "ac297_pivote.csv");
-      });
-      $("piv-xlsx").addEventListener("click", ()=>{
-        if(!tPivote) return;
-        tPivote.download("xlsx", "ac297_pivote.xlsx", { sheetName:"Pivote" });
-      });
-
-      // PNG charts
-      $("png-tiempo").addEventListener("click", ()=> exportChartPNG(chartTiempo, "ac297_tiempo.png"));
-      $("png-muni").addEventListener("click", ()=> exportChartPNG(chartMuni, "ac297_top_municipios.png"));
-      $("png-guarda").addEventListener("click", ()=> exportChartPNG(chartGuarda, "ac297_top_guardas.png"));
-
-      // copiar enlace
-      $("btn-copy").addEventListener("click", async ()=>{
-        setURLFromState();
-        const url = location.origin + location.pathname + location.search;
-        try{
-          await navigator.clipboard.writeText(url);
-          showToast("Enlace copiado");
-        }catch(e){
-          const ta = document.createElement("textarea");
-          ta.value = url;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand("copy");
-          document.body.removeChild(ta);
-          showToast("Enlace copiado");
-        }
-      });
-
-      // PDF
-      $("btn-pdf").addEventListener("click", generarReportePDF);
-
-      // auto-actualizar con cambios de filtros clave (opcional)
-      [fMes, fSemana, fDesde, fHasta, fGuarda, fMuni, fRegion, fArea, fInter, fAgrupar, fPivBy].forEach(el=>{
-        el.addEventListener("change", ()=> aplicar());
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", async ()=>{
-      try{
-        wire();
-        await load();
-      }catch(err){
-        console.error(err);
-        estado.textContent = "Error al cargar: " + err.message;
-      }
-    });
-  </script>
+      if(parsed.data.length)return parsed;
+    }catch(e){}
+  }
+  throw new Error("No se pudo cargar el CSV.");
+}
+
+/* ══════════════════════════════════
+   PARSING DE FECHA
+══════════════════════════════════ */
+function parseDate(f){
+  if(!f)return null;
+  let s=String(f).trim();if(!s)return null;
+  if(s.includes(" "))s=s.split(" ")[0];
+  let m;
+  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m){const d=new Date(+m[1],+m[2]-1,+m[3]);return isNaN(d.getTime())?null:d;}
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if(m){
+    let y=+m[3];if(y<100)y=y<=50?2000+y:1900+y;
+    const p1=+m[1],p2=+m[2];
+    let mes,dia;
+    if(p1>12&&p2>=1&&p2<=12){dia=p1;mes=p2;}
+    else if(p2>12&&p1>=1&&p1<=12){mes=p1;dia=p2;}
+    else{mes=p1;dia=p2;}
+    const d=new Date(y,mes-1,dia);return isNaN(d.getTime())?null:d;
+  }
+  return null;
+}
+function mKey(d){return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")}
+function mShort(k){const[y,m]=k.split("-");return MESES_S[+m-1]+"'"+y.slice(2)}
+function mFull(k){const[y,m]=k.split("-");const n=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][+m-1];return n.charAt(0).toUpperCase()+n.slice(1)+" "+y}
+function dowMon(d){return(d.getUTCDay()+6)%7}
+function fmtDate(d){return d.getUTCDate()+"/"+(d.getUTCMonth()+1)+"/"+d.getUTCFullYear()}
+
+/* ══════════════════════════════════
+   ENRIQUECIMIENTO
+══════════════════════════════════ */
+function canonArea(v){const c=canon(v);if(c.includes("rumcla")||c.includes("dentro"))return"rumcla";if(c.includes("fuera"))return"fuera";return c}
+function canonInter(v){const c=canon(v);return(c==="si"||c==="sí")?"si":c==="no"?"no":""}
+
+function enrich(data){
+  return data.map(r=>{
+    const rr={...r};
+    const fg=norm(r["Nombre del guardarecursos"])||norm(r["Nombre del guardarecurso"]);
+    rr.__dt  =parseDate(r["Fecha"]);
+    rr.__anio=rr.__dt?String(rr.__dt.getUTCFullYear()):"";
+    rr.__mes =rr.__dt?mKey(rr.__dt):"";
+    rr.__dow =rr.__dt?dowMon(rr.__dt):null;
+    rr.__cm  =canon(r["Municipio"]);
+    rr.__cg  =canon(fg);
+    rr.__ca  =canonArea(r["Area protegida"]);
+    rr.__ci  =canonInter(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"]);
+    rr.__arb =numV(r["Cantidad total de arboles a talar"]);
+    rr.__usr =norm(r["Nombre del usuario"])||"(Sin usuario)";
+    ESPECIES.forEach(e=>{rr["__esp_"+e.label]=numV(r[e.campo]);});
+    if(rr.__cm)LABELS.muni.set(rr.__cm,bestL(LABELS.muni.get(rr.__cm),r["Municipio"]));
+    if(rr.__cg)LABELS.guarda.set(rr.__cg,bestL(LABELS.guarda.get(rr.__cg),fg));
+    if(rr.__ca)LABELS.area.set(rr.__ca,bestL(LABELS.area.get(rr.__ca),r["Area protegida"]));
+    return rr;
+  });
+}
+
+/* ══════════════════════════════════
+   FILTROS
+══════════════════════════════════ */
+let ROWS=[];
+function fillSel(id,opts,ph="Todos"){
+  const el=document.getElementById(id);el.innerHTML=`<option value="">${ph}</option>`;
+  opts.forEach(({v,l})=>{const o=document.createElement("option");o.value=v;o.textContent=l;el.appendChild(o)});
+}
+function initFilters(){
+  fillSel("f-anio",uniq(ROWS.map(r=>r.__anio)).sort().map(y=>({v:y,l:y})));
+  fillSel("f-mes",uniq(ROWS.map(r=>r.__mes)).sort().map(k=>({v:k,l:mFull(k)})));
+  const fm=m=>[...m.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));
+  fillSel("f-municipio",fm(LABELS.muni));
+  fillSel("f-guarda",fm(LABELS.guarda));
+  fillSel("f-area",[...LABELS.area.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l})),"Todas");
+  // Radar selector
+  const rSel=document.getElementById("f-radar-guarda");
+  rSel.innerHTML='<option value="">— Mostrar top 6 —</option>';
+  [...LABELS.guarda.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).forEach(([k,l])=>{const o=document.createElement("option");o.value=k;o.textContent=l;rSel.appendChild(o)});
+}
+function getF(){return{anio:document.getElementById("f-anio").value,mes:document.getElementById("f-mes").value,muni:document.getElementById("f-municipio").value,guar:document.getElementById("f-guarda").value,area:document.getElementById("f-area").value}}
+function applyF(f){return ROWS.filter(r=>{
+  if(f.anio&&r.__anio!==f.anio)return false;
+  if(f.mes&&r.__mes!==f.mes)return false;
+  if(f.muni&&r.__cm!==f.muni)return false;
+  if(f.guar&&r.__cg!==f.guar)return false;
+  if(f.area&&r.__ca!==f.area)return false;
+  return true;
+})}
+function renderChips(f){
+  const w=document.getElementById("chips-wrap");w.innerHTML="";
+  const items=[];
+  if(f.anio)items.push("Año: "+f.anio);
+  if(f.mes)items.push("Mes: "+mFull(f.mes));
+  if(f.muni)items.push("Municipio: "+(LABELS.muni.get(f.muni)||f.muni));
+  if(f.guar)items.push("Guardarecursos: "+(LABELS.guarda.get(f.guar)||f.guar));
+  if(f.area)items.push("Área: "+(LABELS.area.get(f.area)||f.area));
+  items.forEach(t=>{const s=document.createElement("span");s.className="chip";s.textContent=t;w.appendChild(s)});
+}
+
+/* ══════════════════════════════════
+   KPIs
+══════════════════════════════════ */
+function updateKPIs(rows){
+  document.getElementById("kpi-total").textContent=rows.length.toLocaleString("es");
+  document.getElementById("kpi-guardas").textContent=new Set(rows.map(r=>r.__cg).filter(Boolean)).size;
+  const totalArb=Math.round(rows.reduce((a,r)=>a+(r.__arb||0),0));
+  document.getElementById("kpi-arboles").textContent=totalArb.toLocaleString("es");
+  document.getElementById("kpi-prom").textContent=rows.length?(totalArb/rows.length).toFixed(1):"–";
+  const dates=rows.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
+  document.getElementById("kpi-rango").textContent=dates.length?fmtDate(dates[0])+" – "+fmtDate(dates[dates.length-1]):"–";
+}
+
+/* ══════════════════════════════════
+   HELPERS
+══════════════════════════════════ */
+function countBy(rows,fn){const m=new Map();rows.forEach(r=>{const k=fn(r);if(k!=null&&k!=="")m.set(k,(m.get(k)||0)+1)});return m}
+function topN(m,n){return[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n)}
+
+/* ══════════════════════════════════
+   G1 — Tendencia mensual
+══════════════════════════════════ */
+function g1(rows){
+  const mm=countBy(rows,r=>r.__mes);
+  const keys=[...mm.keys()].sort();
+  const vals=keys.map(k=>mm.get(k)||0);
+  const mean=avg(vals);
+  const ctx=document.getElementById("c-tendencia").getContext("2d");
+  const grad=ctx.createLinearGradient(0,0,0,300);
+  grad.addColorStop(0,"rgba(14,165,233,0.3)");grad.addColorStop(1,"rgba(14,165,233,0.01)");
+  mkChart("c-tendencia",{type:"line",data:{labels:keys.map(mShort),datasets:[
+    {label:"Consumos",data:vals,fill:true,tension:0.4,borderColor:"#0ea5e9",backgroundColor:grad,borderWidth:2.5,pointBackgroundColor:"#0ea5e9",pointRadius:5,pointHoverRadius:7},
+    {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(239,68,68,.55)",borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false,tension:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
+}
+
+/* ══════════════════════════════════
+   G2 — Heatmap día × mes
+══════════════════════════════════ */
+function g2(rows){
+  const meses=uniq(rows.map(r=>r.__mes)).sort();
+  const mat=Array.from({length:7},()=>new Array(meses.length).fill(0));
+  let maxV=0;
+  rows.forEach(r=>{
+    if(r.__dow===null||!r.__mes)return;
+    const mi=meses.indexOf(r.__mes);if(mi<0)return;
+    mat[r.__dow][mi]++;if(mat[r.__dow][mi]>maxV)maxV=mat[r.__dow][mi];
+  });
+  const CW=Math.max(38,Math.min(60,Math.floor(900/Math.max(meses.length,1)))),CH=30;
+  const PL=70,PT=34,PR=20,PB=32;
+  const W=PL+meses.length*CW+PR,H=PT+7*CH+PB;
+  const svg=document.getElementById("heatmap-svg");
+  svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  function hc(v,max){if(!max||!v)return"#f0f9ff";const t=Math.pow(v/max,0.55);return`rgb(${Math.round(14+t*(2-14))},${Math.round(165-t*107)},${Math.round(233-t*57)})`;}
+  let html="";
+  for(let d=0;d<7;d++){for(let mi=0;mi<meses.length;mi++){
+    const x=PL+mi*CW,y=PT+d*CH,v=mat[d][mi];
+    const fill=hc(v,maxV);const tc=v/maxV>0.45?"#fff":"#1e3a5f";
+    html+=`<rect x="${x}" y="${y}" width="${CW-2}" height="${CH-2}" rx="5" fill="${fill}" stroke="#dbeafe" stroke-width="0.5"/>`;
+    if(v>0)html+=`<text x="${x+CW/2-1}" y="${y+CH/2+4}" text-anchor="middle" font-size="9.5" fill="${tc}" font-family="DM Sans" font-weight="500">${v}</text>`;
+  }}
+  DIAS.forEach((d,i)=>html+=`<text x="${PL-8}" y="${PT+i*CH+CH/2+4}" text-anchor="end" font-size="11.5" fill="#6b7280" font-family="DM Sans">${d}</text>`);
+  meses.forEach((m,i)=>{if(i%2===0||meses.length<=8)html+=`<text x="${PL+i*CW+CW/2}" y="${PT-10}" text-anchor="middle" font-size="10" fill="#6b7280" font-family="DM Sans">${mShort(m)}</text>`;});
+  html+=`<defs><linearGradient id="lgh2" x1="0" x2="1"><stop offset="0%" stop-color="#f0f9ff"/><stop offset="100%" stop-color="#0369a1"/></linearGradient></defs>`;
+  html+=`<rect x="${PL}" y="${H-18}" width="120" height="8" rx="3" fill="url(#lgh2)"/>`;
+  html+=`<text x="${PL}" y="${H-4}" font-size="9" fill="#9ca3af" font-family="DM Sans">0</text>`;
+  html+=`<text x="${PL+120}" y="${H-4}" text-anchor="end" font-size="9" fill="#9ca3af" font-family="DM Sans">${maxV}</text>`;
+  html+=`<text x="${PL+130}" y="${H-10}" font-size="9" fill="#9ca3af" font-family="DM Sans">consumos</text>`;
+  svg.innerHTML=html;
+}
+
+/* ══════════════════════════════════
+   G3 — Distribución de especies (donut)
+══════════════════════════════════ */
+function g3(rows){
+  const espTotals=ESPECIES.map(e=>({label:e.label,color:e.color,val:rows.reduce((a,r)=>a+(r["__esp_"+e.label]||0),0)})).filter(e=>e.val>0);
+  if(!espTotals.length){mkChart("c-especies",{type:"doughnut",data:{labels:["Sin datos"],datasets:[{data:[1],backgroundColor:["#e5e7eb"]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});return;}
+  mkChart("c-especies",{type:"doughnut",data:{labels:espTotals.map(e=>e.label),datasets:[{data:espTotals.map(e=>e.val),backgroundColor:espTotals.map(e=>e.color+"cc"),borderColor:espTotals.map(e=>e.color),borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"58%",plugins:{legend:{position:"right",labels:{font:{size:11},padding:8,usePointStyle:true}},
+    tooltip:{...TT,callbacks:{label:c=>{const tot=espTotals.reduce((a,e)=>a+e.val,0);return ` ${c.label}: ${c.parsed.toLocaleString("es")} (${Math.round(c.parsed/tot*100)}%)`}}}}}});
+}
+
+/* ══════════════════════════════════
+   G4 — Árboles por especie (barra horizontal)
+══════════════════════════════════ */
+function g4(rows){
+  const espSorted=ESPECIES.map(e=>({label:e.label,color:e.color,val:rows.reduce((a,r)=>a+(r["__esp_"+e.label]||0),0)})).filter(e=>e.val>0).sort((a,b)=>b.val-a.val);
+  if(!espSorted.length)return;
+  mkChart("c-arbEsp",{type:"bar",data:{labels:espSorted.map(e=>e.label),datasets:[{label:"Árboles",data:espSorted.map(e=>e.val),backgroundColor:espSorted.map(e=>e.color+"bb"),borderColor:espSorted.map(e=>e.color),borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("es")} árboles`}}},
+    scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
+}
+
+/* ══════════════════════════════════
+   G5 — Stacked municipios × mes
+══════════════════════════════════ */
+function g5(rows){
+  const mc=countBy(rows,r=>r.__cm);
+  const top6=topN(mc,6).map(([k])=>k);
+  const months=uniq(rows.map(r=>r.__mes)).sort();
+  const datasets=top6.map((cm,i)=>({
+    label:LABELS.muni.get(cm)||cm,
+    data:months.map(mo=>rows.filter(r=>r.__cm===cm&&r.__mes===mo).length),
+    backgroundColor:PALETTE[i]+"cc",borderColor:PALETTE[i],borderWidth:1,borderRadius:3,borderSkipped:false,
+  }));
+  mkChart("c-muniMes",{type:"bar",data:{labels:months.map(mShort),datasets},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{position:"top",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},y:{stacked:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
+}
+
+/* ══════════════════════════════════
+   G6 — Radar guardarecursos
+══════════════════════════════════ */
+function g6(rows){
+  const sel=document.getElementById("f-radar-guarda").value;
+  const allG=uniq(ROWS.map(r=>r.__cg)).filter(Boolean);
+  const metricOf=(cg,src)=>{
+    const s=src.filter(r=>r.__cg===cg);
+    const arb=s.reduce((a,r)=>a+(r.__arb||0),0);
+    return{p:s.length,m:uniq(s.map(r=>r.__cm)).length,arb:arb,mes:uniq(s.map(r=>r.__mes)).length,inter:s.filter(r=>r.__ci==="si").length};
+  };
+  const nrm=(v,max)=>max?Math.round(v/max*100):0;
+  const AXES=["Volumen","Municipios\ncubiertos","Árboles\nautorizados","Meses\nactivos","Intermunicipales"];
+  if(sel){
+    const allM=allG.map(cg=>metricOf(cg,ROWS));
+    const gAvg={p:avg(allM.map(x=>x.p)),m:avg(allM.map(x=>x.m)),arb:avg(allM.map(x=>x.arb)),mes:avg(allM.map(x=>x.mes)),inter:avg(allM.map(x=>x.inter))};
+    const selM=metricOf(sel,ROWS);
+    const maxP=Math.max(...allM.map(x=>x.p),1),maxM=Math.max(...allM.map(x=>x.m),1),maxA=Math.max(...allM.map(x=>x.arb),.1),maxMes=Math.max(...allM.map(x=>x.mes),1),maxI=Math.max(...allM.map(x=>x.inter),1);
+    const toArr=o=>[nrm(o.p,maxP),nrm(o.m,maxM),nrm(o.arb,maxA),nrm(o.mes,maxMes),nrm(o.inter,maxI)];
+    const label=(LABELS.guarda.get(sel)||sel).split(" ").slice(0,2).join(" ");
+    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:[
+      {label:label,data:toArr(selM),backgroundColor:"rgba(14,165,233,.18)",borderColor:"#0ea5e9",borderWidth:2.5,pointBackgroundColor:"#0ea5e9",pointRadius:4},
+      {label:"Media global",data:toArr(gAvg),backgroundColor:"rgba(239,68,68,.12)",borderColor:"rgba(239,68,68,.7)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(239,68,68,.7)",pointRadius:3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,.08)"},pointLabels:{font:{size:10}}}}}});
+  }else{
+    const gc=countBy(rows,r=>r.__cg);
+    const top6=topN(gc,6).map(([k])=>k);
+    const allTop=top6.map(cg=>metricOf(cg,rows));
+    const maxP=Math.max(...allTop.map(x=>x.p),1),maxM=Math.max(...allTop.map(x=>x.m),1),maxA=Math.max(...allTop.map(x=>x.arb),.1),maxMes=Math.max(...allTop.map(x=>x.mes),1),maxI=Math.max(...allTop.map(x=>x.inter),1);
+    const datasets=top6.map((cg,i)=>{const o=metricOf(cg,rows);return{label:(LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),data:[nrm(o.p,maxP),nrm(o.m,maxM),nrm(o.arb,maxA),nrm(o.mes,maxMes),nrm(o.inter,maxI)],backgroundColor:PALETTE[i]+"33",borderColor:PALETTE[i],borderWidth:2,pointBackgroundColor:PALETTE[i],pointRadius:3};});
+    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:10},padding:8,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,.08)"},pointLabels:{font:{size:10}}}}}});
+  }
+}
+
+/* ══════════════════════════════════
+   G7 — Donuts territorial + intermunicipal
+══════════════════════════════════ */
+function g7(rows){
+  const ru=rows.filter(r=>r.__ca==="rumcla").length;
+  const fu=rows.filter(r=>r.__ca==="fuera").length;
+  const sd=rows.length-ru-fu;
+  const donutOpts=(labels,data,colors,borders)=>({type:"doughnut",data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+  mkChart("c-rumcla",donutOpts(["RUMCLA","Fuera RUMCLA","Sin dato"].slice(0,sd>0?3:2),[ru,fu,...(sd>0?[sd]:[])],["#0ea5e9","#f59e0b","#e5e7eb"],["#0284c7","#d97706","#d1d5db"]));
+  const si=rows.filter(r=>r.__ci==="si").length;const no=rows.filter(r=>r.__ci==="no").length;
+  mkChart("c-inter",donutOpts(["Solo municipio","Intermunicipal"],[no,si],["#dcfce7","#dbeafe"],["#16a34a","#2563eb"]));
+}
+
+/* ══════════════════════════════════
+   G8 — Mix de especies por mes (stacked)
+══════════════════════════════════ */
+function g8(rows){
+  const meses=uniq(rows.map(r=>r.__mes)).filter(Boolean).sort();
+  const datasets=ESPECIES.map(e=>({
+    label:e.label,
+    data:meses.map(m=>rows.filter(r=>r.__mes===m).reduce((a,r)=>a+(r["__esp_"+e.label]||0),0)),
+    backgroundColor:e.color+"bb",borderColor:e.color,borderWidth:1,borderRadius:2,borderSkipped:false
+  })).filter(ds=>ds.data.some(v=>v>0));
+  mkChart("c-mixEsp",{type:"bar",data:{labels:meses.map(mShort),datasets},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{position:"top",labels:{font:{size:10},padding:8,usePointStyle:true}},tooltip:{...TT}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},y:{stacked:true,beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}},title:{display:true,text:"Árboles",font:{size:11}}}}}});
+}
+
+/* ══════════════════════════════════
+   G9 — Top municipios (combo barras + línea)
+══════════════════════════════════ */
+function g9(rows){
+  const muniMap=new Map(),muniArb=new Map();
+  rows.forEach(r=>{const cm=r.__cm;muniMap.set(cm,(muniMap.get(cm)||0)+1);muniArb.set(cm,(muniArb.get(cm)||0)+(r.__arb||0));});
+  const sorted=[...muniArb.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);
+  const labels=sorted.map(([k])=>LABELS.muni.get(k)||k);
+  mkChart("c-topMuni",{type:"bar",data:{labels,datasets:[
+    {label:"Árboles",data:sorted.map(([k])=>Math.round(muniArb.get(k)||0)),backgroundColor:"rgba(16,185,129,.7)",borderColor:"#059669",borderWidth:1,borderRadius:4,borderSkipped:false,order:2},
+    {label:"Consumos",data:sorted.map(([k])=>muniMap.get(k)||0),type:"line",borderColor:"#0ea5e9",backgroundColor:"rgba(14,165,233,.85)",borderWidth:2,pointRadius:5,pointHoverRadius:7,tension:0,fill:false,order:1,yAxisID:"y2"}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{position:"top",labels:{font:{size:11},padding:12,usePointStyle:true}},tooltip:{...TT}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:10},maxRotation:30}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}},title:{display:true,text:"Árboles",font:{size:11}}},y2:{beginAtZero:true,position:"right",grid:{display:false},ticks:{font:{size:11}},title:{display:true,text:"Consumos",font:{size:11}}}}}});
+}
+
+/* ══════════════════════════════════
+   G10 — Ranking guardarecursos
+══════════════════════════════════ */
+function g10(rows){
+  const guardaMap=new Map(),guardaArb=new Map();
+  rows.forEach(r=>{const g=r.__cg;guardaMap.set(g,(guardaMap.get(g)||0)+1);guardaArb.set(g,(guardaArb.get(g)||0)+(r.__arb||0));});
+  const sorted=[...guardaMap.entries()].sort((a,b)=>b[1]-a[1]);
+  const labels=sorted.map(([k])=>(LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
+  mkChart("c-rankGuarda",{type:"bar",data:{labels,datasets:[
+    {label:"Consumos",data:sorted.map(([k])=>guardaMap.get(k)),backgroundColor:"rgba(14,165,233,.7)",borderColor:"#0284c7",borderWidth:1,borderRadius:4,borderSkipped:false,order:2},
+    {label:"Árboles",data:sorted.map(([k])=>Math.round(guardaArb.get(k)||0)),type:"line",borderColor:"#ef4444",backgroundColor:"rgba(239,68,68,.9)",borderWidth:2,pointRadius:5,pointHoverRadius:7,tension:0,fill:false,order:1}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}},tooltip:{...TT}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:10},maxRotation:35}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
+}
+
+/* ══════════════════════════════════
+   G11 — Histograma árboles por consumo
+══════════════════════════════════ */
+function g11(rows){
+  const vals=rows.map(r=>r.__arb).filter(v=>v>0);
+  const bs=5,nB=12;
+  const bins=new Array(nB).fill(0);
+  vals.forEach(v=>{const i=Math.min(Math.floor((v-1)/bs),nB-1);bins[i]++;});
+  const labels=Array.from({length:nB},(_,i)=>`${i*bs+1}–${(i+1)*bs}`);
+  const ctx=document.getElementById("c-histArb").getContext("2d");
+  const g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,"rgba(245,158,11,.85)");g.addColorStop(1,"rgba(245,158,11,.35)");
+  mkChart("c-histArb",{type:"bar",data:{labels,datasets:[{label:"Consumos",data:bins,backgroundColor:g,borderColor:"#d97706",borderWidth:1,borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].label} árboles`,label:c=>` ${c.parsed.y} consumos`}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
+}
+
+/* ══════════════════════════════════
+   G12 — Top usuarios beneficiarios
+══════════════════════════════════ */
+function g12(rows){
+  const usrMap=new Map();
+  rows.forEach(r=>{const u=r.__usr;usrMap.set(u,(usrMap.get(u)||0)+1);});
+  const top=[...usrMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const labels=top.map(([k])=>k.length>28?k.slice(0,26)+"…":k);
+  mkChart("c-usuario",{type:"bar",data:{labels,datasets:[{label:"Consumos",data:top.map(([,v])=>v),backgroundColor:PALETTE.map(c=>c+"bb"),borderColor:PALETTE,borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} consumo(s)`}}},
+    scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+}
+
+/* ══════════════════════════════════
+   RENDER & RESET
+══════════════════════════════════ */
+function applyAll(){
+  const f=getF();renderChips(f);
+  const rows=applyF(f);
+  updateKPIs(rows);
+  g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);g9(rows);g10(rows);g11(rows);g12(rows);
+  document.getElementById("estado").textContent=`Mostrando ${rows.length.toLocaleString("es")} de ${ROWS.length.toLocaleString("es")} registros`;
+}
+
+function resetAll(){["f-anio","f-mes","f-municipio","f-guarda","f-area"].forEach(id=>document.getElementById(id).value="");applyAll()}
+
+/* ══════════════════════════════════
+   INICIO
+══════════════════════════════════ */
+(async()=>{
+  try{
+    const parsed=await loadCSV();
+    ROWS=enrich(parsed.data);
+    initFilters();
+    ["f-anio","f-mes","f-municipio","f-guarda","f-area"].forEach(id=>document.getElementById(id).addEventListener("change",applyAll));
+    document.getElementById("f-radar-guarda").addEventListener("change",()=>g6(applyF(getF())));
+    document.getElementById("btn-reset").addEventListener("click",resetAll);
+    applyAll();
+  }catch(e){
+    const el=document.getElementById("estado");
+    el.textContent="Error al cargar datos: "+(e.message||e);
+    el.className="estado-txt error";
+  }
+})();
+</script>
 </body>
 </html>
