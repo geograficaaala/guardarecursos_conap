@@ -6,6 +6,7 @@
   <title>AC297 · Tablero dinámico · Consumo Forestal</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
     :root{
       --verde-oscuro:#0a3d2b;--verde-medio:#1a5c3a;
@@ -138,11 +139,11 @@
     <!-- G1: Tendencia mensual -->
     <div class="cc full">
       <div class="cc-title">Tendencia mensual de consumos</div>
-      <div class="cc-hint">Consumos registrados por mes · barras = total · línea punteada = promedio del período</div>
+      <div class="cc-hint">Consumos registrados por mes · línea punteada roja = promedio global del período</div>
       <div class="cw tall"><canvas id="c-tendencia"></canvas></div>
     </div>
 
-    <!-- G2: Heatmap mes × día de semana -->
+    <!-- G2: Heatmap día × mes -->
     <div class="cc full">
       <div class="cc-title">Mapa de calor · día de semana × mes</div>
       <div class="cc-hint">Intensidad de consumos según el día en que se registran · más oscuro = más registros</div>
@@ -152,7 +153,7 @@
     <!-- G3: Distribución de especies (donut) -->
     <div class="cc">
       <div class="cc-title">Distribución de especies</div>
-      <div class="cc-hint">Proporción de árboles autorizados por especie en el filtro actual</div>
+      <div class="cc-hint">Porcentaje de árboles autorizados por especie en el filtro actual</div>
       <div class="cw"><canvas id="c-especies"></canvas></div>
     </div>
 
@@ -191,7 +192,7 @@
       </div>
       <div>
         <div class="cc-title">Consumos intermunicipales</div>
-        <div class="cc-hint">Proporción de consumos cedidos entre guardarecursos de distintos municipios</div>
+        <div class="cc-hint">Consumos cedidos entre guardarecursos de distintos municipios</div>
         <div class="cw short"><canvas id="c-inter"></canvas></div>
       </div>
     </div>
@@ -203,32 +204,37 @@
       <div class="cw tall"><canvas id="c-mixEsp"></canvas></div>
     </div>
 
-    <!-- G9: Top municipios por árboles -->
+    <!-- G9: Top municipios -->
     <div class="cc">
-      <div class="cc-title">Top municipios · árboles autorizados</div>
-      <div class="cc-hint">Municipios con más árboles totales autorizados · barras = total · línea = consumos</div>
-      <div class="cw" style="height:300px"><canvas id="c-topMuni"></canvas></div>
+      <div class="cc-title">Top municipios · consumos y árboles</div>
+      <div class="cc-hint">Municipios con más consumos (barras) y árboles totales autorizados (línea)</div>
+      <div class="cw" style="height:280px"><canvas id="c-topMuni"></canvas></div>
     </div>
 
-    <!-- G10: Ranking guardarecursos -->
-    <div class="cc">
-      <div class="cc-title">Ranking de guardarecursos</div>
-      <div class="cc-hint">Consumos atendidos (barras) y árboles autorizados (línea roja) · todos los activos en el período</div>
-      <div class="cw" style="height:300px"><canvas id="c-rankGuarda"></canvas></div>
-    </div>
-
-    <!-- G11: Histograma de árboles por consumo -->
+    <!-- G10: Histograma árboles por consumo -->
     <div class="cc">
       <div class="cc-title">Distribución de árboles por consumo</div>
       <div class="cc-hint">Histograma: ¿cuántos árboles se autorizan típicamente por visita? · detecta consumos atípicos</div>
-      <div class="cw"><canvas id="c-histArb"></canvas></div>
+      <div class="cw" style="height:280px"><canvas id="c-histArb"></canvas></div>
     </div>
 
-    <!-- G12: Top usuarios beneficiarios -->
-    <div class="cc">
-      <div class="cc-title">Top usuarios beneficiarios</div>
-      <div class="cc-hint">Personas que más consumos han solicitado en el período filtrado</div>
-      <div class="cw"><canvas id="c-usuario"></canvas></div>
+    <!-- G11: Ranking guardarecursos -->
+    <div class="cc full">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:6px">
+        <div>
+          <div class="cc-title">Ranking de guardarecursos · consumos y árboles</div>
+          <div class="cc-hint">Barras = consumos atendidos (número visible) · línea roja = árboles totales autorizados · filtra por rango propio</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <label style="font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase">Rango:</label>
+          <input type="date" id="g11-desde" style="border:1px solid var(--borde);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--ink);outline:none" title="Desde"/>
+          <span style="color:var(--muted);font-size:13px">–</span>
+          <input type="date" id="g11-hasta" style="border:1px solid var(--borde);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--ink);outline:none" title="Hasta"/>
+          <button id="g11-aplicar" style="padding:6px 14px;border-radius:8px;border:none;background:var(--verde-oscuro);color:#fff;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer">Aplicar</button>
+          <button id="g11-limpiar" style="padding:6px 10px;border-radius:8px;border:1px solid var(--borde);background:var(--blanco);color:var(--muted);font-size:12px;font-family:inherit;cursor:pointer">✕ Limpiar</button>
+        </div>
+      </div>
+      <div class="cw" style="height:420px"><canvas id="c-rankGuarda"></canvas></div>
     </div>
 
   </div>
@@ -238,17 +244,39 @@
   <strong style="color:rgba(255,255,255,.75);font-weight:500">CONAP · Dirección Regional Altiplano Central</strong> · Laboratorio SIG AALA · © 2026
 </footer>
 
-<script src="../../assets/papaparse.min.js"></script>
 <script>
 /* ══════════════════════════════════
-   CONFIG
+   UTILIDADES (idénticas a patrullajes)
 ══════════════════════════════════ */
-const CSV_URLS = [
-  "../../datos/base3_datos.csv",
-  "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base3_datos.csv"
-];
+const norm=v=>v==null?"":String(v).trim().replace(/\s+/g," ");
+const canon=v=>norm(v).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const uniq=arr=>[...new Set(arr.filter(v=>v!=null&&v!==""))];
+const sum=arr=>arr.reduce((a,b)=>a+b,0);
+const avg=arr=>arr.length?sum(arr)/arr.length:0;
+const numV=v=>{const n=parseFloat(String(v||"").replace(",","."));return isNaN(n)?0:n};
+const pA=s=>/[áéíóúüñÁÉÍÓÚÜÑ]/.test(String(s||""));
+function bestL(a,b){a=norm(a);b=norm(b);if(!a)return b;if(!b)return a;if(pA(b)&&!pA(a))return b;return b.length>a.length?b:a}
 
-const ESPECIES = [
+const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MESES_F=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DIAS=["Lunes","Martes","Miérc.","Jueves","Viernes","Sábado","Dom."];
+const PALETTE=["#0ea5e9","#10b981","#f59e0b","#8b5cf6","#ef4444","#14b8a6","#f97316","#6366f1","#be185d","#65a30d"];
+const TT={backgroundColor:"rgba(10,61,43,0.92)",titleFont:{size:13,weight:"600"},bodyFont:{size:12},padding:10,cornerRadius:8};
+
+Chart.defaults.font.family="'DM Sans',sans-serif";
+Chart.defaults.color="#6b7280";
+if(typeof ChartDataLabels!=="undefined"){
+  Chart.register(ChartDataLabels);
+  Chart.defaults.set("plugins.datalabels",{display:false});
+}
+
+const CHARTS={};
+function mkChart(id,cfg){if(CHARTS[id])CHARTS[id].destroy();CHARTS[id]=new Chart(document.getElementById(id),cfg)}
+
+/* ══════════════════════════════════
+   ESPECIES DE CONSUMO FORESTAL
+══════════════════════════════════ */
+const ESPECIES=[
   {campo:"Cantidad de Pino (Pinus pseudostrobus)",    label:"Pino",        color:"#15803d"},
   {campo:"Cantidad de Cipres (Cupressus lusitanica)", label:"Ciprés",      color:"#0369a1"},
   {campo:"Cantidad de Aliso (Alnus jorullensis)",     label:"Aliso",       color:"#7c3aed"},
@@ -264,88 +292,79 @@ const ESPECIES = [
 ];
 
 /* ══════════════════════════════════
-   UTILIDADES
-══════════════════════════════════ */
-const norm  = v => v==null?"":String(v).trim().replace(/\s+/g," ");
-const canon = v => norm(v).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-const uniq  = arr => [...new Set(arr.filter(v=>v!=null&&v!==""))];
-const sum   = arr => arr.reduce((a,b)=>a+b,0);
-const avg   = arr => arr.length?sum(arr)/arr.length:0;
-const numV  = v => { const n=parseFloat(String(v||"").replace(",",".")); return isNaN(n)?0:n; };
-const pA    = s => /[áéíóúüñÁÉÍÓÚÜÑ]/.test(String(s||""));
-function bestL(a,b){a=norm(a);b=norm(b);if(!a)return b;if(!b)return a;if(pA(b)&&!pA(a))return b;return b.length>a.length?b:a}
-
-const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const DIAS=["Lunes","Martes","Miérc.","Jueves","Viernes","Sábado","Dom."];
-const PALETTE=["#2d8a4e","#0891b2","#d97706","#7c3aed","#be123c","#0e7490","#65a30d","#9333ea","#b45309","#0f766e"];
-const TT={backgroundColor:"rgba(10,61,43,0.92)",titleFont:{size:13,weight:"600"},bodyFont:{size:12},padding:10,cornerRadius:8};
-
-Chart.defaults.font.family="'DM Sans',sans-serif";
-Chart.defaults.color="#6b7280";
-
-const CHARTS={};
-function mkChart(id,cfg){if(CHARTS[id])CHARTS[id].destroy();CHARTS[id]=new Chart(document.getElementById(id),cfg)}
-
-const LABELS={muni:new Map(),guarda:new Map(),area:new Map()};
-
-/* ══════════════════════════════════
-   CARGA CSV
+   CSV — mismo sistema que patrullajes
 ══════════════════════════════════ */
 async function loadCSV(){
-  for(const url of CSV_URLS){
+  const urls=[
+    "../../datos/base3_datos.csv",
+    "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base3_datos.csv"
+  ];
+  for(const url of urls){
     try{
       const r=await fetch(url,{cache:"no-store"});if(!r.ok)continue;
       const buf=await r.arrayBuffer();const u8=new Uint8Array(buf);
       const t1=new TextDecoder("utf-8",{fatal:false}).decode(u8);
       const t2=new TextDecoder("windows-1252",{fatal:false}).decode(u8);
       const text=(t2.match(/\uFFFD/g)||[]).length<(t1.match(/\uFFFD/g)||[]).length?t2:t1;
-      const parsed=Papa.parse(text,{header:true,skipEmptyLines:true,delimiter:";"});
-      // normalize BOM in first column
-      if(parsed.data.length&&parsed.data[0]){
-        const k0=Object.keys(parsed.data[0])[0];
-        if(k0&&k0.startsWith("\ufeff")){
-          const clean=k0.replace(/^\ufeff/,"");
-          parsed.data.forEach(r=>{r[clean]=r[k0];delete r[k0];});
-          parsed.meta.fields[0]=clean;
-        }
-      }
-      if(parsed.data.length)return parsed;
+      const p=parseCSV(text);if(p.data.length)return p;
     }catch(e){}
   }
   throw new Error("No se pudo cargar el CSV.");
 }
 
+function parseCSV(text){
+  const dl=[";",",","\t"].sort((a,b)=>(text.split("\n")[0].split(b).length)-(text.split("\n")[0].split(a).length))[0];
+  const rows=[];let i=0,f="",row=[],inQ=false;
+  const pF=()=>{row.push(f);f=""};const pR=()=>{if(row.length){rows.push(row);row=[]}};
+  while(i<text.length){
+    const c=text[i];
+    if(inQ){if(c==='"'){if(text[i+1]==='"'){f+='"';i+=2;continue}inQ=false;i++;continue}f+=c;i++;continue}
+    if(c==='"'){inQ=true;i++;continue}
+    if(c===dl){pF();i++;continue}
+    if(c==="\n"){pF();pR();i++;continue}
+    if(c==="\r"){if(text[i+1]==="\n")i++;pF();pR();i++;continue}
+    f+=c;i++;
+  }
+  pF();pR();
+  if(rows.length<2)return{data:[],headers:[]};
+  let headers=rows[0].map(h=>norm(h));
+  // Normalizar BOM en primera columna
+  if(headers[0]&&headers[0].startsWith("\ufeff"))headers[0]=headers[0].slice(1);
+  const data=rows.slice(1).filter(r=>!r.every(v=>!norm(v))).map(r=>{const o={};headers.forEach((h,i)=>o[h]=norm(r[i]||""));return o});
+  return{data,headers};
+}
+
 /* ══════════════════════════════════
-   PARSING DE FECHA
+   FECHA
 ══════════════════════════════════ */
-function parseDate(f){
-  if(!f)return null;
-  let s=String(f).trim();if(!s)return null;
-  if(s.includes(" "))s=s.split(" ")[0];
-  let m;
-  m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if(m){const d=new Date(+m[1],+m[2]-1,+m[3]);return isNaN(d.getTime())?null:d;}
-  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+function parseDate(s){
+  const v=norm(s);if(!v)return null;
+  // Quitar parte de hora si la hay
+  const parteF=v.split(" ")[0];
+  let m=parteF.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m)return new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
+  m=parteF.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
   if(m){
     let y=+m[3];if(y<100)y=y<=50?2000+y:1900+y;
     const p1=+m[1],p2=+m[2];
     let mes,dia;
+    // si p1>12 → es día/mes/año (DMY)
     if(p1>12&&p2>=1&&p2<=12){dia=p1;mes=p2;}
-    else if(p2>12&&p1>=1&&p1<=12){mes=p1;dia=p2;}
-    else{mes=p1;dia=p2;}
-    const d=new Date(y,mes-1,dia);return isNaN(d.getTime())?null:d;
+    else{mes=p1;dia=p2;}  // asumir M/D/Y (formato Survey123)
+    return new Date(Date.UTC(y,mes-1,dia));
   }
   return null;
 }
-function mKey(d){return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")}
-function mShort(k){const[y,m]=k.split("-");return MESES_S[+m-1]+"'"+y.slice(2)}
-function mFull(k){const[y,m]=k.split("-");const n=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][+m-1];return n.charAt(0).toUpperCase()+n.slice(1)+" "+y}
-function dowMon(d){return(d.getUTCDay()+6)%7}
-function fmtDate(d){return d.getUTCDate()+"/"+(d.getUTCMonth()+1)+"/"+d.getUTCFullYear()}
+function fmtDate(dt){if(!dt)return"–";return String(dt.getUTCDate()).padStart(2,"0")+"/"+String(dt.getUTCMonth()+1).padStart(2,"0")+"/"+dt.getUTCFullYear()}
+function mKey(dt){return dt.getUTCFullYear()+"-"+String(dt.getUTCMonth()+1).padStart(2,"0")}
+function mShort(k){const[y,m]=k.split("-");return MESES_S[+m-1]+" '"+String(y).slice(2)}
+function mFull(k){const[y,m]=k.split("-");return MESES_F[+m-1]+" "+y}
+function dowMon(dt){return(dt.getUTCDay()+6)%7}
 
 /* ══════════════════════════════════
    ENRIQUECIMIENTO
 ══════════════════════════════════ */
+const LABELS={muni:new Map(),guarda:new Map(),area:new Map()};
 function canonArea(v){const c=canon(v);if(c.includes("rumcla")||c.includes("dentro"))return"rumcla";if(c.includes("fuera"))return"fuera";return c}
 function canonInter(v){const c=canon(v);return(c==="si"||c==="sí")?"si":c==="no"?"no":""}
 
@@ -363,6 +382,7 @@ function enrich(data){
     rr.__ci  =canonInter(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"]);
     rr.__arb =numV(r["Cantidad total de arboles a talar"]);
     rr.__usr =norm(r["Nombre del usuario"])||"(Sin usuario)";
+    // Sumatoria por especie
     ESPECIES.forEach(e=>{rr["__esp_"+e.label]=numV(r[e.campo]);});
     if(rr.__cm)LABELS.muni.set(rr.__cm,bestL(LABELS.muni.get(rr.__cm),r["Municipio"]));
     if(rr.__cg)LABELS.guarda.set(rr.__cg,bestL(LABELS.guarda.get(rr.__cg),fg));
@@ -385,21 +405,13 @@ function initFilters(){
   const fm=m=>[...m.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));
   fillSel("f-municipio",fm(LABELS.muni));
   fillSel("f-guarda",fm(LABELS.guarda));
-  fillSel("f-area",[...LABELS.area.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l})),"Todas");
-  // Radar selector
+  fillSel("f-area",fm(LABELS.area),"Todas");
   const rSel=document.getElementById("f-radar-guarda");
   rSel.innerHTML='<option value="">— Mostrar top 6 —</option>';
   [...LABELS.guarda.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).forEach(([k,l])=>{const o=document.createElement("option");o.value=k;o.textContent=l;rSel.appendChild(o)});
 }
 function getF(){return{anio:document.getElementById("f-anio").value,mes:document.getElementById("f-mes").value,muni:document.getElementById("f-municipio").value,guar:document.getElementById("f-guarda").value,area:document.getElementById("f-area").value}}
-function applyF(f){return ROWS.filter(r=>{
-  if(f.anio&&r.__anio!==f.anio)return false;
-  if(f.mes&&r.__mes!==f.mes)return false;
-  if(f.muni&&r.__cm!==f.muni)return false;
-  if(f.guar&&r.__cg!==f.guar)return false;
-  if(f.area&&r.__ca!==f.area)return false;
-  return true;
-})}
+function applyF(f){return ROWS.filter(r=>{if(f.anio&&r.__anio!==f.anio)return false;if(f.mes&&r.__mes!==f.mes)return false;if(f.muni&&r.__cm!==f.muni)return false;if(f.guar&&r.__cg!==f.guar)return false;if(f.area&&r.__ca!==f.area)return false;return true})}
 function renderChips(f){
   const w=document.getElementById("chips-wrap");w.innerHTML="";
   const items=[];
@@ -415,9 +427,9 @@ function renderChips(f){
    KPIs
 ══════════════════════════════════ */
 function updateKPIs(rows){
+  const totalArb=Math.round(rows.reduce((a,r)=>a+(r.__arb||0),0));
   document.getElementById("kpi-total").textContent=rows.length.toLocaleString("es");
   document.getElementById("kpi-guardas").textContent=new Set(rows.map(r=>r.__cg).filter(Boolean)).size;
-  const totalArb=Math.round(rows.reduce((a,r)=>a+(r.__arb||0),0));
   document.getElementById("kpi-arboles").textContent=totalArb.toLocaleString("es");
   document.getElementById("kpi-prom").textContent=rows.length?(totalArb/rows.length).toFixed(1):"–";
   const dates=rows.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
@@ -440,15 +452,15 @@ function g1(rows){
   const mean=avg(vals);
   const ctx=document.getElementById("c-tendencia").getContext("2d");
   const grad=ctx.createLinearGradient(0,0,0,300);
-  grad.addColorStop(0,"rgba(45,138,78,0.30)");grad.addColorStop(1,"rgba(45,138,78,0.02)");
+  grad.addColorStop(0,"rgba(14,165,233,0.3)");grad.addColorStop(1,"rgba(14,165,233,0.01)");
   mkChart("c-tendencia",{type:"line",data:{labels:keys.map(mShort),datasets:[
-    {label:"Consumos",data:vals,fill:true,tension:0.4,borderColor:"#2d8a4e",backgroundColor:grad,borderWidth:2.5,pointBackgroundColor:"#2d8a4e",pointRadius:5,pointHoverRadius:7},
-    {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(239,68,68,.55)",borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false,tension:0}
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
+    {label:"Consumos",data:vals,fill:true,tension:0.4,borderColor:"#0ea5e9",backgroundColor:grad,borderWidth:2.5,pointBackgroundColor:"#0ea5e9",pointRadius:5,pointHoverRadius:7},
+    {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(239,68,68,0.55)",borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false,tension:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}}}});
 }
 
 /* ══════════════════════════════════
-   G2 — Heatmap día × mes
+   G2 — Heatmap SVG día × mes
 ══════════════════════════════════ */
 function g2(rows){
   const meses=uniq(rows.map(r=>r.__mes)).sort();
@@ -459,7 +471,7 @@ function g2(rows){
     const mi=meses.indexOf(r.__mes);if(mi<0)return;
     mat[r.__dow][mi]++;if(mat[r.__dow][mi]>maxV)maxV=mat[r.__dow][mi];
   });
-  const CW=Math.max(38,Math.min(60,Math.floor(900/Math.max(meses.length,1)))),CH=30;
+  const CW=Math.max(36,Math.min(58,Math.floor(880/Math.max(meses.length,1)))),CH=30;
   const PL=70,PT=34,PR=20,PB=32;
   const W=PL+meses.length*CW+PR,H=PT+7*CH+PB;
   const svg=document.getElementById("heatmap-svg");
@@ -474,8 +486,8 @@ function g2(rows){
   }}
   DIAS.forEach((d,i)=>html+=`<text x="${PL-8}" y="${PT+i*CH+CH/2+4}" text-anchor="end" font-size="11.5" fill="#6b7280" font-family="DM Sans">${d}</text>`);
   meses.forEach((m,i)=>{if(i%2===0||meses.length<=8)html+=`<text x="${PL+i*CW+CW/2}" y="${PT-10}" text-anchor="middle" font-size="10" fill="#6b7280" font-family="DM Sans">${mShort(m)}</text>`;});
-  html+=`<defs><linearGradient id="lgh2" x1="0" x2="1"><stop offset="0%" stop-color="#f0f9ff"/><stop offset="100%" stop-color="#0369a1"/></linearGradient></defs>`;
-  html+=`<rect x="${PL}" y="${H-18}" width="120" height="8" rx="3" fill="url(#lgh2)"/>`;
+  html+=`<defs><linearGradient id="lghC" x1="0" x2="1"><stop offset="0%" stop-color="#f0f9ff"/><stop offset="100%" stop-color="#0369a1"/></linearGradient></defs>`;
+  html+=`<rect x="${PL}" y="${H-18}" width="120" height="8" rx="3" fill="url(#lghC)"/>`;
   html+=`<text x="${PL}" y="${H-4}" font-size="9" fill="#9ca3af" font-family="DM Sans">0</text>`;
   html+=`<text x="${PL+120}" y="${H-4}" text-anchor="end" font-size="9" fill="#9ca3af" font-family="DM Sans">${maxV}</text>`;
   html+=`<text x="${PL+130}" y="${H-10}" font-size="9" fill="#9ca3af" font-family="DM Sans">consumos</text>`;
@@ -486,20 +498,20 @@ function g2(rows){
    G3 — Distribución de especies (donut)
 ══════════════════════════════════ */
 function g3(rows){
-  const espTotals=ESPECIES.map(e=>({label:e.label,color:e.color,val:rows.reduce((a,r)=>a+(r["__esp_"+e.label]||0),0)})).filter(e=>e.val>0);
-  if(!espTotals.length){mkChart("c-especies",{type:"doughnut",data:{labels:["Sin datos"],datasets:[{data:[1],backgroundColor:["#bbf7d0"]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});return;}
-  mkChart("c-especies",{type:"doughnut",data:{labels:espTotals.map(e=>e.label),datasets:[{data:espTotals.map(e=>e.val),backgroundColor:espTotals.map(e=>e.color+"cc"),borderColor:espTotals.map(e=>e.color),borderWidth:2,hoverOffset:8}]},
+  const esp=ESPECIES.map(e=>({label:e.label,color:e.color,val:rows.reduce((a,r)=>a+(r["__esp_"+e.label]||0),0)})).filter(e=>e.val>0);
+  if(!esp.length){mkChart("c-especies",{type:"doughnut",data:{labels:["Sin datos"],datasets:[{data:[1],backgroundColor:["#e5e7eb"]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});return;}
+  mkChart("c-especies",{type:"doughnut",data:{labels:esp.map(e=>e.label),datasets:[{data:esp.map(e=>e.val),backgroundColor:esp.map(e=>e.color+"cc"),borderColor:esp.map(e=>e.color),borderWidth:2,hoverOffset:8}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"58%",plugins:{legend:{position:"right",labels:{font:{size:11},padding:8,usePointStyle:true}},
-    tooltip:{...TT,callbacks:{label:c=>{const tot=espTotals.reduce((a,e)=>a+e.val,0);return ` ${c.label}: ${c.parsed.toLocaleString("es")} (${Math.round(c.parsed/tot*100)}%)`}}}}}});
+    tooltip:{...TT,callbacks:{label:c=>{const tot=esp.reduce((a,e)=>a+e.val,0);return ` ${c.label}: ${c.parsed.toLocaleString("es")} (${Math.round(c.parsed/tot*100)}%)`}}}}}});
 }
 
 /* ══════════════════════════════════
    G4 — Árboles por especie (barra horizontal)
 ══════════════════════════════════ */
 function g4(rows){
-  const espSorted=ESPECIES.map(e=>({label:e.label,color:e.color,val:rows.reduce((a,r)=>a+(r["__esp_"+e.label]||0),0)})).filter(e=>e.val>0).sort((a,b)=>b.val-a.val);
-  if(!espSorted.length)return;
-  mkChart("c-arbEsp",{type:"bar",data:{labels:espSorted.map(e=>e.label),datasets:[{label:"Árboles",data:espSorted.map(e=>e.val),backgroundColor:espSorted.map(e=>e.color+"bb"),borderColor:espSorted.map(e=>e.color),borderWidth:1,borderRadius:5,borderSkipped:false}]},
+  const esp=ESPECIES.map(e=>({label:e.label,color:e.color,val:rows.reduce((a,r)=>a+(r["__esp_"+e.label]||0),0)})).filter(e=>e.val>0).sort((a,b)=>b.val-a.val);
+  if(!esp.length)return;
+  mkChart("c-arbEsp",{type:"bar",data:{labels:esp.map(e=>e.label),datasets:[{label:"Árboles",data:esp.map(e=>e.val),backgroundColor:esp.map(e=>e.color+"bb"),borderColor:esp.map(e=>e.color),borderWidth:1,borderRadius:5,borderSkipped:false}]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("es")} árboles`}}},
     scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
 }
@@ -519,11 +531,12 @@ function g5(rows){
   mkChart("c-muniMes",{type:"bar",data:{labels:months.map(mShort),datasets},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
     plugins:{legend:{position:"top",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT}},
-    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},y:{stacked:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},y:{stacked:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}}}});
 }
 
 /* ══════════════════════════════════
    G6 — Radar guardarecursos
+   (top6 sin selección · seleccionado vs media con selección)
 ══════════════════════════════════ */
 function g6(rows){
   const sel=document.getElementById("f-radar-guarda").value;
@@ -531,28 +544,29 @@ function g6(rows){
   const metricOf=(cg,src)=>{
     const s=src.filter(r=>r.__cg===cg);
     const arb=s.reduce((a,r)=>a+(r.__arb||0),0);
-    return{p:s.length,m:uniq(s.map(r=>r.__cm)).length,arb:arb,mes:uniq(s.map(r=>r.__mes)).length,inter:s.filter(r=>r.__ci==="si").length};
+    return{p:s.length,m:uniq(s.map(r=>r.__cm)).length,arb,mes:uniq(s.map(r=>r.__mes)).length,inter:s.filter(r=>r.__ci==="si").length};
   };
   const nrm=(v,max)=>max?Math.round(v/max*100):0;
   const AXES=["Volumen","Municipios\ncubiertos","Árboles\nautorizados","Meses\nactivos","Intermunicipales"];
   if(sel){
     const allM=allG.map(cg=>metricOf(cg,ROWS));
-    const gAvg={p:avg(allM.map(x=>x.p)),m:avg(allM.map(x=>x.m)),arb:avg(allM.map(x=>x.arb)),mes:avg(allM.map(x=>x.mes)),inter:avg(allM.map(x=>x.inter))};
+    const globalAvg={p:avg(allM.map(x=>x.p)),m:avg(allM.map(x=>x.m)),arb:avg(allM.map(x=>x.arb)),mes:avg(allM.map(x=>x.mes)),inter:avg(allM.map(x=>x.inter))};
     const selM=metricOf(sel,ROWS);
     const maxP=Math.max(...allM.map(x=>x.p),1),maxM=Math.max(...allM.map(x=>x.m),1),maxA=Math.max(...allM.map(x=>x.arb),.1),maxMes=Math.max(...allM.map(x=>x.mes),1),maxI=Math.max(...allM.map(x=>x.inter),1);
     const toArr=o=>[nrm(o.p,maxP),nrm(o.m,maxM),nrm(o.arb,maxA),nrm(o.mes,maxMes),nrm(o.inter,maxI)];
     const label=(LABELS.guarda.get(sel)||sel).split(" ").slice(0,2).join(" ");
     mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:[
-      {label:label,data:toArr(selM),backgroundColor:"rgba(14,165,233,.18)",borderColor:"#0ea5e9",borderWidth:2.5,pointBackgroundColor:"#0ea5e9",pointRadius:4},
-      {label:"Media global",data:toArr(gAvg),backgroundColor:"rgba(239,68,68,.12)",borderColor:"rgba(239,68,68,.7)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(239,68,68,.7)",pointRadius:3}
-    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,.08)"},pointLabels:{font:{size:10}}}}}});
+      {label:label,data:toArr(selM),backgroundColor:"rgba(14,165,233,0.18)",borderColor:"#0ea5e9",borderWidth:2.5,pointBackgroundColor:"#0ea5e9",pointRadius:4},
+      {label:"Media global",data:toArr(globalAvg),backgroundColor:"rgba(239,68,68,0.12)",borderColor:"rgba(239,68,68,0.7)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(239,68,68,0.7)",pointRadius:3}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.08)"},pointLabels:{font:{size:10}}}}}});
   }else{
     const gc=countBy(rows,r=>r.__cg);
     const top6=topN(gc,6).map(([k])=>k);
-    const allTop=top6.map(cg=>metricOf(cg,rows));
+    const srcM=cg=>metricOf(cg,rows);
+    const allTop=top6.map(srcM);
     const maxP=Math.max(...allTop.map(x=>x.p),1),maxM=Math.max(...allTop.map(x=>x.m),1),maxA=Math.max(...allTop.map(x=>x.arb),.1),maxMes=Math.max(...allTop.map(x=>x.mes),1),maxI=Math.max(...allTop.map(x=>x.inter),1);
-    const datasets=top6.map((cg,i)=>{const o=metricOf(cg,rows);return{label:(LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),data:[nrm(o.p,maxP),nrm(o.m,maxM),nrm(o.arb,maxA),nrm(o.mes,maxMes),nrm(o.inter,maxI)],backgroundColor:PALETTE[i]+"33",borderColor:PALETTE[i],borderWidth:2,pointBackgroundColor:PALETTE[i],pointRadius:3};});
-    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:10},padding:8,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,.08)"},pointLabels:{font:{size:10}}}}}});
+    const datasets=top6.map((cg,i)=>{const o=srcM(cg);return{label:(LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),data:[nrm(o.p,maxP),nrm(o.m,maxM),nrm(o.arb,maxA),nrm(o.mes,maxMes),nrm(o.inter,maxI)],backgroundColor:PALETTE[i]+"33",borderColor:PALETTE[i],borderWidth:2,pointBackgroundColor:PALETTE[i],pointRadius:3};});
+    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:10},padding:8,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.08)"},pointLabels:{font:{size:10}}}}}});
   }
 }
 
@@ -565,9 +579,9 @@ function g7(rows){
   const sd=rows.length-ru-fu;
   const donutOpts=(labels,data,colors,borders)=>({type:"doughnut",data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2,hoverOffset:8}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
-  mkChart("c-rumcla",donutOpts(["RUMCLA","Fuera RUMCLA","Sin dato"].slice(0,sd>0?3:2),[ru,fu,...(sd>0?[sd]:[])],["#2d8a4e","#0891b2","#e5e7eb"],["#1a5c3a","#0e7490","#d1d5db"]));
+  mkChart("c-rumcla",donutOpts(["RUMCLA","Fuera RUMCLA","Sin dato"].slice(0,sd>0?3:2),[ru,fu,...(sd>0?[sd]:[])],["#0ea5e9","#f59e0b","#e5e7eb"],["#0284c7","#d97706","#d1d5db"]));
   const si=rows.filter(r=>r.__ci==="si").length;const no=rows.filter(r=>r.__ci==="no").length;
-  mkChart("c-inter",donutOpts(["Solo municipio","Intermunicipal"],[no,si],["rgba(45,138,78,.75)","rgba(217,119,6,.75)"],["#2d8a4e","#d97706"]));
+  mkChart("c-inter",donutOpts(["Solo municipio","Intermunicipal"],[no,si],["#dcfce7","#dbeafe"],["#16a34a","#2563eb"]));
 }
 
 /* ══════════════════════════════════
@@ -587,68 +601,138 @@ function g8(rows){
 }
 
 /* ══════════════════════════════════
-   G9 — Top municipios (combo barras + línea)
+   G9 — Top municipios (combo)
 ══════════════════════════════════ */
 function g9(rows){
   const muniMap=new Map(),muniArb=new Map();
   rows.forEach(r=>{const cm=r.__cm;muniMap.set(cm,(muniMap.get(cm)||0)+1);muniArb.set(cm,(muniArb.get(cm)||0)+(r.__arb||0));});
-  const sorted=[...muniArb.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);
+  const sorted=[...muniMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);
   const labels=sorted.map(([k])=>LABELS.muni.get(k)||k);
   mkChart("c-topMuni",{type:"bar",data:{labels,datasets:[
-    {label:"Árboles",data:sorted.map(([k])=>Math.round(muniArb.get(k)||0)),backgroundColor:"rgba(45,138,78,0.65)",borderColor:"#2d8a4e",borderWidth:1,borderRadius:4,borderSkipped:false,order:2},
-    {label:"Consumos",data:sorted.map(([k])=>muniMap.get(k)||0),type:"line",borderColor:"#0891b2",backgroundColor:"rgba(8,145,178,.85)",borderWidth:2,pointRadius:5,pointHoverRadius:7,tension:0,fill:false,order:1,yAxisID:"y2"}
+    {label:"Consumos",data:sorted.map(([k])=>muniMap.get(k)||0),backgroundColor:PALETTE.map(c=>c+"bb").concat(PALETTE.map(c=>c+"bb")),borderColor:PALETTE.concat(PALETTE),borderWidth:1,borderRadius:4,borderSkipped:false,order:2},
+    {label:"Árboles",data:sorted.map(([k])=>Math.round(muniArb.get(k)||0)),type:"line",borderColor:"#dc2626",backgroundColor:"#dc2626",borderWidth:2.5,pointRadius:6,pointHoverRadius:8,pointBackgroundColor:"#dc2626",pointBorderColor:"#fff",pointBorderWidth:1.5,tension:0,fill:false,order:1,yAxisID:"y2"}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
     plugins:{legend:{position:"top",labels:{font:{size:11},padding:12,usePointStyle:true}},tooltip:{...TT}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:10},maxRotation:30}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}},title:{display:true,text:"Árboles",font:{size:11}}},y2:{beginAtZero:true,position:"right",grid:{display:false},ticks:{font:{size:11}},title:{display:true,text:"Consumos",font:{size:11}}}}}});
+    scales:{x:{grid:{display:false},ticks:{font:{size:10},maxRotation:30}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}},title:{display:true,text:"Consumos",font:{size:11}}},y2:{beginAtZero:true,position:"right",grid:{display:false},ticks:{font:{size:11}},title:{display:true,text:"Árboles",font:{size:11}}}}}});
 }
 
 /* ══════════════════════════════════
-   G10 — Ranking guardarecursos
+   G10 — Histograma árboles por consumo
 ══════════════════════════════════ */
 function g10(rows){
-  const guardaMap=new Map(),guardaArb=new Map();
-  rows.forEach(r=>{const g=r.__cg;guardaMap.set(g,(guardaMap.get(g)||0)+1);guardaArb.set(g,(guardaArb.get(g)||0)+(r.__arb||0));});
-  const sorted=[...guardaMap.entries()].sort((a,b)=>b[1]-a[1]);
-  const labels=sorted.map(([k])=>(LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
-  mkChart("c-rankGuarda",{type:"bar",data:{labels,datasets:[
-    // Colores distintos por guarda
-  const PAL_G10=["#2d8a4e","#0891b2","#d97706","#7c3aed","#be123c","#0e7490","#65a30d","#9333ea","#b45309","#0f766e","#15803d","#0369a1","#a16207","#6d28d9","#9f1239","#047857","#0284c7","#92400e","#7e22ce","#881337","#166534","#075985","#78350f","#4c1d95","#b91c1c","#0f766e","#0c4a6e","#854d0e","#581c87","#9f1239"];
-  const bgG10=sorted.map((_,i)=>PAL_G10[i%PAL_G10.length]+"cc");
-  const bdG10=sorted.map((_,i)=>PAL_G10[i%PAL_G10.length]);
-  {label:"Consumos",data:sorted.map(([k])=>guardaMap.get(k)),backgroundColor:bgG10,borderColor:bdG10,borderWidth:1.5,borderRadius:4,borderSkipped:false,order:2},
-    {label:"Árboles",data:sorted.map(([k])=>Math.round(guardaArb.get(k)||0)),type:"line",borderColor:"#ef4444",backgroundColor:"rgba(239,68,68,.9)",borderWidth:2,pointRadius:5,pointHoverRadius:7,tension:0,fill:false,order:1}
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-    plugins:{legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}},tooltip:{...TT}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:10},maxRotation:35}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
-}
-
-/* ══════════════════════════════════
-   G11 — Histograma árboles por consumo
-══════════════════════════════════ */
-function g11(rows){
   const vals=rows.map(r=>r.__arb).filter(v=>v>0);
   const bs=5,nB=12;
   const bins=new Array(nB).fill(0);
   vals.forEach(v=>{const i=Math.min(Math.floor((v-1)/bs),nB-1);bins[i]++;});
   const labels=Array.from({length:nB},(_,i)=>`${i*bs+1}–${(i+1)*bs}`);
   const ctx=document.getElementById("c-histArb").getContext("2d");
-  const g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,"rgba(45,138,78,.82)");g.addColorStop(1,"rgba(45,138,78,.28)");
-  mkChart("c-histArb",{type:"bar",data:{labels,datasets:[{label:"Consumos",data:bins,backgroundColor:g,borderColor:"#2d8a4e",borderWidth:1,borderRadius:4,borderSkipped:false}]},
+  const g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,"rgba(245,158,11,.85)");g.addColorStop(1,"rgba(245,158,11,.3)");
+  mkChart("c-histArb",{type:"bar",data:{labels,datasets:[{label:"Consumos",data:bins,backgroundColor:g,borderColor:"#d97706",borderWidth:1,borderRadius:4,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].label} árboles`,label:c=>` ${c.parsed.y} consumos`}}},
     scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
 }
 
 /* ══════════════════════════════════
-   G12 — Top usuarios beneficiarios
+   G11 — Ranking guardarecursos
+   · color por guarda · etiquetas en barras
+   · etiquetas en nodos de línea
+   · filtro de rango propio
 ══════════════════════════════════ */
-function g12(rows){
-  const usrMap=new Map();
-  rows.forEach(r=>{const u=r.__usr;usrMap.set(u,(usrMap.get(u)||0)+1);});
-  const top=[...usrMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const labels=top.map(([k])=>k.length>28?k.slice(0,26)+"…":k);
-  mkChart("c-usuario",{type:"bar",data:{labels,datasets:[{label:"Consumos",data:top.map(([,v])=>v),backgroundColor:"rgba(8,145,178,0.55)",borderColor:"rgba(14,116,110,0.85)",borderWidth:1.5,borderRadius:5,borderSkipped:false}]},
-    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} consumo(s)`}}},
-    scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+let G11_DESDE=null,G11_HASTA=null;
+
+function g11(rows){
+  let src=rows;
+  if(G11_DESDE||G11_HASTA){
+    src=rows.filter(r=>{
+      if(!r.__dt)return false;
+      if(G11_DESDE&&r.__dt<G11_DESDE)return false;
+      if(G11_HASTA&&r.__dt>G11_HASTA)return false;
+      return true;
+    });
+  }
+
+  const PAL=[
+    "#0ea5e9","#10b981","#f59e0b","#8b5cf6","#ef4444","#14b8a6",
+    "#f97316","#6366f1","#be185d","#65a30d","#0369a1","#059669",
+    "#d97706","#7c3aed","#dc2626","#0891b2","#ea580c","#4f46e5",
+    "#9d174d","#4d7c0f","#0284c7","#047857","#b45309","#6d28d9",
+    "#b91c1c","#0e7490","#c2410c","#4338ca","#831843","#3f6212"
+  ];
+
+  const gc=countBy(src,r=>r.__cg);
+  const sorted=[...gc.entries()].sort((a,b)=>b[1]-a[1]);
+  const labels=sorted.map(([k])=>(LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
+  const consumos=sorted.map(([,v])=>v);
+  // Árboles totales por guarda
+  const arboles=sorted.map(([k])=>Math.round(src.filter(r=>r.__cg===k).reduce((a,r)=>a+(r.__arb||0),0)));
+  const bgColors=sorted.map((_,i)=>PAL[i%PAL.length]+"bb");
+  const bdColors=sorted.map((_,i)=>PAL[i%PAL.length]);
+
+  mkChart("c-rankGuarda",{type:"bar",data:{labels,datasets:[
+    {
+      label:"Consumos",
+      data:consumos,
+      backgroundColor:bgColors,
+      borderColor:bdColors,
+      borderWidth:1.5,
+      borderRadius:5,
+      borderSkipped:false,
+      order:2,
+      datalabels:{
+        display:true,
+        anchor:"end",
+        align:"top",
+        offset:3,
+        color:"#0d1f15",
+        font:{size:10,weight:"700",family:"'DM Sans',sans-serif"},
+        formatter:v=>v>0?v.toLocaleString("es"):""
+      }
+    },
+    {
+      label:"Árboles",
+      data:arboles,
+      type:"line",
+      borderColor:"#dc2626",
+      backgroundColor:"#dc2626",
+      borderWidth:2.5,
+      pointRadius:7,
+      pointHoverRadius:9,
+      pointStyle:"circle",
+      pointBackgroundColor:"#dc2626",
+      pointBorderColor:"#fff",
+      pointBorderWidth:1.5,
+      tension:0,
+      fill:false,
+      order:1,
+      datalabels:{
+        display:true,
+        anchor:"end",
+        align:"top",
+        offset:5,
+        color:"#dc2626",
+        font:{size:10,weight:"700",family:"'DM Sans',sans-serif"},
+        formatter:v=>v>0?v.toLocaleString("es"):""
+      }
+    }
+  ]},options:{
+    responsive:true,
+    maintainAspectRatio:false,
+    interaction:{mode:"index",intersect:false},
+    layout:{padding:{top:28}},
+    plugins:{
+      legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}},
+      tooltip:{...TT,callbacks:{
+        label:c=>c.dataset.label==="Consumos"
+          ?` Consumos: ${c.parsed.y}`
+          :` Árboles: ${c.parsed.y.toLocaleString("es")}`
+      }},
+      datalabels:{display:false}
+    },
+    scales:{
+      x:{grid:{display:false},ticks:{font:{size:10},maxRotation:38,minRotation:25}},
+      y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}
+    }
+  }});
 }
 
 /* ══════════════════════════════════
@@ -658,7 +742,7 @@ function applyAll(){
   const f=getF();renderChips(f);
   const rows=applyF(f);
   updateKPIs(rows);
-  g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);g9(rows);g10(rows);g11(rows);g12(rows);
+  g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);g9(rows);g10(rows);g11(rows);
   document.getElementById("estado").textContent=`Mostrando ${rows.length.toLocaleString("es")} de ${ROWS.length.toLocaleString("es")} registros`;
 }
 
@@ -669,12 +753,25 @@ function resetAll(){["f-anio","f-mes","f-municipio","f-guarda","f-area"].forEach
 ══════════════════════════════════ */
 (async()=>{
   try{
-    const parsed=await loadCSV();
-    ROWS=enrich(parsed.data);
+    const{data}=await loadCSV();
+    ROWS=enrich(data);
     initFilters();
     ["f-anio","f-mes","f-municipio","f-guarda","f-area"].forEach(id=>document.getElementById(id).addEventListener("change",applyAll));
     document.getElementById("f-radar-guarda").addEventListener("change",()=>g6(applyF(getF())));
     document.getElementById("btn-reset").addEventListener("click",resetAll);
+    document.getElementById("g11-aplicar").addEventListener("click",()=>{
+      const d=document.getElementById("g11-desde").value;
+      const h=document.getElementById("g11-hasta").value;
+      G11_DESDE=d?new Date(d+"T00:00:00"):null;
+      G11_HASTA=h?new Date(h+"T23:59:59"):null;
+      g11(applyF(getF()));
+    });
+    document.getElementById("g11-limpiar").addEventListener("click",()=>{
+      document.getElementById("g11-desde").value="";
+      document.getElementById("g11-hasta").value="";
+      G11_DESDE=null;G11_HASTA=null;
+      g11(applyF(getF()));
+    });
     applyAll();
   }catch(e){
     const el=document.getElementById("estado");
