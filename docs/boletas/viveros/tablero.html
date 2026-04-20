@@ -1,289 +1,237 @@
 <!DOCTYPE html>
-
 <html lang="es">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>AC210 · Asistencia técnica a viveros - Tablero dinámico</title>
-<!-- Dependencias (CDN) -->
-<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>AC210 · Tablero dinámico · Asistencia a viveros</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
     :root{
-      --bg:#f4f6f8; --card:#fff; --ink:#0f172a; --muted:#64748b;
-      --line:#e2e8f0; --brand:#1f6feb; --warn:#b91c1c;
-      --radius:14px;
+      --verde-oscuro:#0a3d2b;--verde-medio:#1a5c3a;--bg:#f0f4f2;--blanco:#ffffff;
+      --ink:#0d1f15;--muted:#6b7280;--borde:#e2e8e4;--sombra:rgba(10,61,43,.08);--azul-m:#2563eb;
+      --p0:#0ea5e9;--p1:#10b981;--p2:#f59e0b;--p3:#8b5cf6;--p4:#ef4444;
     }
-    *{box-sizing:border-box}
-    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif; background:var(--bg); color:var(--ink)}
-    a{color:inherit; text-decoration:none}
-    header{background:#fff; border-bottom:1px solid var(--line)}
-    .header-inner{max-width:1200px; margin:0 auto; padding:14px 16px; display:flex; gap:16px; align-items:center}
-    .logo-group{display:flex; gap:10px; align-items:center}
-    .logo-group img{height:46px; width:auto; object-fit:contain}
-    .title-group h1{margin:0; font-size:18px}
-    .title-group p{margin:2px 0 0; color:var(--muted); font-size:13px}
-
-    main{max-width:1200px; margin:0 auto; padding:16px}
-    .page-header{margin:4px 0 10px}
-    .page-header h2{margin:0; font-size:18px}
-
-    .topnav{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px; display:flex; flex-wrap:wrap; gap:10px; align-items:center}
-    .tabs{display:flex; gap:8px; flex-wrap:wrap}
-    .tab{padding:8px 10px; border:1px solid var(--line); border-radius:999px; font-size:13px; color:var(--muted); background:#fff}
-    .tab.active{border-color:var(--brand); color:var(--brand); font-weight:600}
-    .nav-actions{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap}
-    .btn{border:1px solid var(--line); background:#fff; border-radius:10px; padding:8px 10px; font-size:13px; cursor:pointer}
-    .btn:hover{border-color:#cbd5e1}
-    .btn-warn{border-color:#fecaca; background:#fff5f5; color:var(--warn)}
-    .btn-ghost{background:#fff}
-    .infobox{flex-basis:100%; padding:8px 10px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:12px; color:var(--muted); font-size:13px}
-    .chips{margin-top:8px; display:flex; flex-wrap:wrap; gap:6px}
-    .chip{background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; padding:4px 8px; border-radius:999px; font-size:12px}
-
-    .subnote{color:var(--muted); font-size:13px; margin:8px 2px 0}
-
-    .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:12px 12px; box-shadow:0 1px 0 rgba(15,23,42,.02)}
-    .card.soft{background:#fbfdff}
-    .grid{display:grid; grid-template-columns:repeat(12,1fr); gap:12px; margin-top:12px}
-    .col-12{grid-column:span 12}
-    .col-6{grid-column:span 6}
-    .col-4{grid-column:span 4}
-    .col-8{grid-column:span 8}
-    @media (max-width: 960px){
-      .col-6,.col-4,.col-8{grid-column:span 12}
-      .nav-actions{margin-left:0}
-      .logo-group img{height:40px}
-    }
-
-    .filters{display:grid; grid-template-columns:repeat(12,1fr); gap:10px; margin-top:8px}
-    .field{grid-column:span 3; min-width:160px}
-    .field.wide{grid-column:span 6}
-    .field label{display:block; font-size:12px; color:var(--muted); margin-bottom:4px}
-    select,input{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:10px; font-size:13px; background:#fff}
-    input::placeholder{color:#94a3b8}
-    .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:10px}
-    @media (max-width: 960px){ .kpis{grid-template-columns:repeat(2,1fr)} }
-    .kpi{border:1px solid var(--line); border-radius:14px; padding:10px 10px; background:#fff}
-    .kpi .t{font-size:12px; color:var(--muted)}
-    .kpi .v{font-size:20px; font-weight:700; margin-top:4px}
-    .kpi .s{font-size:12px; color:var(--muted); margin-top:2px}
-
-    .chartwrap{height:320px}
-    canvas{width:100%; height:100%}
-
-    /* MAPA: altura fija para que NO desproporcione el layout */
-    #map{height:340px; min-height:340px; max-height:340px; border-radius:12px; border:1px solid var(--line); overflow:hidden}
-    .mapnote{margin-top:8px; color:var(--muted); font-size:13px}
-
-    .error{color:var(--warn); font-weight:700}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;opacity:0;animation:fadeIn .35s ease forwards}
+    @keyframes fadeIn{to{opacity:1}}
+    @media(prefers-reduced-motion:reduce){body{animation:none;opacity:1}}
+    header{background:linear-gradient(90deg,var(--verde-oscuro),var(--verde-medio));color:#fff;padding:12px 20px 14px;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.28)}
+    .header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:5px 10px}
+    .logo-group img{height:34px;max-width:110px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 7px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+    .header-right{text-align:right;flex:1}
+    .header-right h1{font-size:17px;font-weight:600;margin-bottom:1px}
+    .header-right p{font-size:11.5px;opacity:.7;font-weight:300}
+    .header-chip{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:2px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+    .chip-dot{width:5px;height:5px;border-radius:50%;background:#86efac;animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .module-nav{background:var(--blanco);border-bottom:1px solid var(--borde);padding:0 20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .module-nav-inner{max-width:1400px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+    .module-nav-inner::-webkit-scrollbar{display:none}
+    .nav-back{display:flex;align-items:center;gap:6px;padding:12px 16px 12px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap}
+    .nav-back:hover{color:var(--verde-medio)}
+    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s}
+    .nav-tab:hover{color:var(--azul-m);border-bottom-color:rgba(37,99,235,.25)}
+    .nav-tab.active{color:var(--azul-m);border-bottom-color:var(--azul-m);font-weight:600}
+    .page{max-width:1400px;width:100%;margin:0 auto;padding:20px 20px 48px;flex:1}
+    .toolbar{background:var(--blanco);border:1px solid var(--borde);border-radius:14px;padding:16px 20px;box-shadow:0 2px 10px var(--sombra);margin-bottom:16px}
+    .toolbar-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+    .toolbar-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;line-height:1.15}
+    .toolbar-copy{font-size:13px;color:var(--muted);line-height:1.55;max-width:780px;margin-top:4px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{padding:8px 14px;border-radius:10px;border:1px solid var(--borde);background:var(--blanco);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--ink);transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+    .btn:hover{border-color:#94a3b8;transform:translateY(-1px)}
+    .btn.primary{background:var(--azul-m);border-color:var(--azul-m);color:#fff}
+    .btn.primary:hover{background:#1d4ed8;border-color:#1d4ed8}
+    .btn.warn{border-color:#fbcfe8;background:#fff1f2;color:#be123c}
+    .btn.small{padding:6px 10px;font-size:12px}
+    .filtros-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:10px}
+    .fg{display:flex;flex-direction:column;gap:4px;min-width:140px;flex:1}
+    .fg.wide{min-width:220px;flex:1.4}
+    .fg label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase}
+    .fg select,.fg input{border:1px solid var(--borde);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--ink);transition:border-color .2s,box-shadow .2s;outline:none}
+    .fg select:focus,.fg input:focus{border-color:var(--azul-m);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+    .chips-wrap{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 8px}
+    .chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);font-size:11.5px;font-weight:500;color:var(--azul-m)}
+    .estado-bar{display:flex;flex-direction:column;gap:4px}
+    .estado-txt,.meta-txt{font-size:12.5px;color:var(--muted);font-weight:300}
+    .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}}
+    .kpi{background:var(--blanco);border:1px solid var(--borde);border-top:3px solid transparent;border-radius:14px;padding:16px 18px;box-shadow:0 2px 8px var(--sombra)}
+    .kpi-0{border-top-color:var(--p0)}.kpi-1{border-top-color:var(--p1)}.kpi-2{border-top-color:var(--p2)}.kpi-3{border-top-color:var(--p4)}.kpi-4{border-top-color:var(--p3)}.kpi-5{border-top-color:#14b8a6}
+    .kpi-label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px}
+    .kpi-value{font-family:'Playfair Display',serif;font-size:30px;font-weight:700;line-height:1;color:var(--ink);margin-bottom:4px}
+    .kpi-sub{font-size:11.5px;color:var(--muted);font-weight:300}
+    .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media(max-width:900px){.charts-grid{grid-template-columns:1fr}}
+    .cc{background:var(--blanco);border:1px solid var(--borde);border-radius:16px;padding:22px;box-shadow:0 2px 12px var(--sombra)}
+    .cc.full{grid-column:span 2}
+    @media(max-width:900px){.cc.full{grid-column:span 1}}
+    .cc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+    .cc-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:3px}
+    .cc-hint{font-size:12px;color:var(--muted);font-weight:300;line-height:1.5}
+    .cw{position:relative;height:280px}
+    .cw.tall{height:340px}
+    .mapbox{height:360px;border-radius:12px;overflow:hidden;border:1px solid var(--borde)}
+    .mapmeta{margin-top:10px;font-size:12px;color:var(--muted)}
+    .tablewrap{overflow:auto;border:1px solid var(--borde);border-radius:12px;background:#fff}
+    table{width:100%;border-collapse:collapse;font-size:12.5px}
+    thead th{position:sticky;top:0;background:#f8fafc;padding:10px 12px;border-bottom:1px solid var(--borde);text-align:left;cursor:pointer;white-space:nowrap}
+    tbody td{padding:10px 12px;border-bottom:1px solid #edf2f7;vertical-align:top}
+    tbody tr:hover{background:#f8fbff}
+    .pager{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+    .pager .right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .pager button,.pager select{border:1px solid var(--borde);background:#fff;border-radius:8px;padding:6px 10px;font-family:inherit}
+    .muted{color:var(--muted);font-size:12px}
+    footer{text-align:center;font-size:12px;color:#6b7280;padding:10px 20px 18px;border-top:1px solid #e5e7eb;background-color:rgba(248,250,252,.9)}
+    .toast{position:fixed;right:16px;bottom:16px;background:#0f172a;color:#fff;padding:10px 14px;border-radius:999px;font-size:12px;opacity:0;pointer-events:none;transform:translateY(8px);transition:all .2s;z-index:400}
+    .toast.show{opacity:1;transform:translateY(0)}
   </style>
 </head>
 <body>
 <header>
-<div class="header-inner">
-<div class="logo-group">
-<img alt="Logo CONAP" src="../../assets/conap_logo.jpg"/>
-<img alt="Logo Laboratorio SIG AALA" src="../../assets/aala_logo.png"/>
-</div>
-<div class="title-group">
-<h1>Centro de consulta de datos</h1>
-<p>Sistema de monitoreo de actividades</p>
-<p>CONAP – Dirección Regional Altiplano Central</p>
-</div>
-</div>
+  <div class="header-inner">
+    <div class="logo-group">
+      <img src="../../assets/conap_logo.jpg" alt="CONAP">
+      <img src="../../assets/aala_logo.png" alt="AALA">
+    </div>
+    <div class="header-right">
+      <h1>Centro de consulta de datos</h1>
+      <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
+      <div class="header-chip"><span class="chip-dot"></span>AC210 · Tablero dinámico</div>
+    </div>
+  </div>
 </header>
-<main id="pdf-area">
-<section class="page-header">
-<h2>AC210 · Asistencia técnica a viveros · Tablero dinámico</h2>
-</section><section aria-label="Navegación y acciones del módulo" class="topnav"><nav aria-label="Navegación del módulo" class="tabs">
-<a class="tab" href="dashboard.html">Dashboard geográfico</a>
-<a class="tab active" href="ac210_tablero.html">Tablero dinámico</a>
-<a class="tab" href="datos.html">Tabla de datos</a>
-</nav><div class="nav-actions"><a class="btn btn-ghost" href="index.html">Inicio</a><button class="btn btn-ghost" id="btn-reset" type="button">Limpiar filtros</button><button class="btn btn-ghost" id="btn-dl-csv" type="button">Descargar CSV</button><button class="btn btn-ghost" id="btn-dl-xlsx" type="button">Descargar Excel</button><button class="btn btn-warn" id="btn-pdf" type="button">Generar informe PDF (liviano)</button></div><div class="infobox"><b>Sugerencia:</b> use filtros para explorar y haga clic en barras de los gráficos para filtrar.<div aria-label="Resumen de filtros" class="chips" id="chips-filtros"></div><div class="subnote" id="estado" style="margin-top:8px;">Cargando datos…</div><div class="subnote" id="meta"></div></div></section>
-<section class="card soft">
-<!-- Filtros (misma estructura que AC192, adaptada a AC210) -->
-<div class="filters" id="filters-grid">
-<div class="field">
-<label for="f-anio">Año</label>
-<select id="f-anio"></select>
+
+<nav class="module-nav">
+  <div class="module-nav-inner">
+    <a href="../../index.html" class="nav-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Inicio
+    </a>
+    <a href="dashboard.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Mapa geográfico
+    </a>
+    <a href="tablero.html" class="nav-tab active">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Tablero dinámico
+    </a>
+    <a href="datos.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>Tabla de datos
+    </a>
+  </div>
+</nav>
+
+<div class="page" id="pdf-area">
+  <section class="toolbar">
+    <div class="toolbar-top">
+      <div>
+        <div class="toolbar-title">AC210 · Asistencia técnica a viveros forestales</div>
+        <div class="toolbar-copy">Tablero rediseñado con la misma línea visual de patrullajes y consumo forestal. Filtra por período, territorio, guardarecurso y actividades para explorar el comportamiento operativo del módulo de viveros.</div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btn-reset" type="button">Limpiar filtros</button>
+        <button class="btn" id="btn-dl-csv" type="button">Descargar CSV</button>
+        <button class="btn" id="btn-dl-xlsx" type="button">Descargar Excel</button>
+        <button class="btn warn" id="btn-pdf" type="button">Informe PDF</button>
+      </div>
+    </div>
+
+    <div class="filtros-bar">
+      <div class="fg"><label>Año</label><select id="f-anio"><option value="">Todos</option></select></div>
+      <div class="fg"><label>Mes</label><select id="f-mes"><option value="">Todos</option></select></div>
+      <div class="fg"><label>Región</label><select id="f-region"><option value="">Todas</option></select></div>
+      <div class="fg"><label>Municipio</label><select id="f-muni"><option value="">Todos</option></select></div>
+      <div class="fg"><label>Área protegida</label><select id="f-area"><option value="">Todas</option></select></div>
+      <div class="fg"><label>Guardarecurso</label><select id="f-guarda"><option value="">Todos</option></select></div>
+      <div class="fg wide"><label>Actividad</label><select id="f-actividad"><option value="">Todas</option></select></div>
+      <div class="fg"><label>Apoyo fuera</label><select id="f-apoyo"><option value="">Todos</option><option value="si">Sí</option><option value="no">No</option><option value="sin">Sin dato</option></select></div>
+      <div class="fg wide"><label>Buscar en todo</label><input id="f-texto" type="search" placeholder="Buscar vivero, observaciones, municipio…"></div>
+    </div>
+
+    <div class="chips-wrap" id="chips-filtros"></div>
+    <div class="estado-bar">
+      <span class="estado-txt" id="estado">Cargando datos…</span>
+      <span class="meta-txt" id="meta"></span>
+    </div>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi kpi-0"><div class="kpi-label">Registros</div><div class="kpi-value" id="k-total">–</div><div class="kpi-sub" id="k-total-s">Total filtrado</div></div>
+    <div class="kpi kpi-1"><div class="kpi-label">Municipios</div><div class="kpi-value" id="k-munis">–</div><div class="kpi-sub">Cobertura territorial</div></div>
+    <div class="kpi kpi-2"><div class="kpi-label">Guardarecursos</div><div class="kpi-value" id="k-guardas">–</div><div class="kpi-sub">Activos en el filtro</div></div>
+    <div class="kpi kpi-3"><div class="kpi-label">Apoyo fuera</div><div class="kpi-value" id="k-apoyo">–</div><div class="kpi-sub">Entre registros sí/no</div></div>
+    <div class="kpi kpi-4"><div class="kpi-label">Prom. jornada</div><div class="kpi-value" id="k-horas">–</div><div class="kpi-sub">Horas calculadas</div></div>
+    <div class="kpi kpi-5"><div class="kpi-label">Coordenadas válidas</div><div class="kpi-value" id="k-coord">–</div><div class="kpi-sub">Puntos dentro de Guatemala</div></div>
+  </section>
+
+  <section class="charts-grid">
+    <article class="cc full">
+      <div class="cc-head"><div><div class="cc-title">Tendencia mensual de asistencias</div><div class="cc-hint">Conteo mensual de registros según los filtros activos. Haz clic en un punto para fijar el mes.</div></div><button class="btn small" id="png-tiempo" type="button">PNG</button></div>
+      <div class="cw tall"><canvas id="c-tiempo"></canvas></div>
+    </article>
+
+    <article class="cc">
+      <div class="cc-head"><div><div class="cc-title">Actividades principales</div><div class="cc-hint">Top de actividades reportadas en la asistencia técnica.</div></div><button class="btn small" id="png-act" type="button">PNG</button></div>
+      <div class="cw"><canvas id="c-act"></canvas></div>
+    </article>
+
+    <article class="cc">
+      <div class="cc-head"><div><div class="cc-title">Municipios con más asistencia</div><div class="cc-hint">Top 10 municipios por número de registros. Haz clic en una barra para filtrar.</div></div><button class="btn small" id="png-muni" type="button">PNG</button></div>
+      <div class="cw"><canvas id="c-muni"></canvas></div>
+    </article>
+
+    <article class="cc full">
+      <div class="cc-head"><div><div class="cc-title">Guardarecursos con mayor actividad</div><div class="cc-hint">Top de responsables según la cantidad de asistencias registradas.</div></div><button class="btn small" id="png-guarda" type="button">PNG</button></div>
+      <div class="cw"><canvas id="c-guarda"></canvas></div>
+    </article>
+
+    <article class="cc full">
+      <div class="cc-head"><div><div class="cc-title">Mapa de registros georreferenciados</div><div class="cc-hint">Se excluyen coordenadas 0/0 y puntos fuera del territorio de Guatemala para evitar ruido geográfico.</div></div></div>
+      <div class="mapbox"><div id="map"></div></div>
+      <div class="mapmeta" id="mapmeta">—</div>
+    </article>
+
+    <article class="cc full">
+      <div class="cc-head"><div><div class="cc-title">Vista tabular del filtro actual</div><div class="cc-hint">Resumen rápido de registros filtrados. Puedes ordenar por columna y exportar desde la parte superior.</div></div></div>
+      <div class="tablewrap">
+        <table id="t-data">
+          <thead><tr id="t-head"></tr></thead>
+          <tbody id="t-body"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <div class="left"><span class="muted" id="t-info">—</span></div>
+        <div class="right">
+          <label class="muted" for="t-size">Filas:</label>
+          <select id="t-size"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
+          <button id="t-prev" type="button">◀</button>
+          <span class="muted" id="t-page">—</span>
+          <button id="t-next" type="button">▶</button>
+        </div>
+      </div>
+    </article>
+  </section>
 </div>
-<div class="field">
-<label for="f-mes">Mes</label>
-<select id="f-mes"></select>
-</div>
-<div class="field wide">
-<label for="f-region">Región </label>
-<select id="f-region"></select>
-</div>
-<div class="field wide">
-<label for="f-muni">Municipio</label>
-<select id="f-muni"></select>
-</div>
-<div class="field wide">
-<label for="f-area">Área protegida </label>
-<select id="f-area"></select>
-</div>
-<div class="field wide">
-<label for="f-guarda">Guardarrecursos responsable</label>
-<select id="f-guarda"></select>
-</div>
-<div class="field">
-<label for="f-actividad">Actividad</label>
-<select id="f-actividad"></select>
-</div>
-<div class="field">
-<label for="f-apoyo">¿Apoyo fuera de su municipio?</label>
-<select id="f-apoyo">
-<option value="">(Todos)</option>
-<option value="si">Sí</option>
-<option value="no">No</option>
-<option value="sin">Sin dato</option>
-</select>
-</div>
-<div class="field wide">
-<label for="f-texto">Buscar en todo</label>
-<input autocomplete="off" id="f-texto" placeholder="Buscar (vivero, observaciones, etc.)…" type="search"/>
-</div>
-</div>
-<div class="grid">
-<div class="kpi">
-<div class="t">Registros</div>
-<div class="v" id="k-total">—</div>
-<div class="s" id="k-total-s">Total filtrado</div>
-</div>
-<div class="kpi">
-<div class="t">Municipios</div>
-<div class="v" id="k-munis">—</div>
-<div class="s">Únicos</div>
-</div>
-<div class="kpi">
-<div class="t">Guardarecursos</div>
-<div class="v" id="k-guardas">—</div>
-<div class="s">Únicos</div>
-</div>
-<div class="kpi">
-<div class="t">% Apoyo fuera</div>
-<div class="v" id="k-apoyo">—</div>
-<div class="s">Entre “sí/no”</div>
-</div>
-<div class="kpi">
-<div class="t">Prom. horas</div>
-<div class="v" id="k-horas">—</div>
-<div class="s">Jornada (si hay horas)</div>
-</div>
-<div class="kpi">
-<div class="t">Coord. Guatemala</div>
-<div class="v" id="k-coord">—</div>
-<div class="s">% dentro del país</div>
-</div>
-<section class="card col-6">
-<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
-<div>
-<h3 style="margin:0 0 6px;">Registros por mes</h3>
-<p class="subnote" style="margin:0;">Conteo mensual (según filtros). Click para filtrar por mes.</p>
-</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;">
-<button class="btn ghost" id="png-tiempo" type="button">PNG</button>
-</div>
-</div>
-<div class="chartwrap"><canvas id="c-tiempo"></canvas></div>
-</section>
-<section class="card col-6">
-<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
-<div>
-<h3 style="margin:0 0 6px;">Actividades (Top 10)</h3>
-<p class="subnote" style="margin:0;">Cada registro puede incluir varias actividades.</p>
-</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;">
-<button class="btn ghost" id="png-act" type="button">PNG</button>
-</div>
-</div>
-<div class="chartwrap"><canvas id="c-act"></canvas></div>
-</section>
-<section class="card col-6">
-<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
-<div>
-<h3 style="margin:0 0 6px;">Top municipios</h3>
-<p class="subnote" style="margin:0;">Top 10 por registros. Click para filtrar.</p>
-</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;">
-<button class="btn ghost" id="png-muni" type="button">PNG</button>
-</div>
-</div>
-<div class="chartwrap"><canvas id="c-muni"></canvas></div>
-</section>
-<section class="card col-6">
-<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
-<div>
-<h3 style="margin:0 0 6px;">Top guardarecursos</h3>
-<p class="subnote" style="margin:0;">Top 10 por registros. Click para filtrar.</p>
-</div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;">
-<button class="btn ghost" id="png-guarda" type="button">PNG</button>
-</div>
-</div>
-<div class="chartwrap"><canvas id="c-guarda"></canvas></div>
-</section>
-<section class="card" style="grid-column: span 12;">
-<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
-<div>
-<h3 style="margin:0 0 6px;">Mapa (solo puntos dentro de Guatemala)</h3>
-<p class="subnote" style="margin:0;">Se excluyen coordenadas 0/0 y puntos fuera del país.</p>
-</div>
-</div>
-<div class="mapwrap"><div id="map"></div></div>
-<div class="mapmeta" id="mapmeta">—</div>
-</section>
-<section class="card" style="grid-column: span 12;">
-<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
-<div>
-<h3 style="margin:0 0 6px;">Registros filtrados</h3>
-<p class="subnote" style="margin:0;">Tabla simple. Click en encabezado para ordenar.</p>
-</div>
-</div>
-<div class="tablewrap">
-<table id="t-data">
-<thead><tr id="t-head"></tr></thead>
-<tbody id="t-body"></tbody>
-</table>
-</div>
-<div class="pager">
-<div class="left">
-<span class="muted" id="t-info">—</span>
-</div>
-<div class="right">
-<label class="muted" for="t-size">Filas:</label>
-<select id="t-size">
-<option value="25">25</option>
-<option value="50">50</option>
-<option value="100">100</option>
-</select>
-<button id="t-prev" type="button">◀</button>
-<span class="muted" id="t-page">—</span>
-<button id="t-next" type="button">▶</button>
-</div>
-</div>
-</section>
-</div>
-</section>
-</main>
+
 <footer>
-<p>© 2026 Laboratorio SIG AALA en apoyo a CONAP – Dirección Regional Altiplano Central</p>
+  <p><strong>CONAP · Dirección Regional Altiplano Central</strong> · Sistema desarrollado por el Laboratorio SIG · AALA · © 2026</p>
 </footer>
 <div class="toast" id="toast">Listo</div>
 <script>
+
   // =========================
   // Config AC210
   // =========================
   const CSV_CANDIDATES = [
     "../../datos/base2_datos.csv",
-    "../../datos/base2_datos.csv",
     "./data/base2_datos.csv",
+    "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base2_datos.csv",
   ];
 
   const F = {
@@ -581,7 +529,7 @@
     }
     // fallback raw GitHub (por si Pages mueve rutas)
     try{
-      const raw = "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/base2_datos.csv";
+      const raw = "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base2_datos.csv";
       const res = await fetch(raw, {cache:"no-store"});
       if(res.ok){
         const buf = await res.arrayBuffer();
@@ -1182,6 +1130,7 @@
       estado.textContent = "Error: " + (err && err.message ? err.message : String(err));
     }
   })();
-  </script>
+  
+</script>
 </body>
 </html>
