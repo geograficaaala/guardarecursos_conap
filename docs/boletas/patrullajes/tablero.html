@@ -9,43 +9,37 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
     :root {
-      /* ── Marca CONAP ── */
       --verde-oscuro:  #0a3d2b;
       --verde-medio:   #1a5c3a;
       --verde-claro:   #2d7a4f;
-
-      /* ── Fondo y superficies ── */
       --bg:            #f2f5f3;
       --surface:       #ffffff;
-      --surface-2:     #f8faf9;
-
-      /* ── Texto ── */
+      --surface-2:     #f7faf8;
       --ink:           #0d2018;
-      --ink-2:         #3a5244;
-      --muted:         #7a9187;
-      --borde:         #dde8e3;
+      --ink-2:         #2e4e3b;
+      --muted:         #6e8c7c;
+      --borde:         #dae4de;
       --sombra:        rgba(10,61,43,0.07);
+      --acento:        #1a5c3a;
+      --acento-bg:     rgba(26,92,58,0.07);
+      --acento-borde:  rgba(26,92,58,0.22);
 
-      /* ── Paleta de datos — 10 colores bien diferenciados ── */
-      --c0: #1d6fa4;   /* azul acero       */
-      --c1: #2d9e6b;   /* verde esmeralda  */
-      --c2: #d4822a;   /* naranja cálido   */
-      --c3: #7b4fa6;   /* violeta medio    */
-      --c4: #c0393b;   /* rojo carmín      */
-      --c5: #1a9494;   /* verde-azul       */
-      --c6: #b87333;   /* cobre            */
-      --c7: #4a72b8;   /* azul índigo      */
-      --c8: #8e6bbf;   /* lavanda          */
-      --c9: #3d8f5f;   /* verde oliva      */
-
-      /* ── Acento UI ── */
-      --acento:        #1d6fa4;
-      --acento-bg:     rgba(29,111,164,0.08);
-      --acento-borde:  rgba(29,111,164,0.25);
+      /* ── Paleta de datos — 12 colores categóricos, bien separados ── */
+      --d0:  #2166ac;   /* azul cobalto      */
+      --d1:  #1b7837;   /* verde bosque      */
+      --d2:  #b35806;   /* naranja tostado   */
+      --d3:  #762a83;   /* violeta oscuro    */
+      --d4:  #b2182b;   /* rojo carmín       */
+      --d5:  #01665e;   /* verde azulado     */
+      --d6:  #8c510a;   /* cobre/marrón      */
+      --d7:  #4393c3;   /* azul cielo        */
+      --d8:  #c51b7d;   /* magenta           */
+      --d9:  #4d9221;   /* verde lima        */
+      --d10: #d6604d;   /* salmón/coral      */
+      --d11: #5e3c99;   /* índigo            */
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     html { scroll-behavior: smooth; }
 
     body {
@@ -58,87 +52,55 @@
       opacity: 0;
       animation: fadeIn .4s ease forwards;
       font-size: 14px;
-      line-height: 1.5;
+      line-height: 1.55;
     }
 
     @keyframes fadeIn { to { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { body { animation: none; opacity: 1; } }
 
-    /* ════════════════════════════════════
-       HEADER
-    ════════════════════════════════════ */
+    /* ══ HEADER ══════════════════════════════════ */
     header {
       background: linear-gradient(100deg, var(--verde-oscuro) 0%, var(--verde-medio) 100%);
       color: #fff;
       padding: 14px 24px 16px;
-      position: sticky;
-      top: 0;
-      z-index: 200;
-      box-shadow: 0 2px 20px rgba(0,0,0,.28);
+      position: sticky; top: 0; z-index: 200;
+      box-shadow: 0 2px 24px rgba(0,0,0,.3);
       flex-shrink: 0;
     }
-
     .header-inner {
-      max-width: 1440px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
+      max-width: 1480px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap;
     }
-
     .logo-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.18);
-      border-radius: 999px;
-      padding: 5px 12px;
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.11);
+      border: 1px solid rgba(255,255,255,.17);
+      border-radius: 999px; padding: 5px 13px;
     }
-
     .logo-group img {
-      height: 36px;
-      max-width: 114px;
-      object-fit: contain;
-      background: #fff;
-      border-radius: 999px;
-      padding: 3px 8px;
+      height: 36px; max-width: 112px; object-fit: contain;
+      background: #fff; border-radius: 999px; padding: 3px 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,.22);
     }
-
     .header-right { text-align: right; flex: 1; }
-    .header-right h1 { font-size: 16px; font-weight: 600; margin-bottom: 1px; letter-spacing: -.01em; }
-    .header-right p  { font-size: 12px; opacity: .65; font-weight: 300; }
-
+    .header-right h1 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 1px; }
+    .header-right p  { font-size: 12px; opacity: .6; font-weight: 300; }
     .header-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 6px;
-      padding: 3px 10px;
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 6px; padding: 3px 11px;
       border-radius: 999px;
       border: 1px solid rgba(255,255,255,.22);
       background: rgba(255,255,255,.1);
-      font-size: 10.5px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      font-weight: 500;
+      font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 500;
     }
-
     .chip-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: #86efac;
+      width: 6px; height: 6px; border-radius: 50%; background: #86efac;
       animation: pulse 2s ease-in-out infinite;
     }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.65)} }
 
-    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
-
-    /* ════════════════════════════════════
-       NAV MÓDULO
-    ════════════════════════════════════ */
+    /* ══ NAV MÓDULO ══════════════════════════════ */
     .module-nav {
       background: var(--surface);
       border-bottom: 1px solid var(--borde);
@@ -146,426 +108,260 @@
       box-shadow: 0 1px 6px rgba(0,0,0,.05);
       flex-shrink: 0;
     }
-
     .module-nav-inner {
-      max-width: 1440px;
-      margin: 0 auto;
-      display: flex;
-      align-items: stretch;
-      overflow-x: auto;
-      scrollbar-width: none;
+      max-width: 1480px; margin: 0 auto;
+      display: flex; align-items: stretch;
+      overflow-x: auto; scrollbar-width: none;
     }
     .module-nav-inner::-webkit-scrollbar { display: none; }
-
     .nav-back {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      display: flex; align-items: center; gap: 6px;
       padding: 13px 18px 13px 0;
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--muted);
-      border-right: 1px solid var(--borde);
-      margin-right: 8px;
-      white-space: nowrap;
-      transition: color .2s;
+      text-decoration: none; font-size: 13px; font-weight: 500; color: var(--muted);
+      border-right: 1px solid var(--borde); margin-right: 8px;
+      white-space: nowrap; transition: color .2s;
     }
     .nav-back:hover { color: var(--verde-medio); }
-
     .nav-tab {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      padding: 0 18px;
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--muted);
-      border-bottom: 3px solid transparent;
-      white-space: nowrap;
-      transition: color .2s, border-color .2s;
-      height: 50px;
+      display: flex; align-items: center; gap: 7px;
+      padding: 0 18px; text-decoration: none;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      border-bottom: 3px solid transparent; white-space: nowrap;
+      transition: color .2s, border-color .2s; height: 50px;
     }
-    .nav-tab:hover { color: var(--acento); border-bottom-color: rgba(29,111,164,.25); }
+    .nav-tab:hover { color: var(--acento); border-bottom-color: rgba(26,92,58,.25); }
     .nav-tab.active { color: var(--acento); border-bottom-color: var(--acento); font-weight: 600; }
 
-    /* ════════════════════════════════════
-       PÁGINA PRINCIPAL
-    ════════════════════════════════════ */
+    /* ══ PÁGINA ══════════════════════════════════ */
     .page {
-      max-width: 1440px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 24px 24px 56px;
-      flex: 1;
+      max-width: 1480px; width: 100%;
+      margin: 0 auto; padding: 24px 24px 64px; flex: 1;
     }
 
-    /* ════════════════════════════════════
-       PANEL DE FILTROS GLOBAL
-    ════════════════════════════════════ */
+    /* ══ PANEL FILTROS ═══════════════════════════ */
     .filtros-panel {
       background: var(--surface);
       border: 1px solid var(--borde);
-      border-radius: 16px;
-      padding: 20px 24px;
+      border-radius: 16px; padding: 20px 24px;
       box-shadow: 0 2px 14px var(--sombra);
       margin-bottom: 20px;
     }
-
     .filtros-titulo {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      letter-spacing: .12em;
-      text-transform: uppercase;
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      letter-spacing: .12em; text-transform: uppercase;
       margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      display: flex; align-items: center; gap: 8px;
     }
-
-    .filtros-titulo svg { color: var(--verde-medio); }
-
     .filtros-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr auto auto auto;
-      gap: 12px;
-      align-items: end;
+      grid-template-columns: 160px 160px 1fr 1fr 1fr auto auto;
+      gap: 12px; align-items: end;
     }
+    @media (max-width: 1100px) { .filtros-grid { grid-template-columns: 1fr 1fr 1fr; } }
+    @media (max-width: 660px)  { .filtros-grid { grid-template-columns: 1fr 1fr; } }
 
-    @media (max-width: 1100px) {
-      .filtros-grid { grid-template-columns: 1fr 1fr 1fr; }
-    }
-    @media (max-width: 700px) {
-      .filtros-grid { grid-template-columns: 1fr 1fr; }
-    }
-
-    .fg {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
+    .fg { display: flex; flex-direction: column; gap: 5px; }
     .fg label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--ink-2);
-      letter-spacing: .06em;
-      text-transform: uppercase;
+      font-size: 11px; font-weight: 700; color: var(--ink-2);
+      letter-spacing: .07em; text-transform: uppercase;
     }
-
-    .fg select,
-    .fg input[type="date"] {
-      border: 1.5px solid var(--borde);
-      border-radius: 9px;
-      padding: 8px 11px;
-      font-size: 13.5px;
-      font-family: inherit;
-      background: var(--surface-2);
-      color: var(--ink);
-      transition: border-color .2s, box-shadow .2s;
-      outline: none;
-      width: 100%;
+    .fg select, .fg input[type="date"] {
+      border: 1.5px solid var(--borde); border-radius: 9px;
+      padding: 8px 11px; font-size: 13.5px; font-family: inherit;
+      background: var(--surface-2); color: var(--ink);
+      transition: border-color .2s, box-shadow .2s; outline: none; width: 100%;
     }
-    .fg select:focus,
-    .fg input[type="date"]:focus {
+    .fg select:focus, .fg input[type="date"]:focus {
       border-color: var(--acento);
-      box-shadow: 0 0 0 3px rgba(29,111,164,.12);
+      box-shadow: 0 0 0 3px rgba(26,92,58,.1);
       background: var(--surface);
     }
-
     .btn-filtro {
-      padding: 8px 18px;
-      border-radius: 9px;
+      padding: 8px 18px; border-radius: 9px;
       border: 1.5px solid var(--borde);
-      font-size: 13px;
-      font-weight: 500;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all .2s;
-      white-space: nowrap;
-      height: 38px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: all .2s; white-space: nowrap;
+      height: 40px; display: inline-flex; align-items: center; gap: 6px;
     }
-
-    .btn-aplicar {
-      background: var(--verde-oscuro);
-      color: #fff;
-      border-color: var(--verde-oscuro);
-    }
+    .btn-aplicar { background: var(--verde-oscuro); color: #fff; border-color: var(--verde-oscuro); }
     .btn-aplicar:hover { background: var(--verde-medio); }
-
-    .btn-limpiar {
-      background: var(--surface);
-      color: var(--muted);
-    }
+    .btn-limpiar { background: var(--surface); color: var(--muted); }
     .btn-limpiar:hover { border-color: #94a3b8; color: var(--ink); }
 
-    /* Chips de filtros activos */
     .chips-wrap {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px;
+      display: flex; flex-wrap: wrap; gap: 7px;
       margin-top: 14px;
-      min-height: 0;
     }
-
     .chip-activo {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      border-radius: 999px;
-      background: var(--acento-bg);
-      border: 1px solid var(--acento-borde);
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--acento);
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 12px; border-radius: 999px;
+      background: var(--acento-bg); border: 1px solid var(--acento-borde);
+      font-size: 12px; font-weight: 500; color: var(--acento);
     }
 
-    /* ════════════════════════════════════
-       ESTADO Y CONTEO
-    ════════════════════════════════════ */
+    /* ══ ESTADO ═════════════════════════════════ */
     .estado-bar {
-      display: flex;
-      align-items: center;
+      display: flex; align-items: center;
       justify-content: space-between;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-      gap: 8px;
+      margin-bottom: 20px; flex-wrap: wrap; gap: 8px;
     }
-
-    .estado-txt {
-      font-size: 13.5px;
-      color: var(--muted);
-      font-weight: 400;
-    }
-    .estado-txt.error { color: #c0392b; font-weight: 600; }
+    .estado-txt { font-size: 13.5px; color: var(--muted); font-weight: 400; }
+    .estado-txt.error { color: #b91c1c; font-weight: 600; }
     .estado-txt strong { color: var(--ink); font-weight: 600; }
 
-    /* ════════════════════════════════════
-       KPIs
-    ════════════════════════════════════ */
+    /* ══ KPIs ════════════════════════════════════ */
     .kpis {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 14px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 14px; margin-bottom: 26px;
     }
-
-    @media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px)  { .kpis { grid-template-columns: repeat(2, 1fr); } }
 
     .kpi {
       background: var(--surface);
       border: 1px solid var(--borde);
-      border-top: 3px solid transparent;
-      border-radius: 14px;
-      padding: 18px 20px 16px;
+      border-top: 4px solid transparent;
+      border-radius: 14px; padding: 18px 18px 15px;
       box-shadow: 0 2px 10px var(--sombra);
       transition: box-shadow .2s;
     }
-    .kpi:hover { box-shadow: 0 6px 20px rgba(10,61,43,.12); }
-
-    .kpi-0 { border-top-color: var(--c0); }
-    .kpi-1 { border-top-color: var(--c1); }
-    .kpi-2 { border-top-color: var(--c2); }
-    .kpi-3 { border-top-color: var(--c4); }
-    .kpi-4 { border-top-color: var(--c3); }
+    .kpi:hover { box-shadow: 0 6px 22px rgba(10,61,43,.12); }
+    .kpi-0 { border-top-color: var(--d0); }
+    .kpi-1 { border-top-color: var(--d1); }
+    .kpi-2 { border-top-color: var(--d2); }
+    .kpi-3 { border-top-color: var(--d4); }
+    .kpi-4 { border-top-color: var(--d5); }
+    .kpi-5 { border-top-color: var(--d3); }
 
     .kpi-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      margin-bottom: 10px;
+      font-size: 10.5px; font-weight: 700; color: var(--muted);
+      letter-spacing: .09em; text-transform: uppercase; margin-bottom: 9px;
     }
-
     .kpi-value {
       font-family: 'Playfair Display', serif;
-      font-size: 34px;
-      font-weight: 900;
-      line-height: 1;
-      color: var(--ink);
-      margin-bottom: 5px;
+      font-size: 32px; font-weight: 900;
+      line-height: 1; color: var(--ink); margin-bottom: 5px;
+    }
+    .kpi-sub { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+    /* ══ DIVISOR DE SECCIÓN ══════════════════════ */
+    .sec-divider {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      letter-spacing: .12em; text-transform: uppercase;
+      margin: 28px 0 18px;
+    }
+    .sec-divider::before, .sec-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--borde);
     }
 
-    .kpi-sub {
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 400;
-    }
-
-    /* ════════════════════════════════════
-       GRID DE GRÁFICAS
-    ════════════════════════════════════ */
+    /* ══ GRID DE GRÁFICAS ═══════════════════════ */
     .charts-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 18px;
     }
-
-    @media (max-width: 800px) { .charts-grid { grid-template-columns: 1fr; } }
-
+    @media (max-width: 860px) { .charts-grid { grid-template-columns: 1fr; } }
     .cc {
       background: var(--surface);
       border: 1px solid var(--borde);
-      border-radius: 16px;
-      padding: 24px 26px 22px;
+      border-radius: 16px; padding: 22px 24px 20px;
       box-shadow: 0 2px 14px var(--sombra);
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
     }
-
     .cc.full { grid-column: span 2; }
-    @media (max-width: 800px) { .cc.full { grid-column: span 1; } }
+    @media (max-width: 860px) { .cc.full { grid-column: span 1; } }
 
-    /* Cabecera de gráfica */
+    /* Cabecera tarjeta */
     .cc-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 6px;
-      flex-wrap: wrap;
-    }
-
-    .cc-meta { flex: 1; }
-
-    .cc-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 17px;
-      font-weight: 700;
-      color: var(--ink);
-      line-height: 1.2;
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 10px;
       margin-bottom: 4px;
     }
-
-    .cc-hint {
-      font-size: 12.5px;
-      color: var(--muted);
-      font-weight: 400;
-      line-height: 1.5;
+    .cc-meta { flex: 1; }
+    .cc-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 17px; font-weight: 700; color: var(--ink);
+      line-height: 1.25; margin-bottom: 4px;
     }
+    .cc-hint { font-size: 12.5px; color: var(--muted); font-weight: 400; line-height: 1.5; }
+
+    /* Botón PNG */
+    .btn-png {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 11px; border-radius: 7px;
+      border: 1.5px solid var(--borde);
+      background: var(--surface-2);
+      font-size: 11.5px; font-weight: 600; font-family: inherit;
+      color: var(--ink-2); cursor: pointer;
+      transition: all .18s; white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-png:hover { background: var(--verde-oscuro); color: #fff; border-color: var(--verde-oscuro); }
+    .btn-png svg { flex-shrink: 0; }
+
+    /* Separador interno */
+    .cc-sep { width: 100%; height: 1px; background: var(--borde); margin: 10px 0 16px; }
 
     /* Filtros locales de gráfica */
     .cc-filters {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-      padding: 10px 14px;
-      background: var(--surface-2);
-      border: 1px solid var(--borde);
-      border-radius: 10px;
-      font-size: 12.5px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 14px; padding: 10px 14px;
+      background: var(--surface-2); border: 1px solid var(--borde);
+      border-radius: 10px; font-size: 12.5px;
     }
-
     .cc-filters label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--ink-2);
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      white-space: nowrap;
+      font-size: 10.5px; font-weight: 700; color: var(--ink-2);
+      letter-spacing: .07em; text-transform: uppercase; white-space: nowrap;
     }
-
-    .cc-filters select,
-    .cc-filters input[type="date"] {
-      border: 1.5px solid var(--borde);
-      border-radius: 7px;
-      padding: 5px 9px;
-      font-size: 12.5px;
-      font-family: inherit;
-      background: var(--surface);
-      color: var(--ink);
-      outline: none;
+    .cc-filters select, .cc-filters input[type="date"] {
+      border: 1.5px solid var(--borde); border-radius: 7px;
+      padding: 5px 9px; font-size: 12.5px; font-family: inherit;
+      background: var(--surface); color: var(--ink); outline: none;
       transition: border-color .15s;
     }
     .cc-filters select:focus,
     .cc-filters input[type="date"]:focus { border-color: var(--acento); }
-
     .cc-btn {
-      padding: 5px 12px;
-      border-radius: 7px;
+      padding: 5px 12px; border-radius: 7px;
       border: 1.5px solid var(--borde);
-      background: var(--verde-oscuro);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: background .2s;
+      background: var(--verde-oscuro); color: #fff;
+      font-size: 12px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: background .2s;
     }
     .cc-btn:hover { background: var(--verde-medio); }
-
     .cc-btn-clear {
-      background: var(--surface);
-      color: var(--muted);
-      border-color: var(--borde);
+      background: var(--surface); color: var(--muted); border-color: var(--borde);
     }
     .cc-btn-clear:hover { color: var(--ink); border-color: #94a3b8; }
 
-    /* Separador */
-    .cc-sep { width: 100%; height: 1px; background: var(--borde); margin: 8px 0 16px; }
-
-    /* Contenedor canvas */
+    /* Canvas */
     .cw { position: relative; }
-    .cw-260 { height: 260px; }
-    .cw-300 { height: 300px; }
-    .cw-340 { height: 340px; }
-    .cw-400 { height: 400px; }
-    .cw-200 { height: 200px; }
+    .h200 { height: 200px; }
+    .h260 { height: 260px; }
+    .h300 { height: 300px; }
+    .h340 { height: 340px; }
+    .h420 { height: 420px; }
+    .h480 { height: 480px; }
+    .h560 { height: 560px; }
 
-    /* ════════════════════════════════════
-       HEATMAP SVG
-    ════════════════════════════════════ */
+    /* Heatmap */
     #heatmap-container { overflow-x: auto; padding-bottom: 6px; }
 
-    /* ════════════════════════════════════
-       FOOTER
-    ════════════════════════════════════ */
+    /* ══ FOOTER ══════════════════════════════════ */
     footer {
       background: var(--verde-oscuro);
       color: rgba(255,255,255,.45);
-      text-align: center;
-      padding: 16px 24px;
-      font-size: 12px;
-      font-weight: 300;
-      letter-spacing: .03em;
+      text-align: center; padding: 16px 24px;
+      font-size: 12px; font-weight: 300; letter-spacing: .03em;
       flex-shrink: 0;
     }
     footer strong { color: rgba(255,255,255,.78); font-weight: 500; }
-
-    /* ════════════════════════════════════
-       UTILIDADES
-    ════════════════════════════════════ */
-    .divider-text {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      margin: 24px 0 16px;
-    }
-    .divider-text::before, .divider-text::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--borde);
-    }
   </style>
 </head>
 <body>
 
-<!-- ════════════════ HEADER ════════════════ -->
+<!-- ══ HEADER ══════════════════════════════════════ -->
 <header>
   <div class="header-inner">
     <div class="logo-group">
@@ -583,7 +379,7 @@
   </div>
 </header>
 
-<!-- ════════════════ NAV MÓDULO ════════════════ -->
+<!-- ══ NAV MÓDULO ══════════════════════════════════ -->
 <nav class="module-nav">
   <div class="module-nav-inner">
     <a href="../../index.html" class="nav-back">
@@ -605,24 +401,18 @@
   </div>
 </nav>
 
-<!-- ════════════════ PÁGINA ════════════════ -->
+<!-- ══ CONTENIDO PRINCIPAL ════════════════════════ -->
 <div class="page">
 
-  <!-- ── PANEL DE FILTROS GLOBAL ── -->
+  <!-- ── FILTROS GLOBALES ── -->
   <div class="filtros-panel">
     <div class="filtros-titulo">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-      Filtros globales — aplican a todos los gráficos
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filtros globales — se aplican a todos los gráficos
     </div>
     <div class="filtros-grid">
-      <div class="fg">
-        <label>Desde</label>
-        <input type="date" id="f-desde" />
-      </div>
-      <div class="fg">
-        <label>Hasta</label>
-        <input type="date" id="f-hasta" />
-      </div>
+      <div class="fg"><label>Desde</label><input type="date" id="f-desde"/></div>
+      <div class="fg"><label>Hasta</label><input type="date" id="f-hasta"/></div>
       <div class="fg">
         <label>Municipio</label>
         <select id="f-municipio"><option value="">Todos los municipios</option></select>
@@ -651,7 +441,7 @@
     <div class="chips-wrap" id="chips-wrap"></div>
   </div>
 
-  <!-- Estado/conteo -->
+  <!-- Estado -->
   <div class="estado-bar">
     <span class="estado-txt" id="estado">Cargando datos…</span>
   </div>
@@ -661,7 +451,7 @@
     <div class="kpi kpi-0">
       <div class="kpi-label">Patrullajes</div>
       <div class="kpi-value" id="kpi-total">–</div>
-      <div class="kpi-sub">registros en el período</div>
+      <div class="kpi-sub">registros totales</div>
     </div>
     <div class="kpi kpi-1">
       <div class="kpi-label">Guardarecursos</div>
@@ -679,17 +469,21 @@
       <div class="kpi-sub">incidentes reportados</div>
     </div>
     <div class="kpi kpi-4">
-      <div class="kpi-label">Período</div>
-      <div class="kpi-value" style="font-size:15px;padding-top:6px" id="kpi-rango">–</div>
-      <div class="kpi-sub">rango de fechas activo</div>
+      <div class="kpi-label">Kilómetros recorridos</div>
+      <div class="kpi-value" id="kpi-km">–</div>
+      <div class="kpi-sub">km totales acumulados</div>
+    </div>
+    <div class="kpi kpi-5">
+      <div class="kpi-label">Período activo</div>
+      <div class="kpi-value" style="font-size:14px;padding-top:8px" id="kpi-rango">–</div>
+      <div class="kpi-sub">rango de fechas</div>
     </div>
   </div>
 
-  <!-- ════════════════════════════════════
-       SECCIÓN 1 — TEMPORAL
-  ════════════════════════════════════ -->
-  <div class="divider-text">Análisis temporal</div>
-
+  <!-- ══════════════════════════════════════════════
+       SECCIÓN 1 — ANÁLISIS TEMPORAL
+  ══════════════════════════════════════════════ -->
+  <div class="sec-divider">Análisis temporal</div>
   <div class="charts-grid">
 
     <!-- G1: Tendencia mensual -->
@@ -699,18 +493,26 @@
           <div class="cc-title">Tendencia mensual de patrullajes</div>
           <div class="cc-hint">Volumen total por mes · la línea punteada muestra el promedio del período seleccionado</div>
         </div>
+        <button class="btn-png" onclick="downloadChart('c-tendencia','tendencia_mensual')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
       </div>
       <div class="cc-sep"></div>
-      <div class="cw cw-300"><canvas id="c-tendencia"></canvas></div>
+      <div class="cw h300"><canvas id="c-tendencia"></canvas></div>
     </div>
 
-    <!-- G2: Heatmap día × hora -->
+    <!-- G2: Heatmap -->
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Mapa de calor · día de semana × hora de inicio</div>
-          <div class="cc-hint">Cada celda muestra cuántos patrullajes iniciaron en ese día y hora · más oscuro = más registros</div>
+          <div class="cc-hint">Cada celda muestra cuántos patrullajes iniciaron en ese día y hora · más oscuro = mayor concentración</div>
         </div>
+        <button class="btn-png" onclick="downloadSVGasPNG('heatmap-svg','heatmap_dia_hora')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
       </div>
       <div class="cc-sep"></div>
       <div id="heatmap-container"><svg id="heatmap-svg"></svg></div>
@@ -721,35 +523,63 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Distribución de duración</div>
-          <div class="cc-hint">Histograma de horas efectivas · solo registros con hora inicio y fin válidas</div>
+          <div class="cc-hint">Histograma de horas efectivas · solo registros con horario de inicio y fin válidos</div>
         </div>
+        <button class="btn-png" onclick="downloadChart('c-duracion','distribucion_duracion')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
       </div>
       <div class="cc-sep"></div>
-      <div class="cw cw-260"><canvas id="c-duracion"></canvas></div>
+      <div class="cw h260"><canvas id="c-duracion"></canvas></div>
     </div>
 
-    <!-- G4: Scatter hora vs duración -->
+    <!-- G4: Scatter -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Hora de inicio vs. duración</div>
-          <div class="cc-hint">Cada punto es un patrullaje · revela si la hora de salida influye en la duración</div>
+          <div class="cc-hint">Cada punto representa un patrullaje · explora si la hora de salida incide en la duración</div>
         </div>
+        <button class="btn-png" onclick="downloadChart('c-scatter','hora_vs_duracion')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
       </div>
       <div class="cc-sep"></div>
-      <div class="cw cw-260"><canvas id="c-scatter"></canvas></div>
+      <div class="cw h260"><canvas id="c-scatter"></canvas></div>
     </div>
 
-    <!-- G11: Patrullajes por día de semana -->
+    <!-- G11: Día de semana -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Volumen por día de la semana</div>
-          <div class="cc-hint">Total acumulado según el día en que se realizó el patrullaje</div>
+          <div class="cc-hint">Total acumulado de patrullajes según el día en que fueron realizados</div>
         </div>
+        <button class="btn-png" onclick="downloadChart('c-diaSem','patrullajes_por_dia')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
       </div>
       <div class="cc-sep"></div>
-      <div class="cw cw-260"><canvas id="c-diaSem"></canvas></div>
+      <div class="cw h260"><canvas id="c-diaSem"></canvas></div>
+    </div>
+
+    <!-- G_km: Km por mes -->
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Kilómetros recorridos por mes</div>
+          <div class="cc-hint">Acumulado mensual de kilómetros de patrullaje registrados en el período</div>
+        </div>
+        <button class="btn-png" onclick="downloadChart('c-kmMes','km_por_mes')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h260"><canvas id="c-kmMes"></canvas></div>
     </div>
 
     <!-- G5: Stacked municipios × mes -->
@@ -757,65 +587,23 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Evolución mensual por municipio (top 8)</div>
-          <div class="cc-hint">Distribución geográfica de patrullajes a lo largo del tiempo</div>
+          <div class="cc-hint">Distribución geográfica de patrullajes a lo largo del tiempo · identifica tendencias por territorio</div>
         </div>
+        <button class="btn-png" onclick="downloadChart('c-muniMes','evolucion_municipal')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
       </div>
       <div class="cc-sep"></div>
-      <div class="cw cw-340"><canvas id="c-muniMes"></canvas></div>
+      <div class="cw h340"><canvas id="c-muniMes"></canvas></div>
     </div>
 
   </div>
 
-  <!-- ════════════════════════════════════
-       SECCIÓN 2 — GUARDARECURSOS
-  ════════════════════════════════════ -->
-  <div class="divider-text">Análisis por guardarecursos</div>
-
-  <div class="charts-grid">
-
-    <!-- G6: Radar guardas -->
-    <div class="cc">
-      <div class="cc-head">
-        <div class="cc-meta">
-          <div class="cc-title">Radar de actividad por guardarecursos</div>
-          <div class="cc-hint">Perfil multidimensional: volumen, municipios cubiertos, duración, meses activos e incidentes</div>
-        </div>
-      </div>
-      <div class="cc-filters">
-        <label>Guardarecurso:</label>
-        <select id="f-radar-guarda" style="min-width:200px">
-          <option value="">— Mostrar top 6 —</option>
-        </select>
-      </div>
-      <div class="cw cw-340"><canvas id="c-radar"></canvas></div>
-    </div>
-
-    <!-- G12: Ranking guardas -->
-    <div class="cc">
-      <div class="cc-head">
-        <div class="cc-meta">
-          <div class="cc-title">Ranking de guardarecursos</div>
-          <div class="cc-hint">Barras = patrullajes totales · puntos rojos = incidentes reportados · filtro de fecha independiente</div>
-        </div>
-      </div>
-      <div class="cc-filters">
-        <label>Desde:</label>
-        <input type="date" id="g12-desde" />
-        <label>Hasta:</label>
-        <input type="date" id="g12-hasta" />
-        <button class="cc-btn" id="g12-aplicar">Aplicar</button>
-        <button class="cc-btn cc-btn-clear" id="g12-limpiar">✕</button>
-      </div>
-      <div class="cw cw-340"><canvas id="c-rankGuarda"></canvas></div>
-    </div>
-
-  </div>
-
-  <!-- ════════════════════════════════════
-       SECCIÓN 3 — TERRITORIAL
-  ════════════════════════════════════ -->
-  <div class="divider-text">Análisis territorial y temático</div>
-
+  <!-- ══════════════════════════════════════════════
+       SECCIÓN 2 — TERRITORIAL Y TEMÁTICO
+  ══════════════════════════════════════════════ -->
+  <div class="sec-divider">Análisis territorial y temático</div>
   <div class="charts-grid">
 
     <!-- G7a: Donut RUMCLA -->
@@ -825,9 +613,13 @@
           <div class="cc-title">Cobertura territorial</div>
           <div class="cc-hint">Patrullajes dentro vs. fuera del área protegida RUMCLA</div>
         </div>
+        <button class="btn-png" onclick="downloadChart('c-rumcla','cobertura_rumcla')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
       </div>
       <div class="cc-sep"></div>
-      <div class="cw cw-260"><canvas id="c-rumcla"></canvas></div>
+      <div class="cw h260"><canvas id="c-rumcla"></canvas></div>
     </div>
 
     <!-- G7b: Donut ilegal -->
@@ -835,35 +627,15 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Actividad ilegal observada</div>
-          <div class="cc-hint">Proporción de patrullajes con y sin incidente reportado</div>
+          <div class="cc-hint">Proporción de patrullajes con y sin incidente reportado en el período</div>
         </div>
+        <button class="btn-png" onclick="downloadChart('c-ilegal','actividad_ilegal')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
       </div>
       <div class="cc-sep"></div>
-      <div class="cw cw-260"><canvas id="c-ilegal"></canvas></div>
-    </div>
-
-    <!-- G8: Ilegal por municipio -->
-    <div class="cc full">
-      <div class="cc-head">
-        <div class="cc-meta">
-          <div class="cc-title">Incidentes por municipio</div>
-          <div class="cc-hint">Patrullajes con actividad ilegal vs. sin incidente · haz clic en una barra para filtrar el tablero</div>
-        </div>
-      </div>
-      <div class="cc-sep"></div>
-      <div class="cw cw-300"><canvas id="c-ilegalMuni"></canvas></div>
-    </div>
-
-    <!-- G9: Área protegida horizontal -->
-    <div class="cc full">
-      <div class="cc-head">
-        <div class="cc-meta">
-          <div class="cc-title">Patrullajes por área protegida</div>
-          <div class="cc-hint">Distribución de patrullajes según el área cubierta · muestra la carga de trabajo por zona</div>
-        </div>
-      </div>
-      <div class="cc-sep"></div>
-      <div class="cw cw-400"><canvas id="c-areaProt"></canvas></div>
+      <div class="cw h260"><canvas id="c-ilegal"></canvas></div>
     </div>
 
     <!-- G10: Tipo de patrullaje -->
@@ -871,124 +643,220 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Tipo de patrullaje</div>
-          <div class="cc-hint">Distribución por modalidad registrada</div>
+          <div class="cc-hint">Distribución por modalidad de patrullaje registrada en el formulario</div>
         </div>
+        <button class="btn-png" onclick="downloadChart('c-tipoPat','tipo_patrullaje')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
       </div>
       <div class="cc-sep"></div>
-      <div class="cw cw-260"><canvas id="c-tipoPat"></canvas></div>
+      <div class="cw h260"><canvas id="c-tipoPat"></canvas></div>
     </div>
 
-    <!-- G_instituciones: Patrullajes con instituciones -->
+    <!-- G_inst: Instituciones -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Patrullajes con otras instituciones</div>
-          <div class="cc-hint">Proporción de patrullajes realizados con apoyo interinstitucional</div>
+          <div class="cc-title">Patrullajes interinstitucionales</div>
+          <div class="cc-hint">Proporción de patrullajes realizados con apoyo de otras instituciones</div>
         </div>
+        <button class="btn-png" onclick="downloadChart('c-inst','patrullajes_interinstitucionales')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
       </div>
       <div class="cc-sep"></div>
-      <div class="cw cw-260"><canvas id="c-inst"></canvas></div>
+      <div class="cw h260"><canvas id="c-inst"></canvas></div>
+    </div>
+
+    <!-- G8: Ilegal por municipio -->
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Incidentes por municipio</div>
+          <div class="cc-hint">Patrullajes con actividad ilegal vs. sin incidente · haz clic en una barra para filtrar el tablero por ese municipio</div>
+        </div>
+        <button class="btn-png" onclick="downloadChart('c-ilegalMuni','incidentes_municipio')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-ilegalMuni"></canvas></div>
+    </div>
+
+    <!-- G9: Área protegida -->
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Patrullajes por área protegida</div>
+          <div class="cc-hint">Distribución de patrullajes según el área cubierta · refleja la carga de trabajo por zona</div>
+        </div>
+        <button class="btn-png" onclick="downloadChart('c-areaProt','patrullajes_area_protegida')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h420"><canvas id="c-areaProt"></canvas></div>
     </div>
 
   </div>
-</div>
+
+  <!-- ══════════════════════════════════════════════
+       SECCIÓN 3 — GUARDARECURSOS
+  ══════════════════════════════════════════════ -->
+  <div class="sec-divider">Análisis por guardarecursos</div>
+  <div class="charts-grid">
+
+    <!-- G6: Radar -->
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Radar de actividad por guardarecursos</div>
+          <div class="cc-hint">Perfil multidimensional: volumen, municipios cubiertos, duración media, meses activos e incidentes</div>
+        </div>
+        <button class="btn-png" onclick="downloadChart('c-radar','radar_guardarecursos')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
+      </div>
+      <div class="cc-filters">
+        <label>Guardarecursos:</label>
+        <select id="f-radar-guarda" style="min-width:210px"><option value="">— Top 6 por volumen —</option></select>
+      </div>
+      <div class="cw h340"><canvas id="c-radar"></canvas></div>
+    </div>
+
+    <!-- G_km_guarda: km por guardarecursos -->
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Kilómetros recorridos por guardarecursos</div>
+          <div class="cc-hint">Total de kilómetros acumulados por cada guardarecursos en el período filtrado</div>
+        </div>
+        <button class="btn-png" onclick="downloadChart('c-kmGuarda','km_por_guardarecursos')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h340"><canvas id="c-kmGuarda"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- G12: RANKING — ANCHO COMPLETO, AL FONDO -->
+  <div class="charts-grid" style="margin-top:18px">
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Ranking de guardarecursos — patrullajes e incidentes (todos los activos)</div>
+          <div class="cc-hint">Barras = total de patrullajes (etiqueta en cada barra) · puntos rojos = incidentes reportados · se pueden aplicar fechas propias independientes de los filtros globales</div>
+        </div>
+        <button class="btn-png" onclick="downloadChart('c-rankGuarda','ranking_guardarecursos')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          PNG
+        </button>
+      </div>
+      <div class="cc-filters">
+        <label>Rango propio:</label>
+        <input type="date" id="g12-desde" title="Desde"/>
+        <span style="color:var(--muted);font-size:13px">–</span>
+        <input type="date" id="g12-hasta" title="Hasta"/>
+        <button class="cc-btn" id="g12-aplicar">Aplicar</button>
+        <button class="cc-btn cc-btn-clear" id="g12-limpiar">✕ Limpiar</button>
+      </div>
+      <div class="cw h480"><canvas id="c-rankGuarda"></canvas></div>
+    </div>
+  </div>
+
+</div><!-- /page -->
 
 <footer>
   <p><strong>CONAP · Dirección Regional Altiplano Central</strong> · Sistema desarrollado por el Laboratorio SIG · Asociación Amigos del Lago de Atitlán (AALA) · © 2026</p>
 </footer>
 
 <script>
-/* ════════════════════════════════════════════════════════════════
-   NORMALIZACIÓN DE GUARDARECURSOS
-   — Limpia duplicados tipográficos y excluye guardas inactivos
-════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   PALETA UNIFICADA — 12 colores categóricos
+══════════════════════════════════════════════════════════════ */
+const PAL = [
+  "#2166ac","#1b7837","#b35806","#762a83","#b2182b","#01665e",
+  "#8c510a","#4393c3","#c51b7d","#4d9221","#d6604d","#5e3c99"
+];
+const PAL_BG = PAL.map(c => c + "bb");
 
-// Guardas que ya NO trabajan para CONAP — se excluyen completamente
-const GUARDAS_EXCLUIDOS = new Set([
-  "daniel estuardo barillas coo",
-  "daniel estuardo barillas",
-  "domingo alfonso mendoza quiacain",
-  "domingo alfonso mendoza",
-  "job' kotz'ij eligia morales quino",
-  "job kotzij eligia morales quino",
-  "job kotz'ij morales",
-  "jose manuel vasquez upun",
-  "josé manuel vásquez upún",
+/* ══════════════════════════════════════════════════════════════
+   NORMALIZACIÓN DE GUARDARECURSOS
+══════════════════════════════════════════════════════════════ */
+// Excluidos: ya no trabajan para CONAP
+const EXCLUIDOS = new Set([
+  "daniel estuardo barillas coo","daniel estuardo barillas",
+  "domingo alfonso mendoza quiacain","domingo alfonso mendoza",
+  "job' kotz'ij eligia morales quino","job kotzij eligia morales quino",
+  "jose manuel vasquez upun","jose manuel vasquez upun",
   "pedro chiviliu esquina",
-  "ruben enrique sumoza mendoza",
-  "rubén enrique sumoza mendoza",
-  "rubén enrique sumoza",
+  "ruben enrique sumoza mendoza","ruben enrique sumoza",
 ]);
 
-// Tabla de fusión: versión canónica (sin tildes, minúsculas) → nombre display correcto
-// Resuelve: códigos numéricos, variantes de tildes, orden de apellidos
-const GUARDAS_MERGE = {
-  // Código numérico → nombre real
-  "5 juan marcos saquic":              "Juan Marcos Saquic",
-  "9 heriberto chavez chavez":         "Heriberto Chavez Chavez",
-  // Variantes tipográficas — se unifican al nombre con tildes/correcto
-  "antonio federico tzaj y tzaj":      "Antonio Federico Tzaj Y Tzaj",
-  "diego martin ramirez ixbalan":      "Diego Martín Ramírez Ixbalan",
-  "diego martín ramírez ixbalan":      "Diego Martín Ramírez Ixbalan",
-  "edgar bartolo batin navichoc":      "Edgar Bartolo Batín Navichoc",
-  "edgar bartolo batín navichoc":      "Edgar Bartolo Batín Navichoc",
-  "henry regino mendez chavajay":      "Henry Regino Méndez Chavajay",
-  "henry regino méndez chavajay":      "Henry Regino Méndez Chavajay",
-  "jose bacajol simaji":               "José Bacajol Simají",
-  "josé bacajol simají":               "José Bacajol Simají",
-  "mario cesar tale coche":            "Mario César Talé Coché",
-  "mario césar talé coché":            "Mario César Talé Coché",
-  "rafael enrique chiciy chocoy":      "Rafael Enrique Chiciy Chocoy",
-  "rafael enrique chocoy chocoy":      "Rafael Enrique Chiciy Chocoy",  // duplicado fusionado
-  "sebastian tinuar":                   "Sebastián Tinuar Cipriano",
-  "sebastian tinuar cipriano":          "Sebastián Tinuar Cipriano",
-  "vicente francisco omar perez cox":  "Vicente Francisco Omar Pérez Cox",
-  "vicente omar francisco pérez":      "Vicente Francisco Omar Pérez Cox",
-  "vicente omar francisco perez":      "Vicente Francisco Omar Pérez Cox",
-  "santos maurico vicente mendoza":    "Santos Mauricio Vicente Mendoza",
+// Fusiones: variantes tipográficas → nombre canónico
+const MERGE = {
+  "5 juan marcos saquic":             "Juan Marcos Saquic",
+  "9 heriberto chavez chavez":        "Heriberto Chavez Chavez",
+  "antonio federico tzaj y tzaj":     "Antonio Federico Tzaj Y Tzaj",
+  "diego martin ramirez ixbalan":     "Diego Martín Ramírez Ixbalan",
+  "diego martín ramírez ixbalan":     "Diego Martín Ramírez Ixbalan",
+  "edgar bartolo batin navichoc":     "Edgar Bartolo Batín Navichoc",
+  "edgar bartolo batín navichoc":     "Edgar Bartolo Batín Navichoc",
+  "henry regino mendez chavajay":     "Henry Regino Méndez Chavajay",
+  "henry regino méndez chavajay":     "Henry Regino Méndez Chavajay",
+  "jose bacajol simaji":              "José Bacajol Simají",
+  "josé bacajol simají":              "José Bacajol Simají",
+  "mario cesar tale coche":           "Mario César Talé Coché",
+  "mario césar talé coché":           "Mario César Talé Coché",
+  "rafael enrique chiciy chocoy":     "Rafael Enrique Chiciy Chocoy",
+  "rafael enrique chocoy chocoy":     "Rafael Enrique Chiciy Chocoy",
+  "sebastian tinuar":                 "Sebastián Tinuar Cipriano",
+  "sebastian tinuar cipriano":        "Sebastián Tinuar Cipriano",
+  "vicente francisco omar perez cox": "Vicente Francisco Omar Pérez Cox",
+  "vicente omar francisco pérez":     "Vicente Francisco Omar Pérez Cox",
+  "vicente omar francisco perez":     "Vicente Francisco Omar Pérez Cox",
+  "santos maurico vicente mendoza":   "Santos Mauricio Vicente Mendoza",
 };
 
-function normalizarGuarda(nombre) {
-  if (!nombre) return null;
-  const n = nombre.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ");
-  // Excluir guardas que ya no trabajan
-  if (GUARDAS_EXCLUIDOS.has(n)) return null;
-  // Buscar en tabla de merge (con versión sin tildes)
-  const merged = GUARDAS_MERGE[n];
-  if (merged) return merged;
-  // Devolver original limpio (capitalizado)
-  return nombre.trim();
+function canonStr(s) {
+  return String(s||"").trim().normalize("NFD")
+    .replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ");
 }
 
-/* ════════════════════════════════════════════════════════════════
-   PALETA Y CONFIGURACIÓN DE CHARTS
-════════════════════════════════════════════════════════════════ */
-const PALETTE = [
-  "#1d6fa4","#2d9e6b","#d4822a","#7b4fa6","#c0393b",
-  "#1a9494","#b87333","#4a72b8","#8e6bbf","#3d8f5f",
-  "#c27b00","#d45a87","#5b8e3c","#8b3d3d","#3d7a8a"
-];
+function normGuarda(nombre) {
+  if (!nombre) return null;
+  const c = canonStr(nombre);
+  if (EXCLUIDOS.has(c)) return null;
+  return MERGE[c] || nombre.trim();
+}
 
-const PALETTE_BG = PALETTE.map(c => c + "bb");
-
-const TT = {
-  backgroundColor: "rgba(10,32,20,0.9)",
-  titleFont: { size: 13, weight: "600", family: "'DM Sans', sans-serif" },
-  bodyFont:  { size: 12.5, family: "'DM Sans', sans-serif" },
-  padding: 12,
-  cornerRadius: 10,
-  borderColor: "rgba(255,255,255,0.08)",
-  borderWidth: 1,
-};
-
+/* ══════════════════════════════════════════════════════════════
+   CHART.JS — CONFIG GLOBAL
+══════════════════════════════════════════════════════════════ */
 Chart.defaults.font.family = "'DM Sans', sans-serif";
-Chart.defaults.font.size = 13;
-Chart.defaults.color = "#7a9187";
+Chart.defaults.font.size   = 13;
+Chart.defaults.color       = "#6e8c7c";
 
 if (typeof ChartDataLabels !== "undefined") {
   Chart.register(ChartDataLabels);
   Chart.defaults.set("plugins.datalabels", { display: false });
 }
+
+const TT = {
+  backgroundColor: "rgba(8,28,18,0.92)",
+  titleFont:  { size: 13, weight: "600", family: "'DM Sans',sans-serif" },
+  bodyFont:   { size: 12.5, family: "'DM Sans',sans-serif" },
+  padding: 12, cornerRadius: 10,
+  borderColor: "rgba(255,255,255,0.07)", borderWidth: 1,
+};
 
 const CHARTS = {};
 function mkChart(id, cfg) {
@@ -998,14 +866,58 @@ function mkChart(id, cfg) {
   CHARTS[id] = new Chart(el, cfg);
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
+   DESCARGA PNG
+══════════════════════════════════════════════════════════════ */
+function downloadChart(canvasId, filename) {
+  const chart = CHARTS[canvasId];
+  if (!chart) return;
+  // Fondo blanco para la descarga
+  const canvas = chart.canvas;
+  const offscreen = document.createElement("canvas");
+  offscreen.width  = canvas.width;
+  offscreen.height = canvas.height;
+  const ctx = offscreen.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+  ctx.drawImage(canvas, 0, 0);
+  const a = document.createElement("a");
+  a.href = offscreen.toDataURL("image/png");
+  a.download = filename + ".png";
+  a.click();
+}
+
+function downloadSVGasPNG(svgId, filename) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const data = new XMLSerializer().serializeToString(svg);
+  const blob = new Blob([data], { type: "image/svg+xml;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
+  const img  = new Image();
+  img.onload = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width  = svg.width.baseVal.value  || 900;
+    canvas.height = svg.height.baseVal.value || 320;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = filename + ".png";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
+/* ══════════════════════════════════════════════════════════════
    UTILIDADES
-════════════════════════════════════════════════════════════════ */
-const norm  = v => v == null ? "" : String(v).trim().replace(/\s+/g, " ");
-const canon = v => norm(v).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+══════════════════════════════════════════════════════════════ */
+const norm  = v => v == null ? "" : String(v).trim().replace(/\s+/g," ");
 const uniq  = arr => [...new Set(arr.filter(v => v != null && v !== ""))];
-const sum   = arr => arr.reduce((a, b) => a + b, 0);
-const avg   = arr => arr.length ? sum(arr) / arr.length : 0;
+const sum_  = arr => arr.reduce((a,b) => a+b, 0);
+const avg_  = arr => arr.length ? sum_(arr)/arr.length : 0;
 
 const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MESES_F = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -1014,65 +926,58 @@ const DIAS    = ["Lunes","Martes","Miér.","Jueves","Viernes","Sáb.","Dom."];
 const LABELS = { muni: new Map(), guarda: new Map(), ap: new Map(), tp: new Map() };
 
 function canonU(v) {
-  const c = canon(v);
+  const c = canonStr(v);
   if (c.includes("fuera"))  return "fuera";
   if (c.includes("rumcla") || c.includes("dentro")) return "rumcla";
   return c;
 }
 function canonI(v) {
-  const c = canon(v);
-  if (c === "si" || c === "sí") return "si";
-  if (c === "no") return "no";
-  return "";
+  const c = canonStr(v);
+  return (c==="si"||c==="sí") ? "si" : c==="no" ? "no" : "";
 }
 
 function parseDate(s) {
   const v = norm(s); if (!v) return null;
   let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (m) return new Date(Date.UTC(+m[1], +m[2]-1, +m[3]));
+  if (m) return new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
   if (v.includes("/")) {
     const p = v.split("/");
-    if (p.length >= 3) return new Date(Date.UTC(+p[2], +p[1]-1, +p[0]));
+    if (p.length>=3) return new Date(Date.UTC(+p[2],+p[1]-1,+p[0]));
   }
   return null;
 }
-
 function parseHour(s) {
   const v = norm(s); if (!v) return null;
   const m = v.match(/^(\d{1,2}):(\d{2})/);
   return m ? +m[1] + Math.round(+m[2]/60*100)/100 : null;
 }
-
-function calcDur(ini, fin) {
-  const a = parseHour(ini), b = parseHour(fin);
-  if (a === null || b === null) return null;
-  let d = b - a; if (d < 0) d += 24;
-  return (d > 16 || d < 0.1) ? null : d;
+function calcDur(ini,fin) {
+  const a=parseHour(ini), b=parseHour(fin);
+  if (a===null||b===null) return null;
+  let d=b-a; if(d<0)d+=24;
+  return (d>16||d<0.1)?null:d;
 }
-
 function fmtDate(dt) {
-  if (!dt) return "–";
-  return String(dt.getUTCDate()).padStart(2,"0") + "/" +
-         String(dt.getUTCMonth()+1).padStart(2,"0") + "/" +
-         dt.getUTCFullYear();
+  if(!dt)return"–";
+  return String(dt.getUTCDate()).padStart(2,"0")+"/"+
+         String(dt.getUTCMonth()+1).padStart(2,"0")+"/"+dt.getUTCFullYear();
+}
+function mKey(dt) { return dt.getUTCFullYear()+"-"+String(dt.getUTCMonth()+1).padStart(2,"0"); }
+function mShort(k) { const [y,m]=k.split("-"); return MESES_S[+m-1]+" '"+String(y).slice(2); }
+function mFull(k)  { const [y,m]=k.split("-"); return MESES_F[+m-1]+" "+y; }
+function dowMon(dt){ return (dt.getUTCDay()+6)%7; }
+
+function bestL(a,b) {
+  a=norm(a);b=norm(b);
+  if(!a)return b;if(!b)return a;
+  const hasTilde = s=>/[áéíóúüñÁÉÍÓÚÜÑ]/.test(s);
+  if(hasTilde(b)&&!hasTilde(a))return b;
+  return b.length>a.length?b:a;
 }
 
-function mKey(dt) {
-  return dt.getUTCFullYear() + "-" + String(dt.getUTCMonth()+1).padStart(2,"0");
-}
-function mShort(k) {
-  const [y, m] = k.split("-");
-  return MESES_S[+m-1] + " '" + String(y).slice(2);
-}
-function mFull(k) {
-  const [y, m] = k.split("-");
-  return MESES_F[+m-1] + " " + y;
-}
-function dowMon(dt) { return (dt.getUTCDay() + 6) % 7; }
-
-/* ════════════════════════════════════════════════════════════════
-   CARGA Y PARSEO DE CSV
-════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   CARGA CSV
+══════════════════════════════════════════════════════════════ */
 async function loadCSV() {
   const urls = [
     "../../datos/datos_patrullaje.csv",
@@ -1080,899 +985,527 @@ async function loadCSV() {
   ];
   for (const url of urls) {
     try {
-      const r = await fetch(url, { cache: "no-store" });
-      if (!r.ok) continue;
-      const buf  = await r.arrayBuffer();
-      const u8   = new Uint8Array(buf);
-      const t1   = new TextDecoder("utf-8",       { fatal: false }).decode(u8);
-      const t2   = new TextDecoder("windows-1252", { fatal: false }).decode(u8);
-      const text = (t2.match(/\uFFFD/g)||[]).length < (t1.match(/\uFFFD/g)||[]).length ? t2 : t1;
-      const p = parseCSV(text);
-      if (p.data.length) return p;
-    } catch(e) { /* intentar siguiente */ }
+      const r = await fetch(url,{cache:"no-store"});
+      if(!r.ok) continue;
+      const buf=await r.arrayBuffer(); const u8=new Uint8Array(buf);
+      const t1=new TextDecoder("utf-8",{fatal:false}).decode(u8);
+      const t2=new TextDecoder("windows-1252",{fatal:false}).decode(u8);
+      const text=(t2.match(/\uFFFD/g)||[]).length<(t1.match(/\uFFFD/g)||[]).length?t2:t1;
+      const p=parseCSV(text); if(p.data.length)return p;
+    } catch(e){}
   }
   throw new Error("No se pudo cargar el CSV de patrullajes.");
 }
 
 function parseCSV(text) {
-  const firstLine = text.split("\n")[0];
-  const dl = [";", ",", "\t"].sort((a,b) =>
-    firstLine.split(b).length - firstLine.split(a).length
-  )[0];
-
-  const rows = []; let i=0, f="", row=[], inQ=false;
-  const pF = () => { row.push(f); f=""; };
-  const pR = () => { if (row.length) { rows.push(row); row=[]; } };
-
-  while (i < text.length) {
-    const c = text[i];
-    if (inQ) {
-      if (c === '"') { if (text[i+1] === '"') { f+='"'; i+=2; continue; } inQ=false; i++; continue; }
-      f += c; i++; continue;
-    }
-    if (c === '"')  { inQ=true; i++; continue; }
-    if (c === dl)   { pF(); i++; continue; }
-    if (c === "\n") { pF(); pR(); i++; continue; }
-    if (c === "\r") { if (text[i+1]==="\n") i++; pF(); pR(); i++; continue; }
-    f += c; i++;
+  const line0=text.split("\n")[0];
+  const dl=[";",",","\t"].sort((a,b)=>line0.split(b).length-line0.split(a).length)[0];
+  const rows=[];let i=0,f="",row=[],inQ=false;
+  const pF=()=>{row.push(f);f="";};
+  const pR=()=>{if(row.length){rows.push(row);row=[];}};
+  while(i<text.length){
+    const c=text[i];
+    if(inQ){if(c==='"'){if(text[i+1]==='"'){f+='"';i+=2;continue;}inQ=false;i++;continue;}f+=c;i++;continue;}
+    if(c==='"'){inQ=true;i++;continue;}
+    if(c===dl){pF();i++;continue;}
+    if(c==="\n"){pF();pR();i++;continue;}
+    if(c==="\r"){if(text[i+1]==="\n")i++;pF();pR();i++;continue;}
+    f+=c;i++;
   }
-  pF(); pR();
-
-  if (rows.length < 2) return { data: [], headers: [] };
-  const headers = rows[0].map(h => norm(h));
-  const data = rows.slice(1)
-    .filter(r => !r.every(v => !norm(v)))
-    .map(r => {
-      const o = {};
-      headers.forEach((h, i) => o[h] = norm(r[i] || ""));
-      return o;
-    });
-  return { data, headers };
+  pF();pR();
+  if(rows.length<2)return{data:[],headers:[]};
+  const headers=rows[0].map(h=>norm(h));
+  const data=rows.slice(1).filter(r=>!r.every(v=>!norm(v))).map(r=>{
+    const o={};headers.forEach((h,i)=>o[h]=norm(r[i]||""));return o;
+  });
+  return{data,headers};
 }
 
-/* ════════════════════════════════════════════════════════════════
-   ENRIQUECIMIENTO DE FILAS
-════════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   ENRIQUECIMIENTO
+══════════════════════════════════════════════════════════════ */
 function enrich(data) {
-  const out = [];
-  for (const r of data) {
-    const guardaNorm = normalizarGuarda(r["Guarda recursos responsable"]);
-    if (guardaNorm === null) continue; // excluir guardas inactivos
-
-    const rr = { ...r };
-    rr.__guarda = guardaNorm;
-    rr.__dt     = parseDate(r["Fecha de patrullaje"]);
-    rr.__anio   = rr.__dt ? String(rr.__dt.getUTCFullYear()) : "";
-    rr.__mes    = rr.__dt ? mKey(rr.__dt) : "";
-    rr.__dow    = rr.__dt ? dowMon(rr.__dt) : null;
-    rr.__hora   = parseHour(r["Hora de Inicio del patrullaje"]);
-    rr.__dur    = calcDur(r["Hora de Inicio del patrullaje"], r["Hora de finalizacion de patrullaje"]);
-    rr.__cm     = canon(r["Municipio"]);
-    rr.__cg     = canon(guardaNorm);
-    rr.__cu     = canonU(r["Ubicacion"]);
-    rr.__ci     = canonI(r["Actividad ilegal observada"]);
-    rr.__cap    = canon(r["Area protegida"]);
-    rr.__ctp    = canon(r["Tipo de patrullaje"]);
-    rr.__cin    = canonI(r["Hay mas instituciones involucradas en el patrullaje"]);
-
-    if (rr.__cm) LABELS.muni.set(rr.__cm,   bestL(LABELS.muni.get(rr.__cm),  r["Municipio"]));
-    if (rr.__cg) LABELS.guarda.set(rr.__cg, bestL(LABELS.guarda.get(rr.__cg), guardaNorm));
-    if (rr.__cap) LABELS.ap.set(rr.__cap,    bestL(LABELS.ap.get(rr.__cap),    r["Area protegida"]));
-    if (rr.__ctp) LABELS.tp.set(rr.__ctp,    bestL(LABELS.tp.get(rr.__ctp),    r["Tipo de patrullaje"]));
-
+  const out=[];
+  for(const r of data){
+    const gn=normGuarda(r["Guarda recursos responsable"]);
+    if(gn===null)continue;
+    const rr={...r};
+    rr.__guarda=gn;
+    rr.__dt    =parseDate(r["Fecha de patrullaje"]);
+    rr.__anio  =rr.__dt?String(rr.__dt.getUTCFullYear()):"";
+    rr.__mes   =rr.__dt?mKey(rr.__dt):"";
+    rr.__dow   =rr.__dt?dowMon(rr.__dt):null;
+    rr.__hora  =parseHour(r["Hora de Inicio del patrullaje"]);
+    rr.__dur   =calcDur(r["Hora de Inicio del patrullaje"],r["Hora de finalizacion de patrullaje"]);
+    rr.__cm    =canonStr(r["Municipio"]);
+    rr.__cg    =canonStr(gn);
+    rr.__cu    =canonU(r["Ubicacion"]);
+    rr.__ci    =canonI(r["Actividad ilegal observada"]);
+    rr.__cap   =canonStr(r["Area protegida"]);
+    rr.__ctp   =canonStr(r["Tipo de patrullaje"]);
+    rr.__cin   =canonI(r["Hay mas instituciones involucradas en el patrullaje"]);
+    const kmRaw=parseFloat(r["Kilometros recorridos"]||"");
+    rr.__km    =isNaN(kmRaw)?null:kmRaw;
+    if(rr.__cm) LABELS.muni.set(rr.__cm,   bestL(LABELS.muni.get(rr.__cm),  r["Municipio"]));
+    if(rr.__cg) LABELS.guarda.set(rr.__cg, bestL(LABELS.guarda.get(rr.__cg), gn));
+    if(rr.__cap)LABELS.ap.set(rr.__cap,    bestL(LABELS.ap.get(rr.__cap),    r["Area protegida"]));
+    if(rr.__ctp)LABELS.tp.set(rr.__ctp,    bestL(LABELS.tp.get(rr.__ctp),    r["Tipo de patrullaje"]));
     out.push(rr);
   }
   return out;
 }
 
-function bestL(a, b) {
-  a = norm(a); b = norm(b);
-  if (!a) return b; if (!b) return a;
-  const hasTilde = s => /[áéíóúüñÁÉÍÓÚÜÑ]/.test(s);
-  if (hasTilde(b) && !hasTilde(a)) return b;
-  return b.length > a.length ? b : a;
-}
+/* ══════════════════════════════════════════════════════════════
+   FILTROS
+══════════════════════════════════════════════════════════════ */
+let ROWS=[];
 
-/* ════════════════════════════════════════════════════════════════
-   FILTROS GLOBALES
-════════════════════════════════════════════════════════════════ */
-let ROWS = [];
-
-function fillSel(id, opts, ph = "Todos") {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.innerHTML = `<option value="">${ph}</option>`;
-  opts.forEach(({ v, l }) => {
-    const o = document.createElement("option");
-    o.value = v; o.textContent = l;
-    el.appendChild(o);
-  });
-}
-
-function initSelects() {
-  const sortedMunis = [...LABELS.muni.entries()]
-    .sort((a,b) => (a[1]||"").localeCompare(b[1]||"","es"))
-    .map(([k,l]) => ({ v:k, l }));
-  fillSel("f-municipio", sortedMunis, "Todos los municipios");
-
-  const sortedGuardas = [...LABELS.guarda.entries()]
-    .sort((a,b) => (a[1]||"").localeCompare(b[1]||"","es"))
-    .map(([k,l]) => ({ v:k, l }));
-  fillSel("f-guarda", sortedGuardas, "Todos");
-
-  // Radar selector
-  const rSel = document.getElementById("f-radar-guarda");
-  if (rSel) {
-    rSel.innerHTML = '<option value="">— Mostrar top 6 —</option>';
-    sortedGuardas.forEach(({ v, l }) => {
-      const o = document.createElement("option");
-      o.value = v; o.textContent = l;
-      rSel.appendChild(o);
-    });
-  }
-
-  // Rangos de fecha sugeridos
-  const dates = ROWS.map(r => r.__dt).filter(Boolean).sort((a,b) => a-b);
-  if (dates.length) {
-    const toISO = d => d.toISOString().slice(0,10);
-    document.getElementById("f-desde").value = toISO(dates[0]);
-    document.getElementById("f-hasta").value = toISO(dates[dates.length-1]);
+function initSelects(){
+  const sM=[...LABELS.muni.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));
+  fillSel("f-municipio",sM,"Todos los municipios");
+  const sG=[...LABELS.guarda.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));
+  fillSel("f-guarda",sG,"Todos");
+  const rSel=document.getElementById("f-radar-guarda");
+  if(rSel){rSel.innerHTML='<option value="">— Top 6 por volumen —</option>';
+    sG.forEach(({v,l})=>{const o=document.createElement("option");o.value=v;o.textContent=l;rSel.appendChild(o);});}
+  const dates=ROWS.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
+  if(dates.length){
+    const iso=d=>d.toISOString().slice(0,10);
+    document.getElementById("f-desde").value=iso(dates[0]);
+    document.getElementById("f-hasta").value=iso(dates[dates.length-1]);
   }
 }
 
-function getF() {
-  return {
-    desde:  document.getElementById("f-desde")?.value || "",
-    hasta:  document.getElementById("f-hasta")?.value || "",
-    muni:   document.getElementById("f-municipio")?.value || "",
-    guar:   document.getElementById("f-guarda")?.value || "",
-    ubic:   document.getElementById("f-ubic")?.value || "",
+function fillSel(id,opts,ph){
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML=`<option value="">${ph}</option>`;
+  opts.forEach(({v,l})=>{const o=document.createElement("option");o.value=v;o.textContent=l;el.appendChild(o);});
+}
+
+function getF(){
+  return{
+    desde: document.getElementById("f-desde")?.value||"",
+    hasta: document.getElementById("f-hasta")?.value||"",
+    muni:  document.getElementById("f-municipio")?.value||"",
+    guar:  document.getElementById("f-guarda")?.value||"",
+    ubic:  document.getElementById("f-ubic")?.value||"",
   };
 }
 
-function applyF(f) {
-  return ROWS.filter(r => {
-    if (f.desde && r.__dt) {
-      const d = new Date(f.desde + "T00:00:00Z");
-      if (r.__dt < d) return false;
-    }
-    if (f.hasta && r.__dt) {
-      const h = new Date(f.hasta + "T23:59:59Z");
-      if (r.__dt > h) return false;
-    }
-    if (f.muni && r.__cm !== f.muni)   return false;
-    if (f.guar && r.__cg !== f.guar)   return false;
-    if (f.ubic && r.__cu !== f.ubic)   return false;
+function applyF(f){
+  return ROWS.filter(r=>{
+    if(f.desde&&r.__dt){if(r.__dt<new Date(f.desde+"T00:00:00Z"))return false;}
+    if(f.hasta&&r.__dt){if(r.__dt>new Date(f.hasta+"T23:59:59Z"))return false;}
+    if(f.muni&&r.__cm!==f.muni)return false;
+    if(f.guar&&r.__cg!==f.guar)return false;
+    if(f.ubic&&r.__cu!==f.ubic)return false;
     return true;
   });
 }
 
-function renderChips(f) {
-  const w = document.getElementById("chips-wrap");
-  if (!w) return;
-  w.innerHTML = "";
-  const add = txt => {
-    const s = document.createElement("span");
-    s.className = "chip-activo";
-    s.textContent = txt;
-    w.appendChild(s);
-  };
-  if (f.desde || f.hasta) {
-    const desde = f.desde ? f.desde.split("-").reverse().join("/") : "–";
-    const hasta = f.hasta ? f.hasta.split("-").reverse().join("/") : "–";
-    add(`📅 ${desde} → ${hasta}`);
-  }
-  if (f.muni)  add("📍 " + (LABELS.muni.get(f.muni)   || f.muni));
-  if (f.guar)  add("👤 " + (LABELS.guarda.get(f.guar) || f.guar));
-  if (f.ubic)  add("🗺 " + (f.ubic === "rumcla" ? "Dentro RUMCLA" : "Fuera RUMCLA"));
+function renderChips(f){
+  const w=document.getElementById("chips-wrap");if(!w)return;w.innerHTML="";
+  const add=txt=>{const s=document.createElement("span");s.className="chip-activo";s.textContent=txt;w.appendChild(s);};
+  if(f.desde||f.hasta){const de=f.desde?f.desde.split("-").reverse().join("/"):"inicio";
+    const ha=f.hasta?f.hasta.split("-").reverse().join("/"):"hoy";add(`📅 ${de} → ${ha}`);}
+  if(f.muni) add("📍 "+(LABELS.muni.get(f.muni)||f.muni));
+  if(f.guar) add("👤 "+(LABELS.guarda.get(f.guar)||f.guar));
+  if(f.ubic) add("🗺  "+(f.ubic==="rumcla"?"Dentro RUMCLA":"Fuera RUMCLA"));
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    KPIs
-════════════════════════════════════════════════════════════════ */
-function updateKPIs(rows) {
-  document.getElementById("kpi-total").textContent    = rows.length.toLocaleString("es");
-  document.getElementById("kpi-guardas").textContent  = new Set(rows.map(r => r.__cg).filter(Boolean)).size;
-  const durs = rows.map(r => r.__dur).filter(v => v !== null);
-  document.getElementById("kpi-duracion").textContent = durs.length ? avg(durs).toFixed(1) + "h" : "–";
-  document.getElementById("kpi-ilegales").textContent = rows.filter(r => r.__ci === "si").length;
-  const dates = rows.map(r => r.__dt).filter(Boolean).sort((a,b) => a-b);
-  document.getElementById("kpi-rango").textContent    = dates.length
-    ? fmtDate(dates[0]) + " – " + fmtDate(dates[dates.length-1])
-    : "–";
+══════════════════════════════════════════════════════════════ */
+function updateKPIs(rows){
+  document.getElementById("kpi-total").textContent   =rows.length.toLocaleString("es");
+  document.getElementById("kpi-guardas").textContent =new Set(rows.map(r=>r.__cg).filter(Boolean)).size;
+  const durs=rows.map(r=>r.__dur).filter(v=>v!==null);
+  document.getElementById("kpi-duracion").textContent=durs.length?avg_(durs).toFixed(1)+"h":"–";
+  document.getElementById("kpi-ilegales").textContent=rows.filter(r=>r.__ci==="si").length;
+  const kms=rows.map(r=>r.__km).filter(v=>v!==null);
+  const totalKm=kms.length?sum_(kms):0;
+  document.getElementById("kpi-km").textContent=totalKm>0?totalKm.toLocaleString("es",{maximumFractionDigits:0}):"–";
+  const dates=rows.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
+  document.getElementById("kpi-rango").textContent=dates.length?fmtDate(dates[0])+" – "+fmtDate(dates[dates.length-1]):"–";
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    HELPERS
-════════════════════════════════════════════════════════════════ */
-function countBy(rows, fn) {
-  const m = new Map();
-  rows.forEach(r => {
-    const k = fn(r);
-    if (k != null && k !== "") m.set(k, (m.get(k)||0) + 1);
-  });
-  return m;
-}
-function topN(m, n) { return [...m.entries()].sort((a,b) => b[1]-a[1]).slice(0, n); }
+══════════════════════════════════════════════════════════════ */
+function countBy(rows,fn){const m=new Map();rows.forEach(r=>{const k=fn(r);if(k!=null&&k!=="")m.set(k,(m.get(k)||0)+1)});return m;}
+function sumBy(rows,kFn,vFn){const m=new Map();rows.forEach(r=>{const k=kFn(r),v=vFn(r);if(k!=null&&k!==""&&v!=null)m.set(k,(m.get(k)||0)+v)});return m;}
+function topN(m,n){return[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n);}
 
-/* ════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    G1 — Tendencia mensual
-════════════════════════════════════════════════════════════════ */
-function g1(rows) {
-  const mm = countBy(rows, r => r.__mes);
-  const keys = [...mm.keys()].sort();
-  const vals = keys.map(k => mm.get(k)||0);
-  const mean = avg(vals);
-
-  const ctx = document.getElementById("c-tendencia").getContext("2d");
-  const grad = ctx.createLinearGradient(0, 0, 0, 300);
-  grad.addColorStop(0, "rgba(29,111,164,0.28)");
-  grad.addColorStop(1, "rgba(29,111,164,0.01)");
-
-  mkChart("c-tendencia", {
-    type: "line",
-    data: {
-      labels: keys.map(mShort),
-      datasets: [
-        {
-          label: "Patrullajes",
-          data: vals,
-          fill: true,
-          tension: 0.4,
-          borderColor: "#1d6fa4",
-          backgroundColor: grad,
-          borderWidth: 2.5,
-          pointBackgroundColor: "#1d6fa4",
-          pointRadius: 5,
-          pointHoverRadius: 7,
-        },
-        {
-          label: "Promedio del período",
-          data: keys.map(() => Math.round(mean)),
-          borderColor: "rgba(192,57,59,0.6)",
-          borderWidth: 1.5,
-          borderDash: [7, 5],
-          pointRadius: 0,
-          fill: false,
-          tension: 0,
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        tooltip: { ...TT, callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y}` } },
-        legend: { position: "top", labels: { font: { size: 13 }, padding: 16, usePointStyle: true } },
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 12 }, maxRotation: 40 } },
-        y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 12 } } },
-      }
-    }
-  });
+══════════════════════════════════════════════════════════════ */
+function g1(rows){
+  const mm=countBy(rows,r=>r.__mes);
+  const keys=[...mm.keys()].sort();
+  const vals=keys.map(k=>mm.get(k)||0);
+  const mean=avg_(vals);
+  const ctx=document.getElementById("c-tendencia").getContext("2d");
+  const grad=ctx.createLinearGradient(0,0,0,300);
+  grad.addColorStop(0,"rgba(33,102,172,0.28)");grad.addColorStop(1,"rgba(33,102,172,0.01)");
+  mkChart("c-tendencia",{type:"line",data:{labels:keys.map(mShort),datasets:[
+    {label:"Patrullajes",data:vals,fill:true,tension:0.4,borderColor:"#2166ac",backgroundColor:grad,borderWidth:2.5,pointBackgroundColor:"#2166ac",pointRadius:5,pointHoverRadius:7},
+    {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(178,24,43,0.55)",borderWidth:1.5,borderDash:[7,5],pointRadius:0,fill:false,tension:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:13},padding:16,usePointStyle:true}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:12},maxRotation:40}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}}}}});
 }
 
-/* ════════════════════════════════════════════════════════════════
-   G2 — Heatmap SVG día × hora
-════════════════════════════════════════════════════════════════ */
-function g2(rows) {
-  const mat = Array.from({ length: 7 }, () => new Array(24).fill(0));
-  let maxV = 0;
-  rows.forEach(r => {
-    if (r.__dow === null || r.__hora === null) return;
-    const h = Math.floor(r.__hora);
-    if (h < 0 || h > 23) return;
-    mat[r.__dow][h]++;
-    if (mat[r.__dow][h] > maxV) maxV = mat[r.__dow][h];
-  });
-
-  const CW=38, CH=32, PL=76, PT=36, PR=20, PB=36;
-  const W = PL + 24*CW + PR;
-  const H = PT + 7*CH + PB;
-  const svg = document.getElementById("heatmap-svg");
-  svg.setAttribute("width",  W);
-  svg.setAttribute("height", H);
-  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-
-  function heatColor(v, max) {
-    if (!max || !v) return "#eef4f1";
-    const t = Math.pow(v/max, 0.55);
-    const r = Math.round(29 + t*(10-29));
-    const g = Math.round(111 - t*45);
-    const b = Math.round(164 - t*84);
-    return `rgb(${r},${g},${b})`;
+/* ══════════════════════════════════════════════════════════════
+   G2 — Heatmap SVG
+══════════════════════════════════════════════════════════════ */
+function g2(rows){
+  const mat=Array.from({length:7},()=>new Array(24).fill(0));
+  let maxV=0;
+  rows.forEach(r=>{if(r.__dow===null||r.__hora===null)return;const h=Math.floor(r.__hora);if(h<0||h>23)return;mat[r.__dow][h]++;if(mat[r.__dow][h]>maxV)maxV=mat[r.__dow][h];});
+  const CW=38,CH=32,PL=76,PT=36,PR=20,PB=38;
+  const W=PL+24*CW+PR,H=PT+7*CH+PB;
+  const svg=document.getElementById("heatmap-svg");
+  svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  function hc(v,max){
+    if(!max||!v)return"#eef3ef";
+    const t=Math.pow(v/max,0.55);
+    return`rgb(${Math.round(27+t*(6-27))},${Math.round(104-t*50)},${Math.round(172-t*102)})`;
   }
-
-  let html = "";
-  for (let d = 0; d < 7; d++) {
-    for (let h = 0; h < 24; h++) {
-      const x = PL + h*CW, y = PT + d*CH, v = mat[d][h];
-      const fill = heatColor(v, maxV);
-      const tc   = v/maxV > 0.45 ? "#fff" : "#1a3c28";
-      html += `<rect x="${x}" y="${y}" width="${CW-2}" height="${CH-2}" rx="5" fill="${fill}" stroke="#dde8e3" stroke-width="0.6"/>`;
-      if (v > 0) html += `<text x="${x+CW/2-1}" y="${y+CH/2+4.5}" text-anchor="middle" font-size="10" fill="${tc}" font-family="DM Sans,sans-serif" font-weight="500">${v}</text>`;
-    }
+  let html="";
+  for(let d=0;d<7;d++)for(let h=0;h<24;h++){
+    const x=PL+h*CW,y=PT+d*CH,v=mat[d][h];
+    const fill=hc(v,maxV);const tc=v/maxV>0.45?"#fff":"#1a3425";
+    html+=`<rect x="${x}" y="${y}" width="${CW-2}" height="${CH-2}" rx="5" fill="${fill}" stroke="#dae4de" stroke-width="0.6"/>`;
+    if(v>0)html+=`<text x="${x+CW/2-1}" y="${y+CH/2+4.5}" text-anchor="middle" font-size="10" fill="${tc}" font-family="DM Sans,sans-serif" font-weight="500">${v}</text>`;
   }
-
-  DIAS.forEach((d, i) => {
-    html += `<text x="${PL-8}" y="${PT + i*CH + CH/2 + 4.5}" text-anchor="end" font-size="12" fill="#7a9187" font-family="DM Sans,sans-serif" font-weight="500">${d}</text>`;
-  });
-
-  for (let h = 0; h < 24; h += 2) {
-    html += `<text x="${PL + h*CW + CW/2}" y="${PT-12}" text-anchor="middle" font-size="10.5" fill="#7a9187" font-family="DM Sans,sans-serif">${String(h).padStart(2,"0")}h</text>`;
-  }
-
-  // Leyenda
-  html += `<defs><linearGradient id="lgh" x1="0" x2="1"><stop offset="0%" stop-color="#eef4f1"/><stop offset="100%" stop-color="#1d6fa4"/></linearGradient></defs>`;
-  html += `<rect x="${PL}" y="${H-18}" width="120" height="8" rx="3" fill="url(#lgh)"/>`;
-  html += `<text x="${PL}" y="${H-3}" font-size="10" fill="#9aafa8" font-family="DM Sans,sans-serif">0</text>`;
-  html += `<text x="${PL+120}" y="${H-3}" text-anchor="end" font-size="10" fill="#9aafa8" font-family="DM Sans,sans-serif">${maxV}</text>`;
-  html += `<text x="${PL+132}" y="${H-10}" font-size="10" fill="#9aafa8" font-family="DM Sans,sans-serif">patrullajes</text>`;
-
-  svg.innerHTML = html;
+  DIAS.forEach((d,i)=>html+=`<text x="${PL-8}" y="${PT+i*CH+CH/2+4.5}" text-anchor="end" font-size="12" fill="#6e8c7c" font-family="DM Sans,sans-serif" font-weight="500">${d}</text>`);
+  for(let h=0;h<24;h+=2)html+=`<text x="${PL+h*CW+CW/2}" y="${PT-12}" text-anchor="middle" font-size="10.5" fill="#6e8c7c" font-family="DM Sans,sans-serif">${String(h).padStart(2,"0")}h</text>`;
+  html+=`<defs><linearGradient id="lgh" x1="0" x2="1"><stop offset="0%" stop-color="#eef3ef"/><stop offset="100%" stop-color="#2166ac"/></linearGradient></defs>`;
+  html+=`<rect x="${PL}" y="${H-20}" width="120" height="8" rx="3" fill="url(#lgh)"/>`;
+  html+=`<text x="${PL}" y="${H-5}" font-size="10" fill="#9aafa8" font-family="DM Sans,sans-serif">0</text>`;
+  html+=`<text x="${PL+120}" y="${H-5}" text-anchor="end" font-size="10" fill="#9aafa8" font-family="DM Sans,sans-serif">${maxV}</text>`;
+  html+=`<text x="${PL+132}" y="${H-12}" font-size="10" fill="#9aafa8" font-family="DM Sans,sans-serif">patrullajes</text>`;
+  svg.innerHTML=html;
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    G3 — Histograma duración
-════════════════════════════════════════════════════════════════ */
-function g3(rows) {
-  const durs = rows.map(r => r.__dur).filter(v => v !== null);
-  const bs = 0.5, nB = 16;
-  const bins = new Array(nB).fill(0);
-  durs.forEach(d => { const i = Math.floor(d/bs); if (i >= 0 && i < nB) bins[i]++; });
-  const labels = Array.from({ length: nB }, (_, i) => i % 2 === 0 ? (i*bs)+"h" : "");
-
-  const ctx = document.getElementById("c-duracion").getContext("2d");
-  const g = ctx.createLinearGradient(0, 0, 0, 260);
-  g.addColorStop(0, "rgba(45,158,107,0.9)");
-  g.addColorStop(1, "rgba(45,158,107,0.25)");
-
-  mkChart("c-duracion", {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "Patrullajes",
-        data: bins,
-        backgroundColor: g,
-        borderColor: "#2d9e6b",
-        borderWidth: 1,
-        borderRadius: 4,
-        borderSkipped: false,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { ...TT, callbacks: {
-          title: c => `${c[0].dataIndex*bs}h – ${(c[0].dataIndex+1)*bs}h`,
-          label: c => ` ${c.parsed.y} patrullajes`
-        }}
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 12 } }, title: { display: true, text: "Duración (horas)", font: { size: 12 } } },
-        y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 12 } }, title: { display: true, text: "Frecuencia", font: { size: 12 } } },
-      }
-    }
-  });
+══════════════════════════════════════════════════════════════ */
+function g3(rows){
+  const durs=rows.map(r=>r.__dur).filter(v=>v!==null);
+  const bins=new Array(16).fill(0);
+  durs.forEach(d=>{const i=Math.floor(d/0.5);if(i>=0&&i<16)bins[i]++;});
+  const labels=Array.from({length:16},(_,i)=>i%2===0?(i*0.5)+"h":"");
+  const ctx=document.getElementById("c-duracion").getContext("2d");
+  const g=ctx.createLinearGradient(0,0,0,260);
+  g.addColorStop(0,"rgba(27,120,55,0.9)");g.addColorStop(1,"rgba(27,120,55,0.22)");
+  mkChart("c-duracion",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:bins,backgroundColor:g,borderColor:"#1b7837",borderWidth:1,borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].dataIndex*0.5}h – ${(c[0].dataIndex+1)*0.5}h`,label:c=>` ${c.parsed.y} patrullajes`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:12}},title:{display:true,text:"Duración (horas)",font:{size:12}}},
+              y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}},title:{display:true,text:"Frecuencia",font:{size:12}}}}}});
 }
 
-/* ════════════════════════════════════════════════════════════════
-   G4 — Scatter hora vs duración
-════════════════════════════════════════════════════════════════ */
-function g4(rows) {
-  const pts = rows
-    .filter(r => r.__hora !== null && r.__dur !== null)
-    .map(r => ({ x: r.__hora, y: r.__dur, m: LABELS.muni.get(r.__cm) || r["Municipio"] || "" }));
-
-  mkChart("c-scatter", {
-    type: "scatter",
-    data: {
-      datasets: [{
-        label: "Patrullaje",
-        data: pts,
-        backgroundColor: "rgba(123,79,166,0.35)",
-        borderColor: "rgba(123,79,166,0.75)",
-        borderWidth: 1,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { ...TT, callbacks: { label: c => [
-          ` Inicio: ${Math.floor(c.parsed.x)}h${Math.round((c.parsed.x%1)*60).toString().padStart(2,"0")}`,
-          ` Duración: ${c.parsed.y.toFixed(1)}h`,
-          ` ${c.raw.m}`
-        ]}}
-      },
-      scales: {
-        x: { min:5, max:19, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font:{ size:12 }, callback: v=>`${v}h` }, title: { display:true, text:"Hora de inicio", font:{ size:12 } } },
-        y: { min:0, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font:{ size:12 } }, title: { display:true, text:"Duración (h)", font:{ size:12 } } },
-      }
-    }
-  });
+/* ══════════════════════════════════════════════════════════════
+   G4 — Scatter
+══════════════════════════════════════════════════════════════ */
+function g4(rows){
+  const pts=rows.filter(r=>r.__hora!==null&&r.__dur!==null).map(r=>({x:r.__hora,y:r.__dur,m:LABELS.muni.get(r.__cm)||""}));
+  mkChart("c-scatter",{type:"scatter",data:{datasets:[{label:"Patrullaje",data:pts,backgroundColor:"rgba(118,42,131,0.32)",borderColor:"rgba(118,42,131,0.7)",borderWidth:1,pointRadius:4,pointHoverRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>[` Inicio: ${Math.floor(c.parsed.x)}h${Math.round((c.parsed.x%1)*60).toString().padStart(2,"0")}`,` Duración: ${c.parsed.y.toFixed(1)}h`,` ${c.raw.m}`]}}},
+      scales:{x:{min:5,max:19,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12},callback:v=>`${v}h`},title:{display:true,text:"Hora de inicio",font:{size:12}}},
+              y:{min:0,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}},title:{display:true,text:"Duración (h)",font:{size:12}}}}}});
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    G5 — Stacked municipios × mes
-════════════════════════════════════════════════════════════════ */
-function g5(rows) {
-  const mc = countBy(rows, r => r.__cm);
-  const top8 = topN(mc, 8).map(([k]) => k);
-  const months = uniq(rows.map(r => r.__mes)).sort();
-
-  const datasets = top8.map((cm, i) => ({
-    label: LABELS.muni.get(cm) || cm,
-    data:  months.map(mo => rows.filter(r => r.__cm===cm && r.__mes===mo).length),
-    backgroundColor: PALETTE_BG[i % PALETTE.length],
-    borderColor:     PALETTE[i % PALETTE.length],
-    borderWidth: 1,
-    borderRadius: 3,
-    borderSkipped: false,
+══════════════════════════════════════════════════════════════ */
+function g5(rows){
+  const mc=countBy(rows,r=>r.__cm);
+  const top8=topN(mc,8).map(([k])=>k);
+  const months=uniq(rows.map(r=>r.__mes)).sort();
+  const datasets=top8.map((cm,i)=>({
+    label:LABELS.muni.get(cm)||cm,
+    data:months.map(mo=>rows.filter(r=>r.__cm===cm&&r.__mes===mo).length),
+    backgroundColor:PAL_BG[i%PAL.length],borderColor:PAL[i%PAL.length],borderWidth:1,borderRadius:3,borderSkipped:false
   }));
-
-  mkChart("c-muniMes", {
-    type: "bar",
-    data: { labels: months.map(mShort), datasets },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: { position: "top", labels: { font: { size: 12 }, padding: 12, usePointStyle: true } },
-        tooltip: { ...TT },
-      },
-      scales: {
-        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 12 }, maxRotation: 40 } },
-        y: { stacked: true, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 12 } } },
-      }
-    }
-  });
+  mkChart("c-muniMes",{type:"bar",data:{labels:months.map(mShort),datasets},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+      plugins:{legend:{position:"top",labels:{font:{size:12},padding:12,usePointStyle:true}},tooltip:{...TT}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:12},maxRotation:40}},y:{stacked:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}}}}});
 }
 
-/* ════════════════════════════════════════════════════════════════
-   G6 — Radar por guardarecursos
-════════════════════════════════════════════════════════════════ */
-function g6(rows) {
-  const sel = document.getElementById("f-radar-guarda")?.value || "";
-  const allG = uniq(ROWS.map(r => r.__cg)).filter(Boolean);
-
-  const metricOf = (cg, src) => {
-    const s = src.filter(r => r.__cg === cg);
-    const d = s.map(r => r.__dur).filter(v => v !== null);
-    return {
-      p:   s.length,
-      m:   uniq(s.map(r => r.__cm)).length,
-      d:   d.length ? avg(d) : 0,
-      mes: uniq(s.map(r => r.__mes)).length,
-      i:   s.filter(r => r.__ci === "si").length,
-    };
-  };
-
-  const nrm = (v, max) => max ? Math.round(v/max*100) : 0;
-  const AXES = ["Volumen","Municipios\ncubiertos","Duración\nmedia","Meses\nactivos","Incidentes"];
-
-  if (sel) {
-    const allM   = allG.map(cg => metricOf(cg, ROWS));
-    const selM   = metricOf(sel, ROWS);
-    const globalAvg = {
-      p:   avg(allM.map(x => x.p)),
-      m:   avg(allM.map(x => x.m)),
-      d:   avg(allM.map(x => x.d)),
-      mes: avg(allM.map(x => x.mes)),
-      i:   avg(allM.map(x => x.i)),
-    };
-    const maxP = Math.max(...allM.map(x => x.p), 1);
-    const maxM = Math.max(...allM.map(x => x.m), 1);
-    const maxD = Math.max(...allM.map(x => x.d), 0.1);
-    const maxMes = Math.max(...allM.map(x => x.mes), 1);
-    const maxI = Math.max(...allM.map(x => x.i), 1);
-    const toArr = o => [nrm(o.p,maxP), nrm(o.m,maxM), nrm(o.d,maxD), nrm(o.mes,maxMes), nrm(o.i,maxI)];
-    const label = (LABELS.guarda.get(sel)||sel).split(" ").slice(0,3).join(" ");
-
-    mkChart("c-radar", {
-      type: "radar",
-      data: { labels: AXES, datasets: [
-        { label: label, data: toArr(selM), backgroundColor: "rgba(29,111,164,0.18)", borderColor: "#1d6fa4", borderWidth: 2.5, pointBackgroundColor: "#1d6fa4", pointRadius: 4 },
-        { label: "Media global", data: toArr(globalAvg), backgroundColor: "rgba(192,57,59,0.12)", borderColor: "rgba(192,57,59,0.7)", borderWidth: 2, borderDash: [5,4], pointBackgroundColor: "rgba(192,57,59,0.7)", pointRadius: 3 },
-      ]},
-      options: { responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: "bottom", labels: { font: { size: 12 }, padding: 12, usePointStyle: true } }, tooltip: { ...TT } },
-        scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: "rgba(0,0,0,0.08)" }, pointLabels: { font: { size: 12 } } } }
-      }
-    });
+/* ══════════════════════════════════════════════════════════════
+   G6 — Radar guardarecursos
+══════════════════════════════════════════════════════════════ */
+function g6(rows){
+  const sel=document.getElementById("f-radar-guarda")?.value||"";
+  const allG=uniq(ROWS.map(r=>r.__cg)).filter(Boolean);
+  const metOf=(cg,src)=>{const s=src.filter(r=>r.__cg===cg);const d=s.map(r=>r.__dur).filter(v=>v!==null);
+    return{p:s.length,m:uniq(s.map(r=>r.__cm)).length,d:d.length?avg_(d):0,mes:uniq(s.map(r=>r.__mes)).length,i:s.filter(r=>r.__ci==="si").length};};
+  const nrm=(v,mx)=>mx?Math.round(v/mx*100):0;
+  const AXES=["Volumen","Municipios\ncubiertos","Duración\nmedia","Meses\nactivos","Incidentes"];
+  if(sel){
+    const allM=allG.map(cg=>metOf(cg,ROWS));
+    const gAvg={p:avg_(allM.map(x=>x.p)),m:avg_(allM.map(x=>x.m)),d:avg_(allM.map(x=>x.d)),mes:avg_(allM.map(x=>x.mes)),i:avg_(allM.map(x=>x.i))};
+    const sM=metOf(sel,ROWS);
+    const mxP=Math.max(...allM.map(x=>x.p),1),mxM=Math.max(...allM.map(x=>x.m),1),mxD=Math.max(...allM.map(x=>x.d),.1),mxMes=Math.max(...allM.map(x=>x.mes),1),mxI=Math.max(...allM.map(x=>x.i),1);
+    const toA=o=>[nrm(o.p,mxP),nrm(o.m,mxM),nrm(o.d,mxD),nrm(o.mes,mxMes),nrm(o.i,mxI)];
+    const lbl=(LABELS.guarda.get(sel)||sel).split(" ").slice(0,3).join(" ");
+    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:[
+      {label:lbl,data:toA(sM),backgroundColor:"rgba(33,102,172,0.18)",borderColor:"#2166ac",borderWidth:2.5,pointBackgroundColor:"#2166ac",pointRadius:4},
+      {label:"Media global",data:toA(gAvg),backgroundColor:"rgba(178,24,43,0.12)",borderColor:"rgba(178,24,43,0.7)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(178,24,43,0.7)",pointRadius:3}
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:"bottom",labels:{font:{size:12},padding:12,usePointStyle:true}},tooltip:{...TT}},
+      scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.08)"},pointLabels:{font:{size:12}}}}}});
   } else {
-    const gc = countBy(rows, r => r.__cg);
-    const top6 = topN(gc, 6).map(([k]) => k);
-    const allTop = top6.map(cg => metricOf(cg, rows));
-    const maxP = Math.max(...allTop.map(x => x.p), 1);
-    const maxM = Math.max(...allTop.map(x => x.m), 1);
-    const maxD = Math.max(...allTop.map(x => x.d), 0.1);
-    const maxMes = Math.max(...allTop.map(x => x.mes), 1);
-    const maxI = Math.max(...allTop.map(x => x.i), 1);
-
-    const datasets = top6.map((cg, i) => {
-      const o = metricOf(cg, rows);
-      return {
-        label: (LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),
-        data: [nrm(o.p,maxP), nrm(o.m,maxM), nrm(o.d,maxD), nrm(o.mes,maxMes), nrm(o.i,maxI)],
-        backgroundColor: PALETTE[i] + "33",
-        borderColor: PALETTE[i],
-        borderWidth: 2,
-        pointBackgroundColor: PALETTE[i],
-        pointRadius: 3,
-      };
-    });
-
-    mkChart("c-radar", {
-      type: "radar",
-      data: { labels: AXES, datasets },
-      options: { responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: "bottom", labels: { font: { size: 11.5 }, padding: 10, usePointStyle: true } }, tooltip: { ...TT } },
-        scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: "rgba(0,0,0,0.08)" }, pointLabels: { font: { size: 12 } } } }
-      }
-    });
+    const gc=countBy(rows,r=>r.__cg);const top6=topN(gc,6).map(([k])=>k);
+    const allT=top6.map(cg=>metOf(cg,rows));
+    const mxP=Math.max(...allT.map(x=>x.p),1),mxM=Math.max(...allT.map(x=>x.m),1),mxD=Math.max(...allT.map(x=>x.d),.1),mxMes=Math.max(...allT.map(x=>x.mes),1),mxI=Math.max(...allT.map(x=>x.i),1);
+    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:top6.map((cg,i)=>{
+      const o=metOf(cg,rows);
+      return{label:(LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),
+        data:[nrm(o.p,mxP),nrm(o.m,mxM),nrm(o.d,mxD),nrm(o.mes,mxMes),nrm(o.i,mxI)],
+        backgroundColor:PAL[i]+"33",borderColor:PAL[i],borderWidth:2,pointBackgroundColor:PAL[i],pointRadius:3};})},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{position:"bottom",labels:{font:{size:11.5},padding:10,usePointStyle:true}},tooltip:{...TT}},
+        scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.08)"},pointLabels:{font:{size:12}}}}}});
   }
 }
 
-/* ════════════════════════════════════════════════════════════════
-   G7 — Donuts (RUMCLA + Ilegal)
-════════════════════════════════════════════════════════════════ */
-function g7(rows) {
-  const ru = rows.filter(r => r.__cu === "rumcla").length;
-  const fu = rows.filter(r => r.__cu === "fuera").length;
-  const sd = rows.length - ru - fu;
-
-  const donutOpts = (labels, data, colors, borders) => ({
-    type: "doughnut",
-    data: {
-      labels,
-      datasets: [{ data, backgroundColor: colors, borderColor: borders, borderWidth: 2, hoverOffset: 10 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: "64%",
-      plugins: {
-        legend: { position: "bottom", labels: { font: { size: 13 }, padding: 14, usePointStyle: true } },
-        tooltip: { ...TT, callbacks: { label: c => ` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)` } }
-      }
-    }
-  });
-
-  const lbls1 = ["Dentro RUMCLA","Fuera RUMCLA",...(sd > 0 ? ["Sin dato"] : [])];
-  const dat1  = [ru, fu, ...(sd > 0 ? [sd] : [])];
-  mkChart("c-rumcla", donutOpts(lbls1, dat1,
-    ["#1d6fa4","#d4822a","#e5e7eb"],
-    ["#155e8f","#b36b1e","#d1d5db"]
-  ));
-
-  const si = rows.filter(r => r.__ci === "si").length;
-  const no = rows.filter(r => r.__ci === "no").length;
-  mkChart("c-ilegal", donutOpts(
-    ["Sin incidente","Con incidente"],
-    [no, si],
-    ["#dcf5e9","#fde8e8"],
-    ["#2d9e6b","#c0393b"]
-  ));
+/* ══════════════════════════════════════════════════════════════
+   G7 — Donuts
+══════════════════════════════════════════════════════════════ */
+function g7(rows){
+  const ru=rows.filter(r=>r.__cu==="rumcla").length;
+  const fu=rows.filter(r=>r.__cu==="fuera").length;
+  const sd=rows.length-ru-fu;
+  const dOpts=(labels,data,colors,borders)=>({type:"doughnut",data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"64%",
+      plugins:{legend:{position:"bottom",labels:{font:{size:13},padding:14,usePointStyle:true}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+  mkChart("c-rumcla",dOpts(["Dentro RUMCLA","Fuera RUMCLA",...(sd>0?["Sin dato"]:[])],[ru,fu,...(sd>0?[sd]:[])],["#2166ac","#b35806","#e5e7eb"],["#1a5490","#8f4604","#d1d5db"]));
+  const si=rows.filter(r=>r.__ci==="si").length;const no=rows.filter(r=>r.__ci==="no").length;
+  mkChart("c-ilegal",dOpts(["Sin incidente","Con incidente"],[no,si],["#d9f0e3","#fde8e8"],["#1b7837","#b2182b"]));
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    G8 — Ilegal por municipio
-════════════════════════════════════════════════════════════════ */
-function g8(rows) {
-  const mc   = countBy(rows, r => r.__cm);
-  const top  = topN(mc, 12).map(([k]) => k);
-  const lbls = top.map(cm => LABELS.muni.get(cm) || cm);
-  const si   = top.map(cm => rows.filter(r => r.__cm===cm && r.__ci==="si").length);
-  const no   = top.map(cm => rows.filter(r => r.__cm===cm && r.__ci==="no").length);
-
-  mkChart("c-ilegalMuni", {
-    type: "bar",
-    data: { labels: lbls, datasets: [
-      { label: "Sin incidente", data: no, backgroundColor: "rgba(45,158,107,0.75)", borderColor: "#2d9e6b", borderWidth: 1, borderRadius: 4, borderSkipped: false },
-      { label: "Con incidente", data: si, backgroundColor: "rgba(192,57,59,0.8)",  borderColor: "#c0393b", borderWidth: 1, borderRadius: 4, borderSkipped: false },
-    ]},
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: { position: "top", labels: { font: { size: 13 }, padding: 14, usePointStyle: true } },
-        tooltip: { ...TT },
-      },
-      scales: {
-        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 12 }, maxRotation: 35 } },
-        y: { stacked: true, beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 12 } } },
-      },
-      onClick: (e, els) => {
-        if (!els.length) return;
-        const muni = top[els[0].index];
-        document.getElementById("f-municipio").value = muni;
-        applyAll();
-      }
-    }
-  });
+══════════════════════════════════════════════════════════════ */
+function g8(rows){
+  const mc=countBy(rows,r=>r.__cm);
+  const top=topN(mc,12).map(([k])=>k);
+  const lbls=top.map(cm=>LABELS.muni.get(cm)||cm);
+  const si=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="si").length);
+  const no=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="no").length);
+  mkChart("c-ilegalMuni",{type:"bar",data:{labels:lbls,datasets:[
+    {label:"Sin incidente",data:no,backgroundColor:"rgba(27,120,55,0.75)",borderColor:"#1b7837",borderWidth:1,borderRadius:4,borderSkipped:false},
+    {label:"Con incidente",data:si,backgroundColor:"rgba(178,24,43,0.8)",borderColor:"#b2182b",borderWidth:1,borderRadius:4,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{position:"top",labels:{font:{size:13},padding:14,usePointStyle:true}},tooltip:{...TT}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:12},maxRotation:35}},y:{stacked:true,beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}}},
+    onClick:(e,els)=>{if(!els.length)return;document.getElementById("f-municipio").value=top[els[0].index];applyAll();}}});
 }
 
-/* ════════════════════════════════════════════════════════════════
-   G9 — Área protegida (barra horizontal)
-════════════════════════════════════════════════════════════════ */
-function g9(rows) {
-  const mc = countBy(rows, r => r.__cap);
-  const sorted = topN(mc, 14);
-  const labels = sorted.map(([k]) => {
-    const l = LABELS.ap.get(k) || k;
-    return l.length > 50 ? l.slice(0, 48) + "…" : l;
-  });
-  const vals = sorted.map(([,v]) => v);
-
-  const ctx = document.getElementById("c-areaProt").getContext("2d");
-  const g = ctx.createLinearGradient(500, 0, 0, 0);
-  g.addColorStop(0, "rgba(45,158,107,0.85)");
-  g.addColorStop(1, "rgba(29,111,164,0.65)");
-
-  mkChart("c-areaProt", {
-    type: "bar",
-    data: { labels, datasets: [{ label: "Patrullajes", data: vals, backgroundColor: g, borderColor: "#2d9e6b", borderWidth: 1, borderRadius: 5, borderSkipped: false }] },
-    options: {
-      indexAxis: "y",
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { ...TT, callbacks: { label: c => ` ${c.parsed.x} patrullajes` } },
-        datalabels: {
-          display: true,
-          anchor: "end",
-          align: "end",
-          offset: 4,
-          color: "#3a5244",
-          font: { size: 11, weight: "600", family: "'DM Sans',sans-serif" },
-          formatter: v => v > 0 ? v.toLocaleString("es") : ""
-        }
-      },
-      scales: {
-        x: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 12 } } },
-        y: { grid: { display: false }, ticks: { font: { size: 12 } } },
-      }
-    }
-  });
+/* ══════════════════════════════════════════════════════════════
+   G9 — Área protegida
+══════════════════════════════════════════════════════════════ */
+function g9(rows){
+  const mc=countBy(rows,r=>r.__cap);const sorted=topN(mc,14);
+  const labels=sorted.map(([k])=>{const l=LABELS.ap.get(k)||k;return l.length>52?l.slice(0,50)+"…":l;});
+  const vals=sorted.map(([,v])=>v);
+  const ctx=document.getElementById("c-areaProt").getContext("2d");
+  const g=ctx.createLinearGradient(500,0,0,0);
+  g.addColorStop(0,"rgba(27,120,55,0.85)");g.addColorStop(1,"rgba(33,102,172,0.6)");
+  mkChart("c-areaProt",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:vals,backgroundColor:g,borderColor:"#1b7837",borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} patrullajes`}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2e4e3b",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}},y:{grid:{display:false},ticks:{font:{size:12}}}}}});
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    G10 — Tipo de patrullaje
-════════════════════════════════════════════════════════════════ */
-function g10(rows) {
-  const mc = countBy(rows, r => r.__ctp);
-  const sorted = topN(mc, 7);
-  const labels = sorted.map(([k]) => { const l = LABELS.tp.get(k)||k; return l.length > 38 ? l.slice(0,36)+"…":l; });
-  const vals = sorted.map(([,v]) => v);
-  const colors = PALETTE.slice(0, vals.length);
-
-  mkChart("c-tipoPat", {
-    type: "doughnut",
-    data: { labels, datasets: [{ data: vals, backgroundColor: colors.map(c => c+"cc"), borderColor: colors, borderWidth: 2, hoverOffset: 10 }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: "58%",
-      plugins: {
-        legend: { position: "bottom", labels: { font: { size: 12 }, padding: 10, usePointStyle: true } },
-        tooltip: { ...TT, callbacks: { label: c => ` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)` } }
-      }
-    }
-  });
+══════════════════════════════════════════════════════════════ */
+function g10(rows){
+  const mc=countBy(rows,r=>r.__ctp);const sorted=topN(mc,7);
+  const labels=sorted.map(([k])=>{const l=LABELS.tp.get(k)||k;return l.length>38?l.slice(0,36)+"…":l;});
+  const vals=sorted.map(([,v])=>v);
+  mkChart("c-tipoPat",{type:"doughnut",data:{labels,datasets:[{data:vals,backgroundColor:PAL.slice(0,vals.length).map(c=>c+"cc"),borderColor:PAL.slice(0,vals.length),borderWidth:2,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"58%",
+      plugins:{legend:{position:"bottom",labels:{font:{size:12},padding:10,usePointStyle:true}},
+               tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    G11 — Día de semana
-════════════════════════════════════════════════════════════════ */
-function g11(rows) {
-  const counts = new Array(7).fill(0);
-  rows.forEach(r => { if (r.__dow !== null) counts[r.__dow]++; });
-
-  const ctx = document.getElementById("c-diaSem").getContext("2d");
-  const g = ctx.createLinearGradient(0, 0, 0, 260);
-  g.addColorStop(0, "rgba(29,111,164,0.9)");
-  g.addColorStop(1, "rgba(29,111,164,0.3)");
-
-  mkChart("c-diaSem", {
-    type: "bar",
-    data: { labels: DIAS, datasets: [{ label: "Patrullajes", data: counts, backgroundColor: g, borderColor: "#1d6fa4", borderWidth: 1, borderRadius: 6, borderSkipped: false }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { ...TT, callbacks: { label: c => ` ${c.parsed.y} patrullajes` } },
-        datalabels: { display: true, anchor: "end", align: "top", offset: 2, color: "#3a5244", font: { size: 11, weight: "700", family: "'DM Sans',sans-serif" }, formatter: v => v || "" }
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 13 } } },
-        y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 12 } } },
-      }
-    }
-  });
+══════════════════════════════════════════════════════════════ */
+function g11(rows){
+  const counts=new Array(7).fill(0);
+  rows.forEach(r=>{if(r.__dow!==null)counts[r.__dow]++;});
+  const ctx=document.getElementById("c-diaSem").getContext("2d");
+  const g=ctx.createLinearGradient(0,0,0,260);
+  g.addColorStop(0,"rgba(33,102,172,0.9)");g.addColorStop(1,"rgba(33,102,172,0.28)");
+  mkChart("c-diaSem",{type:"bar",data:{labels:DIAS,datasets:[{label:"Patrullajes",data:counts,backgroundColor:g,borderColor:"#2166ac",borderWidth:1,borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} patrullajes`}},
+        datalabels:{display:true,anchor:"end",align:"top",offset:2,color:"#2e4e3b",font:{size:11.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v||""}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:13}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}}}}});
 }
 
-/* ════════════════════════════════════════════════════════════════
-   G12 — Ranking guardarecursos (combo bar+line)
-════════════════════════════════════════════════════════════════ */
-let G12_DESDE = null, G12_HASTA = null;
+/* ══════════════════════════════════════════════════════════════
+   G_KM_MES — Kilómetros por mes
+══════════════════════════════════════════════════════════════ */
+function gKmMes(rows){
+  const mm=sumBy(rows,r=>r.__mes,r=>r.__km);
+  const keys=[...mm.keys()].sort();
+  const vals=keys.map(k=>parseFloat((mm.get(k)||0).toFixed(1)));
+  const ctx=document.getElementById("c-kmMes").getContext("2d");
+  const g=ctx.createLinearGradient(0,0,0,260);
+  g.addColorStop(0,"rgba(1,102,94,0.85)");g.addColorStop(1,"rgba(1,102,94,0.18)");
+  mkChart("c-kmMes",{type:"bar",data:{labels:keys.map(mShort),datasets:[{label:"Kilómetros",data:vals,backgroundColor:g,borderColor:"#01665e",borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y.toLocaleString("es")} km`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:12},maxRotation:40}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}},title:{display:true,text:"Kilómetros",font:{size:12}}}}}});
+}
 
-function g12(rows) {
-  let src = rows;
-  if (G12_DESDE || G12_HASTA) {
-    src = rows.filter(r => {
-      if (!r.__dt) return false;
-      if (G12_DESDE && r.__dt < G12_DESDE) return false;
-      if (G12_HASTA && r.__dt > G12_HASTA) return false;
+/* ══════════════════════════════════════════════════════════════
+   G_KM_GUARDA — Km por guardarecursos
+══════════════════════════════════════════════════════════════ */
+function gKmGuarda(rows){
+  const km=sumBy(rows,r=>r.__cg,r=>r.__km);
+  const sorted=[...km.entries()].sort((a,b)=>b[1]-a[1]);
+  const labels=sorted.map(([k])=>{const l=LABELS.guarda.get(k)||k;return l.split(" ").slice(0,3).join(" ");});
+  const vals=sorted.map(([,v])=>parseFloat(v.toFixed(1)));
+  mkChart("c-kmGuarda",{type:"bar",data:{labels,datasets:[{label:"Kilómetros",data:vals,
+    backgroundColor:sorted.map((_,i)=>PAL[i%PAL.length]+"bb"),
+    borderColor:sorted.map((_,i)=>PAL[i%PAL.length]),
+    borderWidth:1.5,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("es")} km`}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2e4e3b",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}},title:{display:true,text:"Kilómetros",font:{size:12}}},y:{grid:{display:false},ticks:{font:{size:12}}}}}});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   G_INST — Interinstitucional
+══════════════════════════════════════════════════════════════ */
+function gInst(rows){
+  const si=rows.filter(r=>r.__cin==="si").length;
+  const no=rows.filter(r=>r.__cin==="no").length;
+  const nd=rows.length-si-no;
+  mkChart("c-inst",{type:"doughnut",data:{
+    labels:["Sin otras instituciones","Con instituciones involucradas",...(nd>0?["Sin dato"]:[])],
+    datasets:[{data:[no,si,...(nd>0?[nd]:[])],backgroundColor:["#2166accc","#b35806cc","#e5e7eb"],borderColor:["#1a5490","#8f4604","#d1d5db"],borderWidth:2,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"64%",
+      plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:12,usePointStyle:true}},
+               tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+}
+
+/* ══════════════════════════════════════════════════════════════
+   G12 — RANKING GUARDARECURSOS (TODOS LOS ACTIVOS)
+══════════════════════════════════════════════════════════════ */
+let G12_DESDE=null,G12_HASTA=null;
+
+function g12(rows){
+  let src=rows;
+  if(G12_DESDE||G12_HASTA){
+    src=rows.filter(r=>{
+      if(!r.__dt)return false;
+      if(G12_DESDE&&r.__dt<G12_DESDE)return false;
+      if(G12_HASTA&&r.__dt>G12_HASTA)return false;
       return true;
     });
   }
+  // TODOS los guardarecursos activos (incluyendo los con 0 en el período)
+  const allGuardas=[...LABELS.guarda.entries()].map(([k])=>k);
+  const gc=countBy(src,r=>r.__cg);
+  // Ordenar por total desc, luego alfabético
+  const sorted=allGuardas
+    .map(k=>([k,gc.get(k)||0]))
+    .sort((a,b)=>b[1]-a[1]||(LABELS.guarda.get(a[0])||"").localeCompare(LABELS.guarda.get(b[0])||"","es"));
 
-  const gc = countBy(src, r => r.__cg);
-  const sorted = [...gc.entries()].sort((a,b) => b[1]-a[1]);
-  const labels   = sorted.map(([k]) => (LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
-  const totales  = sorted.map(([,v]) => v);
-  const ilegales = sorted.map(([k]) => src.filter(r => r.__cg===k && r.__ci==="si").length);
-  const bgColors = sorted.map((_, i) => PALETTE[i % PALETTE.length] + "bb");
-  const bdColors = sorted.map((_, i) => PALETTE[i % PALETTE.length]);
+  const labels  =sorted.map(([k])=>(LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
+  const totales =sorted.map(([,v])=>v);
+  const ilegales=sorted.map(([k])=>src.filter(r=>r.__cg===k&&r.__ci==="si").length);
+  const bgC=sorted.map((_,i)=>PAL[i%PAL.length]+"bb");
+  const bdC=sorted.map((_,i)=>PAL[i%PAL.length]);
 
-  mkChart("c-rankGuarda", {
-    type: "bar",
-    data: { labels, datasets: [
-      {
-        label: "Patrullajes",
-        data: totales,
-        backgroundColor: bgColors,
-        borderColor: bdColors,
-        borderWidth: 1.5,
-        borderRadius: 5,
-        borderSkipped: false,
-        order: 2,
-        datalabels: {
-          display: true, anchor: "end", align: "top", offset: 3,
-          color: "#0d2018", font: { size: 10.5, weight: "700", family: "'DM Sans',sans-serif" },
-          formatter: v => v > 0 ? v.toLocaleString("es") : ""
-        }
-      },
-      {
-        label: "Incidentes",
-        data: ilegales,
-        type: "line",
-        borderColor: "#c0393b",
-        backgroundColor: "#c0393b",
-        borderWidth: 2.5,
-        pointRadius: 7,
-        pointHoverRadius: 9,
-        pointBackgroundColor: "#c0393b",
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-        tension: 0,
-        fill: false,
-        order: 1,
-        datalabels: {
-          display: true, anchor: "end", align: "top", offset: 5,
-          color: "#c0393b", font: { size: 10.5, weight: "700", family: "'DM Sans',sans-serif" },
-          formatter: v => v > 0 ? v : ""
-        }
-      }
-    ]},
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: "index", intersect: false },
-      layout: { padding: { top: 28 } },
-      plugins: {
-        legend: { position: "top", labels: { font: { size: 13 }, padding: 14, usePointStyle: true } },
-        tooltip: { ...TT, callbacks: { label: c => c.dataset.label === "Patrullajes" ? ` Patrullajes: ${c.parsed.y}` : ` Incidentes: ${c.parsed.y}` } },
-        datalabels: { display: false }
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 11.5 }, maxRotation: 40, minRotation: 25 } },
-        y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 12 } } },
-      }
-    }
-  });
+  // Altura dinámica según cantidad de guardas
+  const n=sorted.length;
+  const h=Math.max(420, n*22+80);
+  const cw=document.getElementById("c-rankGuarda");
+  if(cw)cw.parentElement.style.height=h+"px";
+
+  mkChart("c-rankGuarda",{type:"bar",data:{labels,datasets:[
+    {label:"Patrullajes",data:totales,backgroundColor:bgC,borderColor:bdC,borderWidth:1.5,borderRadius:5,borderSkipped:false,order:2,
+      datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#0d2018",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+    {label:"Incidentes",data:ilegales,type:"line",borderColor:"#b2182b",backgroundColor:"#b2182b",borderWidth:2.5,
+      pointRadius:7,pointHoverRadius:9,pointBackgroundColor:"#b2182b",pointBorderColor:"#fff",pointBorderWidth:2,
+      tension:0,fill:false,order:1,
+      datalabels:{display:true,anchor:"end",align:"top",offset:5,color:"#b2182b",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v:""}}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    interaction:{mode:"index",intersect:false},
+    layout:{padding:{top:28}},
+    plugins:{
+      legend:{position:"top",labels:{font:{size:13},padding:16,usePointStyle:true}},
+      tooltip:{...TT,callbacks:{label:c=>c.dataset.label==="Patrullajes"?` Patrullajes: ${c.parsed.y}`:` Incidentes: ${c.parsed.y}`}},
+      datalabels:{display:false}},
+    scales:{
+      x:{grid:{display:false},ticks:{font:{size:11.5},maxRotation:42,minRotation:28}},
+      y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}}}}});
 }
 
-/* ════════════════════════════════════════════════════════════════
-   G_INST — Patrullajes con instituciones
-════════════════════════════════════════════════════════════════ */
-function gInst(rows) {
-  const si = rows.filter(r => r.__cin === "si").length;
-  const no = rows.filter(r => r.__cin === "no").length;
-  const nd = rows.length - si - no;
-
-  mkChart("c-inst", {
-    type: "doughnut",
-    data: {
-      labels: ["Sin otras instituciones", "Con instituciones involucradas", ...(nd > 0 ? ["Sin dato"] : [])],
-      datasets: [{ data: [no, si, ...(nd > 0 ? [nd] : [])], backgroundColor: ["#1d6fa4cc","#d4822acc","#e5e7eb"], borderColor: ["#155e8f","#b36b1e","#d1d5db"], borderWidth: 2, hoverOffset: 10 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: "64%",
-      plugins: {
-        legend: { position: "bottom", labels: { font: { size: 12.5 }, padding: 12, usePointStyle: true } },
-        tooltip: { ...TT, callbacks: { label: c => ` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)` } }
-      }
-    }
-  });
-}
-
-/* ════════════════════════════════════════════════════════════════
-   RENDER TOTAL + RESET
-════════════════════════════════════════════════════════════════ */
-function applyAll() {
-  const f = getF();
-  renderChips(f);
-  const rows = applyF(f);
+/* ══════════════════════════════════════════════════════════════
+   RENDER TOTAL
+══════════════════════════════════════════════════════════════ */
+function applyAll(){
+  const f=getF();renderChips(f);
+  const rows=applyF(f);
   updateKPIs(rows);
-  g1(rows); g2(rows); g3(rows); g4(rows); g5(rows);
-  g6(rows); g7(rows); g8(rows); g9(rows); g10(rows); g11(rows); g12(rows); gInst(rows);
-
-  const el = document.getElementById("estado");
-  if (el) {
-    el.innerHTML = `Mostrando <strong>${rows.length.toLocaleString("es")}</strong> de <strong>${ROWS.length.toLocaleString("es")}</strong> registros`;
-  }
+  g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);g9(rows);g10(rows);g11(rows);g12(rows);gKmMes(rows);gKmGuarda(rows);gInst(rows);
+  const el=document.getElementById("estado");
+  if(el)el.innerHTML=`Mostrando <strong>${rows.length.toLocaleString("es")}</strong> de <strong>${ROWS.length.toLocaleString("es")}</strong> registros`;
 }
 
-/* ════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    INICIO
-════════════════════════════════════════════════════════════════ */
-(async () => {
-  try {
-    const { data } = await loadCSV();
-    ROWS = enrich(data);
+══════════════════════════════════════════════════════════════ */
+(async()=>{
+  try{
+    const{data}=await loadCSV();
+    ROWS=enrich(data);
     initSelects();
 
-    // Listeners filtros globales
-    document.getElementById("btn-aplicar").addEventListener("click", applyAll);
-    document.getElementById("btn-limpiar").addEventListener("click", () => {
-      ["f-municipio","f-guarda","f-ubic"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = "";
-      });
-      // Restaurar rango completo
-      const dates = ROWS.map(r => r.__dt).filter(Boolean).sort((a,b) => a-b);
-      if (dates.length) {
-        const toISO = d => d.toISOString().slice(0,10);
-        document.getElementById("f-desde").value = toISO(dates[0]);
-        document.getElementById("f-hasta").value = toISO(dates[dates.length-1]);
-      }
+    document.getElementById("btn-aplicar").addEventListener("click",applyAll);
+    document.getElementById("btn-limpiar").addEventListener("click",()=>{
+      ["f-municipio","f-guarda","f-ubic"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+      const dates=ROWS.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
+      if(dates.length){const iso=d=>d.toISOString().slice(0,10);
+        document.getElementById("f-desde").value=iso(dates[0]);
+        document.getElementById("f-hasta").value=iso(dates[dates.length-1]);}
       applyAll();
     });
 
-    // Listener radar
-    document.getElementById("f-radar-guarda")?.addEventListener("change", () => g6(applyF(getF())));
+    document.getElementById("f-radar-guarda")?.addEventListener("change",()=>g6(applyF(getF())));
 
-    // Listeners ranking fechas propias
-    document.getElementById("g12-aplicar")?.addEventListener("click", () => {
-      const d = document.getElementById("g12-desde")?.value;
-      const h = document.getElementById("g12-hasta")?.value;
-      G12_DESDE = d ? new Date(d + "T00:00:00Z") : null;
-      G12_HASTA = h ? new Date(h + "T23:59:59Z") : null;
+    document.getElementById("g12-aplicar")?.addEventListener("click",()=>{
+      const d=document.getElementById("g12-desde")?.value;
+      const h=document.getElementById("g12-hasta")?.value;
+      G12_DESDE=d?new Date(d+"T00:00:00Z"):null;
+      G12_HASTA=h?new Date(h+"T23:59:59Z"):null;
       g12(applyF(getF()));
     });
-    document.getElementById("g12-limpiar")?.addEventListener("click", () => {
-      const gd = document.getElementById("g12-desde");
-      const gh = document.getElementById("g12-hasta");
-      if (gd) gd.value = "";
-      if (gh) gh.value = "";
-      G12_DESDE = null; G12_HASTA = null;
-      g12(applyF(getF()));
+    document.getElementById("g12-limpiar")?.addEventListener("click",()=>{
+      const gd=document.getElementById("g12-desde");const gh=document.getElementById("g12-hasta");
+      if(gd)gd.value="";if(gh)gh.value="";
+      G12_DESDE=null;G12_HASTA=null;g12(applyF(getF()));
     });
 
     applyAll();
-
-  } catch(e) {
-    const el = document.getElementById("estado");
-    if (el) {
-      el.textContent = "Error al cargar datos: " + (e.message || e);
-      el.className = "estado-txt error";
-    }
+  }catch(e){
+    const el=document.getElementById("estado");
+    if(el){el.textContent="Error al cargar datos: "+(e.message||e);el.className="estado-txt error";}
   }
 })();
 </script>
