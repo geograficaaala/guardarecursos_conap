@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>AC192 · Registros y análisis por guardarecurso · Patrullajes</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>AC192 · Registros y verificación · Patrullajes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../assets/tabulator.min.css">
   <script src="../../assets/tabulator.min.js"></script>
   <script src="../../assets/papaparse.min.js"></script>
@@ -12,117 +12,181 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    :root{
-      --verde-oscuro:#0a3d2b;--verde-medio:#1a5c3a;
-      --bg:#f0f4f2;--blanco:#ffffff;
-      --ink:#0d1f15;--muted:#6b7280;--borde:#e2e8e4;
-      --sombra:rgba(10,61,43,0.08);--azul-m:#2563eb;
-      --p0:#0ea5e9;--p1:#10b981;--p2:#f59e0b;--p3:#8b5cf6;--p4:#ef4444;
+    :root {
+      --verde-oscuro: #0a3d2b;
+      --verde-medio:  #1a5c3a;
+      --bg:           #f0f4f1;
+      --surface:      #ffffff;
+      --surface-2:    #f6faf7;
+      --ink:          #0c1e13;
+      --ink-2:        #2a4535;
+      --muted:        #6a8878;
+      --borde:        #d8e4dd;
+      --sombra:       rgba(10,61,43,0.06);
+      --acento:       #1a5c3a;
+      /* Paleta de datos */
+      --d0:#1f6cb0; --d1:#1a7a38; --d2:#b05608; --d3:#6b2680;
+      --d4:#a81c2a; --d5:#016660; --d6:#7a4508; --d7:#3d8fbf;
     }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;opacity:0;animation:fadeIn .35s ease forwards}
-    @keyframes fadeIn{to{opacity:1}}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;font-size:14px;line-height:1.55;opacity:0;animation:bodyIn .45s cubic-bezier(.22,.68,0,1.2) forwards}
+    @keyframes bodyIn{to{opacity:1}}
     @media(prefers-reduced-motion:reduce){body{animation:none;opacity:1}}
 
     /* HEADER */
-    header{background:linear-gradient(90deg,var(--verde-oscuro),var(--verde-medio));color:#fff;padding:12px 20px 14px;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.28)}
-    .header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:5px 10px}
-    .logo-group img{height:34px;max-width:110px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 7px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+    header{background:linear-gradient(105deg,var(--verde-oscuro) 0%,var(--verde-medio) 100%);color:#fff;padding:14px 28px 16px;position:sticky;top:0;z-index:200;box-shadow:0 2px 28px rgba(0,0,0,.26);flex-shrink:0}
+    .header-inner{max-width:1480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:5px 14px}
+    .logo-group img{height:36px;max-width:112px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 8px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
     .header-right{text-align:right;flex:1}
-    .header-right h1{font-size:17px;font-weight:600;margin-bottom:1px}
-    .header-right p{font-size:11.5px;opacity:.7;font-weight:300}
-    .header-chip{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:2px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-    .chip-dot{width:5px;height:5px;border-radius:50%;background:#86efac;animation:pulse 2s ease-in-out infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .header-right h1{font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:1px}
+    .header-right p{font-size:12px;opacity:.58;font-weight:300}
+    .header-chip{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.20);background:rgba(255,255,255,.08);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+    .chip-dot{width:6px;height:6px;border-radius:50%;background:#86efac;animation:blink 2.4s ease-in-out infinite}
+    @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.6)}}
 
     /* NAV */
-    .module-nav{background:var(--blanco);border-bottom:1px solid var(--borde);padding:0 20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-    .module-nav-inner{max-width:1400px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+    .module-nav{background:var(--surface);border-bottom:1px solid var(--borde);padding:0 28px;box-shadow:0 1px 8px rgba(0,0,0,.04);flex-shrink:0}
+    .module-nav-inner{max-width:1480px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
     .module-nav-inner::-webkit-scrollbar{display:none}
-    .nav-back{display:flex;align-items:center;gap:6px;padding:12px 16px 12px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap;transition:color .2s}
+    .nav-back{display:flex;align-items:center;gap:6px;padding:13px 18px 13px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap;transition:color .18s}
     .nav-back:hover{color:var(--verde-medio)}
-    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;height:48px}
-    .nav-tab:hover{color:var(--azul-m);border-bottom-color:rgba(37,99,235,.25)}
-    .nav-tab.active{color:var(--azul-m);border-bottom-color:var(--azul-m);font-weight:600}
+    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;height:50px;transition:color .18s,border-color .18s}
+    .nav-tab:hover{color:var(--acento);border-bottom-color:rgba(26,92,58,.2)}
+    .nav-tab.active{color:var(--acento);border-bottom-color:var(--acento);font-weight:600}
 
-    /* SECCIÓN INTERNA */
-    .page{max-width:1400px;width:100%;margin:0 auto;padding:20px 20px 48px;flex:1}
+    /* PÁGINA */
+    .page{max-width:1480px;width:100%;margin:0 auto;padding:28px 28px 72px;flex:1}
 
     /* TABS INTERNOS */
-    .inner-tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--blanco);border:1px solid var(--borde);border-radius:10px;padding:4px}
-    .inner-tab{flex:1;text-align:center;padding:8px 12px;border-radius:7px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;border:none;background:none;font-family:inherit}
-    .inner-tab.active{background:var(--verde-oscuro);color:#fff;font-weight:600}
+    .inner-tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--borde);border-radius:12px;padding:4px;box-shadow:0 1px 8px var(--sombra)}
+    .inner-tab{flex:1;text-align:center;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;border:none;background:none;font-family:inherit}
+    .inner-tab.active{background:var(--verde-oscuro);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(10,61,43,.25)}
     .inner-tab:hover:not(.active){background:var(--bg);color:var(--ink)}
     .tab-panel{display:none}
-    .tab-panel.active{display:block}
+    .tab-panel.active{display:block;animation:panelIn .25s ease both}
+    @keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-    /* CARD */
-    .card{background:var(--blanco);border:1px solid var(--borde);border-radius:14px;padding:20px;box-shadow:0 2px 10px var(--sombra);margin-bottom:16px}
+    /* CARDS */
+    .card{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:22px 24px;box-shadow:0 1px 10px var(--sombra);margin-bottom:16px}
     .card-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:4px}
-    .card-hint{font-size:12px;color:var(--muted);font-weight:300;margin-bottom:14px}
+    .card-hint{font-size:12.5px;color:var(--muted);font-weight:400;margin-bottom:16px;line-height:1.5}
 
-    /* BARRA DE ACCIONES */
-    .actions-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
-    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1px solid var(--borde);background:var(--blanco);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;color:var(--ink);transition:all .2s;text-decoration:none}
-    .btn:hover{border-color:#94a3b8;background:var(--bg)}
+    /* BOTONES */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;border:1.5px solid var(--borde);background:var(--surface);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;color:var(--ink);transition:all .18s;text-decoration:none}
+    .btn:hover{border-color:#94a3b8;background:var(--bg);transform:translateY(-1px)}
     .btn-primary{background:var(--verde-oscuro);color:#fff;border-color:var(--verde-oscuro)}
-    .btn-primary:hover{background:var(--verde-medio);border-color:var(--verde-medio)}
-    .btn-blue{background:var(--azul-m);color:#fff;border-color:var(--azul-m)}
-    .btn-blue:hover{background:#1d4ed8;border-color:#1d4ed8}
-    .btn-sm{padding:6px 12px;font-size:12px}
-    .btn:disabled{opacity:.4;cursor:not-allowed}
-
-    /* INFORME MENSUAL BAR */
-    .informe-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px;background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.15);border-radius:10px;margin-bottom:16px}
-    .informe-bar label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-    .informe-bar select{border:1px solid var(--borde);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;background:var(--blanco);color:var(--ink);outline:none}
-    .informe-bar select:focus{border-color:var(--azul-m)}
+    .btn-primary:hover{background:var(--verde-medio);border-color:var(--verde-medio);box-shadow:0 4px 12px rgba(10,61,43,.25)}
+    .btn-blue{background:var(--d0);color:#fff;border-color:var(--d0)}
+    .btn-blue:hover{background:#1558a0;border-color:#1558a0;box-shadow:0 4px 12px rgba(31,108,176,.3)}
+    .btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+    .actions-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 
     /* ESTADO */
-    .estado-txt{font-size:13px;color:var(--muted);font-weight:300;margin-bottom:12px}
-    .estado-txt.error{color:#dc2626;font-weight:600}
+    .estado-txt{font-size:13px;color:var(--muted);font-weight:400;margin-bottom:16px}
+    .estado-txt.error{color:#9b1c1c;font-weight:600}
+    .estado-txt strong{color:var(--ink);font-weight:600}
 
-    /* TABLA TABULATOR */
-    #tabla-registros .tabulator{border-radius:10px;overflow:hidden;font-size:13px}
-    .tabulator-row.tabulator-selected{background:#dbeafe !important}
+    /* ═══════════════════════════════════
+       HERRAMIENTA DE VERIFICACIÓN
+    ═══════════════════════════════════ */
+    .verif-panel{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:22px 24px;box-shadow:0 1px 10px var(--sombra);margin-bottom:20px}
+    .verif-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:4px}
+    .verif-hint{font-size:12.5px;color:var(--muted);margin-bottom:18px;line-height:1.55}
 
-    /* ── PANEL ANÁLISIS ── */
+    .verif-controls{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:18px}
+    @media(max-width:900px){.verif-controls{grid-template-columns:1fr 1fr}}
+    @media(max-width:600px){.verif-controls{grid-template-columns:1fr}}
+
+    .vc-group{display:flex;flex-direction:column;gap:5px}
+    .vc-group label{font-size:10.5px;font-weight:700;color:var(--ink-2);letter-spacing:.07em;text-transform:uppercase}
+    .vc-group select,.vc-group input{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13.5px;font-family:inherit;background:var(--surface-2);color:var(--ink);outline:none;transition:border-color .18s,box-shadow .18s;width:100%}
+    .vc-group select:focus,.vc-group input:focus{border-color:var(--acento);box-shadow:0 0 0 3px rgba(26,92,58,.10);background:var(--surface)}
+
+    /* Resumen de verificación */
+    .verif-resumen{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:900px){.verif-resumen{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){.verif-resumen{grid-template-columns:repeat(2,1fr)}}
+
+    .vr-card{border-radius:12px;padding:14px 16px;border:1px solid var(--borde);background:var(--surface)}
+    .vr-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase;margin-bottom:8px}
+    .vr-value{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;line-height:1;margin-bottom:4px}
+    .vr-sub{font-size:11.5px;color:var(--muted)}
+    .vr-cumple{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+    .vr-incumple{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
+    .vr-neutral{color:var(--ink)}
+
+    /* Tabla de guardas en período */
+    .verif-table-wrap{overflow-x:auto}
+    .verif-table{width:100%;border-collapse:collapse;font-size:13px}
+    .verif-table th{background:var(--bg);padding:10px 14px;text-align:left;font-weight:700;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:2px solid var(--borde);white-space:nowrap}
+    .verif-table td{padding:10px 14px;border-bottom:1px solid var(--borde);vertical-align:middle}
+    .verif-table tr:last-child td{border-bottom:none}
+    .verif-table tr:hover td{background:var(--surface-2)}
+    .verif-table td:first-child{font-weight:500}
+
+    .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;gap:4px}
+    .badge-verde{background:#dcfce7;color:#15803d}
+    .badge-rojo{background:#fee2e2;color:#b91c1c}
+    .badge-amarillo{background:#fef9c3;color:#854d0e}
+    .badge-azul{background:#dbeafe;color:#1e40af}
+    .badge-gris{background:#f3f4f6;color:#6b7280}
+
+    /* Barra de progreso */
+    .prog-wrap{display:flex;align-items:center;gap:8px}
+    .prog-bar-bg{flex:1;height:7px;background:var(--borde);border-radius:999px;overflow:hidden;min-width:60px}
+    .prog-bar-fill{height:100%;border-radius:999px;transition:width .4s ease}
+    .prog-fill-verde{background:#22c55e}
+    .prog-fill-amarillo{background:#f59e0b}
+    .prog-fill-rojo{background:#ef4444}
+    .prog-num{font-size:12px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+
+    /* Período display */
+    .periodo-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:999px;background:rgba(26,92,58,.07);border:1px solid rgba(26,92,58,.20);font-size:12.5px;font-weight:600;color:var(--acento);margin-bottom:16px}
+
+    /* TABLA REGISTROS */
+    #tabla-registros .tabulator{border-radius:12px;overflow:hidden;font-size:13px;font-family:'DM Sans',sans-serif}
+    .tabulator .tabulator-header{background:var(--bg)!important;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .tabulator-row.tabulator-selected{background:#dbeafe!important}
+    .tabulator-row:hover{background:var(--surface-2)!important}
+
+    /* ANÁLISIS POR GUARDA */
     .guarda-selector{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:20px}
-    .guarda-selector label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:4px}
-    .guarda-selector select{border:1px solid var(--borde);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--blanco);color:var(--ink);outline:none;min-width:280px}
-    .guarda-selector select:focus{border-color:var(--azul-m)}
+    .guarda-selector label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:5px}
+    .guarda-selector select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface-2);color:var(--ink);outline:none;min-width:280px;transition:border-color .18s}
+    .guarda-selector select:focus{border-color:var(--acento)}
 
-    /* KPIs guarda */
-    .kpis-guarda{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-    @media(max-width:800px){.kpis-guarda{grid-template-columns:repeat(2,1fr)}}
-    .kpi-g{background:var(--blanco);border:1px solid var(--borde);border-top:3px solid transparent;border-radius:14px;padding:14px 16px;box-shadow:0 2px 8px var(--sombra)}
-    .kpi-g-0{border-top-color:var(--p0)}.kpi-g-1{border-top-color:var(--p1)}.kpi-g-2{border-top-color:var(--p2)}.kpi-g-3{border-top-color:var(--p3)}
-    .kpi-g-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
-    .kpi-g-value{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;line-height:1;color:var(--ink);margin-bottom:3px}
-    .kpi-g-sub{font-size:11px;color:var(--muted);font-weight:300}
+    .kpis-guarda{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:900px){.kpis-guarda{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){.kpis-guarda{grid-template-columns:repeat(2,1fr)}}
 
-    /* Charts grid */
+    .kpi-g{background:var(--surface);border:1px solid var(--borde);border-top:3px solid transparent;border-radius:14px;padding:14px 16px;box-shadow:0 1px 8px var(--sombra)}
+    .kpi-g-0{border-top-color:var(--d0)}.kpi-g-1{border-top-color:var(--d1)}.kpi-g-2{border-top-color:var(--d2)}.kpi-g-3{border-top-color:var(--d4)}.kpi-g-4{border-top-color:var(--d5)}
+    .kpi-g-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:8px}
+    .kpi-g-value{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;line-height:1;color:var(--ink);margin-bottom:3px}
+    .kpi-g-sub{font-size:11px;color:var(--muted)}
+
     .charts-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
     @media(max-width:700px){.charts-2{grid-template-columns:1fr}}
     .cw{position:relative;height:240px}
 
-    /* Tabla resumen guarda */
     .resumen-table{width:100%;border-collapse:collapse;font-size:13px}
-    .resumen-table th{background:var(--bg);padding:8px 12px;text-align:left;font-weight:600;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--borde)}
-    .resumen-table td{padding:8px 12px;border-bottom:1px solid var(--borde)}
+    .resumen-table th{background:var(--bg);padding:9px 13px;text-align:left;font-weight:700;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--borde)}
+    .resumen-table td{padding:9px 13px;border-bottom:1px solid var(--borde)}
     .resumen-table tr:last-child td{border-bottom:none}
-    .resumen-table tr:hover td{background:var(--bg)}
-    .badge{display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
-    .badge-verde{background:#dcfce7;color:#15803d}
-    .badge-rojo{background:#fee2e2;color:#dc2626}
-    .badge-azul{background:#dbeafe;color:#1d4ed8}
+    .resumen-table tr:hover td{background:var(--surface-2)}
 
-    /* Sin datos */
-    .sin-datos{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
+    .sin-datos{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
+
+    /* Selector mes informe */
+    .informe-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:16px 18px;background:var(--surface-2);border:1px solid var(--borde);border-radius:12px;margin-bottom:16px}
+    .informe-bar label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:5px}
+    .informe-bar select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--ink);outline:none;transition:border-color .18s}
+    .informe-bar select:focus{border-color:var(--acento)}
 
     /* FOOTER */
-    footer{background:var(--verde-oscuro);color:rgba(255,255,255,.45);text-align:center;padding:14px 20px;font-size:11.5px;font-weight:300}
+    footer{background:var(--verde-oscuro);color:rgba(255,255,255,.42);text-align:center;padding:16px 24px;font-size:12px;font-weight:300;letter-spacing:.04em;flex-shrink:0}
     footer strong{color:rgba(255,255,255,.75);font-weight:500}
   </style>
 </head>
@@ -137,7 +201,7 @@
     <div class="header-right">
       <h1>Centro de consulta de datos</h1>
       <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
-      <div class="header-chip"><span class="chip-dot"></span>AC192 · Registros y análisis</div>
+      <div class="header-chip"><span class="chip-dot"></span>AC192 · Registros y verificación</div>
     </div>
   </div>
 </header>
@@ -145,151 +209,261 @@
 <nav class="module-nav">
   <div class="module-nav-inner">
     <a href="../../index.html" class="nav-back">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Inicio
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Inicio
     </a>
     <a href="dashboard.html" class="nav-tab">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Mapa geográfico
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      Mapa geográfico
     </a>
     <a href="tablero.html" class="nav-tab">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Tablero dinámico
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Tablero dinámico
     </a>
     <a href="registros.html" class="nav-tab active">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>Registros y análisis
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      Registros y verificación
     </a>
   </div>
 </nav>
 
 <div class="page">
 
-  <!-- TABS INTERNOS -->
   <div class="inner-tabs">
-    <button class="inner-tab active" data-panel="panel-registros">
+    <button class="inner-tab active" data-panel="panel-verif">
+      Verificación de cumplimiento
+    </button>
+    <button class="inner-tab" data-panel="panel-registros">
       Tabla de registros y exportación
     </button>
     <button class="inner-tab" data-panel="panel-analisis">
-      Análisis por guardarecurso
+      Análisis por guardarecursos
     </button>
   </div>
 
-  <!-- ══════════════════════════════
-       PANEL 1: TABLA + REPORTES
-  ══════════════════════════════ -->
-  <div id="panel-registros" class="tab-panel active">
+  <!-- ══════════════════════════════════════════
+       PANEL 1 — VERIFICACIÓN DE CUMPLIMIENTO
+  ══════════════════════════════════════════ -->
+  <div id="panel-verif" class="tab-panel active">
+
+    <div class="verif-panel">
+      <div class="verif-title">Verificación de cumplimiento de patrullajes</div>
+      <div class="verif-hint">
+        El período de corte es del <strong>25 de cada mes al 25 del siguiente</strong>. Seleccione el período y el guardarecurso para confirmar si cumplió con la cantidad de patrullajes declarados. 
+        Deje el campo "Meta" en 0 para ver solo el conteo sin verificar contra una meta específica.
+      </div>
+
+      <div class="verif-controls">
+        <div class="vc-group">
+          <label>Período — desde (25 del mes)</label>
+          <input type="date" id="vc-desde"/>
+        </div>
+        <div class="vc-group">
+          <label>Período — hasta (25 del mes)</label>
+          <input type="date" id="vc-hasta"/>
+        </div>
+        <div class="vc-group">
+          <label>Guardarecursos (opcional)</label>
+          <select id="vc-guarda"><option value="">Todos los guardarecursos</option></select>
+        </div>
+        <div class="vc-group">
+          <label>Meta de patrullajes</label>
+          <input type="number" id="vc-meta" value="0" min="0" placeholder="Ej: 8"/>
+        </div>
+        <button class="btn btn-primary" id="vc-aplicar" style="height:40px;align-self:flex-end">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Verificar
+        </button>
+      </div>
+
+      <div id="vc-periodo-tag" class="periodo-tag" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="vc-periodo-label"></span>
+      </div>
+
+      <!-- KPIs del período -->
+      <div class="verif-resumen" id="vc-resumen" style="display:none">
+        <div class="vr-card" style="border-top:3px solid var(--d0)">
+          <div class="vr-label">Patrullajes en período</div>
+          <div class="vr-value vr-neutral" id="vc-total">–</div>
+          <div class="vr-sub" id="vc-total-sub">registros</div>
+        </div>
+        <div class="vr-card" style="border-top:3px solid var(--d1)">
+          <div class="vr-label">Guardarecursos activos</div>
+          <div class="vr-value vr-neutral" id="vc-guardas">–</div>
+          <div class="vr-sub">en el período</div>
+        </div>
+        <div class="vr-card" style="border-top:3px solid var(--d2)">
+          <div class="vr-label">Kilómetros recorridos</div>
+          <div class="vr-value vr-neutral" id="vc-km">–</div>
+          <div class="vr-sub">km acumulados</div>
+        </div>
+        <div class="vr-card" style="border-top:3px solid var(--d4)">
+          <div class="vr-label">Con meta definida</div>
+          <div class="vr-value vr-neutral" id="vc-meta-display">–</div>
+          <div class="vr-sub">patrullajes esperados</div>
+        </div>
+        <div class="vr-card" id="vc-cumplimiento-card" style="border-top:3px solid var(--d5)">
+          <div class="vr-label">Cumplimiento general</div>
+          <div class="vr-value vr-neutral" id="vc-pct">–</div>
+          <div class="vr-sub">del equipo</div>
+        </div>
+      </div>
+
+      <!-- Tabla de cumplimiento por guardarecurso -->
+      <div id="vc-tabla-wrap" style="display:none">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase;margin-bottom:12px">
+          Detalle por guardarecursos
+        </div>
+        <div class="verif-table-wrap">
+          <table class="verif-table">
+            <thead>
+              <tr>
+                <th>Guardarecursos</th>
+                <th>Patrullajes registrados</th>
+                <th>Km recorridos</th>
+                <th>Municipios</th>
+                <th>Incidentes</th>
+                <th>Duración media</th>
+                <th>Dentro RUMCLA</th>
+                <th id="th-cumplimiento" style="display:none">vs. Meta</th>
+                <th id="th-avance" style="display:none">Avance</th>
+              </tr>
+            </thead>
+            <tbody id="vc-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="vc-export-xlsx">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar verificación Excel
+          </button>
+          <button class="btn" id="vc-export-csv">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      <div id="vc-empty" class="sin-datos">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <p style="margin-top:12px">Seleccione el período y haga clic en <strong>Verificar</strong> para ver el cumplimiento</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PANEL 2 — TABLA DE REGISTROS
+  ══════════════════════════════════════════ -->
+  <div id="panel-registros" class="tab-panel">
 
     <p class="estado-txt" id="estado-registros">Cargando datos…</p>
 
-    <!-- Descarga y reportes por registro -->
     <div class="card">
-      <div class="card-title">Exportar datos filtrados</div>
-      <div class="card-hint">Descarga todos los registros visibles en la tabla según los filtros aplicados</div>
+      <div class="card-title">Exportar registros filtrados</div>
+      <div class="card-hint">Descarga todos los registros visibles en la tabla según los filtros de columna aplicados</div>
       <div class="actions-bar">
         <button class="btn" id="download-csv">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Descargar CSV
         </button>
         <button class="btn btn-primary" id="download-xlsx">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Descargar Excel
         </button>
       </div>
     </div>
 
-    <!-- Informe por registro individual -->
     <div class="card">
-      <div class="card-title">Informe por registro individual</div>
-      <div class="card-hint">Selecciona una fila en la tabla y genera el informe de ese patrullaje</div>
+      <div class="card-title">Informe de registro individual</div>
+      <div class="card-hint">Selecciona una fila en la tabla y genera el informe de ese patrullaje específico</div>
       <div class="actions-bar">
         <button class="btn btn-blue" id="generate-report-word">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Informe registro (Word)
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe Word
         </button>
         <button class="btn" id="generate-report-pdf">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Informe registro (PDF)
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe PDF
         </button>
       </div>
     </div>
 
-    <!-- Informe mensual -->
     <div class="card">
       <div class="card-title">Informe mensual narrativo</div>
-      <div class="card-hint">Genera un informe ejecutivo completo para el mes seleccionado con análisis estadístico, temporal y por municipio</div>
+      <div class="card-hint">Genera un informe ejecutivo completo con análisis estadístico, territorial y por guardarecursos</div>
       <div class="informe-bar">
         <div>
           <label>Selecciona el mes</label>
           <select id="monthly-month-select"></select>
         </div>
         <button class="btn btn-blue" id="generate-monthly-report-word" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Informe mensual (Word)
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe mensual Word
         </button>
         <button class="btn" id="generate-monthly-report-pdf" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Informe mensual (PDF)
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe mensual PDF
         </button>
       </div>
     </div>
 
-    <!-- Tabla Tabulator -->
     <div class="card" style="padding:0;overflow:hidden">
       <div id="tabla-registros"></div>
     </div>
 
   </div>
 
-  <!-- ══════════════════════════════
-       PANEL 2: ANÁLISIS POR GUARDA
-  ══════════════════════════════ -->
+  <!-- ══════════════════════════════════════════
+       PANEL 3 — ANÁLISIS POR GUARDARECURSO
+  ══════════════════════════════════════════ -->
   <div id="panel-analisis" class="tab-panel">
 
-    <p class="estado-txt" id="estado-analisis">Selecciona un guardarecurso para ver su perfil de actividad</p>
+    <p class="estado-txt" id="estado-analisis">Selecciona un guardarecursos para ver su perfil de actividad</p>
 
-    <!-- Selector -->
     <div class="guarda-selector">
       <div>
-        <label>Guardarecurso</label>
-        <select id="sel-guarda">
-          <option value="">Selecciona un guardarecurso…</option>
-        </select>
+        <label>Guardarecursos</label>
+        <select id="sel-guarda"><option value="">Selecciona un guardarecursos…</option></select>
       </div>
       <button class="btn btn-primary" id="btn-informe-guarda" disabled>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        Exportar informe Word
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Exportar perfil Word
       </button>
     </div>
 
-    <!-- KPIs del guarda -->
     <div id="guarda-kpis" class="kpis-guarda" style="display:none">
       <div class="kpi-g kpi-g-0"><div class="kpi-g-label">Patrullajes</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">total registrados</div></div>
       <div class="kpi-g kpi-g-1"><div class="kpi-g-label">Municipios</div><div class="kpi-g-value" id="g-munis">–</div><div class="kpi-g-sub">distintos cubiertos</div></div>
       <div class="kpi-g kpi-g-2"><div class="kpi-g-label">Duración media</div><div class="kpi-g-value" id="g-dur">–</div><div class="kpi-g-sub">horas por patrullaje</div></div>
       <div class="kpi-g kpi-g-3"><div class="kpi-g-label">Incidentes</div><div class="kpi-g-value" id="g-ileg">–</div><div class="kpi-g-sub">actividad ilegal</div></div>
+      <div class="kpi-g kpi-g-4"><div class="kpi-g-label">Km recorridos</div><div class="kpi-g-value" id="g-km">–</div><div class="kpi-g-sub">km totales</div></div>
     </div>
 
-    <!-- Gráficas del guarda -->
     <div id="guarda-charts" class="charts-2" style="display:none">
       <div class="card">
-        <div class="card-title">Patrullajes por mes</div>
-        <div class="card-hint">Evolución mensual de actividad</div>
+        <div class="card-title">Patrullajes por período (corte 25)</div>
+        <div class="card-hint">Agrupados por período operativo mensual</div>
         <div class="cw"><canvas id="g-c-mes"></canvas></div>
       </div>
       <div class="card">
         <div class="card-title">Municipios visitados</div>
-        <div class="card-hint">Distribución por municipio</div>
+        <div class="card-hint">Distribución por municipio de patrullaje</div>
         <div class="cw"><canvas id="g-c-muni"></canvas></div>
       </div>
     </div>
 
-    <!-- Tabla resumen por municipio -->
     <div id="guarda-tabla-wrap" class="card" style="display:none">
       <div class="card-title">Detalle por municipio</div>
-      <div class="card-hint">Patrullajes, incidentes y duración media por municipio</div>
+      <div class="card-hint">Patrullajes, incidentes, km y duración media por municipio</div>
       <div style="overflow-x:auto">
         <table class="resumen-table" id="guarda-tabla">
           <thead>
             <tr>
               <th>Municipio</th>
               <th>Patrullajes</th>
+              <th>Km recorridos</th>
               <th>Con incidente</th>
               <th>% incidentes</th>
               <th>Duración media</th>
@@ -303,7 +477,7 @@
 
     <div id="guarda-empty" class="sin-datos">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <p style="margin-top:12px">Selecciona un guardarecurso para ver su análisis individual</p>
+      <p style="margin-top:12px">Selecciona un guardarecursos para ver su análisis individual</p>
     </div>
 
   </div>
@@ -314,392 +488,164 @@
 </footer>
 
 <script>
-/* ══════════════════════════════════════════════════════
-   VARIABLES GLOBALES
-══════════════════════════════════════════════════════ */
-let tablaPatrullajes;
-let datosPatrullajes = [];
+/* ═══════════════════════════════════════════════════
+   NORMALIZACIÓN DE GUARDARECURSOS (misma lógica del tablero)
+═══════════════════════════════════════════════════ */
+const EXCLUIDOS = new Set([
+  "daniel estuardo barillas coo","daniel estuardo barillas",
+  "domingo alfonso mendoza quiacain","domingo alfonso mendoza",
+  "job' kotz'ij eligia morales quino","job kotzij eligia morales quino",
+  "pedro chiviliu esquina",
+  "ruben enrique sumoza mendoza","ruben enrique sumoza",
+]);
+const MERGE = {
+  "5 juan marcos saquic":"Juan Marcos Saquic",
+  "9 heriberto chavez chavez":"Heriberto Chavez Chavez",
+  "antonio federico tzaj y tzaj":"Antonio Federico Tzaj Y Tzaj",
+  "diego martin ramirez ixbalan":"Diego Martín Ramírez Ixbalan",
+  "diego martín ramírez ixbalan":"Diego Martín Ramírez Ixbalan",
+  "edgar bartolo batin navichoc":"Edgar Bartolo Batín Navichoc",
+  "edgar bartolo batín navichoc":"Edgar Bartolo Batín Navichoc",
+  "henry regino mendez chavajay":"Henry Regino Méndez Chavajay",
+  "henry regino méndez chavajay":"Henry Regino Méndez Chavajay",
+  "jose bacajol simaji":"José Bacajol Simají",
+  "josé bacajol simají":"José Bacajol Simají",
+  "mario cesar tale coche":"Mario César Talé Coché",
+  "mario césar talé coché":"Mario César Talé Coché",
+  "rafael enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "rafael enrique chocoy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "sebastian tinuar":"Sebastián Tinuar Cipriano",
+  "sebastian tinuar cipriano":"Sebastián Tinuar Cipriano",
+  "vicente francisco omar perez cox":"Vicente Francisco Omar Pérez Cox",
+  "vicente omar francisco pérez":"Vicente Francisco Omar Pérez Cox",
+  "vicente omar francisco perez":"Vicente Francisco Omar Pérez Cox",
+  "santos maurico vicente mendoza":"Santos Mauricio Vicente Mendoza",
+};
+function canonStr(s){return String(s||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ");}
+function normGuarda(n){if(!n)return null;const c=canonStr(n);if(EXCLUIDOS.has(c))return null;return MERGE[c]||n.trim();}
+
+/* ═══════════════════════════════════════════════════
+   GLOBALS
+═══════════════════════════════════════════════════ */
+let DATOS = [];         // datos normalizados
+let tablaTabulator;
 let mapaMeses = new Map();
 
-/* ══════════════════════════════════════════════════════
-   PROYECCIÓN GTM · Guatemala Transversa Mercator
-   IGN Resolución Normativa IGN-01/99
-   Elipsoide: WGS84  |  Meridiano central: 90°30'W
-   Falso Este: 500 000 m  |  Factor escala: 0.9998
-══════════════════════════════════════════════════════ */
-function latLonAGTM(lat, lon) {
-  if (!isFinite(lat) || !isFinite(lon)) return { GTM_X: null, GTM_Y: null };
-  // Parámetros WGS84
-  const a   = 6378137.0;
-  const f   = 1 / 298.257223563;
-  const e2  = 2*f - f*f;
-  const ep2 = e2 / (1 - e2);
-  // Parámetros GTM
-  const k0   = 0.9998;
-  const lon0 = -90.5 * Math.PI / 180;   // meridiano central 90°30'W
-  const E0   = 500000;
-  const N0   = 0;
-
-  const phi  = lat * Math.PI / 180;
-  const lam  = lon * Math.PI / 180;
-  const sp   = Math.sin(phi), cp = Math.cos(phi), tp = Math.tan(phi);
-  const N    = a / Math.sqrt(1 - e2 * sp * sp);
-  const T    = tp * tp;
-  const C    = ep2 * cp * cp;
-  const A    = cp * (lam - lon0);
-  // Arco meridional (phi0 = 0 → M0 = 0)
-  const M    = a * (
-    (1 - e2/4 - 3*e2*e2/64 - 5*e2*e2*e2/256)    * phi
-    - (3*e2/8 + 3*e2*e2/32 + 45*e2*e2*e2/1024)   * Math.sin(2*phi)
-    + (15*e2*e2/256 + 45*e2*e2*e2/1024)           * Math.sin(4*phi)
-    - (35*e2*e2*e2/3072)                          * Math.sin(6*phi)
-  );
-  const X = E0 + k0 * N * (
-    A + (1-T+C)*Math.pow(A,3)/6
-      + (5-18*T+T*T+72*C-58*ep2)*Math.pow(A,5)/120
-  );
-  const Y = N0 + k0 * (
-    M + N*tp*(
-      Math.pow(A,2)/2
-      + (5-T+9*C+4*C*C)*Math.pow(A,4)/24
-      + (61-58*T+T*T+600*C-330*ep2)*Math.pow(A,6)/720
-    )
-  );
-  return { GTM_X: Math.round(X*100)/100, GTM_Y: Math.round(Y*100)/100 };
-}
-
-function enriquecerConGTM(datos) {
-  return datos.map(r => {
-    const lat = parseFloat(String(r["Latitud"]  || "").replace(",", "."));
-    const lon = parseFloat(String(r["Longitud"] || "").replace(",", "."));
-    const gtm = (isFinite(lat) && isFinite(lon)) ? latLonAGTM(lat, lon) : { GTM_X: "", GTM_Y: "" };
-    return {
-      ...r,
-      "GTM_X (m)": gtm.GTM_X !== null ? gtm.GTM_X : "",
-      "GTM_Y (m)": gtm.GTM_Y !== null ? gtm.GTM_Y : ""
-    };
-  });
-}
-
+const PAL = ["#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660","#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"];
+const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MESES_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-const PALETTE  = ["#0ea5e9","#10b981","#f59e0b","#8b5cf6","#ef4444","#14b8a6","#f97316","#6366f1"];
 
-/* ══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
    UTILIDADES
-══════════════════════════════════════════════════════ */
-function slugify(s){return String(s||"").toLowerCase().trim().replace(/\s+/g,"_").replace(/[^\w\-]/g,"")}
-function escapeHtml(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function porcentaje(p,t){return t?Math.round(p*1000/t)/10:0}
-function redondear(n,d){if(!isFinite(n))return 0;const f=Math.pow(10,d);return Math.round(n*f)/f}
-function combinarFrases(arr){if(!arr.length)return"";if(arr.length===1)return arr[0];if(arr.length===2)return arr[0]+" y "+arr[1];return arr.slice(0,-1).join(", ")+" y "+arr[arr.length-1]}
-function nombreMes(m){return MESES_ES[m-1]||""}
+═══════════════════════════════════════════════════ */
+function escH(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function pct(p,t){return t?Math.round(p*1000/t)/10:0}
+function rnd(n,d){if(!isFinite(n))return 0;const f=Math.pow(10,d);return Math.round(n*f)/f}
+function cFrases(arr){if(!arr.length)return"";if(arr.length===1)return arr[0];if(arr.length===2)return arr[0]+" y "+arr[1];return arr.slice(0,-1).join(", ")+" y "+arr[arr.length-1]}
+function slug(s){return String(s||"").toLowerCase().trim().replace(/\s+/g,"_").replace(/[^\w\-]/g,"")}
+
+function canonUbic(v){const c=canonStr(v);if(c.includes("fuera"))return"fuera";if(c.includes("rumcla"))return"rumcla";return""}
+function canonIlegal(v){const c=canonStr(v);return(c==="si"||c==="sí")?"si":c==="no"?"no":""}
 
 function parseHora(s){
   if(!s)return null;
-  const str=s.toString().trim().replace(".",":");
-  const m=str.match(/(\d{1,2}):(\d{2})/);
+  const m=String(s).trim().replace(".","：").match(/(\d{1,2}):(\d{2})/);
   if(!m)return null;
   const h=+m[1],mi=+m[2];
-  if(h<0||h>23||mi<0||mi>59)return null;
-  return h*60+mi;
+  return(h<0||h>23||mi<0||mi>59)?null:h*60+mi;
 }
-function fmtHora(min){if(min===null||!isFinite(min))return"-";return String(Math.floor(min/60)).padStart(2,"0")+":"+String(min%60).padStart(2,"0")}
 function durHoras(ini,fin){
   const a=parseHora(ini),b=parseHora(fin);
   if(a===null||b===null)return null;
   let d=b-a;if(d<0)d+=1440;
   return(d>960||d<6)?null:d/60;
 }
+function fmtHora(min){if(min===null||!isFinite(min))return"–";return String(Math.floor(min/60)).padStart(2,"0")+":"+String(min%60).padStart(2,"0")}
 
-function canonUbic(v){const c=String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");if(c.includes("fuera"))return"fuera";if(c.includes("rumcla"))return"rumcla";return""}
-function canonIlegal(v){const c=String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");return(c==="si"||c==="sí")?"si":c==="no"?"no":""}
+// Parseo de fechas robusto
+function parseDate(s){
+  if(!s)return null;
+  const str=String(s).trim().split(" ")[0];
+  const sep=str.includes("/")?"/":str.includes("-")?"-":null;if(!sep)return null;
+  const p=str.split(sep);if(p.length<3)return null;
+  const a=+p[0],b=+p[1],cv=p[2].match(/\d{1,4}/);if(!cv)return null;
+  let c=+cv[0];if(c<100)c=c<=50?2000+c:1900+c;
+  if(p[0].length===4)return new Date(a,b-1,+p[2]);
+  if(a>12)return new Date(c,b-1,a);
+  if(b>12)return new Date(c,a-1,b);
+  return new Date(c,b-1,a);
+}
+function fmtDateDisplay(dt){
+  if(!dt||isNaN(dt))return"–";
+  return String(dt.getDate()).padStart(2,"0")+"/"+String(dt.getMonth()+1).padStart(2,"0")+"/"+dt.getFullYear();
+}
+function isoDate(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0")}
 
-/* ══════════════════════════════════════════════════════
-   FECHA ROBUSTA (de datos.html original)
-══════════════════════════════════════════════════════ */
-function detectarFormatoFecha(f){
-  if(!f)return null;const s=f.toString().trim();if(!s)return null;
-  const pf=s.split(" ")[0],sep=pf.includes("/")?"/":pf.includes("-")?"-":null;if(!sep)return null;
-  const p=pf.split(sep);if(p.length<3)return null;
-  const p1=p[0].trim(),p2=p[1].trim(),p3=p[2].trim();if(!p1||!p2||!p3)return null;
-  if(p1.length===4)return"YMD";
-  const a=parseInt(p1,10),b=parseInt(p2,10),ym=p3.match(/\d{2,4}/);
-  if(!isFinite(a)||!isFinite(b)||!ym)return null;
-  if(a>12&&b>=1&&b<=12)return"DMY";if(b>12&&a>=1&&a<=12)return"MDY";return null;
-}
-function construirDate(y,m,d){const dt=new Date(y,m-1,d);return(dt.getFullYear()===y&&dt.getMonth()+1===m&&dt.getDate()===d)?dt:null}
-function prepararHintsFechas(data){
-  const h=data.map(r=>detectarFormatoFecha(r["Fecha de patrullaje"]));
-  let last=null;for(let i=0;i<h.length;i++){if(!h[i])h[i]=last;else last=h[i];}
-  let next=null;for(let i=h.length-1;i>=0;i--){if(!h[i])h[i]=next;else next=h[i];}
-  data.forEach((r,i)=>r._dh=h[i]||null);
-}
-function extraerFechaCompleta(f,hint){
-  if(!f)return null;const s=f.toString().trim();if(!s)return null;
-  const pf=s.split(" ")[0],sep=pf.includes("/")?"/":pf.includes("-")?"-":null;if(!sep)return null;
-  const p=pf.split(sep);if(p.length<3)return null;
-  const p1=p[0].trim(),p2=p[1].trim(),p3=p[2].trim();
-  const a=parseInt(p1,10),b=parseInt(p2,10),ym=p3.match(/\d{1,4}/);if(!ym)return null;
-  let c=parseInt(ym[0],10);if(!isFinite(a)||!isFinite(b)||!isFinite(c))return null;
-  if(p1.length===4||hint==="YMD"){const dt=construirDate(a,b,c);return dt?{anio:a,mes:b,dia:c,_date:dt}:null}
-  if(c<100)c=c<=50?2000+c:1900+c;
-  if(a>12&&b>=1&&b<=12){const dt=construirDate(c,b,a);return dt?{anio:c,mes:b,dia:a,_date:dt}:null}
-  if(b>12&&a>=1&&a<=12){const dt=construirDate(c,a,b);return dt?{anio:c,mes:a,dia:b,_date:dt}:null}
-  const dMDY=construirDate(c,a,b),dDMY=construirDate(c,b,a);
-  if(hint==="MDY"&&dMDY)return{anio:c,mes:a,dia:b,_date:dMDY};
-  if(hint==="DMY"&&dDMY)return{anio:c,mes:b,dia:a,_date:dDMY};
-  if(dMDY)return{anio:c,mes:a,dia:b,_date:dMDY};if(dDMY)return{anio:c,mes:b,dia:a,_date:dDMY};return null;
-}
-function extraerAnioMes(f,hint){const i=extraerFechaCompleta(f,hint);return i?{anio:i.anio,mes:i.mes}:null}
-
-/* ══════════════════════════════════════════════════════
-   DOCUMENTOS
-══════════════════════════════════════════════════════ */
-const ESTILOS_INFORME=`<style>body{font-family:"Times New Roman",serif;font-size:10pt;line-height:1.4}.informe-contenido{font-family:"Times New Roman",serif;font-size:10pt}.informe-contenido h1{font-size:14pt;font-weight:bold;margin:0 0 8pt 0;text-align:center}.informe-contenido h2{font-size:12pt;font-weight:bold;margin:12pt 0 6pt 0}.informe-contenido p{margin:0 0 6pt 0;text-align:justify}.informe-seccion{page-break-inside:avoid;margin-bottom:8pt}</style>`;
-
-function crearDocumentoWord(nombre,html){
-  const src="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+ESTILOS_INFORME+"</head><body>"+html+"</body></html>";
-  const blob=new Blob(["\ufeff",src],{type:"application/msword"});
-  const url=URL.createObjectURL(blob),a=document.createElement("a");
-  a.href=url;a.download=nombre.endsWith(".doc")?nombre:nombre+".doc";
-  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-}
-function crearDocumentoPDF(nombre,html){
-  if(typeof html2pdf==="undefined"){alert("No se pudo cargar html2pdf.");return}
-  const div=document.createElement("div");div.style.padding="10px";div.innerHTML=ESTILOS_INFORME+html;document.body.appendChild(div);
-  html2pdf().set({margin:10,filename:nombre.endsWith(".pdf")?nombre:nombre+".pdf",image:{type:"jpeg",quality:.98},html2canvas:{scale:2},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}})
-    .from(div).save().then(()=>document.body.removeChild(div)).catch(()=>document.body.removeChild(div));
+// Determina el período operativo (corte 25): para una fecha dada, retorna "YYYY-MM" del período
+// Un patrullaje del 26/mar al 25/abr pertenece al período "abr"
+function periodoOperativo(dt){
+  if(!dt||isNaN(dt))return null;
+  const d=dt.getDate();
+  const m=dt.getMonth(); // 0-based
+  const y=dt.getFullYear();
+  if(d>=26){
+    // Pertenece al período del siguiente mes
+    const nm=m===11?0:m+1;
+    const ny=m===11?y+1:y;
+    return ny+"-"+String(nm+1).padStart(2,"0");
+  }else{
+    return y+"-"+String(m+1).padStart(2,"0");
+  }
 }
 
-/* ══════════════════════════════════════════════════════
-   INFORME MENSUAL (lógica completa de datos.html)
-══════════════════════════════════════════════════════ */
-function inicializarSelectorMeses(){
-  const sel=document.getElementById("monthly-month-select");
-  const btnW=document.getElementById("generate-monthly-report-word");
-  const btnP=document.getElementById("generate-monthly-report-pdf");
-  mapaMeses=new Map();
-  datosPatrullajes.forEach(r=>{
-    const i=extraerAnioMes(r["Fecha de patrullaje"],r._dh);if(!i)return;
-    const k=i.anio+"-"+String(i.mes).padStart(2,"0");if(!mapaMeses.has(k))mapaMeses.set(k,i);
-  });
-  const claves=[...mapaMeses.keys()].sort();
-  sel.innerHTML="";
-  if(!claves.length){sel.innerHTML="<option value='' disabled selected>No hay meses</option>";btnW.disabled=btnP.disabled=true;return}
-  sel.innerHTML="<option value='' disabled selected>Seleccione un mes…</option>";
-  claves.forEach(k=>{
-    const i=mapaMeses.get(k);const nm=nombreMes(i.mes);
-    const o=document.createElement("option");o.value=k;o.textContent=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+i.anio;sel.appendChild(o);
-  });
-  sel.addEventListener("change",()=>{const h=!!sel.value;btnW.disabled=btnP.disabled=!h});
+/* ═══════════════════════════════════════════════════
+   GTM PROYECCIÓN
+═══════════════════════════════════════════════════ */
+function latLonAGTM(lat,lon){
+  if(!isFinite(lat)||!isFinite(lon))return{GTM_X:null,GTM_Y:null};
+  const a=6378137,f=1/298.257223563,e2=2*f-f*f,ep2=e2/(1-e2);
+  const k0=0.9998,lon0=-90.5*Math.PI/180,E0=500000,N0=0;
+  const phi=lat*Math.PI/180,lam=lon*Math.PI/180;
+  const sp=Math.sin(phi),cp=Math.cos(phi),tp=Math.tan(phi);
+  const N=a/Math.sqrt(1-e2*sp*sp),T=tp*tp,C=ep2*cp*cp,A=cp*(lam-lon0);
+  const M=a*((1-e2/4-3*e2*e2/64-5*e2*e2*e2/256)*phi-(3*e2/8+3*e2*e2/32+45*e2*e2*e2/1024)*Math.sin(2*phi)+(15*e2*e2/256+45*e2*e2*e2/1024)*Math.sin(4*phi)-(35*e2*e2*e2/3072)*Math.sin(6*phi));
+  const X=E0+k0*N*(A+(1-T+C)*Math.pow(A,3)/6+(5-18*T+T*T+72*C-58*ep2)*Math.pow(A,5)/120);
+  const Y=N0+k0*(M+N*tp*(Math.pow(A,2)/2+(5-T+9*C+4*C*C)*Math.pow(A,4)/24+(61-58*T+T*T+600*C-330*ep2)*Math.pow(A,6)/720));
+  return{GTM_X:Math.round(X*100)/100,GTM_Y:Math.round(Y*100)/100};
 }
 
-function generarInformeMensual(formato){
-  if(!datosPatrullajes.length){alert("No hay datos cargados.");return}
-  const sel=document.getElementById("monthly-month-select");
-  if(!sel.value){alert("Seleccione un mes.");return}
-  const info=mapaMeses.get(sel.value);if(!info){alert("Mes no encontrado.");return}
-  const {anio:anioSel,mes:mesSel}=info;
-  const nmMes=nombreMes(mesSel);const etiqueta=nmMes.charAt(0).toUpperCase()+nmMes.slice(1)+" "+anioSel;
-  const regs=datosPatrullajes.filter(r=>{const i=extraerAnioMes(r["Fecha de patrullaje"],r._dh);return i&&i.anio===anioSel&&i.mes===mesSel});
-  if(!regs.length){alert("No hay registros para "+etiqueta);return}
-  const total=regs.length;
-  const muniSet=new Set(),guarSet=new Set(),cMuni={},cGuar={};
-  let iSi=0,iNo=0,instSi=0,instNo=0,aInt=0,aExt=0,aSin=0;
-  const iMuni={},cInst={},durs=[],dInt=[],dExt=[];
-  let rcH=0,rSI=0,rSF=0,totH=0,minHI=null,maxHF=null;
-  const cFecha={},semanas=[0,0,0,0];let coordOk=0,coordBad=0;
-  regs.forEach(r=>{
-    const mu=(r["Municipio"]||"").toString().trim();if(mu){muniSet.add(mu);cMuni[mu]=(cMuni[mu]||0)+1}
-    const gu=(r["Guarda recursos responsable"]||"").toString().trim();if(gu){guarSet.add(gu);cGuar[gu]=(cGuar[gu]||0)+1}
-    const cu=canonUbic(r["Ubicacion"]);if(cu==="rumcla")aInt++;else if(cu==="fuera")aExt++;else aSin++;
-    const ci=canonIlegal(r["Actividad ilegal observada"]);if(ci==="si"){iSi++;if(mu)iMuni[mu]=(iMuni[mu]||0)+1}else if(ci==="no")iNo++;
-    const mIraw=(r["Hay mas instituciones involucradas en el patrullaje"]||"").toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-    if(mIraw==="si"||mIraw==="sí"){instSi++;[...[(r["Instituciones involucradas"]||""),(r["Otra (especifique)"]||"")]].flatMap(x=>x.split(/[,;]/)).map(x=>x.trim()).filter(Boolean).forEach(x=>cInst[x]=(cInst[x]||0)+1)}else if(mIraw==="no")instNo++;
-    const fi=extraerFechaCompleta(r["Fecha de patrullaje"],r._dh);
-    if(fi){const dk=fi.anio+"-"+String(fi.mes).padStart(2,"0")+"-"+String(fi.dia).padStart(2,"0");cFecha[dk]=(cFecha[dk]||0)+1;const d=fi.dia;semanas[d<=7?0:d<=14?1:d<=21?2:3]++;}
-    const hI=parseHora(r["Hora de Inicio del patrullaje"]),hF=parseHora(r["Hora de finalizacion de patrullaje"]);
-    if(hI!==null&&hF!==null){rcH++;let df=hF-hI;if(df<0)df+=1440;const hr=df/60;durs.push(hr);totH+=hr;if(minHI===null||hI<minHI)minHI=hI;if(maxHF===null||hF>maxHF)maxHF=hF;if(cu==="rumcla")dInt.push(hr);else if(cu==="fuera")dExt.push(hr)}else{if(hI===null&&hF!==null)rSI++;if(hI!==null&&hF===null)rSF++;}
-    const x=Number(r["X"]),y=Number(r["Y"]);(isFinite(x)&&isFinite(y))?coordOk++:coordBad++;
-  });
-  const muOrd=Object.entries(cMuni).sort((a,b)=>b[1]-a[1]);
-  const guOrd=Object.entries(cGuar).sort((a,b)=>b[1]-a[1]);
-  const fOrd=Object.entries(cFecha).sort((a,b)=>b[1]-a[1]);
-  const diasAct=Object.keys(cFecha).length;
-  const diasTot=new Date(anioSel,mesSel,0).getDate();
-  const promDia=diasTot?total/diasTot:0,promDiaAct=diasAct?total/diasAct:0;
-  const diaPico=fOrd[0]?fOrd[0][0]:null,valPico=fOrd[0]?fOrd[0][1]:0;
-  let prom=0,desv=0;
-  if(durs.length){prom=durs.reduce((a,b)=>a+b,0)/durs.length;const vr=durs.reduce((a,v)=>a+(v-prom)**2,0)/durs.length;desv=Math.sqrt(vr)}
-  const pavg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
-  function fBon(k){if(!k)return"-";const[a,m,d]=k.split("-");return(+d)+" de "+nombreMes(+m)+" de "+a}
-  const topMu=muOrd.slice(0,6),otrMu=muOrd.slice(6);
-  const topIn=Object.entries(iMuni).sort((a,b)=>b[1]-a[1]).slice(0,4);
-  const topInst=Object.entries(cInst).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  let h="<div class='informe-contenido'>";
-  h+="<div class='informe-seccion'><h1>Informe mensual de patrullajes de control y vigilancia</h1><p style='text-align:center'>Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><p style='text-align:center'><strong>Mes analizado: "+escapeHtml(etiqueta)+"</strong></p><hr/></div>";
-  h+="<div class='informe-seccion'><h2>1. Cantidad total y distribución general</h2><p>Durante <strong>"+escapeHtml(etiqueta)+"</strong> el cuerpo operativo registró <strong>"+total+"</strong> patrullajes en la región Altiplano Central, desarrollados dentro de la RUMCLA y en áreas externas de influencia.</p>";
-  if(aInt+aExt+aSin>0)h+="<p><strong>"+aInt+"</strong> patrullajes ("+porcentaje(aInt,total)+"%) se realizaron dentro de la RUMCLA, <strong>"+aExt+"</strong> ("+porcentaje(aExt,total)+"%) fuera"+(aSin?", y <strong>"+aSin+"</strong> ("+porcentaje(aSin,total)+"%) sin clasificación territorial.":".")+	"</p>";
-  if(muniSet.size&&guarSet.size)h+="<p>Las operaciones cubrieron <strong>"+muniSet.size+"</strong> municipio(s) con la participación de <strong>"+guarSet.size+"</strong> guarda recursos responsables.</p>";
-  h+="</div>";
-  h+="<div class='informe-seccion'><h2>2. Distribución temporal y ritmo operativo</h2><p>Se registró actividad en <strong>"+diasAct+"</strong> día(s), con <strong>"+(diasTot-diasAct)+"</strong> día(s) sin actividad. Promedio: <strong>"+redondear(promDia,2)+"</strong> patrullajes/día calendario y <strong>"+redondear(promDiaAct,2)+"</strong> patrullajes/día activo.</p>";
-  h+="<p>Distribución semanal: "+["primera","segunda","tercera","cuarta"].map((t,i)=>"<strong>"+t+" semana</strong>: "+semanas[i]+" patrullaje(s)").join(", ")+".</p>";
-  if(diaPico)h+="<p>Día pico: <strong>"+fBon(diaPico)+"</strong> con <strong>"+valPico+"</strong> patrullajes.</p>";
-  if(minHI!==null&&maxHF!==null)h+="<p>Horario general: actividades entre las <strong>"+fmtHora(minHI)+"</strong> y las <strong>"+fmtHora(maxHF)+"</strong>.</p>";
-  h+="</div>";
-  h+="<div class='informe-seccion'><h2>3. Municipios con mayor actividad</h2>";
-  if(topMu.length)h+="<p>Municipios principales: "+combinarFrases(topMu.map(([m,c])=>"<strong>"+escapeHtml(m)+"</strong> ("+c+", "+porcentaje(c,total)+"%)"))+". "+(otrMu.length?"Presencia adicional en: "+combinarFrases(otrMu.map(([m])=>"<strong>"+escapeHtml(m)+"</strong>"))+".":" ")+"</p>";
-  h+="</div>";
-  h+="<div class='informe-seccion'><h2>4. Duración y eficiencia operativa</h2><p>Registros con horas completas: <strong>"+rcH+"</strong>; sin hora inicio: <strong>"+rSI+"</strong>; sin hora fin: <strong>"+rSF+"</strong>.</p>";
-  if(durs.length)h+="<p>Duración promedio: <strong>"+redondear(prom,2)+"h</strong> (σ=<strong>"+redondear(desv,2)+"h</strong>). Esfuerzo acumulado: <strong>"+redondear(totH,1)+"h</strong> efectivas.</p>"+(dInt.length||dExt.length?"<p>Promedio interno RUMCLA: <strong>"+redondear(pavg(dInt),2)+"h</strong> · Externo: <strong>"+redondear(pavg(dExt),2)+"h</strong>.</p>":"");
-  h+="</div>";
-  h+="<div class='informe-seccion'><h2>5. Incidencias ambientales</h2>";
-  if(!iSi&&!iNo)h+="<p>Sin información suficiente sobre actividades ilegales.</p>";
-  else{h+="<p><strong>"+iSi+"</strong> patrullajes ("+porcentaje(iSi,total)+"%) reportaron actividad ilegal; <strong>"+iNo+"</strong> ("+porcentaje(iNo,total)+"%) no observaron incidentes.</p>";if(topIn.length)h+="<p>Municipios con más incidencias: "+combinarFrases(topIn.map(([m,c])=>"<strong>"+escapeHtml(m)+"</strong> ("+c+")"))+". </p>"}
-  h+="</div>";
-  h+="<div class='informe-seccion'><h2>6. Participación institucional</h2>";
-  if(!instSi&&!instNo)h+="<p>Sin datos de participación institucional.</p>";
-  else{h+="<p><strong>"+instSi+"</strong> patrullajes ("+porcentaje(instSi,total)+"%) con participación de otras instituciones; <strong>"+instNo+"</strong> ("+porcentaje(instNo,total)+"%) solo CONAP.</p>";if(topInst.length)h+="<p>Instituciones más frecuentes: "+combinarFrases(topInst.map(([i,c])=>"<strong>"+escapeHtml(i)+"</strong> ("+c+")"))+". </p>"}
-  h+="</div>";
-  h+="<div class='informe-seccion'><h2>7. Calidad de los registros</h2><p>Registros con coordenadas válidas: <strong>"+coordOk+"</strong>"+(coordBad?"; sin coordenadas: <strong>"+coordBad+"</strong>":"")+"."+(aSin?" Sin clasificación territorial en <strong>"+aSin+"</strong> registro(s).":"")+"</p></div>";
-  h+="<div class='informe-seccion'><h2>8. Notas metodológicas</h2><p>Informe generado automáticamente desde el formulario AC192 del sistema de monitoreo CONAP-DRAC Altiplano Central. Los indicadores se calculan exclusivamente con los registros del mes seleccionado, depurados de entradas vacías o inconsistentes.</p></div>";
-  h+="</div>";
-  const base="informe_mensual_patrullajes_"+anioSel+"_"+String(mesSel).padStart(2,"0");
-  formato==="pdf"?crearDocumentoPDF(base+".pdf",h):crearDocumentoWord(base+".doc",h);
+/* ═══════════════════════════════════════════════════
+   CARGA Y NORMALIZACIÓN
+═══════════════════════════════════════════════════ */
+function procesarDatos(rawData){
+  return rawData
+    .map(r=>{
+      const guarda=normGuarda(r["Guarda recursos responsable"]);
+      if(!guarda)return null;
+      const dt=parseDate(r["Fecha de patrullaje"]);
+      const lat=parseFloat(String(r["Latitud"]||"").replace(",","."));
+      const lon=parseFloat(String(r["Longitud"]||"").replace(",","."));
+      const gtm=(isFinite(lat)&&isFinite(lon))?latLonAGTM(lat,lon):{GTM_X:"",GTM_Y:""};
+      const km=parseFloat(r["Kilometros recorridos"]||"");
+      return{
+        ...r,
+        "Guarda recursos responsable": guarda,
+        "__dt": dt,
+        "__dur": durHoras(r["Hora de Inicio del patrullaje"],r["Hora de finalizacion de patrullaje"]),
+        "__km": isNaN(km)?null:km,
+        "__cu": canonUbic(r["Ubicacion"]),
+        "__ci": canonIlegal(r["Actividad ilegal observada"]),
+        "__periodo": periodoOperativo(dt),
+        "GTM_X (m)": gtm.GTM_X!==null?gtm.GTM_X:"",
+        "GTM_Y (m)": gtm.GTM_Y!==null?gtm.GTM_Y:"",
+      };
+    })
+    .filter(Boolean);
 }
 
-/* ══════════════════════════════════════════════════════
-   INFORME POR REGISTRO
-══════════════════════════════════════════════════════ */
-function generarInformeRegistro(formato){
-  if(!tablaPatrullajes){alert("Tabla no lista.");return}
-  const sel=tablaPatrullajes.getSelectedData();
-  if(!sel||!sel.length){alert("Selecciona una fila en la tabla.");return}
-  const r=sel[0];
-  const gu=r["Guarda recursos responsable"]||"",mu=r["Municipio"]||"",fe=r["Fecha de patrullaje"]||"";
-  const hI=r["Hora de Inicio del patrullaje"]||"",hF=r["Hora de finalizacion de patrullaje"]||"";
-  const reg=r["Region"]||"",ub=r["Ubicacion"]||"",ap=r["Area protegida"]||"",tp=r["Tipo de patrullaje"]||"";
-  const hayInst=(r["Hay mas instituciones involucradas en el patrullaje"]||"").toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  const inst=r["Instituciones involucradas"]||"",otra=r["Otra (especifique)"]||"",ai=r["Actividad ilegal observada"]||"";
-  const fc=r["Fecha de creacion de registro"]||"",fm=r["Fecha de modificacion de registro"]||"";
-  const lat=r["Latitud"]||"",lon=r["Longitud"]||"",gtmX=r["GTM_X (m)"]||"",gtmY=r["GTM_Y (m)"]||"";
-  const fec=fe.toString().includes(" ")?fe.toString().split(" ")[0]:fe;
-  let tInst=(hayInst==="si"||hayInst==="sí")?"En este patrullaje participaron además: "+(inst||"(sin detalle)")+"."+(otra?" Otras: "+otra+".":" "):"No se registró participación de otras instituciones.";
-  const ci=canonIlegal(ai);let tIleg=ci==="si"?"Se registró actividad ilegal: "+ai+".":"No se registró actividad ilegal durante el patrullaje.";
-  let h="<div class='informe-contenido'>";
-  h+="<div class='informe-seccion'><h1>Informe de patrullaje de control y vigilancia</h1><p style='text-align:center'>Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><hr/></div>";
-  h+="<div class='informe-seccion'><h2>1. Datos de identificación</h2><p><strong>Guarda recursos:</strong> "+escapeHtml(gu||"(no reportado)")+"</p><p><strong>Fecha:</strong> "+escapeHtml(fec||"(no reportada)")+"</p><p><strong>Municipio:</strong> "+escapeHtml(mu||"(no reportado)")+"</p><p><strong>Región:</strong> "+escapeHtml(reg||"-")+"</p><p><strong>Ubicación:</strong> "+escapeHtml(ub||"-")+"</p><p><strong>Área protegida:</strong> "+escapeHtml(ap||"-")+"</p><p><strong>Tipo de patrullaje:</strong> "+escapeHtml(tp||"-")+"</p><p><strong>Horario:</strong> "+escapeHtml(hI||"(no reg)")+" a "+escapeHtml(hF||"(no reg)")+"</p></div>";
-  h+="<div class='informe-seccion'><h2>2. Descripción</h2><p>En fecha "+escapeHtml(fec||"(sin fecha)")+" el guarda recursos "+escapeHtml(gu||"(sin nombre)")+" realizó un patrullaje de tipo "+escapeHtml(tp||"(sin tipo)")+" en el municipio de "+escapeHtml(mu||"(sin municipio)")+" ("+escapeHtml(reg||"-")+"), específicamente en "+escapeHtml(ub||"-")+" dentro de "+escapeHtml(ap||"(sin área protegida)")+". El patrullaje inició a las "+escapeHtml(hI||"(no registrada)")+" y finalizó a las "+escapeHtml(hF||"(no registrada)")+".</p></div>";
-  h+="<div class='informe-seccion'><h2>3. Participación institucional</h2><p>"+escapeHtml(tInst)+"</p></div>";
-  h+="<div class='informe-seccion'><h2>4. Actividad ilegal observada</h2><p>"+escapeHtml(tIleg)+"</p></div>";
-  h+="<div class='informe-seccion'><h2>5. Metadatos del registro</h2><p><strong>Fecha de creación:</strong> "+escapeHtml(fc||"-")+"</p><p><strong>Última modificación:</strong> "+escapeHtml(fm||"-")+"</p>"+(lat||lon?"<p><strong>Coordenadas geográficas (WGS84):</strong> Latitud "+escapeHtml(lat)+" · Longitud "+escapeHtml(lon)+"</p>":"")+(gtmX||gtmY?"<p><strong>Coordenadas proyectadas (GTM · IGN-01/99):</strong> X = "+escapeHtml(String(gtmX))+" m · Y = "+escapeHtml(String(gtmY))+" m</p>":"")+"</div>";
-  h+="<div class='informe-seccion'><h2>6. Firmas</h2><p>______________________________<br/>Guarda recursos / Responsable</p><p>______________________________<br/>Supervisión</p></div>";
-  h+="</div>";
-  const base="informe_patrullaje_"+slugify(gu)+"_"+slugify(fec);
-  formato==="pdf"?crearDocumentoPDF(base+".pdf",h):crearDocumentoWord(base+".doc",h);
-}
-
-/* ══════════════════════════════════════════════════════
-   ANÁLISIS POR GUARDARECURSO
-══════════════════════════════════════════════════════ */
-const GC={};
-function mkGChart(id,cfg){if(GC[id])GC[id].destroy();GC[id]=new Chart(document.getElementById(id),cfg)}
-Chart.defaults.font.family="'DM Sans',sans-serif";Chart.defaults.color="#6b7280";
-const TT={backgroundColor:"rgba(10,61,43,.92)",titleFont:{size:13,weight:"600"},bodyFont:{size:12},padding:10,cornerRadius:8};
-
-function initGuardaSelector(){
-  const guardas=[...new Set(datosPatrullajes.map(r=>(r["Guarda recursos responsable"]||"").toString().trim()).filter(Boolean))].sort();
-  const sel=document.getElementById("sel-guarda");
-  sel.innerHTML="<option value=''>Selecciona un guardarecurso…</option>";
-  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o)});
-  sel.addEventListener("change",()=>{
-    const g=sel.value;
-    document.getElementById("btn-informe-guarda").disabled=!g;
-    if(g)renderGuarda(g);else clearGuarda();
-  });
-}
-
-function clearGuarda(){
-  document.getElementById("guarda-kpis").style.display="none";
-  document.getElementById("guarda-charts").style.display="none";
-  document.getElementById("guarda-tabla-wrap").style.display="none";
-  document.getElementById("guarda-empty").style.display="";
-  document.getElementById("estado-analisis").textContent="Selecciona un guardarecurso para ver su perfil de actividad";
-}
-
-function renderGuarda(nombre){
-  const regs=datosPatrullajes.filter(r=>(r["Guarda recursos responsable"]||"").toString().trim()===nombre);
-  if(!regs.length){clearGuarda();return}
-  document.getElementById("guarda-empty").style.display="none";
-  document.getElementById("estado-analisis").textContent=`Mostrando perfil de ${nombre} · ${regs.length} registros`;
-
-  // KPIs
-  const munis=new Set(regs.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
-  const durs=regs.map(r=>durHoras(r["Hora de Inicio del patrullaje"],r["Hora de finalizacion de patrullaje"])).filter(v=>v!==null);
-  const ilegales=regs.filter(r=>canonIlegal(r["Actividad ilegal observada"])==="si").length;
-  document.getElementById("g-total").textContent=regs.length;
-  document.getElementById("g-munis").textContent=munis.size;
-  document.getElementById("g-dur").textContent=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1)+"h":"–";
-  document.getElementById("g-ileg").textContent=ilegales;
-  document.getElementById("guarda-kpis").style.display="grid";
-
-  // Gráfica por mes
-  const mMes=new Map();
-  regs.forEach(r=>{const i=extraerAnioMes(r["Fecha de patrullaje"],r._dh);if(!i)return;const k=i.anio+"-"+String(i.mes).padStart(2,"0");mMes.set(k,(mMes.get(k)||0)+1)});
-  const mesKeys=[...mMes.keys()].sort();
-  const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-  const mShort=k=>{const[y,m]=k.split("-");return MESES_S[+m-1]+"'"+y.slice(2)};
-  mkGChart("g-c-mes",{type:"bar",data:{labels:mesKeys.map(mShort),datasets:[{label:"Patrullajes",data:mesKeys.map(k=>mMes.get(k)),backgroundColor:"rgba(14,165,233,.75)",borderColor:"#0ea5e9",borderWidth:1,borderRadius:5,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
-
-  // Gráfica por municipio
-  const mMuni=new Map();
-  regs.forEach(r=>{const m=(r["Municipio"]||"").trim();if(m)mMuni.set(m,(mMuni.get(m)||0)+1)});
-  const muniTop=[...mMuni.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
-  mkGChart("g-c-muni",{type:"bar",data:{labels:muniTop.map(([m])=>m),datasets:[{label:"Patrullajes",data:muniTop.map(([,v])=>v),backgroundColor:PALETTE.slice(0,muniTop.length),borderWidth:0,borderRadius:5,borderSkipped:false}]},
-    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
-
-  document.getElementById("guarda-charts").style.display="grid";
-
-  // Tabla por municipio
-  const tbody=document.getElementById("guarda-tbody");tbody.innerHTML="";
-  const allMunis=[...mMuni.entries()].sort((a,b)=>b[1]-a[1]);
-  allMunis.forEach(([mu,cnt])=>{
-    const sub=regs.filter(r=>(r["Municipio"]||"").trim()===mu);
-    const si=sub.filter(r=>canonIlegal(r["Actividad ilegal observada"])==="si").length;
-    const pct=porcentaje(si,cnt);
-    const dMu=sub.map(r=>durHoras(r["Hora de Inicio del patrullaje"],r["Hora de finalizacion de patrullaje"])).filter(v=>v!==null);
-    const durMedia=dMu.length?(dMu.reduce((a,b)=>a+b,0)/dMu.length).toFixed(1)+"h":"–";
-    const rumcla=sub.filter(r=>canonUbic(r["Ubicacion"])==="rumcla").length;
-    const fuera=sub.filter(r=>canonUbic(r["Ubicacion"])==="fuera").length;
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td><strong>${escapeHtml(mu)}</strong></td><td>${cnt}</td><td>${si>0?`<span class="badge badge-rojo">${si}</span>`:`<span class="badge badge-verde">0</span>`}</td><td>${pct}%</td><td>${durMedia}</td><td><span class="badge badge-azul">${rumcla}R/${fuera}F</span></td>`;
-    tbody.appendChild(tr);
-  });
-  document.getElementById("guarda-tabla-wrap").style.display="";
-}
-
-function generarInformeGuarda(){
-  const nombre=document.getElementById("sel-guarda").value;if(!nombre)return;
-  const regs=datosPatrullajes.filter(r=>(r["Guarda recursos responsable"]||"").toString().trim()===nombre);
-  if(!regs.length){alert("Sin registros para "+nombre);return}
-  const durs=regs.map(r=>durHoras(r["Hora de Inicio del patrullaje"],r["Hora de finalizacion de patrullaje"])).filter(v=>v!==null);
-  const prom=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:null;
-  const munis=new Set(regs.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
-  const ileg=regs.filter(r=>canonIlegal(r["Actividad ilegal observada"])==="si").length;
-  const mMuni=new Map();regs.forEach(r=>{const m=(r["Municipio"]||"").trim();if(m)mMuni.set(m,(mMuni.get(m)||0)+1)});
-  const topMu=[...mMuni.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
-  let h="<div class='informe-contenido'>";
-  h+="<div class='informe-seccion'><h1>Perfil de actividad del guardarecurso</h1><p style='text-align:center'>Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><p style='text-align:center'><strong>"+escapeHtml(nombre)+"</strong></p><hr/></div>";
-  h+="<div class='informe-seccion'><h2>Resumen de actividad</h2><p><strong>Total de patrullajes:</strong> "+regs.length+"</p><p><strong>Municipios cubiertos:</strong> "+munis.size+"</p>"+(prom!==null?"<p><strong>Duración promedio:</strong> "+redondear(prom,2)+"h por patrullaje</p>":"")+"<p><strong>Incidentes reportados:</strong> "+ileg+" ("+porcentaje(ileg,regs.length)+"%)</p></div>";
-  h+="<div class='informe-seccion'><h2>Municipios con mayor actividad</h2><p>"+combinarFrases(topMu.map(([m,c])=>"<strong>"+escapeHtml(m)+"</strong> ("+c+" patrullajes)"))+". </p></div>";
-  h+="<div class='informe-seccion'><h2>Nota metodológica</h2><p>Informe generado automáticamente desde el sistema de monitoreo AC192 de CONAP-DRAC Altiplano Central.</p></div></div>";
-  crearDocumentoWord("perfil_guardarecurso_"+slugify(nombre)+".doc",h);
-}
-
-/* ══════════════════════════════════════════════════════
-   TABS INTERNOS
-══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════ */
 document.querySelectorAll(".inner-tab").forEach(tab=>{
   tab.addEventListener("click",()=>{
     document.querySelectorAll(".inner-tab").forEach(t=>t.classList.remove("active"));
@@ -709,41 +655,429 @@ document.querySelectorAll(".inner-tab").forEach(tab=>{
   });
 });
 
-/* ══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════
+   HERRAMIENTA DE VERIFICACIÓN
+═══════════════════════════════════════════════════ */
+function initVcSelects(){
+  const guardas=[...new Set(DATOS.map(r=>r["Guarda recursos responsable"]).filter(Boolean))].sort();
+  const sel=document.getElementById("vc-guarda");
+  sel.innerHTML='<option value="">Todos los guardarecursos</option>';
+  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o);});
+}
+
+function sugerirPeriodo(){
+  // Sugerir el período del corte más reciente: el 25 del mes pasado al 25 del mes actual
+  const hoy=new Date();
+  const hasta=new Date(hoy.getFullYear(),hoy.getMonth(),25);
+  const desde=new Date(hoy.getFullYear(),hoy.getMonth()-1,26);
+  document.getElementById("vc-desde").value=isoDate(desde);
+  document.getElementById("vc-hasta").value=isoDate(hasta);
+}
+
+function ejecutarVerificacion(){
+  const desdeStr=document.getElementById("vc-desde").value;
+  const hastaStr=document.getElementById("vc-hasta").value;
+  const guardaFiltro=document.getElementById("vc-guarda").value;
+  const meta=parseInt(document.getElementById("vc-meta").value)||0;
+
+  if(!desdeStr||!hastaStr){alert("Defina el período completo (desde y hasta).");return;}
+
+  const desde=new Date(desdeStr+"T00:00:00");
+  const hasta=new Date(hastaStr+"T23:59:59");
+
+  const enPeriodo=DATOS.filter(r=>{
+    if(!r.__dt||isNaN(r.__dt))return false;
+    if(r.__dt<desde||r.__dt>hasta)return false;
+    if(guardaFiltro&&r["Guarda recursos responsable"]!==guardaFiltro)return false;
+    return true;
+  });
+
+  // Mostrar período
+  document.getElementById("vc-periodo-tag").style.display="";
+  document.getElementById("vc-periodo-label").textContent=
+    `Período: ${fmtDateDisplay(desde)} al ${fmtDateDisplay(hasta)}${guardaFiltro?" · "+guardaFiltro:""}`;
+
+  // KPIs globales
+  const guardas=[...new Set(enPeriodo.map(r=>r["Guarda recursos responsable"]))];
+  const totalKm=enPeriodo.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+
+  document.getElementById("vc-total").textContent=enPeriodo.length.toLocaleString("es");
+  document.getElementById("vc-guardas").textContent=guardas.length;
+  document.getElementById("vc-km").textContent=totalKm>0?totalKm.toLocaleString("es",{maximumFractionDigits:0})+"":"–";
+  document.getElementById("vc-meta-display").textContent=meta>0?meta+" por guarda":"Sin meta";
+
+  // Cumplimiento general
+  let cumplePct="–";
+  if(meta>0&&guardas.length){
+    const cuentas=guardas.map(g=>enPeriodo.filter(r=>r["Guarda recursos responsable"]===g).length);
+    const cumplen=cuentas.filter(c=>c>=meta).length;
+    cumplePct=Math.round(cumplen/guardas.length*100)+"%";
+  }
+  document.getElementById("vc-pct").textContent=cumplePct;
+  document.getElementById("vc-resumen").style.display="grid";
+
+  // Mostrar/ocultar columnas de meta
+  document.getElementById("th-cumplimiento").style.display=meta>0?"":"none";
+  document.getElementById("th-avance").style.display=meta>0?"":"none";
+
+  // Tabla detalle
+  const tbody=document.getElementById("vc-tbody");tbody.innerHTML="";
+  const allGuardas=guardaFiltro?[guardaFiltro]:
+    [...new Set(DATOS.map(r=>r["Guarda recursos responsable"]).filter(Boolean))].sort();
+
+  const filas=[];
+  allGuardas.forEach(g=>{
+    const sub=enPeriodo.filter(r=>r["Guarda recursos responsable"]===g);
+    const cnt=sub.length;
+    const km=sub.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+    const munis=new Set(sub.map(r=>(r["Municipio"]||"").trim()).filter(Boolean)).size;
+    const ileg=sub.filter(r=>r.__ci==="si").length;
+    const durs=sub.map(r=>r.__dur).filter(v=>v!==null);
+    const durMedia=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1)+"h":"–";
+    const rumcla=sub.filter(r=>r.__cu==="rumcla").length;
+    filas.push({g,cnt,km,munis,ileg,durMedia,rumcla,total:sub.length});
+  });
+
+  // Ordenar por cantidad desc
+  filas.sort((a,b)=>b.cnt-a.cnt);
+
+  filas.forEach(({g,cnt,km,munis,ileg,durMedia,rumcla})=>{
+    const tr=document.createElement("tr");
+    let cumpleCel="";
+    let avanceCel="";
+    if(meta>0){
+      const cumple=cnt>=meta;
+      const pctAvance=Math.min(Math.round(cnt/meta*100),100);
+      const colorProg=pctAvance>=100?"prog-fill-verde":pctAvance>=60?"prog-fill-amarillo":"prog-fill-rojo";
+      const badgeClass=cumple?"badge-verde":cnt>0?"badge-amarillo":"badge-rojo";
+      const badgeLabel=cumple?"Cumplido":cnt>0?"Parcial":"Sin registro";
+      cumpleCel=`<td><span class="badge ${badgeClass}">${badgeLabel} (${cnt}/${meta})</span></td>`;
+      avanceCel=`<td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar-fill ${colorProg}" style="width:${pctAvance}%"></div></div><span class="prog-num">${pctAvance}%</span></div></td>`;
+    }
+    const kmDisplay=km>0?km.toLocaleString("es",{maximumFractionDigits:1})+" km":"–";
+    tr.innerHTML=`
+      <td><strong>${escH(g)}</strong></td>
+      <td><span class="badge ${cnt>0?"badge-azul":"badge-gris"}">${cnt}</span></td>
+      <td style="font-family:monospace;font-size:12px">${kmDisplay}</td>
+      <td>${munis}</td>
+      <td>${ileg>0?`<span class="badge badge-rojo">${ileg}</span>`:`<span class="badge badge-verde">0</span>`}</td>
+      <td>${durMedia}</td>
+      <td><span class="badge badge-gris">${rumcla}R / ${cnt-rumcla>0?cnt-rumcla:0}F</span></td>
+      ${cumpleCel}${avanceCel}
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("vc-tabla-wrap").style.display="";
+  document.getElementById("vc-empty").style.display="none";
+
+  // Exportar
+  document.getElementById("vc-export-csv").onclick=()=>exportarVerificacionCSV(filas,desde,hasta,meta);
+  document.getElementById("vc-export-xlsx").onclick=()=>exportarVerificacionXLSX(filas,desde,hasta,meta);
+}
+
+function exportarVerificacionCSV(filas,desde,hasta,meta){
+  const header=["Guardarecursos","Patrullajes registrados","Km recorridos","Municipios","Incidentes","Duración media","Dentro RUMCLA",...(meta>0?["Cumple meta","% avance"]:[])];
+  const rows=filas.map(f=>[f.g,f.cnt,f.km>0?f.km.toFixed(1):"",f.munis,f.ileg,f.durMedia,f.rumcla,...(meta>0?[f.cnt>=meta?"Sí":"No",Math.min(Math.round(f.cnt/meta*100),100)+"%"]:[])]);
+  const csv=[header,...rows].map(r=>r.map(v=>'"'+String(v||"").replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+  a.download=`verificacion_patrullajes_${fmtDateDisplay(desde).replace(/\//g,"-")}_al_${fmtDateDisplay(hasta).replace(/\//g,"-")}.csv`;
+  a.click();
+}
+
+function exportarVerificacionXLSX(filas,desde,hasta,meta){
+  if(typeof XLSX==="undefined"){alert("No se pudo cargar XLSX.");return}
+  const header=["Guardarecursos","Patrullajes registrados","Km recorridos","Municipios","Incidentes","Duración media","Dentro RUMCLA",...(meta>0?["Cumple meta","% avance"]:[])];
+  const rows=filas.map(f=>[f.g,f.cnt,f.km>0?parseFloat(f.km.toFixed(1)):0,f.munis,f.ileg,f.durMedia,f.rumcla,...(meta>0?[f.cnt>=meta?"Sí":"No",Math.min(Math.round(f.cnt/meta*100),100)]:[])]);
+  const ws=XLSX.utils.aoa_to_sheet([header,...rows]);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Verificación");
+  XLSX.writeFile(wb,`verificacion_patrullajes_${fmtDateDisplay(desde).replace(/\//g,"-")}_al_${fmtDateDisplay(hasta).replace(/\//g,"-")}.xlsx`);
+}
+
+/* ═══════════════════════════════════════════════════
+   TABLA TABULATOR
+═══════════════════════════════════════════════════ */
+function inicializarTabla(){
+  // Columnas base en orden útil — km primero después de fecha, luego las demás
+  const cols=[
+    {title:"Guardarecursos",field:"Guarda recursos responsable",headerFilter:"input",width:200,frozen:true},
+    {title:"Fecha",field:"Fecha de patrullaje",headerFilter:"input",width:115,sorter:"string"},
+    {title:"Km recorridos",field:"Kilometros recorridos",headerFilter:"input",width:120,hozAlign:"right",
+      formatter:c=>{const v=parseFloat(c.getValue());return isNaN(v)?'<span style="color:#d1d5db">–</span>':`<span style="font-weight:600;color:var(--d5)">${v.toFixed(1)} km</span>`}},
+    {title:"Municipio",field:"Municipio",headerFilter:"input",width:160},
+    {title:"Hora inicio",field:"Hora de Inicio del patrullaje",width:100},
+    {title:"Hora fin",field:"Hora de finalizacion de patrullaje",width:100},
+    {title:"Ubicación",field:"Ubicacion",headerFilter:"input",width:130},
+    {title:"Área protegida",field:"Area protegida",headerFilter:"input",width:200},
+    {title:"Tipo de patrullaje",field:"Tipo de patrullaje",headerFilter:"input",width:200},
+    {title:"Instituciones",field:"Hay mas instituciones involucradas en el patrullaje",width:110,hozAlign:"center",
+      formatter:c=>{const v=canonStr(c.getValue()||"");return(v==="si"||v==="sí")?'<span class="badge badge-azul">Sí</span>':'<span class="badge badge-gris">No</span>'}},
+    {title:"Actividad ilegal",field:"Actividad ilegal observada",width:110,hozAlign:"center",
+      formatter:c=>{const v=canonIlegal(c.getValue()||"");return v==="si"?'<span class="badge badge-rojo">Sí</span>':v==="no"?'<span class="badge badge-verde">No</span>':'<span class="badge badge-gris">–</span>'}},
+    {title:"Región",field:"Region",headerFilter:"input",width:140},
+    {title:"Latitud",field:"Latitud",width:100,hozAlign:"right"},
+    {title:"Longitud",field:"Longitud",width:100,hozAlign:"right"},
+    {title:"GTM X (m)",field:"GTM_X (m)",width:130,hozAlign:"right",
+      formatter:c=>{const v=c.getValue();return v!==""?`<span style="font-family:monospace;font-size:11px">${Number(v).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:'<span style="color:#d1d5db">–</span>'}},
+    {title:"GTM Y (m)",field:"GTM_Y (m)",width:130,hozAlign:"right",
+      formatter:c=>{const v=c.getValue();return v!==""?`<span style="font-family:monospace;font-size:11px">${Number(v).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:'<span style="color:#d1d5db">–</span>'}},
+  ];
+
+  tablaTabulator=new Tabulator("#tabla-registros",{
+    data:DATOS,
+    layout:"fitDataStretch",
+    pagination:"local",
+    paginationSize:25,
+    paginationSizeSelector:[15,25,50,100],
+    columns:cols,
+    movableColumns:true,
+    selectableRows:1,
+    rowFormatter:row=>{
+      const d=row.getData();
+      if(d.__ci==="si") row.getElement().style.borderLeft="3px solid #ef4444";
+    }
+  });
+
+  document.getElementById("download-csv").addEventListener("click",()=>tablaTabulator.download("csv","patrullajes.csv"));
+  document.getElementById("download-xlsx").addEventListener("click",()=>tablaTabulator.download("xlsx","patrullajes.xlsx",{sheetName:"Datos"}));
+
+  document.getElementById("estado-registros").innerHTML=
+    `<strong>${DATOS.length.toLocaleString("es")}</strong> registros cargados · selecciona una fila para generar informe individual · las filas con borde rojo tienen actividad ilegal reportada`;
+}
+
+/* ═══════════════════════════════════════════════════
+   SELECTOR MESES INFORMES
+═══════════════════════════════════════════════════ */
+function inicializarSelectorMeses(){
+  mapaMeses=new Map();
+  DATOS.forEach(r=>{
+    if(!r.__dt||isNaN(r.__dt))return;
+    const y=r.__dt.getFullYear(),m=r.__dt.getMonth()+1;
+    const k=y+"-"+String(m).padStart(2,"0");
+    if(!mapaMeses.has(k))mapaMeses.set(k,{anio:y,mes:m});
+  });
+  const sel=document.getElementById("monthly-month-select");
+  const claves=[...mapaMeses.keys()].sort();
+  if(!claves.length){sel.innerHTML="<option>Sin meses</option>";return}
+  sel.innerHTML='<option value="" disabled selected>Seleccione un mes…</option>';
+  claves.forEach(k=>{
+    const{anio,mes}=mapaMeses.get(k);
+    const nm=MESES_ES[mes-1];
+    const o=document.createElement("option");o.value=k;o.textContent=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+anio;sel.appendChild(o);
+  });
+  sel.addEventListener("change",()=>{
+    const h=!!sel.value;
+    document.getElementById("generate-monthly-report-word").disabled=!h;
+    document.getElementById("generate-monthly-report-pdf").disabled=!h;
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   ANÁLISIS POR GUARDARECURSO
+═══════════════════════════════════════════════════ */
+const GC={};
+function mkGChart(id,cfg){if(GC[id])GC[id].destroy();GC[id]=new Chart(document.getElementById(id),cfg)}
+Chart.defaults.font.family="'DM Sans',sans-serif";Chart.defaults.color="#6a8878";
+const TT={backgroundColor:"rgba(7,24,15,0.93)",titleFont:{size:13,weight:"600"},bodyFont:{size:12.5},padding:12,cornerRadius:10};
+
+function initGuardaSelector(){
+  const guardas=[...new Set(DATOS.map(r=>r["Guarda recursos responsable"]).filter(Boolean))].sort();
+  const sel=document.getElementById("sel-guarda");
+  sel.innerHTML="<option value=''>Selecciona un guardarecursos…</option>";
+  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o);});
+  sel.addEventListener("change",()=>{
+    const g=sel.value;
+    document.getElementById("btn-informe-guarda").disabled=!g;
+    g?renderGuarda(g):clearGuarda();
+  });
+}
+
+function clearGuarda(){
+  document.getElementById("guarda-kpis").style.display="none";
+  document.getElementById("guarda-charts").style.display="none";
+  document.getElementById("guarda-tabla-wrap").style.display="none";
+  document.getElementById("guarda-empty").style.display="";
+  document.getElementById("estado-analisis").textContent="Selecciona un guardarecursos para ver su perfil de actividad";
+}
+
+function renderGuarda(nombre){
+  const regs=DATOS.filter(r=>r["Guarda recursos responsable"]===nombre);
+  if(!regs.length){clearGuarda();return}
+  document.getElementById("guarda-empty").style.display="none";
+  document.getElementById("estado-analisis").textContent=`Perfil de ${nombre} · ${regs.length} registros`;
+
+  const munis=new Set(regs.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
+  const durs=regs.map(r=>r.__dur).filter(v=>v!==null);
+  const ileg=regs.filter(r=>r.__ci==="si").length;
+  const km=regs.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+
+  document.getElementById("g-total").textContent=regs.length;
+  document.getElementById("g-munis").textContent=munis.size;
+  document.getElementById("g-dur").textContent=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1)+"h":"–";
+  document.getElementById("g-ileg").textContent=ileg;
+  document.getElementById("g-km").textContent=km>0?km.toLocaleString("es",{maximumFractionDigits:0})+" km":"–";
+  document.getElementById("guarda-kpis").style.display="grid";
+
+  // Gráfica por período operativo (corte 25)
+  const mPer=new Map();
+  regs.forEach(r=>{if(r.__periodo)mPer.set(r.__periodo,(mPer.get(r.__periodo)||0)+1);});
+  const perKeys=[...mPer.keys()].sort();
+  const perShort=k=>{const[y,m]=k.split("-");return MESES_S[+m-1]+"'"+y.slice(2)};
+  mkGChart("g-c-mes",{type:"bar",data:{labels:perKeys.map(perShort),datasets:[{label:"Patrullajes",data:perKeys.map(k=>mPer.get(k)),backgroundColor:PAL[0]+"cc",borderColor:PAL[0],borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} patrullajes`}}},scales:{x:{grid:{display:false},ticks:{font:{size:11.5}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11.5}}}}}});
+
+  // Gráfica por municipio
+  const mMuni=new Map();
+  regs.forEach(r=>{const m=(r["Municipio"]||"").trim();if(m)mMuni.set(m,(mMuni.get(m)||0)+1);});
+  const muniTop=[...mMuni.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
+  mkGChart("g-c-muni",{type:"bar",data:{labels:muniTop.map(([m])=>m),datasets:[{label:"Patrullajes",data:muniTop.map(([,v])=>v),backgroundColor:PAL.slice(0,muniTop.length),borderWidth:0,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11.5}}},y:{grid:{display:false},ticks:{font:{size:11.5}}}}}});
+  document.getElementById("guarda-charts").style.display="grid";
+
+  // Tabla por municipio con km
+  const tbody=document.getElementById("guarda-tbody");tbody.innerHTML="";
+  [...mMuni.entries()].sort((a,b)=>b[1]-a[1]).forEach(([mu,cnt])=>{
+    const sub=regs.filter(r=>(r["Municipio"]||"").trim()===mu);
+    const si=sub.filter(r=>r.__ci==="si").length;
+    const kmMu=sub.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+    const dMu=sub.map(r=>r.__dur).filter(v=>v!==null);
+    const durM=dMu.length?(dMu.reduce((a,b)=>a+b,0)/dMu.length).toFixed(1)+"h":"–";
+    const rumcla=sub.filter(r=>r.__cu==="rumcla").length;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><strong>${escH(mu)}</strong></td><td>${cnt}</td>
+      <td style="font-family:monospace;font-size:12px">${kmMu>0?kmMu.toLocaleString("es",{maximumFractionDigits:1})+" km":"–"}</td>
+      <td>${si>0?`<span class="badge badge-rojo">${si}</span>`:`<span class="badge badge-verde">0</span>`}</td>
+      <td>${pct(si,cnt)}%</td><td>${durM}</td>
+      <td><span class="badge badge-azul">${rumcla}R/${cnt-rumcla}F</span></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById("guarda-tabla-wrap").style.display="";
+}
+
+/* ═══════════════════════════════════════════════════
+   DOCUMENTOS
+═══════════════════════════════════════════════════ */
+const CSS_DOC=`<style>body,p,td,th{font-family:"Times New Roman",serif;font-size:10pt;line-height:1.4}h1{font-size:14pt;font-weight:bold;margin:0 0 8pt;text-align:center}h2{font-size:12pt;font-weight:bold;margin:12pt 0 6pt}p{margin:0 0 6pt;text-align:justify}section{page-break-inside:avoid;margin-bottom:8pt}</style>`;
+function docWord(nombre,html){
+  const src="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_DOC+"</head><body>"+html+"</body></html>";
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff",src],{type:"application/msword"}));a.download=nombre;document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function docPDF(nombre,html){
+  if(typeof html2pdf==="undefined"){alert("No se pudo cargar html2pdf.");return}
+  const d=document.createElement("div");d.style.padding="10px";d.innerHTML=CSS_DOC+html;document.body.appendChild(d);
+  html2pdf().set({margin:10,filename:nombre,image:{type:"jpeg",quality:.98},html2canvas:{scale:2},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(d).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d));
+}
+
+function generarInformeRegistro(fmt){
+  if(!tablaTabulator)return;
+  const sel=tablaTabulator.getSelectedData();
+  if(!sel||!sel.length){alert("Selecciona una fila en la tabla.");return}
+  const r=sel[0];
+  const gu=r["Guarda recursos responsable"]||"",mu=r["Municipio"]||"",fe=r["Fecha de patrullaje"]||"";
+  const hI=r["Hora de Inicio del patrullaje"]||"",hF=r["Hora de finalizacion de patrullaje"]||"";
+  const ub=r["Ubicacion"]||"",ap=r["Area protegida"]||"",tp=r["Tipo de patrullaje"]||"";
+  const km=parseFloat(r["Kilometros recorridos"]||"");
+  const ai=r["Actividad ilegal observada"]||"",inst=r["Instituciones involucradas"]||"";
+  const hayInst=canonStr(r["Hay mas instituciones involucradas en el patrullaje"]||"");
+  const fc=r["Fecha de creacion de registro"]||"",lat=r["Latitud"]||"",lon=r["Longitud"]||"";
+  const gtmX=r["GTM_X (m)"]||"",gtmY=r["GTM_Y (m)"]||"";
+  const ci=canonIlegal(ai);
+  const tInst=(hayInst==="si"||hayInst==="sí")?"Participaron además: "+(inst||"(sin detalle)")+".":"No hubo participación de otras instituciones.";
+  const tIleg=ci==="si"?"Se registró actividad ilegal: "+ai+".":"No se registró actividad ilegal.";
+  let h=`<section><h1>Informe de patrullaje de control y vigilancia</h1><p style="text-align:center">Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><hr/></section>`;
+  h+=`<section><h2>1. Datos de identificación</h2><p><strong>Guarda recursos:</strong> ${escH(gu)}</p><p><strong>Fecha:</strong> ${escH(fe)}</p><p><strong>Municipio:</strong> ${escH(mu)}</p><p><strong>Área protegida:</strong> ${escH(ap)}</p><p><strong>Ubicación:</strong> ${escH(ub)}</p><p><strong>Tipo:</strong> ${escH(tp)}</p><p><strong>Horario:</strong> ${escH(hI)} a ${escH(hF)}</p>${!isNaN(km)?`<p><strong>Kilómetros recorridos:</strong> ${km.toFixed(1)} km</p>`:""}</section>`;
+  h+=`<section><h2>2. Descripción del patrullaje</h2><p>El guardarecursos ${escH(gu)} realizó un patrullaje de tipo ${escH(tp)} en el municipio de ${escH(mu)}, en el área ${escH(ap)} (${escH(ub)}). Horario: ${escH(hI)} a ${escH(hF)}.</p></section>`;
+  h+=`<section><h2>3. Participación institucional</h2><p>${escH(tInst)}</p></section>`;
+  h+=`<section><h2>4. Actividad ilegal observada</h2><p>${escH(tIleg)}</p></section>`;
+  h+=`<section><h2>5. Metadatos</h2><p><strong>Creado:</strong> ${escH(fc)}</p>${(lat||lon)?`<p><strong>WGS84:</strong> Lat ${escH(lat)} · Lon ${escH(lon)}</p>`:""}${(gtmX||gtmY)?`<p><strong>GTM:</strong> X=${escH(String(gtmX))} m · Y=${escH(String(gtmY))} m</p>`:""}</section>`;
+  h+=`<section><h2>6. Firmas</h2><p>______________________________<br/>Guardarecursos / Responsable</p><p>______________________________<br/>Supervisión</p></section>`;
+  const base="informe_patrullaje_"+slug(gu)+"_"+slug(fe);
+  fmt==="pdf"?docPDF(base+".pdf",h):docWord(base+".doc",h);
+}
+
+function generarInformeMensual(fmt){
+  if(!DATOS.length){alert("No hay datos cargados.");return}
+  const sel=document.getElementById("monthly-month-select");
+  if(!sel.value){alert("Seleccione un mes.");return}
+  const{anio,mes}=mapaMeses.get(sel.value)||{};
+  if(!anio)return;
+  const nm=MESES_ES[mes-1];const etiq=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+anio;
+  const regs=DATOS.filter(r=>r.__dt&&!isNaN(r.__dt)&&r.__dt.getFullYear()===anio&&r.__dt.getMonth()+1===mes);
+  if(!regs.length){alert("No hay registros para "+etiq);return}
+  const total=regs.length;
+  const munis=new Set(),guar=new Set();
+  let aInt=0,aExt=0,iSi=0,iNo=0,instSi=0,instNo=0;
+  const durs=[],cMuni={},cGuar={};
+  regs.forEach(r=>{
+    const mu=(r["Municipio"]||"").trim();if(mu){munis.add(mu);cMuni[mu]=(cMuni[mu]||0)+1}
+    const gu=(r["Guarda recursos responsable"]||"").trim();if(gu){guar.add(gu);cGuar[gu]=(cGuar[gu]||0)+1}
+    if(r.__cu==="rumcla")aInt++;else if(r.__cu==="fuera")aExt++;
+    if(r.__ci==="si")iSi++;else if(r.__ci==="no")iNo++;
+    const mI=canonStr(r["Hay mas instituciones involucradas en el patrullaje"]||"");
+    if(mI==="si"||mI==="sí")instSi++;else if(mI==="no")instNo++;
+    if(r.__dur!==null)durs.push(r.__dur);
+  });
+  const muOrd=Object.entries(cMuni).sort((a,b)=>b[1]-a[1]);
+  const guOrd=Object.entries(cGuar).sort((a,b)=>b[1]-a[1]);
+  const prom=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:null;
+  const totH=durs.reduce((a,b)=>a+b,0);
+  const km=regs.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+  let h=`<section><h1>Informe mensual de patrullajes</h1><p style="text-align:center">Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><p style="text-align:center"><strong>${escH(etiq)}</strong></p><hr/></section>`;
+  h+=`<section><h2>1. Resumen general</h2><p>Se registraron <strong>${total}</strong> patrullajes, cubriendo <strong>${munis.size}</strong> municipio(s) con <strong>${guar.size}</strong> guardarecurso(s). ${km>0?"Kilómetros totales recorridos: <strong>"+km.toFixed(0)+"</strong>.":""}</p>`;
+  h+=`<p><strong>${aInt}</strong> patrullajes (${pct(aInt,total)}%) dentro de RUMCLA · <strong>${aExt}</strong> (${pct(aExt,total)}%) fuera.</p></section>`;
+  h+=`<section><h2>2. Municipios con mayor actividad</h2><p>${cFrases(muOrd.slice(0,6).map(([m,c])=>"<strong>"+escH(m)+"</strong> ("+c+")"))}</p></section>`;
+  h+=`<section><h2>3. Guardarecursos más activos</h2><p>${cFrases(guOrd.slice(0,5).map(([g,c])=>"<strong>"+escH(g)+"</strong> ("+c+" patrullajes)"))}</p></section>`;
+  if(durs.length)h+=`<section><h2>4. Duración operativa</h2><p>Duración promedio: <strong>${rnd(prom,2)}h</strong>. Total acumulado: <strong>${rnd(totH,1)}h</strong> efectivas.</p></section>`;
+  h+=`<section><h2>5. Incidentes ambientales</h2><p><strong>${iSi}</strong> patrullajes (${pct(iSi,total)}%) reportaron actividad ilegal · <strong>${iNo}</strong> (${pct(iNo,total)}%) sin incidentes.</p></section>`;
+  h+=`<section><h2>6. Participación interinstitucional</h2><p><strong>${instSi}</strong> patrullajes (${pct(instSi,total)}%) con otras instituciones.</p></section>`;
+  h+=`<section><h2>7. Nota metodológica</h2><p>Informe generado automáticamente desde el sistema AC192 de CONAP-DRAC Altiplano Central.</p></section>`;
+  const base="informe_mensual_"+anio+"_"+String(mes).padStart(2,"0");
+  fmt==="pdf"?docPDF(base+".pdf",h):docWord(base+".doc",h);
+}
+
+function generarInformeGuarda(){
+  const nombre=document.getElementById("sel-guarda").value;if(!nombre)return;
+  const regs=DATOS.filter(r=>r["Guarda recursos responsable"]===nombre);
+  if(!regs.length){alert("Sin registros para "+nombre);return}
+  const durs=regs.map(r=>r.__dur).filter(v=>v!==null);
+  const prom=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:null;
+  const munis=new Set(regs.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
+  const ileg=regs.filter(r=>r.__ci==="si").length;
+  const km=regs.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+  const mMuni=new Map();regs.forEach(r=>{const m=(r["Municipio"]||"").trim();if(m)mMuni.set(m,(mMuni.get(m)||0)+1);});
+  const topMu=[...mMuni.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
+  let h=`<section><h1>Perfil de actividad</h1><p style="text-align:center">Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><p style="text-align:center"><strong>${escH(nombre)}</strong></p><hr/></section>`;
+  h+=`<section><h2>Resumen</h2><p><strong>Patrullajes totales:</strong> ${regs.length}</p><p><strong>Municipios cubiertos:</strong> ${munis.size}</p>${prom!==null?`<p><strong>Duración promedio:</strong> ${rnd(prom,2)}h</p>`:""}${km>0?`<p><strong>Kilómetros recorridos:</strong> ${km.toFixed(0)} km</p>`:""}<p><strong>Incidentes reportados:</strong> ${ileg} (${pct(ileg,regs.length)}%)</p></section>`;
+  h+=`<section><h2>Municipios con mayor actividad</h2><p>${cFrases(topMu.map(([m,c])=>"<strong>"+escH(m)+"</strong> ("+c+" patrullajes)"))}</p></section>`;
+  h+=`<section><h2>Nota metodológica</h2><p>Informe generado desde el sistema AC192 de CONAP-DRAC Altiplano Central.</p></section>`;
+  docWord("perfil_"+slug(nombre)+".doc",h);
+}
+
+/* ═══════════════════════════════════════════════════
    INICIO
-══════════════════════════════════════════════════════ */
+═══════════════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded",function(){
   if(typeof Tabulator==="undefined"){alert("No se pudo cargar Tabulator.");return}
+
   document.getElementById("btn-informe-guarda").addEventListener("click",generarInformeGuarda);
   document.getElementById("generate-report-word").addEventListener("click",()=>generarInformeRegistro("word"));
   document.getElementById("generate-report-pdf").addEventListener("click",()=>generarInformeRegistro("pdf"));
   document.getElementById("generate-monthly-report-word").addEventListener("click",()=>generarInformeMensual("word"));
   document.getElementById("generate-monthly-report-pdf").addEventListener("click",()=>generarInformeMensual("pdf"));
+  document.getElementById("vc-aplicar").addEventListener("click",ejecutarVerificacion);
+
+  sugerirPeriodo();
 
   fetch("../../datos/datos_patrullaje.csv",{cache:"no-store"})
     .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text()})
     .then(csv=>{
       const parsed=Papa.parse(csv,{header:true,skipEmptyLines:true,delimiter:";"});
       if(!parsed.data||!parsed.data.length){document.getElementById("estado-registros").textContent="CSV vacío o sin encabezados.";return}
-      datosPatrullajes=parsed.data;
-      prepararHintsFechas(datosPatrullajes);
-      // Enriquecer con coordenadas GTM
-      datosPatrullajes = enriquecerConGTM(datosPatrullajes);
-      // Construir columnas: las del CSV primero, luego GTM_X y GTM_Y al final
-      const camposBase = Object.keys(parsed.data[0] || {});
-      const cols = [
-        ...camposBase.map(f=>({title:f, field:f, headerFilter:"input"})),
-        {title:"GTM_X (m)", field:"GTM_X (m)", headerFilter:"input", width:130,
-         formatter: c => { const v=c.getValue(); return v!==""?`<span style="font-family:monospace;font-size:11px">${Number(v).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:"<span style='color:#d1d5db'>—</span>"; }},
-        {title:"GTM_Y (m)", field:"GTM_Y (m)", headerFilter:"input", width:130,
-         formatter: c => { const v=c.getValue(); return v!==""?`<span style="font-family:monospace;font-size:11px">${Number(v).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:"<span style='color:#d1d5db'>—</span>"; }},
-      ];
-      tablaPatrullajes=new Tabulator("#tabla-registros",{data:datosPatrullajes,layout:"fitDataStretch",pagination:"local",paginationSize:20,paginationSizeSelector:[10,20,50,100],columns:cols,movableColumns:true,selectableRows:1});
-      document.getElementById("download-csv").addEventListener("click",()=>tablaPatrullajes.download("csv","patrullajes_control_vigilancia.csv"));
-      document.getElementById("download-xlsx").addEventListener("click",()=>tablaPatrullajes.download("xlsx","patrullajes_control_vigilancia.xlsx",{sheetName:"Datos"}));
+      DATOS=procesarDatos(parsed.data);
+      inicializarTabla();
+      initVcSelects();
       inicializarSelectorMeses();
       initGuardaSelector();
-      document.getElementById("estado-registros").textContent=`${datosPatrullajes.length.toLocaleString("es")} registros cargados · selecciona una fila para generar informe individual`;
     })
     .catch(e=>{
       const el=document.getElementById("estado-registros");
