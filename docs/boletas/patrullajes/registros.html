@@ -185,6 +185,20 @@
     .informe-bar select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--ink);outline:none;transition:border-color .18s}
     .informe-bar select:focus{border-color:var(--acento)}
 
+    /* FILAS EXPANDIBLES */
+    .vc-row-guarda{cursor:pointer;user-select:none}
+    .vc-row-guarda:hover td{background:rgba(26,92,58,0.04)!important}
+    .vc-row-guarda td{transition:background .15s}
+    .vc-toggle{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--surface-2);border:1px solid var(--borde);color:var(--muted);transition:transform .2s,background .15s;flex-shrink:0}
+    .vc-row-guarda.open .vc-toggle{transform:rotate(90deg);background:var(--acento);color:#fff;border-color:var(--acento)}
+    .vc-subrows{display:none}
+    .vc-subrows.open{display:table-row-group}
+    .vc-sub-row td{background:#f8fbf9;border-bottom:1px solid #e8f0eb;font-size:12.5px}
+    .vc-sub-row:last-child td{border-bottom:2px solid var(--borde)}
+    .vc-sub-row td:first-child{width:28px;padding:0}
+    .vc-num{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:50%;background:var(--borde);font-size:10px;font-weight:700;color:var(--muted)}
+    .vc-coord{font-family:monospace;font-size:11px;color:var(--muted)}
+
     /* FOOTER */
     footer{background:var(--verde-oscuro);color:rgba(255,255,255,.42);text-align:center;padding:16px 24px;font-size:12px;font-weight:300;letter-spacing:.04em;flex-shrink:0}
     footer strong{color:rgba(255,255,255,.75);font-weight:500}
@@ -312,20 +326,27 @@
 
       <!-- Tabla de cumplimiento por guardarecurso -->
       <div id="vc-tabla-wrap" style="display:none">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase;margin-bottom:12px">
-          Detalle por guardarecursos
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase">
+            Detalle por guardarecursos — haga clic en una fila para ver los patrullajes individuales
+          </span>
+          <div style="display:flex;gap:6px">
+            <button class="btn" id="vc-expand-all" style="font-size:11.5px;padding:5px 12px">Expandir todos</button>
+            <button class="btn" id="vc-collapse-all" style="font-size:11.5px;padding:5px 12px">Colapsar todos</button>
+          </div>
         </div>
         <div class="verif-table-wrap">
           <table class="verif-table">
             <thead>
               <tr>
+                <th style="width:28px"></th>
                 <th>Guardarecursos</th>
-                <th>Patrullajes registrados</th>
-                <th>Km recorridos</th>
+                <th>Patrullajes</th>
+                <th>Km totales</th>
                 <th>Municipios</th>
                 <th>Incidentes</th>
                 <th>Duración media</th>
-                <th>Dentro RUMCLA</th>
+                <th>RUMCLA / Fuera</th>
                 <th id="th-cumplimiento" style="display:none">vs. Meta</th>
                 <th id="th-avance" style="display:none">Avance</th>
               </tr>
@@ -340,7 +361,7 @@
           </button>
           <button class="btn" id="vc-export-csv">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Exportar CSV
+            Exportar CSV completo (con filas individuales)
           </button>
         </div>
       </div>
@@ -692,7 +713,7 @@ function ejecutarVerificacion(){
     return true;
   });
 
-  // Mostrar período
+  // Período label
   document.getElementById("vc-periodo-tag").style.display="";
   document.getElementById("vc-periodo-label").textContent=
     `Período: ${fmtDateDisplay(desde)} al ${fmtDateDisplay(hasta)}${guardaFiltro?" · "+guardaFiltro:""}`;
@@ -700,97 +721,240 @@ function ejecutarVerificacion(){
   // KPIs globales
   const guardas=[...new Set(enPeriodo.map(r=>r["Guarda recursos responsable"]))];
   const totalKm=enPeriodo.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
-
   document.getElementById("vc-total").textContent=enPeriodo.length.toLocaleString("es");
   document.getElementById("vc-guardas").textContent=guardas.length;
-  document.getElementById("vc-km").textContent=totalKm>0?totalKm.toLocaleString("es",{maximumFractionDigits:0})+"":"–";
+  document.getElementById("vc-km").textContent=totalKm>0?totalKm.toLocaleString("es",{maximumFractionDigits:0})+" km":"–";
   document.getElementById("vc-meta-display").textContent=meta>0?meta+" por guarda":"Sin meta";
 
-  // Cumplimiento general
   let cumplePct="–";
   if(meta>0&&guardas.length){
-    const cuentas=guardas.map(g=>enPeriodo.filter(r=>r["Guarda recursos responsable"]===g).length);
-    const cumplen=cuentas.filter(c=>c>=meta).length;
+    const cumplen=guardas.filter(g=>enPeriodo.filter(r=>r["Guarda recursos responsable"]===g).length>=meta).length;
     cumplePct=Math.round(cumplen/guardas.length*100)+"%";
   }
   document.getElementById("vc-pct").textContent=cumplePct;
   document.getElementById("vc-resumen").style.display="grid";
 
-  // Mostrar/ocultar columnas de meta
   document.getElementById("th-cumplimiento").style.display=meta>0?"":"none";
   document.getElementById("th-avance").style.display=meta>0?"":"none";
 
-  // Tabla detalle
-  const tbody=document.getElementById("vc-tbody");tbody.innerHTML="";
-  const allGuardas=guardaFiltro?[guardaFiltro]:
+  // Construir filas con registros individuales
+  const tbody=document.getElementById("vc-tbody");
+  tbody.innerHTML="";
+
+  const todosGuardas=guardaFiltro?[guardaFiltro]:
     [...new Set(DATOS.map(r=>r["Guarda recursos responsable"]).filter(Boolean))].sort();
 
-  const filas=[];
-  allGuardas.forEach(g=>{
-    const sub=enPeriodo.filter(r=>r["Guarda recursos responsable"]===g);
+  const filasSummary=[];
+  const todasFilasIndiv=[];
+
+  todosGuardas.forEach(g=>{
+    const sub=enPeriodo
+      .filter(r=>r["Guarda recursos responsable"]===g)
+      .sort((a,b)=>a.__dt-b.__dt);  // ordenar por fecha asc
+
     const cnt=sub.length;
-    const km=sub.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
-    const munis=new Set(sub.map(r=>(r["Municipio"]||"").trim()).filter(Boolean)).size;
+    const kmTotal=sub.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+    const munisSet=new Set(sub.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
     const ileg=sub.filter(r=>r.__ci==="si").length;
     const durs=sub.map(r=>r.__dur).filter(v=>v!==null);
     const durMedia=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1)+"h":"–";
     const rumcla=sub.filter(r=>r.__cu==="rumcla").length;
-    filas.push({g,cnt,km,munis,ileg,durMedia,rumcla,total:sub.length});
+
+    filasSummary.push({g,cnt,km:kmTotal,munis:munisSet.size,ileg,durMedia,rumcla,registros:sub});
+    sub.forEach((r,i)=>todasFilasIndiv.push({...r,__guarda_display:g,__num:i+1}));
   });
 
-  // Ordenar por cantidad desc
-  filas.sort((a,b)=>b.cnt-a.cnt);
+  filasSummary.sort((a,b)=>b.cnt-a.cnt);
 
-  filas.forEach(({g,cnt,km,munis,ileg,durMedia,rumcla})=>{
-    const tr=document.createElement("tr");
-    let cumpleCel="";
-    let avanceCel="";
+  const colsMeta=meta>0?2:0;
+  const totalCols=9+colsMeta; // toggle + guarda + 7 datos + meta cols
+
+  filasSummary.forEach(({g,cnt,km,munis,ileg,durMedia,rumcla,registros},idx)=>{
+    const uid="grp-"+idx;
+
+    // ── Fila resumen (cabecera colapsable) ──────────────────
+    let cumpleCel="",avanceCel="";
     if(meta>0){
       const cumple=cnt>=meta;
-      const pctAvance=Math.min(Math.round(cnt/meta*100),100);
-      const colorProg=pctAvance>=100?"prog-fill-verde":pctAvance>=60?"prog-fill-amarillo":"prog-fill-rojo";
-      const badgeClass=cumple?"badge-verde":cnt>0?"badge-amarillo":"badge-rojo";
-      const badgeLabel=cumple?"Cumplido":cnt>0?"Parcial":"Sin registro";
-      cumpleCel=`<td><span class="badge ${badgeClass}">${badgeLabel} (${cnt}/${meta})</span></td>`;
-      avanceCel=`<td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar-fill ${colorProg}" style="width:${pctAvance}%"></div></div><span class="prog-num">${pctAvance}%</span></div></td>`;
+      const pctAv=Math.min(Math.round(cnt/meta*100),100);
+      const colP=pctAv>=100?"prog-fill-verde":pctAv>=60?"prog-fill-amarillo":"prog-fill-rojo";
+      const bCls=cumple?"badge-verde":cnt>0?"badge-amarillo":"badge-rojo";
+      cumpleCel=`<td><span class="badge ${bCls}">${cumple?"Cumplido":cnt>0?"Parcial":"Sin registro"} (${cnt}/${meta})</span></td>`;
+      avanceCel=`<td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar-fill ${colP}" style="width:${pctAv}%"></div></div><span class="prog-num">${pctAv}%</span></div></td>`;
     }
-    const kmDisplay=km>0?km.toLocaleString("es",{maximumFractionDigits:1})+" km":"–";
-    tr.innerHTML=`
+
+    const trHead=document.createElement("tr");
+    trHead.className="vc-row-guarda";
+    trHead.dataset.uid=uid;
+    trHead.innerHTML=`
+      <td><span class="vc-toggle">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>
+      </span></td>
       <td><strong>${escH(g)}</strong></td>
-      <td><span class="badge ${cnt>0?"badge-azul":"badge-gris"}">${cnt}</span></td>
-      <td style="font-family:monospace;font-size:12px">${kmDisplay}</td>
+      <td><span class="badge ${cnt>0?"badge-azul":"badge-gris"}">${cnt} patrullaje${cnt!==1?"s":""}</span></td>
+      <td style="font-family:monospace;font-size:12.5px;font-weight:600;color:var(--d5)">${km>0?km.toLocaleString("es",{maximumFractionDigits:1})+" km":"–"}</td>
       <td>${munis}</td>
       <td>${ileg>0?`<span class="badge badge-rojo">${ileg}</span>`:`<span class="badge badge-verde">0</span>`}</td>
       <td>${durMedia}</td>
-      <td><span class="badge badge-gris">${rumcla}R / ${cnt-rumcla>0?cnt-rumcla:0}F</span></td>
+      <td><span class="badge badge-gris">${rumcla}R&nbsp;/&nbsp;${cnt-rumcla}F</span></td>
       ${cumpleCel}${avanceCel}
     `;
-    tbody.appendChild(tr);
+    tbody.appendChild(trHead);
+
+    // ── Sub-cabecera de columnas individuales ──────────────
+    const trSubHead=document.createElement("tr");
+    trSubHead.className="vc-subrows";
+    trSubHead.dataset.uid=uid;
+    trSubHead.innerHTML=`<td colspan="${totalCols}" style="padding:0">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead>
+          <tr style="background:#eef4f0">
+            <td style="width:28px;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">#</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Fecha</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Municipio</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Km</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Inicio</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Fin</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Duración</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Ubicación</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Actividad ilegal</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Latitud</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Longitud</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">GTM X (m)</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">GTM Y (m)</td>
+          </tr>
+        </thead>
+        <tbody>
+          ${registros.map((r,i)=>{
+            const dur=r.__dur!==null?r.__dur.toFixed(1)+"h":"–";
+            const km=r.__km!==null?r.__km.toFixed(1)+" km":"–";
+            const ilegalBadge=r.__ci==="si"
+              ?`<span class="badge badge-rojo" style="font-size:10.5px">Sí</span>`
+              :r.__ci==="no"?`<span class="badge badge-verde" style="font-size:10.5px">No</span>`
+              :`<span class="badge badge-gris" style="font-size:10.5px">–</span>`;
+            const lat=r["Latitud"]||"";
+            const lon=r["Longitud"]||"";
+            const gtmX=r["GTM_X (m)"]!==undefined&&r["GTM_X (m)"]!==""
+              ?Number(r["GTM_X (m)"]).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2}):"–";
+            const gtmY=r["GTM_Y (m)"]!==undefined&&r["GTM_Y (m)"]!==""
+              ?Number(r["GTM_Y (m)"]).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2}):"–";
+            const rowBg=r.__ci==="si"?"background:rgba(168,28,42,0.04)":"";
+            const borderL=r.__ci==="si"?"border-left:3px solid var(--d4)":"border-left:3px solid transparent";
+            return `<tr style="${rowBg};${borderL}">
+              <td style="padding:7px 8px;border-bottom:1px solid #e8f0eb;text-align:center">
+                <span class="vc-num">${i+1}</span>
+              </td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;white-space:nowrap;font-weight:500">${escH(r["Fecha de patrullaje"]||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb">${escH((r["Municipio"]||"").trim()||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-family:monospace;font-weight:600;color:var(--d5)">${km}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-family:monospace">${escH(r["Hora de Inicio del patrullaje"]||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-family:monospace">${escH(r["Hora de finalizacion de patrullaje"]||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-weight:500">${dur}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-size:11.5px">${escH(r["Ubicacion"]||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb">${ilegalBadge}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${lat||"–"}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${lon||"–"}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${gtmX}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${gtmY}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </td>`;
+    tbody.appendChild(trSubHead);
   });
+
+  // Toggle click
+  tbody.querySelectorAll(".vc-row-guarda").forEach(row=>{
+    row.addEventListener("click",()=>{
+      const uid=row.dataset.uid;
+      const isOpen=row.classList.contains("open");
+      row.classList.toggle("open",!isOpen);
+      tbody.querySelectorAll(`.vc-subrows[data-uid="${uid}"]`).forEach(s=>s.classList.toggle("open",!isOpen));
+    });
+  });
+
+  // Expandir/colapsar todos
+  document.getElementById("vc-expand-all").onclick=()=>{
+    tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));
+    tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"));
+  };
+  document.getElementById("vc-collapse-all").onclick=()=>{
+    tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.remove("open"));
+    tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.remove("open"));
+  };
+
+  // Si hay filtro por guarda único, expandir automáticamente
+  if(guardaFiltro){
+    setTimeout(()=>{
+      tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));
+      tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"));
+    },80);
+  }
 
   document.getElementById("vc-tabla-wrap").style.display="";
   document.getElementById("vc-empty").style.display="none";
 
-  // Exportar
-  document.getElementById("vc-export-csv").onclick=()=>exportarVerificacionCSV(filas,desde,hasta,meta);
-  document.getElementById("vc-export-xlsx").onclick=()=>exportarVerificacionXLSX(filas,desde,hasta,meta);
+  // Exportar — ahora incluye filas individuales
+  document.getElementById("vc-export-csv").onclick=()=>exportarVerificacionCSV(filasSummary,enPeriodo,desde,hasta,meta);
+  document.getElementById("vc-export-xlsx").onclick=()=>exportarVerificacionXLSX(filasSummary,enPeriodo,desde,hasta,meta);
 }
 
-function exportarVerificacionCSV(filas,desde,hasta,meta){
-  const header=["Guardarecursos","Patrullajes registrados","Km recorridos","Municipios","Incidentes","Duración media","Dentro RUMCLA",...(meta>0?["Cumple meta","% avance"]:[])];
-  const rows=filas.map(f=>[f.g,f.cnt,f.km>0?f.km.toFixed(1):"",f.munis,f.ileg,f.durMedia,f.rumcla,...(meta>0?[f.cnt>=meta?"Sí":"No",Math.min(Math.round(f.cnt/meta*100),100)+"%"]:[])]);
+function exportarVerificacionCSV(filasSummary,enPeriodo,desde,hasta,meta){
+  const header=["Guardarecursos","#","Fecha","Municipio","Km recorridos","Hora inicio","Hora fin","Duración (h)","Ubicación","Actividad ilegal","Latitud","Longitud","GTM X (m)","GTM Y (m)",...(meta>0?["Meta","Cumple"]:["Total patrullajes"])];
+  const rows=[];
+  filasSummary.forEach(({g,cnt,registros})=>{
+    registros.forEach((r,i)=>{
+      rows.push([
+        g, i+1,
+        r["Fecha de patrullaje"]||"",
+        (r["Municipio"]||"").trim(),
+        r.__km!==null?r.__km.toFixed(1):"",
+        r["Hora de Inicio del patrullaje"]||"",
+        r["Hora de finalizacion de patrullaje"]||"",
+        r.__dur!==null?r.__dur.toFixed(2):"",
+        r["Ubicacion"]||"",
+        r.__ci==="si"?"Sí":r.__ci==="no"?"No":"",
+        r["Latitud"]||"",
+        r["Longitud"]||"",
+        r["GTM_X (m)"]||"",
+        r["GTM_Y (m)"]||"",
+        ...(meta>0?[meta,cnt>=meta?"Sí":"No"]:[cnt]),
+      ]);
+    });
+  });
   const csv=[header,...rows].map(r=>r.map(v=>'"'+String(v||"").replace(/"/g,'""')+'"').join(",")).join("\n");
-  const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+  const a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
   a.download=`verificacion_patrullajes_${fmtDateDisplay(desde).replace(/\//g,"-")}_al_${fmtDateDisplay(hasta).replace(/\//g,"-")}.csv`;
   a.click();
 }
 
-function exportarVerificacionXLSX(filas,desde,hasta,meta){
+function exportarVerificacionXLSX(filasSummary,enPeriodo,desde,hasta,meta){
   if(typeof XLSX==="undefined"){alert("No se pudo cargar XLSX.");return}
-  const header=["Guardarecursos","Patrullajes registrados","Km recorridos","Municipios","Incidentes","Duración media","Dentro RUMCLA",...(meta>0?["Cumple meta","% avance"]:[])];
-  const rows=filas.map(f=>[f.g,f.cnt,f.km>0?parseFloat(f.km.toFixed(1)):0,f.munis,f.ileg,f.durMedia,f.rumcla,...(meta>0?[f.cnt>=meta?"Sí":"No",Math.min(Math.round(f.cnt/meta*100),100)]:[])]);
-  const ws=XLSX.utils.aoa_to_sheet([header,...rows]);
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Verificación");
+  // Hoja 1: resumen por guardarecurso
+  const hSum=[["Guardarecursos","Patrullajes","Km totales","Municipios","Incidentes","Duración media","RUMCLA","Fuera RUMCLA",...(meta>0?["Meta","Cumple","% avance"]:[])]];
+  filasSummary.forEach(({g,cnt,km,munis,ileg,durMedia,rumcla})=>{
+    hSum.push([g,cnt,km>0?parseFloat(km.toFixed(1)):0,munis,ileg,durMedia,rumcla,cnt-rumcla,
+      ...(meta>0?[meta,cnt>=meta?"Sí":"No",Math.min(Math.round(cnt/meta*100),100)]:[])])
+  });
+  // Hoja 2: registros individuales
+  const hDet=[["Guardarecursos","#","Fecha","Municipio","Km recorridos","Hora inicio","Hora fin","Duración (h)","Ubicación","Actividad ilegal","Latitud","Longitud","GTM X (m)","GTM Y (m)"]];
+  filasSummary.forEach(({g,registros})=>{
+    registros.forEach((r,i)=>{
+      hDet.push([g,i+1,r["Fecha de patrullaje"]||"",(r["Municipio"]||"").trim(),
+        r.__km!==null?parseFloat(r.__km.toFixed(1)):null,
+        r["Hora de Inicio del patrullaje"]||"",r["Hora de finalizacion de patrullaje"]||"",
+        r.__dur!==null?parseFloat(r.__dur.toFixed(2)):null,
+        r["Ubicacion"]||"",r.__ci==="si"?"Sí":r.__ci==="no"?"No":"",
+        r["Latitud"]||"",r["Longitud"]||"",r["GTM_X (m)"]||"",r["GTM_Y (m)"]||""]);
+    });
+  });
+  const wsSum=XLSX.utils.aoa_to_sheet(hSum);
+  const wsDet=XLSX.utils.aoa_to_sheet(hDet);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,wsSum,"Resumen por guardarecursos");
+  XLSX.utils.book_append_sheet(wb,wsDet,"Patrullajes individuales");
   XLSX.writeFile(wb,`verificacion_patrullajes_${fmtDateDisplay(desde).replace(/\//g,"-")}_al_${fmtDateDisplay(hasta).replace(/\//g,"-")}.xlsx`);
 }
 
