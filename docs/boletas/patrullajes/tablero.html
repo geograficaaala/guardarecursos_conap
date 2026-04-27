@@ -4,39 +4,29 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>AC192 · Tablero dinámico · Patrullajes</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
     :root {
-      --verde-oscuro:  #0a3d2b;
-      --verde-medio:   #1a5c3a;
-      --verde-claro:   #2d7a4f;
-      --bg:            #f2f5f3;
-      --surface:       #ffffff;
-      --surface-2:     #f7faf8;
-      --ink:           #0d2018;
-      --ink-2:         #2e4e3b;
-      --muted:         #6e8c7c;
-      --borde:         #dae4de;
-      --sombra:        rgba(10,61,43,0.07);
-      --acento:        #1a5c3a;
-      --acento-bg:     rgba(26,92,58,0.07);
-      --acento-borde:  rgba(26,92,58,0.22);
+      --verde-oscuro: #0a3d2b;
+      --verde-medio:  #1a5c3a;
+      --bg:           #f0f4f1;
+      --surface:      #ffffff;
+      --surface-2:    #f6faf7;
+      --ink:          #0c1e13;
+      --ink-2:        #2a4535;
+      --muted:        #6a8878;
+      --borde:        #d8e4dd;
+      --sombra:       rgba(10,61,43,0.06);
+      --acento:       #1a5c3a;
+      --acento-bg:    rgba(26,92,58,0.06);
+      --acento-borde: rgba(26,92,58,0.20);
 
-      /* ── Paleta de datos — 12 colores categóricos, bien separados ── */
-      --d0:  #2166ac;   /* azul cobalto      */
-      --d1:  #1b7837;   /* verde bosque      */
-      --d2:  #b35806;   /* naranja tostado   */
-      --d3:  #762a83;   /* violeta oscuro    */
-      --d4:  #b2182b;   /* rojo carmín       */
-      --d5:  #01665e;   /* verde azulado     */
-      --d6:  #8c510a;   /* cobre/marrón      */
-      --d7:  #4393c3;   /* azul cielo        */
-      --d8:  #c51b7d;   /* magenta           */
-      --d9:  #4d9221;   /* verde lima        */
-      --d10: #d6604d;   /* salmón/coral      */
-      --d11: #5e3c99;   /* índigo            */
+      /* Paleta de datos — 12 colores categóricos ColorBrewer-inspired */
+      --d0:#1f6cb0; --d1:#1a7a38; --d2:#b05608; --d3:#6b2680;
+      --d4:#a81c2a; --d5:#016660; --d6:#7a4508; --d7:#3d8fbf;
+      --d8:#b51a72; --d9:#448a1e; --d10:#c85840; --d11:#4e359a;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -49,63 +39,67 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      opacity: 0;
-      animation: fadeIn .4s ease forwards;
       font-size: 14px;
       line-height: 1.55;
+      opacity: 0;
+      animation: bodyIn .5s cubic-bezier(.22,.68,0,1.2) forwards;
     }
-
-    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes bodyIn { to { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { body { animation: none; opacity: 1; } }
 
-    /* ══ HEADER ══════════════════════════════════ */
+    /* ═══ HEADER ═══════════════════════════════════════ */
     header {
-      background: linear-gradient(100deg, var(--verde-oscuro) 0%, var(--verde-medio) 100%);
+      background: linear-gradient(105deg, var(--verde-oscuro) 0%, var(--verde-medio) 100%);
       color: #fff;
-      padding: 14px 24px 16px;
+      padding: 14px 28px 16px;
       position: sticky; top: 0; z-index: 200;
-      box-shadow: 0 2px 24px rgba(0,0,0,.3);
+      box-shadow: 0 2px 28px rgba(0,0,0,.26);
       flex-shrink: 0;
     }
     .header-inner {
       max-width: 1480px; margin: 0 auto;
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; flex-wrap: wrap;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 16px; flex-wrap: wrap;
     }
     .logo-group {
       display: flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,.11);
-      border: 1px solid rgba(255,255,255,.17);
-      border-radius: 999px; padding: 5px 13px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 999px; padding: 5px 14px;
     }
     .logo-group img {
       height: 36px; max-width: 112px; object-fit: contain;
       background: #fff; border-radius: 999px; padding: 3px 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.22);
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
     }
     .header-right { text-align: right; flex: 1; }
     .header-right h1 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 1px; }
-    .header-right p  { font-size: 12px; opacity: .6; font-weight: 300; }
+    .header-right p  { font-size: 12px; opacity: .58; font-weight: 300; }
     .header-chip {
       display: inline-flex; align-items: center; gap: 6px;
-      margin-top: 6px; padding: 3px 11px;
+      margin-top: 6px; padding: 3px 12px;
       border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.22);
-      background: rgba(255,255,255,.1);
-      font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 500;
+      border: 1px solid rgba(255,255,255,.20);
+      background: rgba(255,255,255,.08);
+      font-size: 10px; letter-spacing: .12em;
+      text-transform: uppercase; font-weight: 600;
     }
     .chip-dot {
-      width: 6px; height: 6px; border-radius: 50%; background: #86efac;
-      animation: pulse 2s ease-in-out infinite;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #86efac;
+      animation: blink 2.4s ease-in-out infinite;
     }
-    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.65)} }
+    @keyframes blink {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .35; transform: scale(.6); }
+    }
 
-    /* ══ NAV MÓDULO ══════════════════════════════ */
+    /* ═══ NAV ═══════════════════════════════════════════ */
     .module-nav {
       background: var(--surface);
       border-bottom: 1px solid var(--borde);
-      padding: 0 24px;
-      box-shadow: 0 1px 6px rgba(0,0,0,.05);
+      padding: 0 28px;
+      box-shadow: 0 1px 8px rgba(0,0,0,.04);
       flex-shrink: 0;
     }
     .module-nav-inner {
@@ -117,44 +111,51 @@
     .nav-back {
       display: flex; align-items: center; gap: 6px;
       padding: 13px 18px 13px 0;
-      text-decoration: none; font-size: 13px; font-weight: 500; color: var(--muted);
-      border-right: 1px solid var(--borde); margin-right: 8px;
-      white-space: nowrap; transition: color .2s;
+      text-decoration: none; font-size: 13px; font-weight: 500;
+      color: var(--muted); border-right: 1px solid var(--borde);
+      margin-right: 8px; white-space: nowrap;
+      transition: color .18s;
     }
     .nav-back:hover { color: var(--verde-medio); }
     .nav-tab {
       display: flex; align-items: center; gap: 7px;
       padding: 0 18px; text-decoration: none;
       font-size: 13px; font-weight: 500; color: var(--muted);
-      border-bottom: 3px solid transparent; white-space: nowrap;
-      transition: color .2s, border-color .2s; height: 50px;
+      border-bottom: 3px solid transparent;
+      white-space: nowrap; height: 50px;
+      transition: color .18s, border-color .18s;
     }
-    .nav-tab:hover { color: var(--acento); border-bottom-color: rgba(26,92,58,.25); }
+    .nav-tab:hover  { color: var(--acento); border-bottom-color: rgba(26,92,58,.2); }
     .nav-tab.active { color: var(--acento); border-bottom-color: var(--acento); font-weight: 600; }
 
-    /* ══ PÁGINA ══════════════════════════════════ */
+    /* ═══ PÁGINA ════════════════════════════════════════ */
     .page {
       max-width: 1480px; width: 100%;
-      margin: 0 auto; padding: 24px 24px 64px; flex: 1;
+      margin: 0 auto; padding: 28px 28px 72px; flex: 1;
     }
 
-    /* ══ PANEL FILTROS ═══════════════════════════ */
+    /* ═══ FILTROS ═══════════════════════════════════════ */
     .filtros-panel {
       background: var(--surface);
       border: 1px solid var(--borde);
       border-radius: 16px; padding: 20px 24px;
-      box-shadow: 0 2px 14px var(--sombra);
-      margin-bottom: 20px;
+      box-shadow: 0 2px 16px var(--sombra);
+      margin-bottom: 24px;
+      animation: slideDown .4s cubic-bezier(.22,.68,0,1.1) .1s both;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
     .filtros-titulo {
-      font-size: 11px; font-weight: 700; color: var(--muted);
-      letter-spacing: .12em; text-transform: uppercase;
+      font-size: 10.5px; font-weight: 700; color: var(--muted);
+      letter-spacing: .13em; text-transform: uppercase;
       margin-bottom: 14px;
       display: flex; align-items: center; gap: 8px;
     }
     .filtros-grid {
       display: grid;
-      grid-template-columns: 160px 160px 1fr 1fr 1fr auto auto;
+      grid-template-columns: 155px 155px 1fr 1fr 1fr auto auto;
       gap: 12px; align-items: end;
     }
     @media (max-width: 1100px) { .filtros-grid { grid-template-columns: 1fr 1fr 1fr; } }
@@ -162,58 +163,62 @@
 
     .fg { display: flex; flex-direction: column; gap: 5px; }
     .fg label {
-      font-size: 11px; font-weight: 700; color: var(--ink-2);
+      font-size: 10.5px; font-weight: 700; color: var(--ink-2);
       letter-spacing: .07em; text-transform: uppercase;
     }
     .fg select, .fg input[type="date"] {
       border: 1.5px solid var(--borde); border-radius: 9px;
       padding: 8px 11px; font-size: 13.5px; font-family: inherit;
       background: var(--surface-2); color: var(--ink);
-      transition: border-color .2s, box-shadow .2s; outline: none; width: 100%;
+      transition: border-color .18s, box-shadow .18s;
+      outline: none; width: 100%;
     }
     .fg select:focus, .fg input[type="date"]:focus {
       border-color: var(--acento);
-      box-shadow: 0 0 0 3px rgba(26,92,58,.1);
+      box-shadow: 0 0 0 3px rgba(26,92,58,.10);
       background: var(--surface);
     }
     .btn-filtro {
       padding: 8px 18px; border-radius: 9px;
       border: 1.5px solid var(--borde);
       font-size: 13px; font-weight: 600; font-family: inherit;
-      cursor: pointer; transition: all .2s; white-space: nowrap;
-      height: 40px; display: inline-flex; align-items: center; gap: 6px;
+      cursor: pointer; transition: all .18s;
+      white-space: nowrap; height: 40px;
+      display: inline-flex; align-items: center; gap: 6px;
     }
     .btn-aplicar { background: var(--verde-oscuro); color: #fff; border-color: var(--verde-oscuro); }
-    .btn-aplicar:hover { background: var(--verde-medio); }
+    .btn-aplicar:hover { background: var(--verde-medio); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(10,61,43,.25); }
     .btn-limpiar { background: var(--surface); color: var(--muted); }
     .btn-limpiar:hover { border-color: #94a3b8; color: var(--ink); }
 
-    .chips-wrap {
-      display: flex; flex-wrap: wrap; gap: 7px;
-      margin-top: 14px;
-    }
+    .chips-wrap { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
     .chip-activo {
       display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 12px; border-radius: 999px;
+      padding: 4px 13px; border-radius: 999px;
       background: var(--acento-bg); border: 1px solid var(--acento-borde);
       font-size: 12px; font-weight: 500; color: var(--acento);
+      animation: chipIn .2s ease both;
+    }
+    @keyframes chipIn {
+      from { opacity: 0; transform: scale(.85); }
+      to   { opacity: 1; transform: scale(1); }
     }
 
-    /* ══ ESTADO ═════════════════════════════════ */
+    /* ═══ ESTADO ════════════════════════════════════════ */
     .estado-bar {
       display: flex; align-items: center;
       justify-content: space-between;
-      margin-bottom: 20px; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 22px; flex-wrap: wrap; gap: 8px;
     }
-    .estado-txt { font-size: 13.5px; color: var(--muted); font-weight: 400; }
-    .estado-txt.error { color: #b91c1c; font-weight: 600; }
+    .estado-txt { font-size: 13px; color: var(--muted); font-weight: 400; }
+    .estado-txt.error { color: #9b1c1c; font-weight: 600; }
     .estado-txt strong { color: var(--ink); font-weight: 600; }
 
-    /* ══ KPIs ════════════════════════════════════ */
+    /* ═══ KPIs ══════════════════════════════════════════ */
     .kpis {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      gap: 14px; margin-bottom: 26px;
+      gap: 14px; margin-bottom: 28px;
     }
     @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 600px)  { .kpis { grid-template-columns: repeat(2, 1fr); } }
@@ -221,71 +226,97 @@
     .kpi {
       background: var(--surface);
       border: 1px solid var(--borde);
-      border-top: 4px solid transparent;
+      border-top: 3px solid transparent;
       border-radius: 14px; padding: 18px 18px 15px;
-      box-shadow: 0 2px 10px var(--sombra);
-      transition: box-shadow .2s;
+      box-shadow: 0 1px 8px var(--sombra);
+      transition: box-shadow .22s, transform .22s;
+      animation: kpiIn .45s cubic-bezier(.22,.68,0,1.1) both;
     }
-    .kpi:hover { box-shadow: 0 6px 22px rgba(10,61,43,.12); }
-    .kpi-0 { border-top-color: var(--d0); }
-    .kpi-1 { border-top-color: var(--d1); }
-    .kpi-2 { border-top-color: var(--d2); }
-    .kpi-3 { border-top-color: var(--d4); }
-    .kpi-4 { border-top-color: var(--d5); }
-    .kpi-5 { border-top-color: var(--d3); }
+    .kpi:nth-child(1) { animation-delay: .10s; }
+    .kpi:nth-child(2) { animation-delay: .15s; }
+    .kpi:nth-child(3) { animation-delay: .20s; }
+    .kpi:nth-child(4) { animation-delay: .25s; }
+    .kpi:nth-child(5) { animation-delay: .30s; }
+    .kpi:nth-child(6) { animation-delay: .35s; }
+    @keyframes kpiIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .kpi:hover { box-shadow: 0 6px 22px rgba(10,61,43,.11); transform: translateY(-2px); }
+
+    .kpi-0  { border-top-color: var(--d0);  }
+    .kpi-1  { border-top-color: var(--d1);  }
+    .kpi-2  { border-top-color: var(--d2);  }
+    .kpi-3  { border-top-color: var(--d4);  }
+    .kpi-4  { border-top-color: var(--d5);  }
+    .kpi-5  { border-top-color: var(--d3);  }
 
     .kpi-label {
-      font-size: 10.5px; font-weight: 700; color: var(--muted);
-      letter-spacing: .09em; text-transform: uppercase; margin-bottom: 9px;
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      letter-spacing: .10em; text-transform: uppercase; margin-bottom: 10px;
     }
     .kpi-value {
       font-family: 'Playfair Display', serif;
       font-size: 32px; font-weight: 900;
       line-height: 1; color: var(--ink); margin-bottom: 5px;
     }
-    .kpi-sub { font-size: 12px; color: var(--muted); font-weight: 400; }
+    .kpi-sub { font-size: 11.5px; color: var(--muted); font-weight: 400; }
 
-    /* ══ DIVISOR DE SECCIÓN ══════════════════════ */
+    /* ═══ DIVISORES DE SECCIÓN ══════════════════════════ */
     .sec-divider {
-      display: flex; align-items: center; gap: 12px;
-      font-size: 11px; font-weight: 700; color: var(--muted);
-      letter-spacing: .12em; text-transform: uppercase;
-      margin: 28px 0 18px;
+      display: flex; align-items: center; gap: 14px;
+      font-size: 10.5px; font-weight: 700; color: var(--muted);
+      letter-spacing: .14em; text-transform: uppercase;
+      margin: 32px 0 20px;
     }
     .sec-divider::before, .sec-divider::after {
       content: ''; flex: 1; height: 1px; background: var(--borde);
     }
 
-    /* ══ GRID DE GRÁFICAS ═══════════════════════ */
+    /* ═══ GRID Y TARJETAS ═══════════════════════════════ */
     .charts-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 18px;
     }
     @media (max-width: 860px) { .charts-grid { grid-template-columns: 1fr; } }
+
     .cc {
       background: var(--surface);
       border: 1px solid var(--borde);
       border-radius: 16px; padding: 22px 24px 20px;
-      box-shadow: 0 2px 14px var(--sombra);
+      box-shadow: 0 1px 10px var(--sombra);
       display: flex; flex-direction: column;
+      transition: box-shadow .22s;
+      animation: cardIn .5s cubic-bezier(.22,.68,0,1.1) both;
     }
+    .cc:hover { box-shadow: 0 4px 22px rgba(10,61,43,.10); }
     .cc.full { grid-column: span 2; }
     @media (max-width: 860px) { .cc.full { grid-column: span 1; } }
 
-    /* Cabecera tarjeta */
+    /* Animación escalonada de tarjetas */
+    .charts-grid .cc:nth-child(1) { animation-delay: .08s; }
+    .charts-grid .cc:nth-child(2) { animation-delay: .14s; }
+    .charts-grid .cc:nth-child(3) { animation-delay: .20s; }
+    .charts-grid .cc:nth-child(4) { animation-delay: .26s; }
+    .charts-grid .cc:nth-child(5) { animation-delay: .32s; }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cabecera de tarjeta */
     .cc-head {
       display: flex; align-items: flex-start;
-      justify-content: space-between; gap: 10px;
-      margin-bottom: 4px;
+      justify-content: space-between; gap: 10px; margin-bottom: 4px;
     }
     .cc-meta { flex: 1; }
     .cc-title {
       font-family: 'Playfair Display', serif;
-      font-size: 17px; font-weight: 700; color: var(--ink);
+      font-size: 16.5px; font-weight: 700; color: var(--ink);
       line-height: 1.25; margin-bottom: 4px;
     }
-    .cc-hint { font-size: 12.5px; color: var(--muted); font-weight: 400; line-height: 1.5; }
+    .cc-hint { font-size: 12px; color: var(--muted); font-weight: 400; line-height: 1.55; }
 
     /* Botón PNG */
     .btn-png {
@@ -293,25 +324,30 @@
       padding: 5px 11px; border-radius: 7px;
       border: 1.5px solid var(--borde);
       background: var(--surface-2);
-      font-size: 11.5px; font-weight: 600; font-family: inherit;
-      color: var(--ink-2); cursor: pointer;
+      font-size: 11px; font-weight: 600; font-family: inherit;
+      color: var(--muted); cursor: pointer;
       transition: all .18s; white-space: nowrap; flex-shrink: 0;
+      letter-spacing: .03em;
     }
-    .btn-png:hover { background: var(--verde-oscuro); color: #fff; border-color: var(--verde-oscuro); }
-    .btn-png svg { flex-shrink: 0; }
+    .btn-png:hover {
+      background: var(--verde-oscuro); color: #fff;
+      border-color: var(--verde-oscuro);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(10,61,43,.22);
+    }
 
     /* Separador interno */
     .cc-sep { width: 100%; height: 1px; background: var(--borde); margin: 10px 0 16px; }
 
-    /* Filtros locales de gráfica */
+    /* Filtros locales */
     .cc-filters {
       display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
       margin-bottom: 14px; padding: 10px 14px;
       background: var(--surface-2); border: 1px solid var(--borde);
-      border-radius: 10px; font-size: 12.5px;
+      border-radius: 10px;
     }
     .cc-filters label {
-      font-size: 10.5px; font-weight: 700; color: var(--ink-2);
+      font-size: 10px; font-weight: 700; color: var(--ink-2);
       letter-spacing: .07em; text-transform: uppercase; white-space: nowrap;
     }
     .cc-filters select, .cc-filters input[type="date"] {
@@ -324,44 +360,39 @@
     .cc-filters input[type="date"]:focus { border-color: var(--acento); }
     .cc-btn {
       padding: 5px 12px; border-radius: 7px;
-      border: 1.5px solid var(--borde);
+      border: 1.5px solid transparent;
       background: var(--verde-oscuro); color: #fff;
-      font-size: 12px; font-weight: 600; font-family: inherit;
-      cursor: pointer; transition: background .2s;
+      font-size: 11.5px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: background .18s;
     }
     .cc-btn:hover { background: var(--verde-medio); }
     .cc-btn-clear {
-      background: var(--surface); color: var(--muted); border-color: var(--borde);
+      background: var(--surface); color: var(--muted);
+      border-color: var(--borde);
     }
     .cc-btn-clear:hover { color: var(--ink); border-color: #94a3b8; }
 
-    /* Canvas */
+    /* Contenedores canvas */
     .cw { position: relative; }
-    .h200 { height: 200px; }
-    .h260 { height: 260px; }
-    .h300 { height: 300px; }
-    .h340 { height: 340px; }
-    .h420 { height: 420px; }
-    .h480 { height: 480px; }
-    .h560 { height: 560px; }
+    .h200 { height: 200px; } .h260 { height: 260px; }
+    .h300 { height: 300px; } .h340 { height: 340px; }
+    .h420 { height: 420px; } .h480 { height: 480px; }
 
-    /* Heatmap */
     #heatmap-container { overflow-x: auto; padding-bottom: 6px; }
 
-    /* ══ FOOTER ══════════════════════════════════ */
+    /* ═══ FOOTER ════════════════════════════════════════ */
     footer {
       background: var(--verde-oscuro);
-      color: rgba(255,255,255,.45);
+      color: rgba(255,255,255,.42);
       text-align: center; padding: 16px 24px;
-      font-size: 12px; font-weight: 300; letter-spacing: .03em;
+      font-size: 12px; font-weight: 300; letter-spacing: .04em;
       flex-shrink: 0;
     }
-    footer strong { color: rgba(255,255,255,.78); font-weight: 500; }
+    footer strong { color: rgba(255,255,255,.75); font-weight: 500; }
   </style>
 </head>
 <body>
 
-<!-- ══ HEADER ══════════════════════════════════════ -->
 <header>
   <div class="header-inner">
     <div class="logo-group">
@@ -379,7 +410,6 @@
   </div>
 </header>
 
-<!-- ══ NAV MÓDULO ══════════════════════════════════ -->
 <nav class="module-nav">
   <div class="module-nav-inner">
     <a href="../../index.html" class="nav-back">
@@ -401,14 +431,12 @@
   </div>
 </nav>
 
-<!-- ══ CONTENIDO PRINCIPAL ════════════════════════ -->
 <div class="page">
 
-  <!-- ── FILTROS GLOBALES ── -->
   <div class="filtros-panel">
     <div class="filtros-titulo">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-      Filtros globales — se aplican a todos los gráficos
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filtros globales — aplican a todos los gráficos
     </div>
     <div class="filtros-grid">
       <div class="fg"><label>Desde</label><input type="date" id="f-desde"/></div>
@@ -430,23 +458,21 @@
         </select>
       </div>
       <button class="btn-filtro btn-aplicar" id="btn-aplicar">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
         Aplicar
       </button>
       <button class="btn-filtro btn-limpiar" id="btn-limpiar">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         Limpiar
       </button>
     </div>
     <div class="chips-wrap" id="chips-wrap"></div>
   </div>
 
-  <!-- Estado -->
   <div class="estado-bar">
     <span class="estado-txt" id="estado">Cargando datos…</span>
   </div>
 
-  <!-- ── KPIs ── -->
   <div class="kpis">
     <div class="kpi kpi-0">
       <div class="kpi-label">Patrullajes</div>
@@ -475,82 +501,75 @@
     </div>
     <div class="kpi kpi-5">
       <div class="kpi-label">Período activo</div>
-      <div class="kpi-value" style="font-size:14px;padding-top:8px" id="kpi-rango">–</div>
+      <div class="kpi-value" style="font-size:13px;padding-top:9px" id="kpi-rango">–</div>
       <div class="kpi-sub">rango de fechas</div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       SECCIÓN 1 — ANÁLISIS TEMPORAL
-  ══════════════════════════════════════════════ -->
+  <!-- SECCIÓN 1 — TEMPORAL -->
   <div class="sec-divider">Análisis temporal</div>
   <div class="charts-grid">
 
-    <!-- G1: Tendencia mensual -->
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Tendencia mensual de patrullajes</div>
-          <div class="cc-hint">Volumen total por mes · la línea punteada muestra el promedio del período seleccionado</div>
+          <div class="cc-hint">Volumen total por mes · la línea punteada indica el promedio del período seleccionado</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-tendencia','tendencia_mensual')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
       <div class="cw h300"><canvas id="c-tendencia"></canvas></div>
     </div>
 
-    <!-- G2: Heatmap -->
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Mapa de calor · día de semana × hora de inicio</div>
-          <div class="cc-hint">Cada celda muestra cuántos patrullajes iniciaron en ese día y hora · más oscuro = mayor concentración</div>
+          <div class="cc-hint">Cada celda muestra cuántos patrullajes iniciaron en ese día y hora · tonos más oscuros indican mayor concentración</div>
         </div>
         <button class="btn-png" onclick="downloadSVGasPNG('heatmap-svg','heatmap_dia_hora')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
       <div id="heatmap-container"><svg id="heatmap-svg"></svg></div>
     </div>
 
-    <!-- G3: Histograma duración -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Distribución de duración</div>
-          <div class="cc-hint">Histograma de horas efectivas · solo registros con horario de inicio y fin válidos</div>
+          <div class="cc-hint">Histograma de horas efectivas · registros con horario válido de inicio y fin</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-duracion','distribucion_duracion')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
       <div class="cw h260"><canvas id="c-duracion"></canvas></div>
     </div>
 
-    <!-- G4: Scatter -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Hora de inicio vs. duración</div>
-          <div class="cc-hint">Cada punto representa un patrullaje · explora si la hora de salida incide en la duración</div>
+          <div class="cc-hint">Cada punto representa un patrullaje · explora si la hora de salida influye en la duración</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-scatter','hora_vs_duracion')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
       <div class="cw h260"><canvas id="c-scatter"></canvas></div>
     </div>
 
-    <!-- G11: Día de semana -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
@@ -558,40 +577,38 @@
           <div class="cc-hint">Total acumulado de patrullajes según el día en que fueron realizados</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-diaSem','patrullajes_por_dia')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
       <div class="cw h260"><canvas id="c-diaSem"></canvas></div>
     </div>
 
-    <!-- G_km: Km por mes -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Kilómetros recorridos por mes</div>
-          <div class="cc-hint">Acumulado mensual de kilómetros de patrullaje registrados en el período</div>
+          <div class="cc-hint">Acumulado mensual de kilómetros de patrullaje en el período seleccionado</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-kmMes','km_por_mes')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
       <div class="cw h260"><canvas id="c-kmMes"></canvas></div>
     </div>
 
-    <!-- G5: Stacked municipios × mes -->
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Evolución mensual por municipio (top 8)</div>
+          <div class="cc-title">Evolución mensual por municipio — top 8</div>
           <div class="cc-hint">Distribución geográfica de patrullajes a lo largo del tiempo · identifica tendencias por territorio</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-muniMes','evolucion_municipal')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
@@ -600,13 +617,10 @@
 
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       SECCIÓN 2 — TERRITORIAL Y TEMÁTICO
-  ══════════════════════════════════════════════ -->
+  <!-- SECCIÓN 2 — TERRITORIAL -->
   <div class="sec-divider">Análisis territorial y temático</div>
   <div class="charts-grid">
 
-    <!-- G7a: Donut RUMCLA -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
@@ -614,15 +628,14 @@
           <div class="cc-hint">Patrullajes dentro vs. fuera del área protegida RUMCLA</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-rumcla','cobertura_rumcla')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
       <div class="cw h260"><canvas id="c-rumcla"></canvas></div>
     </div>
 
-    <!-- G7b: Donut ilegal -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
@@ -630,15 +643,14 @@
           <div class="cc-hint">Proporción de patrullajes con y sin incidente reportado en el período</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-ilegal','actividad_ilegal')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
       <div class="cw h260"><canvas id="c-ilegal"></canvas></div>
     </div>
 
-    <!-- G10: Tipo de patrullaje -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
@@ -646,56 +658,53 @@
           <div class="cc-hint">Distribución por modalidad de patrullaje registrada en el formulario</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-tipoPat','tipo_patrullaje')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
       <div class="cw h260"><canvas id="c-tipoPat"></canvas></div>
     </div>
 
-    <!-- G_inst: Instituciones -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Patrullajes interinstitucionales</div>
           <div class="cc-hint">Proporción de patrullajes realizados con apoyo de otras instituciones</div>
         </div>
-        <button class="btn-png" onclick="downloadChart('c-inst','patrullajes_interinstitucionales')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+        <button class="btn-png" onclick="downloadChart('c-inst','interinstitucionales')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
       <div class="cw h260"><canvas id="c-inst"></canvas></div>
     </div>
 
-    <!-- G8: Ilegal por municipio -->
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Incidentes por municipio</div>
-          <div class="cc-hint">Patrullajes con actividad ilegal vs. sin incidente · haz clic en una barra para filtrar el tablero por ese municipio</div>
+          <div class="cc-hint">Patrullajes con actividad ilegal vs. sin incidente · haga clic en una barra para filtrar el tablero por municipio</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-ilegalMuni','incidentes_municipio')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
       <div class="cw h300"><canvas id="c-ilegalMuni"></canvas></div>
     </div>
 
-    <!-- G9: Área protegida -->
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Patrullajes por área protegida</div>
-          <div class="cc-hint">Distribución de patrullajes según el área cubierta · refleja la carga de trabajo por zona</div>
+          <div class="cc-hint">Distribución según el área cubierta · refleja la carga de trabajo por zona de conservación</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-areaProt','patrullajes_area_protegida')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
@@ -704,13 +713,10 @@
 
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       SECCIÓN 3 — GUARDARECURSOS
-  ══════════════════════════════════════════════ -->
+  <!-- SECCIÓN 3 — GUARDARECURSOS -->
   <div class="sec-divider">Análisis por guardarecursos</div>
   <div class="charts-grid">
 
-    <!-- G6: Radar -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
@@ -718,8 +724,8 @@
           <div class="cc-hint">Perfil multidimensional: volumen, municipios cubiertos, duración media, meses activos e incidentes</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-radar','radar_guardarecursos')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-filters">
@@ -729,7 +735,6 @@
       <div class="cw h340"><canvas id="c-radar"></canvas></div>
     </div>
 
-    <!-- G_km_guarda: km por guardarecursos -->
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
@@ -737,8 +742,8 @@
           <div class="cc-hint">Total de kilómetros acumulados por cada guardarecursos en el período filtrado</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-kmGuarda','km_por_guardarecursos')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-sep"></div>
@@ -747,505 +752,333 @@
 
   </div>
 
-  <!-- G12: RANKING — ANCHO COMPLETO, AL FONDO -->
+  <!-- RANKING — AL FONDO COMPLETO -->
   <div class="charts-grid" style="margin-top:18px">
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Ranking de guardarecursos — patrullajes e incidentes (todos los activos)</div>
-          <div class="cc-hint">Barras = total de patrullajes (etiqueta en cada barra) · puntos rojos = incidentes reportados · se pueden aplicar fechas propias independientes de los filtros globales</div>
+          <div class="cc-title">Ranking de guardarecursos — patrullajes e incidentes</div>
+          <div class="cc-hint">Barras = total de patrullajes · puntos rojos = incidentes reportados · se puede aplicar un rango de fechas propio independiente de los filtros globales</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-rankGuarda','ranking_guardarecursos')">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          PNG
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
         </button>
       </div>
       <div class="cc-filters">
         <label>Rango propio:</label>
-        <input type="date" id="g12-desde" title="Desde"/>
+        <input type="date" id="g12-desde"/>
         <span style="color:var(--muted);font-size:13px">–</span>
-        <input type="date" id="g12-hasta" title="Hasta"/>
+        <input type="date" id="g12-hasta"/>
         <button class="cc-btn" id="g12-aplicar">Aplicar</button>
-        <button class="cc-btn cc-btn-clear" id="g12-limpiar">✕ Limpiar</button>
+        <button class="cc-btn cc-btn-clear" id="g12-limpiar">Limpiar</button>
       </div>
       <div class="cw h480"><canvas id="c-rankGuarda"></canvas></div>
     </div>
   </div>
 
-</div><!-- /page -->
+</div>
 
 <footer>
   <p><strong>CONAP · Dirección Regional Altiplano Central</strong> · Sistema desarrollado por el Laboratorio SIG · Asociación Amigos del Lago de Atitlán (AALA) · © 2026</p>
 </footer>
 
 <script>
-/* ══════════════════════════════════════════════════════════════
-   PALETA UNIFICADA — 12 colores categóricos
-══════════════════════════════════════════════════════════════ */
+/* ─── PALETA UNIFICADA ─────────────────────────────────────── */
 const PAL = [
-  "#2166ac","#1b7837","#b35806","#762a83","#b2182b","#01665e",
-  "#8c510a","#4393c3","#c51b7d","#4d9221","#d6604d","#5e3c99"
+  "#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660",
+  "#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"
 ];
-const PAL_BG = PAL.map(c => c + "bb");
+const PAL_A = PAL.map(c => c + "bb"); // versión semitransparente
 
-/* ══════════════════════════════════════════════════════════════
-   NORMALIZACIÓN DE GUARDARECURSOS
-══════════════════════════════════════════════════════════════ */
-// Excluidos: ya no trabajan para CONAP
+/* ─── NORMALIZACIÓN ────────────────────────────────────────── */
 const EXCLUIDOS = new Set([
   "daniel estuardo barillas coo","daniel estuardo barillas",
   "domingo alfonso mendoza quiacain","domingo alfonso mendoza",
   "job' kotz'ij eligia morales quino","job kotzij eligia morales quino",
-  "jose manuel vasquez upun","jose manuel vasquez upun",
   "pedro chiviliu esquina",
   "ruben enrique sumoza mendoza","ruben enrique sumoza",
 ]);
-
-// Fusiones: variantes tipográficas → nombre canónico
 const MERGE = {
-  "5 juan marcos saquic":             "Juan Marcos Saquic",
-  "9 heriberto chavez chavez":        "Heriberto Chavez Chavez",
-  "antonio federico tzaj y tzaj":     "Antonio Federico Tzaj Y Tzaj",
-  "diego martin ramirez ixbalan":     "Diego Martín Ramírez Ixbalan",
-  "diego martín ramírez ixbalan":     "Diego Martín Ramírez Ixbalan",
-  "edgar bartolo batin navichoc":     "Edgar Bartolo Batín Navichoc",
-  "edgar bartolo batín navichoc":     "Edgar Bartolo Batín Navichoc",
-  "henry regino mendez chavajay":     "Henry Regino Méndez Chavajay",
-  "henry regino méndez chavajay":     "Henry Regino Méndez Chavajay",
-  "jose bacajol simaji":              "José Bacajol Simají",
-  "josé bacajol simají":              "José Bacajol Simají",
-  "mario cesar tale coche":           "Mario César Talé Coché",
-  "mario césar talé coché":           "Mario César Talé Coché",
-  "rafael enrique chiciy chocoy":     "Rafael Enrique Chiciy Chocoy",
-  "rafael enrique chocoy chocoy":     "Rafael Enrique Chiciy Chocoy",
-  "sebastian tinuar":                 "Sebastián Tinuar Cipriano",
-  "sebastian tinuar cipriano":        "Sebastián Tinuar Cipriano",
-  "vicente francisco omar perez cox": "Vicente Francisco Omar Pérez Cox",
-  "vicente omar francisco pérez":     "Vicente Francisco Omar Pérez Cox",
-  "vicente omar francisco perez":     "Vicente Francisco Omar Pérez Cox",
-  "santos maurico vicente mendoza":   "Santos Mauricio Vicente Mendoza",
+  "5 juan marcos saquic":"Juan Marcos Saquic",
+  "9 heriberto chavez chavez":"Heriberto Chavez Chavez",
+  "antonio federico tzaj y tzaj":"Antonio Federico Tzaj Y Tzaj",
+  "diego martin ramirez ixbalan":"Diego Martín Ramírez Ixbalan",
+  "diego martín ramírez ixbalan":"Diego Martín Ramírez Ixbalan",
+  "edgar bartolo batin navichoc":"Edgar Bartolo Batín Navichoc",
+  "edgar bartolo batín navichoc":"Edgar Bartolo Batín Navichoc",
+  "henry regino mendez chavajay":"Henry Regino Méndez Chavajay",
+  "henry regino méndez chavajay":"Henry Regino Méndez Chavajay",
+  "jose bacajol simaji":"José Bacajol Simají",
+  "josé bacajol simají":"José Bacajol Simají",
+  "mario cesar tale coche":"Mario César Talé Coché",
+  "mario césar talé coché":"Mario César Talé Coché",
+  "rafael enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "rafael enrique chocoy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "sebastian tinuar":"Sebastián Tinuar Cipriano",
+  "sebastian tinuar cipriano":"Sebastián Tinuar Cipriano",
+  "vicente francisco omar perez cox":"Vicente Francisco Omar Pérez Cox",
+  "vicente omar francisco pérez":"Vicente Francisco Omar Pérez Cox",
+  "vicente omar francisco perez":"Vicente Francisco Omar Pérez Cox",
+  "santos maurico vicente mendoza":"Santos Mauricio Vicente Mendoza",
+};
+function canonStr(s){return String(s||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ");}
+function normGuarda(n){if(!n)return null;const c=canonStr(n);if(EXCLUIDOS.has(c))return null;return MERGE[c]||n.trim();}
+
+/* ─── CHART.JS GLOBALES ────────────────────────────────────── */
+Chart.defaults.font.family="'DM Sans',sans-serif";
+Chart.defaults.font.size=13;
+Chart.defaults.color="#6a8878";
+if(typeof ChartDataLabels!=="undefined"){Chart.register(ChartDataLabels);Chart.defaults.set("plugins.datalabels",{display:false});}
+
+// Tooltip unificado — fondo muy oscuro, bordes sutiles
+const TT={
+  backgroundColor:"rgba(7,24,15,0.93)",
+  titleFont:{size:13,weight:"600",family:"'DM Sans',sans-serif"},
+  bodyFont:{size:12.5,family:"'DM Sans',sans-serif"},
+  padding:13,cornerRadius:10,
+  borderColor:"rgba(255,255,255,0.06)",borderWidth:1,
+  titleMarginBottom:6,
 };
 
-function canonStr(s) {
-  return String(s||"").trim().normalize("NFD")
-    .replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ");
+// Escalas compartidas — grid muy sutil
+const GRID_COLOR="rgba(0,0,0,0.045)";
+const TICK_FONT={font:{size:12.5}};
+const AXIS_TITLE_FONT={font:{size:12,weight:"600"},color:"#6a8878"};
+
+const CHARTS={};
+function mkChart(id,cfg){
+  if(CHARTS[id])CHARTS[id].destroy();
+  const el=document.getElementById(id);if(!el)return;
+  CHARTS[id]=new Chart(el,cfg);
 }
 
-function normGuarda(nombre) {
-  if (!nombre) return null;
-  const c = canonStr(nombre);
-  if (EXCLUIDOS.has(c)) return null;
-  return MERGE[c] || nombre.trim();
+/* ─── DESCARGAS PNG ─────────────────────────────────────────── */
+function downloadChart(id,fn){
+  const ch=CHARTS[id];if(!ch)return;
+  const cv=ch.canvas,off=document.createElement("canvas");
+  off.width=cv.width;off.height=cv.height;
+  const ctx=off.getContext("2d");
+  ctx.fillStyle="#ffffff";ctx.fillRect(0,0,off.width,off.height);
+  ctx.drawImage(cv,0,0);
+  const a=document.createElement("a");a.href=off.toDataURL("image/png");a.download=fn+".png";a.click();
 }
-
-/* ══════════════════════════════════════════════════════════════
-   CHART.JS — CONFIG GLOBAL
-══════════════════════════════════════════════════════════════ */
-Chart.defaults.font.family = "'DM Sans', sans-serif";
-Chart.defaults.font.size   = 13;
-Chart.defaults.color       = "#6e8c7c";
-
-if (typeof ChartDataLabels !== "undefined") {
-  Chart.register(ChartDataLabels);
-  Chart.defaults.set("plugins.datalabels", { display: false });
-}
-
-const TT = {
-  backgroundColor: "rgba(8,28,18,0.92)",
-  titleFont:  { size: 13, weight: "600", family: "'DM Sans',sans-serif" },
-  bodyFont:   { size: 12.5, family: "'DM Sans',sans-serif" },
-  padding: 12, cornerRadius: 10,
-  borderColor: "rgba(255,255,255,0.07)", borderWidth: 1,
-};
-
-const CHARTS = {};
-function mkChart(id, cfg) {
-  if (CHARTS[id]) CHARTS[id].destroy();
-  const el = document.getElementById(id);
-  if (!el) return;
-  CHARTS[id] = new Chart(el, cfg);
-}
-
-/* ══════════════════════════════════════════════════════════════
-   DESCARGA PNG
-══════════════════════════════════════════════════════════════ */
-function downloadChart(canvasId, filename) {
-  const chart = CHARTS[canvasId];
-  if (!chart) return;
-  // Fondo blanco para la descarga
-  const canvas = chart.canvas;
-  const offscreen = document.createElement("canvas");
-  offscreen.width  = canvas.width;
-  offscreen.height = canvas.height;
-  const ctx = offscreen.getContext("2d");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, offscreen.width, offscreen.height);
-  ctx.drawImage(canvas, 0, 0);
-  const a = document.createElement("a");
-  a.href = offscreen.toDataURL("image/png");
-  a.download = filename + ".png";
-  a.click();
-}
-
-function downloadSVGasPNG(svgId, filename) {
-  const svg = document.getElementById(svgId);
-  if (!svg) return;
-  const data = new XMLSerializer().serializeToString(svg);
-  const blob = new Blob([data], { type: "image/svg+xml;charset=utf-8" });
-  const url  = URL.createObjectURL(blob);
-  const img  = new Image();
-  img.onload = () => {
-    const canvas = document.createElement("canvas");
-    canvas.width  = svg.width.baseVal.value  || 900;
-    canvas.height = svg.height.baseVal.value || 320;
-    const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(img, 0, 0);
-    const a = document.createElement("a");
-    a.href = canvas.toDataURL("image/png");
-    a.download = filename + ".png";
-    a.click();
+function downloadSVGasPNG(svgId,fn){
+  const svg=document.getElementById(svgId);if(!svg)return;
+  const data=new XMLSerializer().serializeToString(svg);
+  const blob=new Blob([data],{type:"image/svg+xml;charset=utf-8"});
+  const url=URL.createObjectURL(blob);const img=new Image();
+  img.onload=()=>{
+    const cv=document.createElement("canvas");
+    cv.width=svg.width.baseVal.value||900;cv.height=svg.height.baseVal.value||320;
+    const ctx=cv.getContext("2d");ctx.fillStyle="#ffffff";ctx.fillRect(0,0,cv.width,cv.height);ctx.drawImage(img,0,0);
+    const a=document.createElement("a");a.href=cv.toDataURL("image/png");a.download=fn+".png";a.click();
     URL.revokeObjectURL(url);
-  };
-  img.src = url;
+  };img.src=url;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   UTILIDADES
-══════════════════════════════════════════════════════════════ */
-const norm  = v => v == null ? "" : String(v).trim().replace(/\s+/g," ");
-const uniq  = arr => [...new Set(arr.filter(v => v != null && v !== ""))];
-const sum_  = arr => arr.reduce((a,b) => a+b, 0);
-const avg_  = arr => arr.length ? sum_(arr)/arr.length : 0;
+/* ─── UTILIDADES ────────────────────────────────────────────── */
+const norm=v=>v==null?"":String(v).trim().replace(/\s+/g," ");
+const uniq=arr=>[...new Set(arr.filter(v=>v!=null&&v!==""))];
+const sum_=arr=>arr.reduce((a,b)=>a+b,0);
+const avg_=arr=>arr.length?sum_(arr)/arr.length:0;
+const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MESES_F=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DIAS=["Lunes","Martes","Miér.","Jueves","Viernes","Sáb.","Dom."];
+const LABELS={muni:new Map(),guarda:new Map(),ap:new Map(),tp:new Map()};
 
-const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const MESES_F = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-const DIAS    = ["Lunes","Martes","Miér.","Jueves","Viernes","Sáb.","Dom."];
+function canonU(v){const c=canonStr(v);if(c.includes("fuera"))return"fuera";if(c.includes("rumcla")||c.includes("dentro"))return"rumcla";return c;}
+function canonI(v){const c=canonStr(v);return(c==="si"||c==="sí")?"si":c==="no"?"no":"";}
+function parseDate(s){const v=norm(s);if(!v)return null;let m=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));if(v.includes("/")){const p=v.split("/");if(p.length>=3)return new Date(Date.UTC(+p[2],+p[1]-1,+p[0]));}return null;}
+function parseHour(s){const v=norm(s);if(!v)return null;const m=v.match(/^(\d{1,2}):(\d{2})/);return m?+m[1]+Math.round(+m[2]/60*100)/100:null;}
+function calcDur(a,b){const x=parseHour(a),y=parseHour(b);if(x===null||y===null)return null;let d=y-x;if(d<0)d+=24;return(d>16||d<0.1)?null:d;}
+function fmtDate(dt){if(!dt)return"–";return String(dt.getUTCDate()).padStart(2,"0")+"/"+String(dt.getUTCMonth()+1).padStart(2,"0")+"/"+dt.getUTCFullYear();}
+function mKey(dt){return dt.getUTCFullYear()+"-"+String(dt.getUTCMonth()+1).padStart(2,"0");}
+function mShort(k){const[y,m]=k.split("-");return MESES_S[+m-1]+" '"+String(y).slice(2);}
+function dowMon(dt){return(dt.getUTCDay()+6)%7;}
+function bestL(a,b){a=norm(a);b=norm(b);if(!a)return b;if(!b)return a;const ht=s=>/[áéíóúüñÁÉÍÓÚÜÑ]/.test(s);if(ht(b)&&!ht(a))return b;return b.length>a.length?b:a;}
 
-const LABELS = { muni: new Map(), guarda: new Map(), ap: new Map(), tp: new Map() };
-
-function canonU(v) {
-  const c = canonStr(v);
-  if (c.includes("fuera"))  return "fuera";
-  if (c.includes("rumcla") || c.includes("dentro")) return "rumcla";
-  return c;
-}
-function canonI(v) {
-  const c = canonStr(v);
-  return (c==="si"||c==="sí") ? "si" : c==="no" ? "no" : "";
-}
-
-function parseDate(s) {
-  const v = norm(s); if (!v) return null;
-  let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (m) return new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
-  if (v.includes("/")) {
-    const p = v.split("/");
-    if (p.length>=3) return new Date(Date.UTC(+p[2],+p[1]-1,+p[0]));
-  }
-  return null;
-}
-function parseHour(s) {
-  const v = norm(s); if (!v) return null;
-  const m = v.match(/^(\d{1,2}):(\d{2})/);
-  return m ? +m[1] + Math.round(+m[2]/60*100)/100 : null;
-}
-function calcDur(ini,fin) {
-  const a=parseHour(ini), b=parseHour(fin);
-  if (a===null||b===null) return null;
-  let d=b-a; if(d<0)d+=24;
-  return (d>16||d<0.1)?null:d;
-}
-function fmtDate(dt) {
-  if(!dt)return"–";
-  return String(dt.getUTCDate()).padStart(2,"0")+"/"+
-         String(dt.getUTCMonth()+1).padStart(2,"0")+"/"+dt.getUTCFullYear();
-}
-function mKey(dt) { return dt.getUTCFullYear()+"-"+String(dt.getUTCMonth()+1).padStart(2,"0"); }
-function mShort(k) { const [y,m]=k.split("-"); return MESES_S[+m-1]+" '"+String(y).slice(2); }
-function mFull(k)  { const [y,m]=k.split("-"); return MESES_F[+m-1]+" "+y; }
-function dowMon(dt){ return (dt.getUTCDay()+6)%7; }
-
-function bestL(a,b) {
-  a=norm(a);b=norm(b);
-  if(!a)return b;if(!b)return a;
-  const hasTilde = s=>/[áéíóúüñÁÉÍÓÚÜÑ]/.test(s);
-  if(hasTilde(b)&&!hasTilde(a))return b;
-  return b.length>a.length?b:a;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   CARGA CSV
-══════════════════════════════════════════════════════════════ */
-async function loadCSV() {
-  const urls = [
-    "../../datos/datos_patrullaje.csv",
-    "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/datos_patrullaje.csv"
-  ];
-  for (const url of urls) {
-    try {
-      const r = await fetch(url,{cache:"no-store"});
-      if(!r.ok) continue;
-      const buf=await r.arrayBuffer(); const u8=new Uint8Array(buf);
+/* ─── CARGA CSV ─────────────────────────────────────────────── */
+async function loadCSV(){
+  const urls=["../../datos/datos_patrullaje.csv","https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/datos_patrullaje.csv"];
+  for(const url of urls){
+    try{
+      const r=await fetch(url,{cache:"no-store"});if(!r.ok)continue;
+      const buf=await r.arrayBuffer();const u8=new Uint8Array(buf);
       const t1=new TextDecoder("utf-8",{fatal:false}).decode(u8);
       const t2=new TextDecoder("windows-1252",{fatal:false}).decode(u8);
       const text=(t2.match(/\uFFFD/g)||[]).length<(t1.match(/\uFFFD/g)||[]).length?t2:t1;
-      const p=parseCSV(text); if(p.data.length)return p;
-    } catch(e){}
+      const p=parseCSV(text);if(p.data.length)return p;
+    }catch(e){}
   }
   throw new Error("No se pudo cargar el CSV de patrullajes.");
 }
-
-function parseCSV(text) {
-  const line0=text.split("\n")[0];
-  const dl=[";",",","\t"].sort((a,b)=>line0.split(b).length-line0.split(a).length)[0];
+function parseCSV(text){
+  const l0=text.split("\n")[0];
+  const dl=[";",",","\t"].sort((a,b)=>l0.split(b).length-l0.split(a).length)[0];
   const rows=[];let i=0,f="",row=[],inQ=false;
-  const pF=()=>{row.push(f);f="";};
-  const pR=()=>{if(row.length){rows.push(row);row=[];}};
-  while(i<text.length){
-    const c=text[i];
+  const pF=()=>{row.push(f);f="";};const pR=()=>{if(row.length){rows.push(row);row=[];}};
+  while(i<text.length){const c=text[i];
     if(inQ){if(c==='"'){if(text[i+1]==='"'){f+='"';i+=2;continue;}inQ=false;i++;continue;}f+=c;i++;continue;}
-    if(c==='"'){inQ=true;i++;continue;}
-    if(c===dl){pF();i++;continue;}
-    if(c==="\n"){pF();pR();i++;continue;}
-    if(c==="\r"){if(text[i+1]==="\n")i++;pF();pR();i++;continue;}
-    f+=c;i++;
-  }
+    if(c==='"'){inQ=true;i++;continue;}if(c===dl){pF();i++;continue;}
+    if(c==="\n"){pF();pR();i++;continue;}if(c==="\r"){if(text[i+1]==="\n")i++;pF();pR();i++;continue;}
+    f+=c;i++;}
   pF();pR();
   if(rows.length<2)return{data:[],headers:[]};
   const headers=rows[0].map(h=>norm(h));
-  const data=rows.slice(1).filter(r=>!r.every(v=>!norm(v))).map(r=>{
-    const o={};headers.forEach((h,i)=>o[h]=norm(r[i]||""));return o;
-  });
+  const data=rows.slice(1).filter(r=>!r.every(v=>!norm(v))).map(r=>{const o={};headers.forEach((h,i)=>o[h]=norm(r[i]||""));return o;});
   return{data,headers};
 }
 
-/* ══════════════════════════════════════════════════════════════
-   ENRIQUECIMIENTO
-══════════════════════════════════════════════════════════════ */
-function enrich(data) {
+/* ─── ENRIQUECIMIENTO ───────────────────────────────────────── */
+function enrich(data){
   const out=[];
   for(const r of data){
-    const gn=normGuarda(r["Guarda recursos responsable"]);
-    if(gn===null)continue;
+    const gn=normGuarda(r["Guarda recursos responsable"]);if(gn===null)continue;
     const rr={...r};
-    rr.__guarda=gn;
-    rr.__dt    =parseDate(r["Fecha de patrullaje"]);
-    rr.__anio  =rr.__dt?String(rr.__dt.getUTCFullYear()):"";
-    rr.__mes   =rr.__dt?mKey(rr.__dt):"";
-    rr.__dow   =rr.__dt?dowMon(rr.__dt):null;
-    rr.__hora  =parseHour(r["Hora de Inicio del patrullaje"]);
-    rr.__dur   =calcDur(r["Hora de Inicio del patrullaje"],r["Hora de finalizacion de patrullaje"]);
-    rr.__cm    =canonStr(r["Municipio"]);
-    rr.__cg    =canonStr(gn);
-    rr.__cu    =canonU(r["Ubicacion"]);
-    rr.__ci    =canonI(r["Actividad ilegal observada"]);
-    rr.__cap   =canonStr(r["Area protegida"]);
-    rr.__ctp   =canonStr(r["Tipo de patrullaje"]);
-    rr.__cin   =canonI(r["Hay mas instituciones involucradas en el patrullaje"]);
-    const kmRaw=parseFloat(r["Kilometros recorridos"]||"");
-    rr.__km    =isNaN(kmRaw)?null:kmRaw;
-    if(rr.__cm) LABELS.muni.set(rr.__cm,   bestL(LABELS.muni.get(rr.__cm),  r["Municipio"]));
-    if(rr.__cg) LABELS.guarda.set(rr.__cg, bestL(LABELS.guarda.get(rr.__cg), gn));
-    if(rr.__cap)LABELS.ap.set(rr.__cap,    bestL(LABELS.ap.get(rr.__cap),    r["Area protegida"]));
-    if(rr.__ctp)LABELS.tp.set(rr.__ctp,    bestL(LABELS.tp.get(rr.__ctp),    r["Tipo de patrullaje"]));
+    rr.__guarda=gn;rr.__dt=parseDate(r["Fecha de patrullaje"]);
+    rr.__mes=rr.__dt?mKey(rr.__dt):"";rr.__dow=rr.__dt?dowMon(rr.__dt):null;
+    rr.__hora=parseHour(r["Hora de Inicio del patrullaje"]);
+    rr.__dur=calcDur(r["Hora de Inicio del patrullaje"],r["Hora de finalizacion de patrullaje"]);
+    rr.__cm=canonStr(r["Municipio"]);rr.__cg=canonStr(gn);
+    rr.__cu=canonU(r["Ubicacion"]);rr.__ci=canonI(r["Actividad ilegal observada"]);
+    rr.__cap=canonStr(r["Area protegida"]);rr.__ctp=canonStr(r["Tipo de patrullaje"]);
+    rr.__cin=canonI(r["Hay mas instituciones involucradas en el patrullaje"]);
+    const km=parseFloat(r["Kilometros recorridos"]||"");rr.__km=isNaN(km)?null:km;
+    if(rr.__cm)LABELS.muni.set(rr.__cm,bestL(LABELS.muni.get(rr.__cm),r["Municipio"]));
+    if(rr.__cg)LABELS.guarda.set(rr.__cg,bestL(LABELS.guarda.get(rr.__cg),gn));
+    if(rr.__cap)LABELS.ap.set(rr.__cap,bestL(LABELS.ap.get(rr.__cap),r["Area protegida"]));
+    if(rr.__ctp)LABELS.tp.set(rr.__ctp,bestL(LABELS.tp.get(rr.__ctp),r["Tipo de patrullaje"]));
     out.push(rr);
   }
   return out;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   FILTROS
-══════════════════════════════════════════════════════════════ */
+/* ─── FILTROS ───────────────────────────────────────────────── */
 let ROWS=[];
-
+function fillSel(id,opts,ph){const el=document.getElementById(id);if(!el)return;el.innerHTML=`<option value="">${ph}</option>`;opts.forEach(({v,l})=>{const o=document.createElement("option");o.value=v;o.textContent=l;el.appendChild(o);});}
 function initSelects(){
-  const sM=[...LABELS.muni.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));
-  fillSel("f-municipio",sM,"Todos los municipios");
-  const sG=[...LABELS.guarda.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));
-  fillSel("f-guarda",sG,"Todos");
+  const sM=[...LABELS.muni.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));fillSel("f-municipio",sM,"Todos los municipios");
+  const sG=[...LABELS.guarda.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));fillSel("f-guarda",sG,"Todos");
   const rSel=document.getElementById("f-radar-guarda");
-  if(rSel){rSel.innerHTML='<option value="">— Top 6 por volumen —</option>';
-    sG.forEach(({v,l})=>{const o=document.createElement("option");o.value=v;o.textContent=l;rSel.appendChild(o);});}
+  if(rSel){rSel.innerHTML='<option value="">— Top 6 por volumen —</option>';sG.forEach(({v,l})=>{const o=document.createElement("option");o.value=v;o.textContent=l;rSel.appendChild(o);});}
   const dates=ROWS.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
-  if(dates.length){
-    const iso=d=>d.toISOString().slice(0,10);
-    document.getElementById("f-desde").value=iso(dates[0]);
-    document.getElementById("f-hasta").value=iso(dates[dates.length-1]);
-  }
+  if(dates.length){const iso=d=>d.toISOString().slice(0,10);document.getElementById("f-desde").value=iso(dates[0]);document.getElementById("f-hasta").value=iso(dates[dates.length-1]);}
 }
-
-function fillSel(id,opts,ph){
-  const el=document.getElementById(id);if(!el)return;
-  el.innerHTML=`<option value="">${ph}</option>`;
-  opts.forEach(({v,l})=>{const o=document.createElement("option");o.value=v;o.textContent=l;el.appendChild(o);});
-}
-
-function getF(){
-  return{
-    desde: document.getElementById("f-desde")?.value||"",
-    hasta: document.getElementById("f-hasta")?.value||"",
-    muni:  document.getElementById("f-municipio")?.value||"",
-    guar:  document.getElementById("f-guarda")?.value||"",
-    ubic:  document.getElementById("f-ubic")?.value||"",
-  };
-}
-
-function applyF(f){
-  return ROWS.filter(r=>{
-    if(f.desde&&r.__dt){if(r.__dt<new Date(f.desde+"T00:00:00Z"))return false;}
-    if(f.hasta&&r.__dt){if(r.__dt>new Date(f.hasta+"T23:59:59Z"))return false;}
-    if(f.muni&&r.__cm!==f.muni)return false;
-    if(f.guar&&r.__cg!==f.guar)return false;
-    if(f.ubic&&r.__cu!==f.ubic)return false;
-    return true;
-  });
-}
-
+function getF(){return{desde:document.getElementById("f-desde")?.value||"",hasta:document.getElementById("f-hasta")?.value||"",muni:document.getElementById("f-municipio")?.value||"",guar:document.getElementById("f-guarda")?.value||"",ubic:document.getElementById("f-ubic")?.value||""};}
+function applyF(f){return ROWS.filter(r=>{
+  if(f.desde&&r.__dt&&r.__dt<new Date(f.desde+"T00:00:00Z"))return false;
+  if(f.hasta&&r.__dt&&r.__dt>new Date(f.hasta+"T23:59:59Z"))return false;
+  if(f.muni&&r.__cm!==f.muni)return false;
+  if(f.guar&&r.__cg!==f.guar)return false;
+  if(f.ubic&&r.__cu!==f.ubic)return false;
+  return true;
+});}
 function renderChips(f){
   const w=document.getElementById("chips-wrap");if(!w)return;w.innerHTML="";
   const add=txt=>{const s=document.createElement("span");s.className="chip-activo";s.textContent=txt;w.appendChild(s);};
-  if(f.desde||f.hasta){const de=f.desde?f.desde.split("-").reverse().join("/"):"inicio";
-    const ha=f.hasta?f.hasta.split("-").reverse().join("/"):"hoy";add(`📅 ${de} → ${ha}`);}
-  if(f.muni) add("📍 "+(LABELS.muni.get(f.muni)||f.muni));
-  if(f.guar) add("👤 "+(LABELS.guarda.get(f.guar)||f.guar));
-  if(f.ubic) add("🗺  "+(f.ubic==="rumcla"?"Dentro RUMCLA":"Fuera RUMCLA"));
+  if(f.desde||f.hasta){const de=f.desde?f.desde.split("-").reverse().join("/"):"inicio";const ha=f.hasta?f.hasta.split("-").reverse().join("/"):"hoy";add(`${de} — ${ha}`);}
+  if(f.muni)add(LABELS.muni.get(f.muni)||f.muni);
+  if(f.guar)add(LABELS.guarda.get(f.guar)||f.guar);
+  if(f.ubic)add(f.ubic==="rumcla"?"Dentro RUMCLA":"Fuera RUMCLA");
 }
 
-/* ══════════════════════════════════════════════════════════════
-   KPIs
-══════════════════════════════════════════════════════════════ */
+/* ─── KPIs ──────────────────────────────────────────────────── */
 function updateKPIs(rows){
-  document.getElementById("kpi-total").textContent   =rows.length.toLocaleString("es");
-  document.getElementById("kpi-guardas").textContent =new Set(rows.map(r=>r.__cg).filter(Boolean)).size;
+  document.getElementById("kpi-total").textContent=rows.length.toLocaleString("es");
+  document.getElementById("kpi-guardas").textContent=new Set(rows.map(r=>r.__cg).filter(Boolean)).size;
   const durs=rows.map(r=>r.__dur).filter(v=>v!==null);
   document.getElementById("kpi-duracion").textContent=durs.length?avg_(durs).toFixed(1)+"h":"–";
   document.getElementById("kpi-ilegales").textContent=rows.filter(r=>r.__ci==="si").length;
   const kms=rows.map(r=>r.__km).filter(v=>v!==null);
-  const totalKm=kms.length?sum_(kms):0;
-  document.getElementById("kpi-km").textContent=totalKm>0?totalKm.toLocaleString("es",{maximumFractionDigits:0}):"–";
+  document.getElementById("kpi-km").textContent=kms.length?sum_(kms).toLocaleString("es",{maximumFractionDigits:0}):"–";
   const dates=rows.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
   document.getElementById("kpi-rango").textContent=dates.length?fmtDate(dates[0])+" – "+fmtDate(dates[dates.length-1]):"–";
 }
 
-/* ══════════════════════════════════════════════════════════════
-   HELPERS
-══════════════════════════════════════════════════════════════ */
+/* ─── HELPERS ───────────────────────────────────────────────── */
 function countBy(rows,fn){const m=new Map();rows.forEach(r=>{const k=fn(r);if(k!=null&&k!=="")m.set(k,(m.get(k)||0)+1)});return m;}
 function sumBy(rows,kFn,vFn){const m=new Map();rows.forEach(r=>{const k=kFn(r),v=vFn(r);if(k!=null&&k!==""&&v!=null)m.set(k,(m.get(k)||0)+v)});return m;}
 function topN(m,n){return[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n);}
 
-/* ══════════════════════════════════════════════════════════════
-   G1 — Tendencia mensual
-══════════════════════════════════════════════════════════════ */
+/* ─── G1 Tendencia mensual ─────────────────────────────────── */
 function g1(rows){
-  const mm=countBy(rows,r=>r.__mes);
-  const keys=[...mm.keys()].sort();
-  const vals=keys.map(k=>mm.get(k)||0);
-  const mean=avg_(vals);
+  const mm=countBy(rows,r=>r.__mes);const keys=[...mm.keys()].sort();const vals=keys.map(k=>mm.get(k)||0);const mean=avg_(vals);
   const ctx=document.getElementById("c-tendencia").getContext("2d");
-  const grad=ctx.createLinearGradient(0,0,0,300);
-  grad.addColorStop(0,"rgba(33,102,172,0.28)");grad.addColorStop(1,"rgba(33,102,172,0.01)");
+  const gr=ctx.createLinearGradient(0,0,0,300);gr.addColorStop(0,"rgba(31,108,176,0.22)");gr.addColorStop(1,"rgba(31,108,176,0.01)");
   mkChart("c-tendencia",{type:"line",data:{labels:keys.map(mShort),datasets:[
-    {label:"Patrullajes",data:vals,fill:true,tension:0.4,borderColor:"#2166ac",backgroundColor:grad,borderWidth:2.5,pointBackgroundColor:"#2166ac",pointRadius:5,pointHoverRadius:7},
-    {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(178,24,43,0.55)",borderWidth:1.5,borderDash:[7,5],pointRadius:0,fill:false,tension:0}
+    {label:"Patrullajes",data:vals,fill:true,tension:0.38,borderColor:PAL[0],backgroundColor:gr,borderWidth:2.5,pointBackgroundColor:PAL[0],pointRadius:4.5,pointHoverRadius:7,pointBorderColor:"#fff",pointBorderWidth:2},
+    {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(168,28,42,0.50)",borderWidth:1.5,borderDash:[6,5],pointRadius:0,fill:false,tension:0}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-    plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:13},padding:16,usePointStyle:true}}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:12},maxRotation:40}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}}}}});
+    plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:true,pointStyleWidth:10}}},
+    scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G2 — Heatmap SVG
-══════════════════════════════════════════════════════════════ */
+/* ─── G2 Heatmap ───────────────────────────────────────────── */
 function g2(rows){
-  const mat=Array.from({length:7},()=>new Array(24).fill(0));
-  let maxV=0;
+  const mat=Array.from({length:7},()=>new Array(24).fill(0));let maxV=0;
   rows.forEach(r=>{if(r.__dow===null||r.__hora===null)return;const h=Math.floor(r.__hora);if(h<0||h>23)return;mat[r.__dow][h]++;if(mat[r.__dow][h]>maxV)maxV=mat[r.__dow][h];});
-  const CW=38,CH=32,PL=76,PT=36,PR=20,PB=38;
-  const W=PL+24*CW+PR,H=PT+7*CH+PB;
+  const CW=38,CH=32,PL=76,PT=36,PR=20,PB=40;const W=PL+24*CW+PR,H=PT+7*CH+PB;
   const svg=document.getElementById("heatmap-svg");
   svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
-  function hc(v,max){
-    if(!max||!v)return"#eef3ef";
-    const t=Math.pow(v/max,0.55);
-    return`rgb(${Math.round(27+t*(6-27))},${Math.round(104-t*50)},${Math.round(172-t*102)})`;
-  }
+  function hc(v,mx){if(!mx||!v)return"#edf2ee";const t=Math.pow(v/mx,0.52);return`rgb(${Math.round(20+t*(8-20))},${Math.round(108-t*60)},${Math.round(176-t*110)})`;}
   let html="";
   for(let d=0;d<7;d++)for(let h=0;h<24;h++){
     const x=PL+h*CW,y=PT+d*CH,v=mat[d][h];
-    const fill=hc(v,maxV);const tc=v/maxV>0.45?"#fff":"#1a3425";
-    html+=`<rect x="${x}" y="${y}" width="${CW-2}" height="${CH-2}" rx="5" fill="${fill}" stroke="#dae4de" stroke-width="0.6"/>`;
+    const fill=hc(v,maxV),tc=v/maxV>0.45?"#fff":"#162a1c";
+    html+=`<rect x="${x}" y="${y}" width="${CW-2}" height="${CH-2}" rx="5" fill="${fill}" stroke="#d8e4dd" stroke-width="0.5"/>`;
     if(v>0)html+=`<text x="${x+CW/2-1}" y="${y+CH/2+4.5}" text-anchor="middle" font-size="10" fill="${tc}" font-family="DM Sans,sans-serif" font-weight="500">${v}</text>`;
   }
-  DIAS.forEach((d,i)=>html+=`<text x="${PL-8}" y="${PT+i*CH+CH/2+4.5}" text-anchor="end" font-size="12" fill="#6e8c7c" font-family="DM Sans,sans-serif" font-weight="500">${d}</text>`);
-  for(let h=0;h<24;h+=2)html+=`<text x="${PL+h*CW+CW/2}" y="${PT-12}" text-anchor="middle" font-size="10.5" fill="#6e8c7c" font-family="DM Sans,sans-serif">${String(h).padStart(2,"0")}h</text>`;
-  html+=`<defs><linearGradient id="lgh" x1="0" x2="1"><stop offset="0%" stop-color="#eef3ef"/><stop offset="100%" stop-color="#2166ac"/></linearGradient></defs>`;
-  html+=`<rect x="${PL}" y="${H-20}" width="120" height="8" rx="3" fill="url(#lgh)"/>`;
-  html+=`<text x="${PL}" y="${H-5}" font-size="10" fill="#9aafa8" font-family="DM Sans,sans-serif">0</text>`;
-  html+=`<text x="${PL+120}" y="${H-5}" text-anchor="end" font-size="10" fill="#9aafa8" font-family="DM Sans,sans-serif">${maxV}</text>`;
-  html+=`<text x="${PL+132}" y="${H-12}" font-size="10" fill="#9aafa8" font-family="DM Sans,sans-serif">patrullajes</text>`;
+  DIAS.forEach((d,i)=>html+=`<text x="${PL-8}" y="${PT+i*CH+CH/2+4.5}" text-anchor="end" font-size="12" fill="#6a8878" font-family="DM Sans,sans-serif" font-weight="500">${d}</text>`);
+  for(let h=0;h<24;h+=2)html+=`<text x="${PL+h*CW+CW/2}" y="${PT-12}" text-anchor="middle" font-size="10.5" fill="#6a8878" font-family="DM Sans,sans-serif">${String(h).padStart(2,"0")}h</text>`;
+  html+=`<defs><linearGradient id="lgh" x1="0" x2="1"><stop offset="0%" stop-color="#edf2ee"/><stop offset="100%" stop-color="${PAL[0]}"/></linearGradient></defs>`;
+  html+=`<rect x="${PL}" y="${H-22}" width="120" height="8" rx="3" fill="url(#lgh)"/>`;
+  html+=`<text x="${PL}" y="${H-6}" font-size="10" fill="#9ab0a6" font-family="DM Sans,sans-serif">0</text>`;
+  html+=`<text x="${PL+120}" y="${H-6}" text-anchor="end" font-size="10" fill="#9ab0a6" font-family="DM Sans,sans-serif">${maxV}</text>`;
+  html+=`<text x="${PL+132}" y="${H-13}" font-size="10" fill="#9ab0a6" font-family="DM Sans,sans-serif">patrullajes</text>`;
   svg.innerHTML=html;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G3 — Histograma duración
-══════════════════════════════════════════════════════════════ */
+/* ─── G3 Histograma duración ───────────────────────────────── */
 function g3(rows){
   const durs=rows.map(r=>r.__dur).filter(v=>v!==null);
-  const bins=new Array(16).fill(0);
-  durs.forEach(d=>{const i=Math.floor(d/0.5);if(i>=0&&i<16)bins[i]++;});
-  const labels=Array.from({length:16},(_,i)=>i%2===0?(i*0.5)+"h":"");
+  const bins=new Array(16).fill(0);durs.forEach(d=>{const i=Math.floor(d/0.5);if(i>=0&&i<16)bins[i]++;});
   const ctx=document.getElementById("c-duracion").getContext("2d");
-  const g=ctx.createLinearGradient(0,0,0,260);
-  g.addColorStop(0,"rgba(27,120,55,0.9)");g.addColorStop(1,"rgba(27,120,55,0.22)");
-  mkChart("c-duracion",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:bins,backgroundColor:g,borderColor:"#1b7837",borderWidth:1,borderRadius:4,borderSkipped:false}]},
+  const gr=ctx.createLinearGradient(0,0,0,260);gr.addColorStop(0,"rgba(26,122,56,0.88)");gr.addColorStop(1,"rgba(26,122,56,0.18)");
+  mkChart("c-duracion",{type:"bar",data:{labels:Array.from({length:16},(_,i)=>i%2===0?(i*0.5)+"h":""),datasets:[{label:"Patrullajes",data:bins,backgroundColor:gr,borderColor:PAL[1],borderWidth:1,borderRadius:4,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].dataIndex*0.5}h – ${(c[0].dataIndex+1)*0.5}h`,label:c=>` ${c.parsed.y} patrullajes`}}},
-      scales:{x:{grid:{display:false},ticks:{font:{size:12}},title:{display:true,text:"Duración (horas)",font:{size:12}}},
-              y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}},title:{display:true,text:"Frecuencia",font:{size:12}}}}}});
+      scales:{x:{grid:{display:false},...TICK_FONT,title:{display:true,text:"Duración (horas)",...AXIS_TITLE_FONT}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Frecuencia",...AXIS_TITLE_FONT}}}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G4 — Scatter
-══════════════════════════════════════════════════════════════ */
+/* ─── G4 Scatter ───────────────────────────────────────────── */
 function g4(rows){
   const pts=rows.filter(r=>r.__hora!==null&&r.__dur!==null).map(r=>({x:r.__hora,y:r.__dur,m:LABELS.muni.get(r.__cm)||""}));
-  mkChart("c-scatter",{type:"scatter",data:{datasets:[{label:"Patrullaje",data:pts,backgroundColor:"rgba(118,42,131,0.32)",borderColor:"rgba(118,42,131,0.7)",borderWidth:1,pointRadius:4,pointHoverRadius:6}]},
+  mkChart("c-scatter",{type:"scatter",data:{datasets:[{label:"Patrullaje",data:pts,backgroundColor:"rgba(107,38,128,0.28)",borderColor:"rgba(107,38,128,0.65)",borderWidth:1,pointRadius:4,pointHoverRadius:6}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>[` Inicio: ${Math.floor(c.parsed.x)}h${Math.round((c.parsed.x%1)*60).toString().padStart(2,"0")}`,` Duración: ${c.parsed.y.toFixed(1)}h`,` ${c.raw.m}`]}}},
-      scales:{x:{min:5,max:19,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12},callback:v=>`${v}h`},title:{display:true,text:"Hora de inicio",font:{size:12}}},
-              y:{min:0,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}},title:{display:true,text:"Duración (h)",font:{size:12}}}}}});
+      scales:{x:{min:5,max:19,grid:{color:GRID_COLOR},...TICK_FONT,ticks:{...TICK_FONT.font,callback:v=>`${v}h`},title:{display:true,text:"Hora de inicio",...AXIS_TITLE_FONT}},y:{min:0,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Duración (h)",...AXIS_TITLE_FONT}}}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G5 — Stacked municipios × mes
-══════════════════════════════════════════════════════════════ */
+/* ─── G5 Stacked muni × mes ────────────────────────────────── */
 function g5(rows){
-  const mc=countBy(rows,r=>r.__cm);
-  const top8=topN(mc,8).map(([k])=>k);
+  const mc=countBy(rows,r=>r.__cm);const top8=topN(mc,8).map(([k])=>k);
   const months=uniq(rows.map(r=>r.__mes)).sort();
-  const datasets=top8.map((cm,i)=>({
-    label:LABELS.muni.get(cm)||cm,
-    data:months.map(mo=>rows.filter(r=>r.__cm===cm&&r.__mes===mo).length),
-    backgroundColor:PAL_BG[i%PAL.length],borderColor:PAL[i%PAL.length],borderWidth:1,borderRadius:3,borderSkipped:false
-  }));
+  const datasets=top8.map((cm,i)=>({label:LABELS.muni.get(cm)||cm,data:months.map(mo=>rows.filter(r=>r.__cm===cm&&r.__mes===mo).length),backgroundColor:PAL_A[i%PAL.length],borderColor:PAL[i%PAL.length],borderWidth:1,borderRadius:3,borderSkipped:false}));
   mkChart("c-muniMes",{type:"bar",data:{labels:months.map(mShort),datasets},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-      plugins:{legend:{position:"top",labels:{font:{size:12},padding:12,usePointStyle:true}},tooltip:{...TT}},
-      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:12},maxRotation:40}},y:{stacked:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}}}}});
+      plugins:{legend:{position:"top",labels:{font:{size:12.5},padding:14,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT}},
+      scales:{x:{stacked:true,grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{stacked:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G6 — Radar guardarecursos
-══════════════════════════════════════════════════════════════ */
+/* ─── G6 Radar ─────────────────────────────────────────────── */
 function g6(rows){
   const sel=document.getElementById("f-radar-guarda")?.value||"";
   const allG=uniq(ROWS.map(r=>r.__cg)).filter(Boolean);
-  const metOf=(cg,src)=>{const s=src.filter(r=>r.__cg===cg);const d=s.map(r=>r.__dur).filter(v=>v!==null);
-    return{p:s.length,m:uniq(s.map(r=>r.__cm)).length,d:d.length?avg_(d):0,mes:uniq(s.map(r=>r.__mes)).length,i:s.filter(r=>r.__ci==="si").length};};
+  const metOf=(cg,src)=>{const s=src.filter(r=>r.__cg===cg);const d=s.map(r=>r.__dur).filter(v=>v!==null);return{p:s.length,m:uniq(s.map(r=>r.__cm)).length,d:d.length?avg_(d):0,mes:uniq(s.map(r=>r.__mes)).length,i:s.filter(r=>r.__ci==="si").length};};
   const nrm=(v,mx)=>mx?Math.round(v/mx*100):0;
   const AXES=["Volumen","Municipios\ncubiertos","Duración\nmedia","Meses\nactivos","Incidentes"];
+  const radarOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:12,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.07)"},pointLabels:{font:{size:12.5}}}}};
   if(sel){
     const allM=allG.map(cg=>metOf(cg,ROWS));
     const gAvg={p:avg_(allM.map(x=>x.p)),m:avg_(allM.map(x=>x.m)),d:avg_(allM.map(x=>x.d)),mes:avg_(allM.map(x=>x.mes)),i:avg_(allM.map(x=>x.i))};
@@ -1254,254 +1087,162 @@ function g6(rows){
     const toA=o=>[nrm(o.p,mxP),nrm(o.m,mxM),nrm(o.d,mxD),nrm(o.mes,mxMes),nrm(o.i,mxI)];
     const lbl=(LABELS.guarda.get(sel)||sel).split(" ").slice(0,3).join(" ");
     mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:[
-      {label:lbl,data:toA(sM),backgroundColor:"rgba(33,102,172,0.18)",borderColor:"#2166ac",borderWidth:2.5,pointBackgroundColor:"#2166ac",pointRadius:4},
-      {label:"Media global",data:toA(gAvg),backgroundColor:"rgba(178,24,43,0.12)",borderColor:"rgba(178,24,43,0.7)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(178,24,43,0.7)",pointRadius:3}
-    ]},options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:"bottom",labels:{font:{size:12},padding:12,usePointStyle:true}},tooltip:{...TT}},
-      scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.08)"},pointLabels:{font:{size:12}}}}}});
-  } else {
+      {label:lbl,data:toA(sM),backgroundColor:PAL[0]+"2a",borderColor:PAL[0],borderWidth:2.5,pointBackgroundColor:PAL[0],pointRadius:4,pointBorderColor:"#fff",pointBorderWidth:1.5},
+      {label:"Media global",data:toA(gAvg),backgroundColor:"rgba(168,28,42,0.10)",borderColor:"rgba(168,28,42,0.60)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(168,28,42,0.6)",pointRadius:3}
+    ]},options:radarOpts});
+  }else{
     const gc=countBy(rows,r=>r.__cg);const top6=topN(gc,6).map(([k])=>k);
     const allT=top6.map(cg=>metOf(cg,rows));
     const mxP=Math.max(...allT.map(x=>x.p),1),mxM=Math.max(...allT.map(x=>x.m),1),mxD=Math.max(...allT.map(x=>x.d),.1),mxMes=Math.max(...allT.map(x=>x.mes),1),mxI=Math.max(...allT.map(x=>x.i),1);
-    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:top6.map((cg,i)=>{
-      const o=metOf(cg,rows);
-      return{label:(LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),
-        data:[nrm(o.p,mxP),nrm(o.m,mxM),nrm(o.d,mxD),nrm(o.mes,mxMes),nrm(o.i,mxI)],
-        backgroundColor:PAL[i]+"33",borderColor:PAL[i],borderWidth:2,pointBackgroundColor:PAL[i],pointRadius:3};})},
-      options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{position:"bottom",labels:{font:{size:11.5},padding:10,usePointStyle:true}},tooltip:{...TT}},
-        scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.08)"},pointLabels:{font:{size:12}}}}}});
+    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:top6.map((cg,i)=>{const o=metOf(cg,rows);return{label:(LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),data:[nrm(o.p,mxP),nrm(o.m,mxM),nrm(o.d,mxD),nrm(o.mes,mxMes),nrm(o.i,mxI)],backgroundColor:PAL[i]+"2a",borderColor:PAL[i],borderWidth:2,pointBackgroundColor:PAL[i],pointRadius:3};})},options:radarOpts});
   }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G7 — Donuts
-══════════════════════════════════════════════════════════════ */
+/* ─── G7 Donuts ────────────────────────────────────────────── */
 function g7(rows){
-  const ru=rows.filter(r=>r.__cu==="rumcla").length;
-  const fu=rows.filter(r=>r.__cu==="fuera").length;
-  const sd=rows.length-ru-fu;
-  const dOpts=(labels,data,colors,borders)=>({type:"doughnut",data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2,hoverOffset:10}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:"64%",
-      plugins:{legend:{position:"bottom",labels:{font:{size:13},padding:14,usePointStyle:true}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
-  mkChart("c-rumcla",dOpts(["Dentro RUMCLA","Fuera RUMCLA",...(sd>0?["Sin dato"]:[])],[ru,fu,...(sd>0?[sd]:[])],["#2166ac","#b35806","#e5e7eb"],["#1a5490","#8f4604","#d1d5db"]));
-  const si=rows.filter(r=>r.__ci==="si").length;const no=rows.filter(r=>r.__ci==="no").length;
-  mkChart("c-ilegal",dOpts(["Sin incidente","Con incidente"],[no,si],["#d9f0e3","#fde8e8"],["#1b7837","#b2182b"]));
+  const ru=rows.filter(r=>r.__cu==="rumcla").length,fu=rows.filter(r=>r.__cu==="fuera").length,sd=rows.length-ru-fu;
+  const dOpts=(labels,data,colors,borders)=>({type:"doughnut",data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2,hoverOffset:12}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"66%",
+      plugins:{legend:{position:"bottom",labels:{font:{size:13},padding:14,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+  mkChart("c-rumcla",dOpts(["Dentro RUMCLA","Fuera RUMCLA",...(sd>0?["Sin dato"]:[])],[ru,fu,...(sd>0?[sd]:[])],[PAL[0]+"cc",PAL[2]+"cc","#e5e7eb"],[PAL[0],PAL[2],"#d1d5db"]));
+  const si=rows.filter(r=>r.__ci==="si").length,no=rows.filter(r=>r.__ci==="no").length;
+  mkChart("c-ilegal",dOpts(["Sin incidente","Con incidente"],[no,si],["#d8f0e2","#fde8e8"],[PAL[1],PAL[4]]));
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G8 — Ilegal por municipio
-══════════════════════════════════════════════════════════════ */
+/* ─── G8 Ilegal por municipio ──────────────────────────────── */
 function g8(rows){
-  const mc=countBy(rows,r=>r.__cm);
-  const top=topN(mc,12).map(([k])=>k);
+  const mc=countBy(rows,r=>r.__cm);const top=topN(mc,12).map(([k])=>k);
   const lbls=top.map(cm=>LABELS.muni.get(cm)||cm);
   const si=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="si").length);
   const no=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="no").length);
   mkChart("c-ilegalMuni",{type:"bar",data:{labels:lbls,datasets:[
-    {label:"Sin incidente",data:no,backgroundColor:"rgba(27,120,55,0.75)",borderColor:"#1b7837",borderWidth:1,borderRadius:4,borderSkipped:false},
-    {label:"Con incidente",data:si,backgroundColor:"rgba(178,24,43,0.8)",borderColor:"#b2182b",borderWidth:1,borderRadius:4,borderSkipped:false}
+    {label:"Sin incidente",data:no,backgroundColor:PAL[1]+"bb",borderColor:PAL[1],borderWidth:1,borderRadius:4,borderSkipped:false},
+    {label:"Con incidente",data:si,backgroundColor:PAL[4]+"cc",borderColor:PAL[4],borderWidth:1,borderRadius:4,borderSkipped:false}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-    plugins:{legend:{position:"top",labels:{font:{size:13},padding:14,usePointStyle:true}},tooltip:{...TT}},
-    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:12},maxRotation:35}},y:{stacked:true,beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}}},
+    plugins:{legend:{position:"top",labels:{font:{size:13},padding:14,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT}},
+    scales:{x:{stacked:true,grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:35}},y:{stacked:true,beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}},
     onClick:(e,els)=>{if(!els.length)return;document.getElementById("f-municipio").value=top[els[0].index];applyAll();}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G9 — Área protegida
-══════════════════════════════════════════════════════════════ */
+/* ─── G9 Área protegida ────────────────────────────────────── */
 function g9(rows){
   const mc=countBy(rows,r=>r.__cap);const sorted=topN(mc,14);
   const labels=sorted.map(([k])=>{const l=LABELS.ap.get(k)||k;return l.length>52?l.slice(0,50)+"…":l;});
   const vals=sorted.map(([,v])=>v);
   const ctx=document.getElementById("c-areaProt").getContext("2d");
-  const g=ctx.createLinearGradient(500,0,0,0);
-  g.addColorStop(0,"rgba(27,120,55,0.85)");g.addColorStop(1,"rgba(33,102,172,0.6)");
-  mkChart("c-areaProt",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:vals,backgroundColor:g,borderColor:"#1b7837",borderWidth:1,borderRadius:5,borderSkipped:false}]},
+  const gr=ctx.createLinearGradient(500,0,0,0);gr.addColorStop(0,PAL[1]+"cc");gr.addColorStop(1,PAL[0]+"88");
+  mkChart("c-areaProt",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:vals,backgroundColor:gr,borderColor:PAL[1],borderWidth:1,borderRadius:5,borderSkipped:false}]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} patrullajes`}},
-        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2e4e3b",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
-      scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}},y:{grid:{display:false},ticks:{font:{size:12}}}}}});
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      scales:{x:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12}}}}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G10 — Tipo de patrullaje
-══════════════════════════════════════════════════════════════ */
+/* ─── G10 Tipo de patrullaje ───────────────────────────────── */
 function g10(rows){
   const mc=countBy(rows,r=>r.__ctp);const sorted=topN(mc,7);
   const labels=sorted.map(([k])=>{const l=LABELS.tp.get(k)||k;return l.length>38?l.slice(0,36)+"…":l;});
-  const vals=sorted.map(([,v])=>v);
-  mkChart("c-tipoPat",{type:"doughnut",data:{labels,datasets:[{data:vals,backgroundColor:PAL.slice(0,vals.length).map(c=>c+"cc"),borderColor:PAL.slice(0,vals.length),borderWidth:2,hoverOffset:10}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:"58%",
-      plugins:{legend:{position:"bottom",labels:{font:{size:12},padding:10,usePointStyle:true}},
-               tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+  const vals=sorted.map(([,v])=>v);const cols=PAL.slice(0,vals.length);
+  mkChart("c-tipoPat",{type:"doughnut",data:{labels,datasets:[{data:vals,backgroundColor:cols.map(c=>c+"cc"),borderColor:cols,borderWidth:2,hoverOffset:12}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"60%",
+      plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:10,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G11 — Día de semana
-══════════════════════════════════════════════════════════════ */
+/* ─── G11 Día de semana ────────────────────────────────────── */
 function g11(rows){
-  const counts=new Array(7).fill(0);
-  rows.forEach(r=>{if(r.__dow!==null)counts[r.__dow]++;});
+  const counts=new Array(7).fill(0);rows.forEach(r=>{if(r.__dow!==null)counts[r.__dow]++;});
   const ctx=document.getElementById("c-diaSem").getContext("2d");
-  const g=ctx.createLinearGradient(0,0,0,260);
-  g.addColorStop(0,"rgba(33,102,172,0.9)");g.addColorStop(1,"rgba(33,102,172,0.28)");
-  mkChart("c-diaSem",{type:"bar",data:{labels:DIAS,datasets:[{label:"Patrullajes",data:counts,backgroundColor:g,borderColor:"#2166ac",borderWidth:1,borderRadius:6,borderSkipped:false}]},
+  const gr=ctx.createLinearGradient(0,0,0,260);gr.addColorStop(0,PAL[0]+"dd");gr.addColorStop(1,PAL[0]+"33");
+  mkChart("c-diaSem",{type:"bar",data:{labels:DIAS,datasets:[{label:"Patrullajes",data:counts,backgroundColor:gr,borderColor:PAL[0],borderWidth:1,borderRadius:7,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} patrullajes`}},
-        datalabels:{display:true,anchor:"end",align:"top",offset:2,color:"#2e4e3b",font:{size:11.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v||""}},
-      scales:{x:{grid:{display:false},ticks:{font:{size:13}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}}}}});
+        datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#2a4535",font:{size:12,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v||""}},
+      scales:{x:{grid:{display:false},...TICK_FONT,ticks:{font:{size:13}}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G_KM_MES — Kilómetros por mes
-══════════════════════════════════════════════════════════════ */
+/* ─── G km/mes ─────────────────────────────────────────────── */
 function gKmMes(rows){
-  const mm=sumBy(rows,r=>r.__mes,r=>r.__km);
-  const keys=[...mm.keys()].sort();
-  const vals=keys.map(k=>parseFloat((mm.get(k)||0).toFixed(1)));
+  const mm=sumBy(rows,r=>r.__mes,r=>r.__km);const keys=[...mm.keys()].sort();const vals=keys.map(k=>parseFloat((mm.get(k)||0).toFixed(1)));
   const ctx=document.getElementById("c-kmMes").getContext("2d");
-  const g=ctx.createLinearGradient(0,0,0,260);
-  g.addColorStop(0,"rgba(1,102,94,0.85)");g.addColorStop(1,"rgba(1,102,94,0.18)");
-  mkChart("c-kmMes",{type:"bar",data:{labels:keys.map(mShort),datasets:[{label:"Kilómetros",data:vals,backgroundColor:g,borderColor:"#01665e",borderWidth:1,borderRadius:5,borderSkipped:false}]},
+  const gr=ctx.createLinearGradient(0,0,0,260);gr.addColorStop(0,PAL[5]+"cc");gr.addColorStop(1,PAL[5]+"22");
+  mkChart("c-kmMes",{type:"bar",data:{labels:keys.map(mShort),datasets:[{label:"Kilómetros",data:vals,backgroundColor:gr,borderColor:PAL[5],borderWidth:1,borderRadius:5,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y.toLocaleString("es")} km`}}},
-      scales:{x:{grid:{display:false},ticks:{font:{size:12},maxRotation:40}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}},title:{display:true,text:"Kilómetros",font:{size:12}}}}}});
+      scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Kilómetros",...AXIS_TITLE_FONT}}}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G_KM_GUARDA — Km por guardarecursos
-══════════════════════════════════════════════════════════════ */
+/* ─── G km/guarda ──────────────────────────────────────────── */
 function gKmGuarda(rows){
-  const km=sumBy(rows,r=>r.__cg,r=>r.__km);
-  const sorted=[...km.entries()].sort((a,b)=>b[1]-a[1]);
+  const km=sumBy(rows,r=>r.__cg,r=>r.__km);const sorted=[...km.entries()].sort((a,b)=>b[1]-a[1]);
   const labels=sorted.map(([k])=>{const l=LABELS.guarda.get(k)||k;return l.split(" ").slice(0,3).join(" ");});
   const vals=sorted.map(([,v])=>parseFloat(v.toFixed(1)));
-  mkChart("c-kmGuarda",{type:"bar",data:{labels,datasets:[{label:"Kilómetros",data:vals,
-    backgroundColor:sorted.map((_,i)=>PAL[i%PAL.length]+"bb"),
-    borderColor:sorted.map((_,i)=>PAL[i%PAL.length]),
-    borderWidth:1.5,borderRadius:5,borderSkipped:false}]},
+  mkChart("c-kmGuarda",{type:"bar",data:{labels,datasets:[{label:"Kilómetros",data:vals,backgroundColor:sorted.map((_,i)=>PAL[i%PAL.length]+"bb"),borderColor:sorted.map((_,i)=>PAL[i%PAL.length]),borderWidth:1.5,borderRadius:5,borderSkipped:false}]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("es")} km`}},
-        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2e4e3b",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
-      scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}},title:{display:true,text:"Kilómetros",font:{size:12}}},y:{grid:{display:false},ticks:{font:{size:12}}}}}});
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      scales:{x:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Kilómetros",...AXIS_TITLE_FONT}},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12}}}}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G_INST — Interinstitucional
-══════════════════════════════════════════════════════════════ */
+/* ─── G inst ───────────────────────────────────────────────── */
 function gInst(rows){
-  const si=rows.filter(r=>r.__cin==="si").length;
-  const no=rows.filter(r=>r.__cin==="no").length;
-  const nd=rows.length-si-no;
-  mkChart("c-inst",{type:"doughnut",data:{
-    labels:["Sin otras instituciones","Con instituciones involucradas",...(nd>0?["Sin dato"]:[])],
-    datasets:[{data:[no,si,...(nd>0?[nd]:[])],backgroundColor:["#2166accc","#b35806cc","#e5e7eb"],borderColor:["#1a5490","#8f4604","#d1d5db"],borderWidth:2,hoverOffset:10}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:"64%",
-      plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:12,usePointStyle:true}},
-               tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+  const si=rows.filter(r=>r.__cin==="si").length,no=rows.filter(r=>r.__cin==="no").length,nd=rows.length-si-no;
+  mkChart("c-inst",{type:"doughnut",data:{labels:["Sin otras instituciones","Con instituciones involucradas",...(nd>0?["Sin dato"]:[])],datasets:[{data:[no,si,...(nd>0?[nd]:[])],backgroundColor:[PAL[0]+"cc",PAL[2]+"cc","#e5e7eb"],borderColor:[PAL[0],PAL[2],"#d1d5db"],borderWidth:2,hoverOffset:12}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"66%",
+      plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:12,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   G12 — RANKING GUARDARECURSOS (TODOS LOS ACTIVOS)
-══════════════════════════════════════════════════════════════ */
+/* ─── G12 Ranking ──────────────────────────────────────────── */
 let G12_DESDE=null,G12_HASTA=null;
-
 function g12(rows){
   let src=rows;
-  if(G12_DESDE||G12_HASTA){
-    src=rows.filter(r=>{
-      if(!r.__dt)return false;
-      if(G12_DESDE&&r.__dt<G12_DESDE)return false;
-      if(G12_HASTA&&r.__dt>G12_HASTA)return false;
-      return true;
-    });
-  }
-  // TODOS los guardarecursos activos (incluyendo los con 0 en el período)
-  const allGuardas=[...LABELS.guarda.entries()].map(([k])=>k);
+  if(G12_DESDE||G12_HASTA)src=rows.filter(r=>{if(!r.__dt)return false;if(G12_DESDE&&r.__dt<G12_DESDE)return false;if(G12_HASTA&&r.__dt>G12_HASTA)return false;return true;});
+  const allG=[...LABELS.guarda.entries()].map(([k])=>k);
   const gc=countBy(src,r=>r.__cg);
-  // Ordenar por total desc, luego alfabético
-  const sorted=allGuardas
-    .map(k=>([k,gc.get(k)||0]))
-    .sort((a,b)=>b[1]-a[1]||(LABELS.guarda.get(a[0])||"").localeCompare(LABELS.guarda.get(b[0])||"","es"));
-
-  const labels  =sorted.map(([k])=>(LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
-  const totales =sorted.map(([,v])=>v);
+  const sorted=allG.map(k=>([k,gc.get(k)||0])).sort((a,b)=>b[1]-a[1]||(LABELS.guarda.get(a[0])||"").localeCompare(LABELS.guarda.get(b[0])||"","es"));
+  const labels=sorted.map(([k])=>(LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
+  const totales=sorted.map(([,v])=>v);
   const ilegales=sorted.map(([k])=>src.filter(r=>r.__cg===k&&r.__ci==="si").length);
-  const bgC=sorted.map((_,i)=>PAL[i%PAL.length]+"bb");
-  const bdC=sorted.map((_,i)=>PAL[i%PAL.length]);
-
-  // Altura dinámica según cantidad de guardas
-  const n=sorted.length;
-  const h=Math.max(420, n*22+80);
-  const cw=document.getElementById("c-rankGuarda");
-  if(cw)cw.parentElement.style.height=h+"px";
-
+  const h=Math.max(460,sorted.length*22+80);
+  const cw=document.getElementById("c-rankGuarda");if(cw)cw.parentElement.style.height=h+"px";
   mkChart("c-rankGuarda",{type:"bar",data:{labels,datasets:[
-    {label:"Patrullajes",data:totales,backgroundColor:bgC,borderColor:bdC,borderWidth:1.5,borderRadius:5,borderSkipped:false,order:2,
-      datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#0d2018",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
-    {label:"Incidentes",data:ilegales,type:"line",borderColor:"#b2182b",backgroundColor:"#b2182b",borderWidth:2.5,
-      pointRadius:7,pointHoverRadius:9,pointBackgroundColor:"#b2182b",pointBorderColor:"#fff",pointBorderWidth:2,
-      tension:0,fill:false,order:1,
-      datalabels:{display:true,anchor:"end",align:"top",offset:5,color:"#b2182b",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v:""}}
-  ]},options:{responsive:true,maintainAspectRatio:false,
-    interaction:{mode:"index",intersect:false},
-    layout:{padding:{top:28}},
-    plugins:{
-      legend:{position:"top",labels:{font:{size:13},padding:16,usePointStyle:true}},
-      tooltip:{...TT,callbacks:{label:c=>c.dataset.label==="Patrullajes"?` Patrullajes: ${c.parsed.y}`:` Incidentes: ${c.parsed.y}`}},
-      datalabels:{display:false}},
-    scales:{
-      x:{grid:{display:false},ticks:{font:{size:11.5},maxRotation:42,minRotation:28}},
-      y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:12}}}}}});
+    {label:"Patrullajes",data:totales,backgroundColor:sorted.map((_,i)=>PAL[i%PAL.length]+"bb"),borderColor:sorted.map((_,i)=>PAL[i%PAL.length]),borderWidth:1.5,borderRadius:5,borderSkipped:false,order:2,
+      datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#0c1e13",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+    {label:"Incidentes",data:ilegales,type:"line",borderColor:PAL[4],backgroundColor:PAL[4],borderWidth:2.5,pointRadius:7,pointHoverRadius:9,pointBackgroundColor:PAL[4],pointBorderColor:"#fff",pointBorderWidth:2,tension:0,fill:false,order:1,
+      datalabels:{display:true,anchor:"end",align:"top",offset:5,color:PAL[4],font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v:""}}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},layout:{padding:{top:28}},
+    plugins:{legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>c.dataset.label==="Patrullajes"?` Patrullajes: ${c.parsed.y}`:` Incidentes: ${c.parsed.y}`}},datalabels:{display:false}},
+    scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:42,minRotation:28}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
-/* ══════════════════════════════════════════════════════════════
-   RENDER TOTAL
-══════════════════════════════════════════════════════════════ */
+/* ─── RENDER TOTAL ─────────────────────────────────────────── */
 function applyAll(){
-  const f=getF();renderChips(f);
-  const rows=applyF(f);
+  const f=getF();renderChips(f);const rows=applyF(f);
   updateKPIs(rows);
   g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);g9(rows);g10(rows);g11(rows);g12(rows);gKmMes(rows);gKmGuarda(rows);gInst(rows);
   const el=document.getElementById("estado");
   if(el)el.innerHTML=`Mostrando <strong>${rows.length.toLocaleString("es")}</strong> de <strong>${ROWS.length.toLocaleString("es")}</strong> registros`;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   INICIO
-══════════════════════════════════════════════════════════════ */
+/* ─── INICIO ───────────────────────────────────────────────── */
 (async()=>{
   try{
-    const{data}=await loadCSV();
-    ROWS=enrich(data);
-    initSelects();
-
+    const{data}=await loadCSV();ROWS=enrich(data);initSelects();
     document.getElementById("btn-aplicar").addEventListener("click",applyAll);
     document.getElementById("btn-limpiar").addEventListener("click",()=>{
       ["f-municipio","f-guarda","f-ubic"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
       const dates=ROWS.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
-      if(dates.length){const iso=d=>d.toISOString().slice(0,10);
-        document.getElementById("f-desde").value=iso(dates[0]);
-        document.getElementById("f-hasta").value=iso(dates[dates.length-1]);}
+      if(dates.length){const iso=d=>d.toISOString().slice(0,10);document.getElementById("f-desde").value=iso(dates[0]);document.getElementById("f-hasta").value=iso(dates[dates.length-1]);}
       applyAll();
     });
-
     document.getElementById("f-radar-guarda")?.addEventListener("change",()=>g6(applyF(getF())));
-
     document.getElementById("g12-aplicar")?.addEventListener("click",()=>{
-      const d=document.getElementById("g12-desde")?.value;
-      const h=document.getElementById("g12-hasta")?.value;
-      G12_DESDE=d?new Date(d+"T00:00:00Z"):null;
-      G12_HASTA=h?new Date(h+"T23:59:59Z"):null;
-      g12(applyF(getF()));
+      const d=document.getElementById("g12-desde")?.value,h=document.getElementById("g12-hasta")?.value;
+      G12_DESDE=d?new Date(d+"T00:00:00Z"):null;G12_HASTA=h?new Date(h+"T23:59:59Z"):null;g12(applyF(getF()));
     });
     document.getElementById("g12-limpiar")?.addEventListener("click",()=>{
-      const gd=document.getElementById("g12-desde");const gh=document.getElementById("g12-hasta");
-      if(gd)gd.value="";if(gh)gh.value="";
-      G12_DESDE=null;G12_HASTA=null;g12(applyF(getF()));
+      const gd=document.getElementById("g12-desde"),gh=document.getElementById("g12-hasta");
+      if(gd)gd.value="";if(gh)gh.value="";G12_DESDE=null;G12_HASTA=null;g12(applyF(getF()));
     });
-
     applyAll();
   }catch(e){
     const el=document.getElementById("estado");
