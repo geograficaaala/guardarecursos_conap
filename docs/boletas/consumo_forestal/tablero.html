@@ -3,81 +3,135 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>AC297 · Tablero dinámico · Consumo Forestal</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>AC297 · Tablero dinámico · Consumo Forestal Familiar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
-    :root{
-      --verde-oscuro:#0a3d2b;--verde-medio:#1a5c3a;
-      --bg:#f0f4f2;--blanco:#ffffff;
-      --ink:#0d1f15;--muted:#6b7280;--borde:#e2e8e4;
-      --sombra:rgba(10,61,43,0.08);--azul-m:#2563eb;
-      --p0:#0ea5e9;--p1:#10b981;--p2:#f59e0b;--p3:#8b5cf6;
-      --p4:#ef4444;--p5:#14b8a6;--p6:#f97316;--p7:#6366f1;
+    :root {
+      --verde-oscuro:#0a3d2b; --verde-medio:#1a5c3a;
+      --bg:#f0f4f1; --surface:#ffffff; --surface-2:#f6faf7;
+      --ink:#0c1e13; --ink-2:#2a4535; --muted:#6a8878;
+      --borde:#d8e4dd; --sombra:rgba(10,61,43,0.06);
+      --acento:#1a5c3a; --acento-bg:rgba(26,92,58,0.06); --acento-borde:rgba(26,92,58,0.20);
+      --d0:#1f6cb0;--d1:#1a7a38;--d2:#b05608;--d3:#6b2680;
+      --d4:#a81c2a;--d5:#016660;--d6:#7a4508;--d7:#3d8fbf;
+      --d8:#b51a72;--d9:#448a1e;--d10:#c85840;--d11:#4e359a;
     }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;opacity:0;animation:fadeIn .35s ease forwards}
-    @keyframes fadeIn{to{opacity:1}}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;font-size:14px;line-height:1.55;opacity:0;animation:bodyIn .45s cubic-bezier(.22,.68,0,1.2) forwards}
+    @keyframes bodyIn{to{opacity:1}}
     @media(prefers-reduced-motion:reduce){body{animation:none;opacity:1}}
 
-    header{background:linear-gradient(90deg,var(--verde-oscuro),var(--verde-medio));color:#fff;padding:12px 20px 14px;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.28)}
-    .header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:5px 10px}
-    .logo-group img{height:34px;max-width:110px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 7px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+    /* HEADER */
+    header{background:linear-gradient(105deg,var(--verde-oscuro) 0%,var(--verde-medio) 100%);color:#fff;padding:14px 28px 16px;position:sticky;top:0;z-index:200;box-shadow:0 2px 28px rgba(0,0,0,.26);flex-shrink:0}
+    .header-inner{max-width:1480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:5px 14px}
+    .logo-group img{height:36px;max-width:112px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 8px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
     .header-right{text-align:right;flex:1}
-    .header-right h1{font-size:17px;font-weight:600;margin-bottom:1px}
-    .header-right p{font-size:11.5px;opacity:.7;font-weight:300}
-    .header-chip{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:2px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-    .chip-dot{width:5px;height:5px;border-radius:50%;background:#86efac;animation:pulse 2s ease-in-out infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .header-right h1{font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:1px}
+    .header-right p{font-size:12px;opacity:.58;font-weight:300}
+    .header-chip{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.20);background:rgba(255,255,255,.08);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+    .chip-dot{width:6px;height:6px;border-radius:50%;background:#86efac;animation:blink 2.4s ease-in-out infinite}
+    @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.6)}}
 
-    .module-nav{background:var(--blanco);border-bottom:1px solid var(--borde);padding:0 20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-    .module-nav-inner{max-width:1400px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+    /* NAV */
+    .module-nav{background:var(--surface);border-bottom:1px solid var(--borde);padding:0 28px;box-shadow:0 1px 8px rgba(0,0,0,.04);flex-shrink:0}
+    .module-nav-inner{max-width:1480px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
     .module-nav-inner::-webkit-scrollbar{display:none}
-    .nav-back{display:flex;align-items:center;gap:6px;padding:12px 16px 12px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap;transition:color .2s}
+    .nav-back{display:flex;align-items:center;gap:6px;padding:13px 18px 13px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap;transition:color .18s}
     .nav-back:hover{color:var(--verde-medio)}
-    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;height:48px}
-    .nav-tab:hover{color:var(--azul-m);border-bottom-color:rgba(37,99,235,.25)}
-    .nav-tab.active{color:var(--azul-m);border-bottom-color:var(--azul-m);font-weight:600}
+    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;height:50px;transition:color .18s,border-color .18s}
+    .nav-tab:hover{color:var(--acento);border-bottom-color:rgba(26,92,58,.2)}
+    .nav-tab.active{color:var(--acento);border-bottom-color:var(--acento);font-weight:600}
 
-    .page{max-width:1400px;width:100%;margin:0 auto;padding:20px 20px 48px;flex:1}
+    /* PÁGINA */
+    .page{max-width:1480px;width:100%;margin:0 auto;padding:28px 28px 72px;flex:1}
 
-    .filtros-bar{background:var(--blanco);border:1px solid var(--borde);border-radius:14px;padding:16px 20px;box-shadow:0 2px 10px var(--sombra);display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:16px}
-    .fg{display:flex;flex-direction:column;gap:4px;min-width:130px;flex:1}
-    .fg label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase}
-    .fg select,.fg input{border:1px solid var(--borde);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;background:var(--bg);color:var(--ink);transition:border-color .2s,box-shadow .2s;outline:none}
-    .fg select:focus,.fg input:focus{border-color:var(--azul-m);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-    .btn-reset{padding:7px 16px;border-radius:8px;border:1px solid var(--borde);background:var(--blanco);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;color:var(--muted);transition:all .2s;align-self:flex-end}
-    .btn-reset:hover{border-color:#94a3b8;color:var(--ink)}
+    /* FILTROS */
+    .filtros-panel{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:20px 24px;box-shadow:0 2px 16px var(--sombra);margin-bottom:24px;animation:slideDown .4s cubic-bezier(.22,.68,0,1.1) .1s both}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+    .filtros-titulo{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.13em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .filtros-grid{display:grid;grid-template-columns:155px 155px 1fr 1fr 1fr auto auto;gap:12px;align-items:end}
+    @media(max-width:1100px){.filtros-grid{grid-template-columns:1fr 1fr 1fr}}
+    @media(max-width:660px){.filtros-grid{grid-template-columns:1fr 1fr}}
+    .fg{display:flex;flex-direction:column;gap:5px}
+    .fg label{font-size:10.5px;font-weight:700;color:var(--ink-2);letter-spacing:.07em;text-transform:uppercase}
+    .fg select,.fg input{border:1.5px solid var(--borde);border-radius:9px;padding:8px 11px;font-size:13.5px;font-family:inherit;background:var(--surface-2);color:var(--ink);transition:border-color .18s,box-shadow .18s;outline:none;width:100%}
+    .fg select:focus,.fg input:focus{border-color:var(--acento);box-shadow:0 0 0 3px rgba(26,92,58,.10);background:var(--surface)}
+    .btn-filtro{padding:8px 18px;border-radius:9px;border:1.5px solid var(--borde);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .18s;white-space:nowrap;height:40px;display:inline-flex;align-items:center;gap:6px}
+    .btn-aplicar{background:var(--verde-oscuro);color:#fff;border-color:var(--verde-oscuro)}
+    .btn-aplicar:hover{background:var(--verde-medio);transform:translateY(-1px);box-shadow:0 4px 12px rgba(10,61,43,.25)}
+    .btn-limpiar{background:var(--surface);color:var(--muted)}
+    .btn-limpiar:hover{border-color:#94a3b8;color:var(--ink)}
+    .chips-wrap{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+    .chip-activo{display:inline-flex;align-items:center;gap:5px;padding:4px 13px;border-radius:999px;background:var(--acento-bg);border:1px solid var(--acento-borde);font-size:12px;font-weight:500;color:var(--acento);animation:chipIn .2s ease both}
+    @keyframes chipIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 
-    .chips-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
-    .chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);font-size:11.5px;font-weight:500;color:var(--azul-m)}
+    /* ESTADO */
+    .estado-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:8px}
+    .estado-txt{font-size:13px;color:var(--muted);font-weight:400}
+    .estado-txt.error{color:#9b1c1c;font-weight:600}
+    .estado-txt strong{color:var(--ink);font-weight:600}
 
-    .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
-    @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
-    .kpi{background:var(--blanco);border:1px solid var(--borde);border-top:3px solid transparent;border-radius:14px;padding:16px 18px;box-shadow:0 2px 8px var(--sombra)}
-    .kpi-0{border-top-color:var(--p0)}.kpi-1{border-top-color:var(--p1)}.kpi-2{border-top-color:var(--p2)}.kpi-3{border-top-color:var(--p4)}.kpi-4{border-top-color:var(--p3)}
-    .kpi-label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px}
-    .kpi-value{font-family:'Playfair Display',serif;font-size:30px;font-weight:700;line-height:1;color:var(--ink);margin-bottom:4px}
-    .kpi-sub{font-size:11.5px;color:var(--muted);font-weight:300}
+    /* KPIs */
+    .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:28px}
+    @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}}
+    .kpi{background:var(--surface);border:1px solid var(--borde);border-top:3px solid transparent;border-radius:14px;padding:18px 18px 15px;box-shadow:0 1px 8px var(--sombra);transition:box-shadow .22s,transform .22s;animation:kpiIn .45s cubic-bezier(.22,.68,0,1.1) both}
+    .kpi:nth-child(1){animation-delay:.10s}.kpi:nth-child(2){animation-delay:.15s}.kpi:nth-child(3){animation-delay:.20s}.kpi:nth-child(4){animation-delay:.25s}.kpi:nth-child(5){animation-delay:.30s}.kpi:nth-child(6){animation-delay:.35s}
+    @keyframes kpiIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+    .kpi:hover{box-shadow:0 6px 22px rgba(10,61,43,.11);transform:translateY(-2px)}
+    .kpi-0{border-top-color:var(--d0)}.kpi-1{border-top-color:var(--d1)}.kpi-2{border-top-color:var(--d2)}.kpi-3{border-top-color:var(--d4)}.kpi-4{border-top-color:var(--d5)}.kpi-5{border-top-color:var(--d3)}
+    .kpi-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase;margin-bottom:9px}
+    .kpi-value{font-family:'Playfair Display',serif;font-size:32px;font-weight:900;line-height:1;color:var(--ink);margin-bottom:5px}
+    .kpi-sub{font-size:11.5px;color:var(--muted);font-weight:400}
 
-    .estado-bar{display:flex;align-items:center;margin-bottom:16px}
-    .estado-txt{font-size:13px;color:var(--muted);font-weight:300}
-    .estado-txt.error{color:#dc2626;font-weight:600}
+    /* DIVISORES */
+    .sec-divider{display:flex;align-items:center;gap:14px;font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;margin:32px 0 20px}
+    .sec-divider::before,.sec-divider::after{content:'';flex:1;height:1px;background:var(--borde)}
 
-    .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    @media(max-width:800px){.charts-grid{grid-template-columns:1fr}}
-    .cc{background:var(--blanco);border:1px solid var(--borde);border-radius:16px;padding:22px;box-shadow:0 2px 12px var(--sombra)}
+    /* TARJETAS */
+    .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    @media(max-width:860px){.charts-grid{grid-template-columns:1fr}}
+    .cc{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:22px 24px 20px;box-shadow:0 1px 10px var(--sombra);display:flex;flex-direction:column;transition:box-shadow .22s;animation:cardIn .5s cubic-bezier(.22,.68,0,1.1) both}
+    .cc:hover{box-shadow:0 4px 22px rgba(10,61,43,.10)}
     .cc.full{grid-column:span 2}
-    @media(max-width:800px){.cc.full{grid-column:span 1}}
-    .cc-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:3px}
-    .cc-hint{font-size:12px;color:var(--muted);font-weight:300;margin-bottom:16px;line-height:1.5}
-    .cw{position:relative;height:260px}
-    .cw.tall{height:320px}
-    .cw.short{height:190px}
+    @media(max-width:860px){.cc.full{grid-column:span 1}}
+    .charts-grid .cc:nth-child(1){animation-delay:.08s}.charts-grid .cc:nth-child(2){animation-delay:.14s}.charts-grid .cc:nth-child(3){animation-delay:.20s}.charts-grid .cc:nth-child(4){animation-delay:.26s}.charts-grid .cc:nth-child(5){animation-delay:.32s}
+    @keyframes cardIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+    .cc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:4px}
+    .cc-meta{flex:1}
+    .cc-title{font-family:'Playfair Display',serif;font-size:16.5px;font-weight:700;color:var(--ink);line-height:1.25;margin-bottom:4px}
+    .cc-hint{font-size:12px;color:var(--muted);font-weight:400;line-height:1.55}
+    .cc-sep{width:100%;height:1px;background:var(--borde);margin:10px 0 16px}
 
-    #heatmap-container{overflow-x:auto;padding-bottom:4px}
+    /* Filtros locales */
+    .cc-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--surface-2);border:1px solid var(--borde);border-radius:10px}
+    .cc-filters label{font-size:10px;font-weight:700;color:var(--ink-2);letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+    .cc-filters select,.cc-filters input[type="date"]{border:1.5px solid var(--borde);border-radius:7px;padding:5px 9px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--ink);outline:none;transition:border-color .15s}
+    .cc-filters select:focus,.cc-filters input[type="date"]:focus{border-color:var(--acento)}
+    .cc-btn{padding:5px 12px;border-radius:7px;border:1.5px solid transparent;background:var(--verde-oscuro);color:#fff;font-size:11.5px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .18s}
+    .cc-btn:hover{background:var(--verde-medio)}
+    .cc-btn-clear{background:var(--surface);color:var(--muted);border-color:var(--borde)}
+    .cc-btn-clear:hover{color:var(--ink);border-color:#94a3b8}
+
+    /* Botón PNG */
+    .btn-png{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1.5px solid var(--borde);background:var(--surface-2);font-size:11px;font-weight:600;font-family:inherit;color:var(--muted);cursor:pointer;transition:all .18s;white-space:nowrap;flex-shrink:0;letter-spacing:.03em}
+    .btn-png:hover{background:var(--verde-oscuro);color:#fff;border-color:var(--verde-oscuro);transform:translateY(-1px);box-shadow:0 3px 10px rgba(10,61,43,.22)}
+
+    /* Canvas */
+    .cw{position:relative}
+    .h240{height:240px}.h280{height:280px}.h300{height:300px}.h340{height:340px}.h400{height:400px}.h460{height:460px}.h520{height:520px}
+
+    /* Nota metodológica especial */
+    .nota-meta{background:rgba(26,92,58,0.06);border:1px solid rgba(26,92,58,0.18);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--ink-2);line-height:1.55;margin-bottom:14px}
+    .nota-meta strong{color:var(--acento)}
+
+    /* FOOTER */
+    footer{background:var(--verde-oscuro);color:rgba(255,255,255,.42);text-align:center;padding:16px 24px;font-size:12px;font-weight:300;letter-spacing:.04em;flex-shrink:0}
+    footer strong{color:rgba(255,255,255,.75);font-weight:500}
   </style>
 </head>
 <body>
@@ -99,206 +153,388 @@
 <nav class="module-nav">
   <div class="module-nav-inner">
     <a href="../../index.html" class="nav-back">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Inicio
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Inicio
     </a>
     <a href="dashboard.html" class="nav-tab">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Mapa geográfico
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      Mapa geográfico
     </a>
     <a href="tablero.html" class="nav-tab active">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Tablero dinámico
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Tablero dinámico
     </a>
     <a href="registros.html" class="nav-tab">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>Registros y análisis
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      Registros y datos
     </a>
   </div>
 </nav>
 
 <div class="page">
 
-  <div class="filtros-bar">
-    <div class="fg"><label>Año</label><select id="f-anio"><option value="">Todos</option></select></div>
-    <div class="fg"><label>Mes</label><select id="f-mes"><option value="">Todos</option></select></div>
-    <div class="fg"><label>Municipio</label><select id="f-municipio"><option value="">Todos</option></select></div>
-    <div class="fg"><label>Guardarecursos</label><select id="f-guarda"><option value="">Todos</option></select></div>
-    <div class="fg"><label>Área protegida</label><select id="f-area"><option value="">Todas</option></select></div>
-    <button class="btn-reset" id="btn-reset">Limpiar</button>
+  <!-- FILTROS GLOBALES -->
+  <div class="filtros-panel">
+    <div class="filtros-titulo">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filtros globales — aplican a todos los gráficos
+    </div>
+    <div class="filtros-grid">
+      <div class="fg"><label>Desde</label><input type="date" id="f-desde"/></div>
+      <div class="fg"><label>Hasta</label><input type="date" id="f-hasta"/></div>
+      <div class="fg"><label>Municipio</label><select id="f-muni"><option value="">Todos</option></select></div>
+      <div class="fg"><label>Área protegida</label><select id="f-area"><option value="">Todas</option></select></div>
+      <div class="fg"><label>Guardarecursos</label><select id="f-guarda"><option value="">Todos</option></select></div>
+      <button class="btn-filtro btn-aplicar" id="btn-aplicar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Aplicar
+      </button>
+      <button class="btn-filtro btn-limpiar" id="btn-limpiar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Limpiar
+      </button>
+    </div>
+    <div class="chips-wrap" id="chips-wrap"></div>
   </div>
-  <div class="chips-wrap" id="chips-wrap"></div>
-  <div class="estado-bar"><span class="estado-txt" id="estado">Cargando datos…</span></div>
 
+  <div class="estado-bar">
+    <span class="estado-txt" id="estado">Cargando datos…</span>
+  </div>
+
+  <!-- KPIs -->
   <div class="kpis">
-    <div class="kpi kpi-0"><div class="kpi-label">Consumos</div><div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub">registros filtrados</div></div>
-    <div class="kpi kpi-1"><div class="kpi-label">Guardarecursos</div><div class="kpi-value" id="kpi-guardas">–</div><div class="kpi-sub">activos en período</div></div>
-    <div class="kpi kpi-2"><div class="kpi-label">Árboles totales</div><div class="kpi-value" id="kpi-arboles">–</div><div class="kpi-sub">autorizados para tala</div></div>
-    <div class="kpi kpi-3"><div class="kpi-label">Prom. árboles</div><div class="kpi-value" id="kpi-prom">–</div><div class="kpi-sub">por consumo</div></div>
-    <div class="kpi kpi-4"><div class="kpi-label">Período</div><div class="kpi-value" style="font-size:15px" id="kpi-rango">–</div><div class="kpi-sub">rango activo</div></div>
+    <div class="kpi kpi-0"><div class="kpi-label">Consumos registrados</div><div class="kpi-value" id="k-total">–</div><div class="kpi-sub">solicitudes totales</div></div>
+    <div class="kpi kpi-1"><div class="kpi-label">Árboles aprobados</div><div class="kpi-value" id="k-arboles">–</div><div class="kpi-sub">total a talar</div></div>
+    <div class="kpi kpi-2"><div class="kpi-label">Meta reforestación</div><div class="kpi-value" id="k-meta">–</div><div class="kpi-sub">árboles a reponer (÷10)</div></div>
+    <div class="kpi kpi-3"><div class="kpi-label">Promedio por consumo</div><div class="kpi-value" id="k-prom">–</div><div class="kpi-sub">árboles por solicitud</div></div>
+    <div class="kpi kpi-4"><div class="kpi-label">Municipios</div><div class="kpi-value" id="k-munis">–</div><div class="kpi-sub">cobertura territorial</div></div>
+    <div class="kpi kpi-5"><div class="kpi-label">Guardarecursos</div><div class="kpi-value" id="k-guardas">–</div><div class="kpi-sub">activos en el período</div></div>
+  </div>
+
+  <!-- SECCIÓN 1 — TEMPORAL -->
+  <div class="sec-divider">Análisis temporal</div>
+  <div class="charts-grid">
+
+    <!-- G1: Tendencia mensual consumos -->
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Tendencia mensual — consumos y árboles aprobados</div>
+          <div class="cc-hint">Barras = consumos registrados por mes · línea = total de árboles aprobados acumulados en ese mes</div>
+        </div>
+        <button class="btn-png" id="png-tendencia">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-tendencia"></canvas></div>
+    </div>
+
+    <!-- G2: Heatmap día × mes -->
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Distribución por día del mes</div>
+          <div class="cc-hint">Concentración de consumos según el día del mes en que se registraron</div>
+        </div>
+        <button class="btn-png" id="png-diames">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h280"><canvas id="c-diames"></canvas></div>
+    </div>
+
+    <!-- G3: Distribución árboles por consumo -->
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Distribución de árboles por solicitud</div>
+          <div class="cc-hint">Histograma de cuántos árboles tiene cada consumo aprobado · revela el tamaño típico de solicitud</div>
+        </div>
+        <button class="btn-png" id="png-hist">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h280"><canvas id="c-hist"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- SECCIÓN 2 — ESPECIES -->
+  <div class="sec-divider">Análisis por especie</div>
+  <div class="charts-grid">
+
+    <!-- G4: Especies totales -->
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Árboles aprobados por especie</div>
+          <div class="cc-hint">Total de árboles a talar por especie en el período seleccionado</div>
+        </div>
+        <button class="btn-png" id="png-especies">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-especies"></canvas></div>
+    </div>
+
+    <!-- G5: Donut mix de especies -->
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Composición por especie</div>
+          <div class="cc-hint">Proporción relativa de cada especie sobre el total de árboles aprobados</div>
+        </div>
+        <button class="btn-png" id="png-donut">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-donut"></canvas></div>
+    </div>
+
+    <!-- G6: Especies por mes (stacked) con filtro propio -->
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Evolución mensual por especie</div>
+          <div class="cc-hint">Composición de especies aprobadas mes a mes · identifica estacionalidad en los tipos de árbol solicitado</div>
+        </div>
+        <button class="btn-png" id="png-especiesMes">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h340"><canvas id="c-especiesMes"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- SECCIÓN 3 — TERRITORIAL -->
+  <div class="sec-divider">Análisis territorial</div>
+  <div class="charts-grid">
+
+    <!-- G7: Municipios por consumos -->
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Municipios con más consumos</div>
+          <div class="cc-hint">Top de municipios por número de solicitudes registradas · haz clic para filtrar</div>
+        </div>
+        <button class="btn-png" id="png-muni">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-muni"></canvas></div>
+    </div>
+
+    <!-- G8: Árboles por municipio -->
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Árboles aprobados por municipio</div>
+          <div class="cc-hint">Volumen total de árboles a talar por municipio · refleja la presión de extracción territorial</div>
+        </div>
+        <button class="btn-png" id="png-muniArb">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-muniArb"></canvas></div>
+    </div>
+
+    <!-- G9: Área protegida donut -->
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Cobertura RUMCLA</div>
+          <div class="cc-hint">Proporción de consumos dentro y fuera del área protegida</div>
+        </div>
+        <button class="btn-png" id="png-rumcla">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-rumcla"></canvas></div>
+    </div>
+
+    <!-- G10: Consumo fuera de municipio -->
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Consumos fuera del municipio de asignación</div>
+          <div class="cc-hint">Proporción de consumos atendidos por un guardarecursos cedido de otro municipio</div>
+        </div>
+        <button class="btn-png" id="png-fuera">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-fuera"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- SECCIÓN 4 — GUARDARECURSOS (al fondo, ancho completo) -->
+  <div class="sec-divider">Análisis por guardarecursos</div>
+
+  <div class="nota-meta">
+    <strong>Regla de meta de reforestación por compromiso:</strong> por cada 10 árboles aprobados en consumo forestal familiar, el guardarecursos genera una meta de 1 árbol a reforestar.
+    La línea roja en el gráfico muestra la cantidad de árboles que cada guardarecursos debe comprometerse a reforestar según el volumen total que tiene aprobado a su nombre.
+    El filtro de rango propio permite comparar cualquier período independientemente de los filtros globales.
   </div>
 
   <div class="charts-grid">
 
-    <!-- G1: Tendencia mensual -->
+    <!-- G11: Ranking guardarecursos — consumos, árboles y meta de reforestación -->
     <div class="cc full">
-      <div class="cc-title">Tendencia mensual de consumos</div>
-      <div class="cc-hint">Consumos registrados por mes · línea punteada roja = promedio global del período</div>
-      <div class="cw tall"><canvas id="c-tendencia"></canvas></div>
-    </div>
-
-    <!-- G2: Heatmap día × mes -->
-    <div class="cc full">
-      <div class="cc-title">Mapa de calor · día de semana × mes</div>
-      <div class="cc-hint">Intensidad de consumos según el día en que se registran · más oscuro = más registros</div>
-      <div id="heatmap-container"><svg id="heatmap-svg"></svg></div>
-    </div>
-
-    <!-- G3: Distribución de especies (donut) -->
-    <div class="cc">
-      <div class="cc-title">Distribución de especies</div>
-      <div class="cc-hint">Porcentaje de árboles autorizados por especie en el filtro actual</div>
-      <div class="cw"><canvas id="c-especies"></canvas></div>
-    </div>
-
-    <!-- G4: Árboles por especie (barra horizontal) -->
-    <div class="cc">
-      <div class="cc-title">Árboles por especie</div>
-      <div class="cc-hint">Total de árboles autorizados acumulados por especie · ordenado de mayor a menor</div>
-      <div class="cw"><canvas id="c-arbEsp"></canvas></div>
-    </div>
-
-    <!-- G5: Stacked municipios × mes -->
-    <div class="cc full">
-      <div class="cc-title">Evolución mensual por municipio (top 6)</div>
-      <div class="cc-hint">Distribución de consumos por municipio a lo largo del tiempo · identifica municipios con mayor demanda</div>
-      <div class="cw tall"><canvas id="c-muniMes"></canvas></div>
-    </div>
-
-    <!-- G6: Radar guardarecursos con selector -->
-    <div class="cc">
-      <div class="cc-title">Radar de actividad por guardarecursos</div>
-      <div class="cc-hint">Selecciona un guardarecursos para ver su perfil vs. la media global · sin selección muestra el top 6</div>
-      <div style="margin-bottom:10px">
-        <select id="f-radar-guarda" style="border:1px solid var(--borde);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--ink);width:100%;outline:none">
-          <option value="">— Mostrar top 6 —</option>
-        </select>
-      </div>
-      <div class="cw tall"><canvas id="c-radar"></canvas></div>
-    </div>
-
-    <!-- G7: Donuts cobertura + intermunicipal -->
-    <div class="cc" style="display:flex;flex-direction:column;gap:20px">
-      <div>
-        <div class="cc-title">Cobertura territorial</div>
-        <div class="cc-hint">Consumos dentro vs. fuera de la RUMCLA</div>
-        <div class="cw short"><canvas id="c-rumcla"></canvas></div>
-      </div>
-      <div>
-        <div class="cc-title">Consumos intermunicipales</div>
-        <div class="cc-hint">Consumos cedidos entre guardarecursos de distintos municipios</div>
-        <div class="cw short"><canvas id="c-inter"></canvas></div>
-      </div>
-    </div>
-
-    <!-- G8: Mix de especies por mes (stacked) -->
-    <div class="cc full">
-      <div class="cc-title">Composición de especies por mes</div>
-      <div class="cc-hint">Árboles autorizados por especie en cada período · permite ver tendencias de demanda a lo largo del tiempo</div>
-      <div class="cw tall"><canvas id="c-mixEsp"></canvas></div>
-    </div>
-
-    <!-- G9: Top municipios -->
-    <div class="cc">
-      <div class="cc-title">Top municipios · consumos y árboles</div>
-      <div class="cc-hint">Municipios con más consumos (barras) y árboles totales autorizados (línea)</div>
-      <div class="cw" style="height:280px"><canvas id="c-topMuni"></canvas></div>
-    </div>
-
-    <!-- G10: Histograma árboles por consumo -->
-    <div class="cc">
-      <div class="cc-title">Distribución de árboles por consumo</div>
-      <div class="cc-hint">Histograma: ¿cuántos árboles se autorizan típicamente por visita? · detecta consumos atípicos</div>
-      <div class="cw" style="height:280px"><canvas id="c-histArb"></canvas></div>
-    </div>
-
-    <!-- G11: Ranking guardarecursos -->
-    <div class="cc full">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:6px">
-        <div>
-          <div class="cc-title">Ranking de guardarecursos · consumos y árboles</div>
-          <div class="cc-hint">Barras = consumos atendidos (número visible) · línea roja = árboles totales autorizados · filtra por rango propio</div>
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Ranking de guardarecursos — consumos, árboles aprobados y meta de reforestación</div>
+          <div class="cc-hint">
+            Barras azules = consumos registrados (eje izquierdo) · puntos verdes = total de árboles aprobados (eje derecho) · línea roja = meta de reforestación por compromiso = árboles ÷ 10
+          </div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <label style="font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase">Rango:</label>
-          <input type="date" id="g11-desde" style="border:1px solid var(--borde);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--ink);outline:none" title="Desde"/>
-          <span style="color:var(--muted);font-size:13px">–</span>
-          <input type="date" id="g11-hasta" style="border:1px solid var(--borde);border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--ink);outline:none" title="Hasta"/>
-          <button id="g11-aplicar" style="padding:6px 14px;border-radius:8px;border:none;background:var(--verde-oscuro);color:#fff;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer">Aplicar</button>
-          <button id="g11-limpiar" style="padding:6px 10px;border-radius:8px;border:1px solid var(--borde);background:var(--blanco);color:var(--muted);font-size:12px;font-family:inherit;cursor:pointer">✕ Limpiar</button>
-        </div>
+        <button class="btn-png" id="png-ranking">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
       </div>
-      <div class="cw" style="height:420px"><canvas id="c-rankGuarda"></canvas></div>
+      <div class="cc-filters">
+        <label>Rango propio:</label>
+        <input type="date" id="g11-desde"/>
+        <span style="color:var(--muted);font-size:13px">–</span>
+        <input type="date" id="g11-hasta"/>
+        <button class="cc-btn" id="g11-aplicar">Aplicar</button>
+        <button class="cc-btn cc-btn-clear" id="g11-limpiar">Limpiar</button>
+      </div>
+      <div class="cw h460"><canvas id="c-ranking"></canvas></div>
+    </div>
+
+    <!-- G12: Especies por guardarecursos (stacked horizontal) -->
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Composición de especies por guardarecursos</div>
+          <div class="cc-hint">Qué tipos de árboles aprueba cada guardarecursos · permite identificar especialización territorial por especie</div>
+        </div>
+        <button class="btn-png" id="png-espGuarda">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h460"><canvas id="c-espGuarda"></canvas></div>
     </div>
 
   </div>
 </div>
 
-<footer style="background:var(--verde-oscuro);color:rgba(255,255,255,.45);text-align:center;padding:14px 20px;font-size:11.5px;font-weight:300">
-  <strong style="color:rgba(255,255,255,.75);font-weight:500">CONAP · Dirección Regional Altiplano Central</strong> · Laboratorio SIG AALA · © 2026
+<footer>
+  <strong>CONAP · Dirección Regional Altiplano Central</strong> · Sistema desarrollado por el Laboratorio SIG · Asociación Amigos del Lago de Atitlán (AALA) · © 2026
 </footer>
 
 <script>
-/* ══════════════════════════════════
-   UTILIDADES (idénticas a patrullajes)
-══════════════════════════════════ */
-const norm=v=>v==null?"":String(v).trim().replace(/\s+/g," ");
-const canon=v=>norm(v).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-const uniq=arr=>[...new Set(arr.filter(v=>v!=null&&v!==""))];
-const sum=arr=>arr.reduce((a,b)=>a+b,0);
-const avg=arr=>arr.length?sum(arr)/arr.length:0;
-const numV=v=>{const n=parseFloat(String(v||"").replace(",","."));return isNaN(n)?0:n};
-const pA=s=>/[áéíóúüñÁÉÍÓÚÜÑ]/.test(String(s||""));
-function bestL(a,b){a=norm(a);b=norm(b);if(!a)return b;if(!b)return a;if(pA(b)&&!pA(a))return b;return b.length>a.length?b:a}
+/* ═══ PALETA ══════════════════════════════════════════════ */
+const PAL = ["#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660","#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"];
+const PAL_A = PAL.map(c=>c+"bb");
 
-const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const MESES_F=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-const DIAS=["Lunes","Martes","Miérc.","Jueves","Viernes","Sábado","Dom."];
-const PALETTE=["#0ea5e9","#10b981","#f59e0b","#8b5cf6","#ef4444","#14b8a6","#f97316","#6366f1","#be185d","#65a30d"];
-const TT={backgroundColor:"rgba(10,61,43,0.92)",titleFont:{size:13,weight:"600"},bodyFont:{size:12},padding:10,cornerRadius:8};
-
-Chart.defaults.font.family="'DM Sans',sans-serif";
-Chart.defaults.color="#6b7280";
-if(typeof ChartDataLabels!=="undefined"){
-  Chart.register(ChartDataLabels);
-  Chart.defaults.set("plugins.datalabels",{display:false});
-}
-
-const CHARTS={};
-function mkChart(id,cfg){if(CHARTS[id])CHARTS[id].destroy();CHARTS[id]=new Chart(document.getElementById(id),cfg)}
-
-/* ══════════════════════════════════
-   ESPECIES DE CONSUMO FORESTAL
-══════════════════════════════════ */
-const ESPECIES=[
-  {campo:"Cantidad de Pino (Pinus pseudostrobus)",    label:"Pino",        color:"#15803d"},
-  {campo:"Cantidad de Cipres (Cupressus lusitanica)", label:"Ciprés",      color:"#0369a1"},
-  {campo:"Cantidad de Aliso (Alnus jorullensis)",     label:"Aliso",       color:"#7c3aed"},
-  {campo:"Cantidad de Encino (Quercus sp)",           label:"Encino",      color:"#b45309"},
-  {campo:"Cantidad de Palo Blanco (Vernonia patens)", label:"Palo Blanco", color:"#be185d"},
-  {campo:"Cantidad de Cajete (Heliocarpus donnellsmithii)",label:"Cajete", color:"#0891b2"},
-  {campo:"Cantidad de Madron (Arbutus xalapensis)",   label:"Madrón",      color:"#dc2626"},
-  {campo:"Cantidad de Mano de mono (Oreopanax xalapensis)",label:"Mano de mono",color:"#65a30d"},
-  {campo:"Cantidad de Matilisguate (Tabebuia rosea)", label:"Matilisguate",color:"#ea580c"},
-  {campo:"Cantidad de Aguacate (Persea americana)",   label:"Aguacate",    color:"#16a34a"},
-  {campo:"Cantidad de Casuarina (Casuarina equisetifolia)",label:"Casuarina",color:"#6d28d9"},
-  {campo:"Cantidad de Otro",                          label:"Otro",        color:"#64748b"},
+/* ═══ ESPECIES ════════════════════════════════════════════ */
+const ESPECIES = [
+  {field:"Cantidad de Pino (Pinus pseudostrobus)",       label:"Pino",         color:"#1a7a38"},
+  {field:"Cantidad de Cipres (Cupressus lusitanica)",    label:"Ciprés",       color:"#1f6cb0"},
+  {field:"Cantidad de Aliso (Alnus jorullensis)",        label:"Aliso",        color:"#b05608"},
+  {field:"Cantidad de Encino (Quercus sp)",              label:"Encino",       color:"#6b2680"},
+  {field:"Cantidad de Palo Blanco (Vernonia patens)",    label:"Palo Blanco",  color:"#016660"},
+  {field:"Cantidad de Cajete (Heliocarpus donnellsmithii)", label:"Cajete",   color:"#7a4508"},
+  {field:"Cantidad de Madron (Arbutus xalapensis)",      label:"Madrón",      color:"#3d8fbf"},
+  {field:"Cantidad de Mano de mono (Oreopanax xalapensis)", label:"Mano de mono", color:"#b51a72"},
+  {field:"Cantidad de Matilisguate (Tabebuia rosea)",    label:"Matilisguate", color:"#448a1e"},
+  {field:"Cantidad de Aguacate (Persea americana)",      label:"Aguacate",     color:"#c85840"},
+  {field:"Cantidad de Casuarina (Casuarina equisetifolia)", label:"Casuarina", color:"#4e359a"},
+  {field:"Cantidad de Otro",                             label:"Otro",         color:"#94a3b8"},
 ];
 
-/* ══════════════════════════════════
-   CSV — mismo sistema que patrullajes
-══════════════════════════════════ */
+/* ═══ NORMALIZACIÓN ═══════════════════════════════════════ */
+const EXCLUIDOS = new Set([
+  "daniel estuardo barillas coo","daniel estuardo barillas",
+  "domingo alfonso mendoza quiacain","domingo alfonso mendoza",
+  "job' kotz'ij eligia morales quino","job kotzij eligia morales quino",
+  "jose manuel vasquez upun",
+  "pedro chiviliu esquina",
+  "ruben enrique sumoza mendoza","ruben enrique sumoza",
+]);
+const MERGE = {
+  "edgar bartolo batin navichoc":"Edgar Bartolo Batín Navichoc",
+  "henry regino mendez chavajay":"Henry Regino Méndez Chavajay",
+  "mario cesar tale coche":"Mario César Talé Coché",
+  "rafaél enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "rafael enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "bernabe lopez sajvin":"Bernabé López Sajvín",
+  "santos maurico vicente mendoza":"Santos Mauricio Vicente Mendoza",
+  "santos mauricio vicente mendoza":"Santos Mauricio Vicente Mendoza",
+  "cornelio marco antonio perechu tzep":"Cornelio Marco Antonio Perechu Tzep",
+  "cornelio marco antonio perechú tzep":"Cornelio Marco Antonio Perechu Tzep",
+  "vicente francisco omar perez cox":"Vicente Francisco Omar Pérez Cox",
+  "antonio federico tzaj y tzaj":"Antonio Federico Tzaj Y Tzaj",
+};
+function canonStr(s){return String(s||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ");}
+function normGuarda(n){if(!n)return null;const c=canonStr(n);if(EXCLUIDOS.has(c))return null;return MERGE[c]||n.trim();}
+
+/* ═══ CHART.JS ════════════════════════════════════════════ */
+Chart.defaults.font.family="'DM Sans',sans-serif";
+Chart.defaults.font.size=13;
+Chart.defaults.color="#6a8878";
+if(typeof ChartDataLabels!=="undefined"){Chart.register(ChartDataLabels);Chart.defaults.set("plugins.datalabels",{display:false});}
+const TT={backgroundColor:"rgba(7,24,15,0.93)",titleFont:{size:13,weight:"600",family:"'DM Sans',sans-serif"},bodyFont:{size:12.5,family:"'DM Sans',sans-serif"},padding:12,cornerRadius:10,borderColor:"rgba(255,255,255,0.06)",borderWidth:1};
+const GC="rgba(0,0,0,0.045)";
+const CHARTS={};
+function mkChart(id,cfg){if(CHARTS[id])CHARTS[id].destroy();const el=document.getElementById(id);if(!el)return;CHARTS[id]=new Chart(el,cfg);}
+
+/* ═══ PNG ═════════════════════════════════════════════════ */
+function dlPNG(id,fn){const c=CHARTS[id];if(!c)return;const cv=c.canvas,off=document.createElement("canvas");off.width=cv.width;off.height=cv.height;const ctx=off.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,off.width,off.height);ctx.drawImage(cv,0,0);const a=document.createElement("a");a.href=off.toDataURL("image/png");a.download=fn+".png";a.click();}
+
+/* ═══ UTILIDADES ══════════════════════════════════════════ */
+const norm=v=>v==null?"":String(v).trim().replace(/\s+/g," ");
+const uniq=arr=>[...new Set(arr.filter(Boolean))];
+const sum_=arr=>arr.reduce((a,b)=>a+b,0);
+const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const LABELS={muni:new Map(),guarda:new Map(),area:new Map()};
+
+function parseCreation(s){
+  s=String(s||"").trim();if(!s)return null;
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+  if(m)return new Date(+m[3],+m[1]-1,+m[2],+m[4],+m[5],+m[6]);
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+  const dt=new Date(s);return isNaN(dt)?null:dt;
+}
+function mKey(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0");}
+function mShort(k){const[y,m]=k.split("-");return MESES_S[+m-1]+"'"+String(y).slice(2);}
+function fmtDate(dt){if(!dt)return"–";return String(dt.getDate()).padStart(2,"0")+"/"+String(dt.getMonth()+1).padStart(2,"0")+"/"+dt.getFullYear();}
+function isoDate(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
+function bestL(a,b){a=norm(a);b=norm(b);if(!a)return b;if(!b)return a;const ht=s=>/[áéíóúüñÁÉÍÓÚÜÑ]/.test(s);if(ht(b)&&!ht(a))return b;return b.length>a.length?b:a;}
+function canonArea(v){const c=canonStr(v);if(c.includes("rumcla"))return"rumcla";if(c.includes("fuera"))return"fuera";return c;}
+function canonFuera(v){const c=canonStr(v);return(c==="si"||c==="sí")?"si":c==="no"?"no":"";}
+function safeInt(v){const n=parseInt(String(v).trim());return isNaN(n)?0:n;}
+
+/* ═══ CARGA CSV ═══════════════════════════════════════════ */
 async function loadCSV(){
-  const urls=[
-    "../../datos/base3_datos.csv",
-    "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base3_datos.csv"
-  ];
+  const urls=["../../datos/base3_datos.csv","https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base3_datos.csv"];
   for(const url of urls){
     try{
       const r=await fetch(url,{cache:"no-store"});if(!r.ok)continue;
@@ -306,338 +542,217 @@ async function loadCSV(){
       const t1=new TextDecoder("utf-8",{fatal:false}).decode(u8);
       const t2=new TextDecoder("windows-1252",{fatal:false}).decode(u8);
       const text=(t2.match(/\uFFFD/g)||[]).length<(t1.match(/\uFFFD/g)||[]).length?t2:t1;
-      const p=parseCSV(text);if(p.data.length)return p;
+      const l0=text.split("\n")[0];
+      const dl=[";",",","\t"].sort((a,b)=>l0.split(b).length-l0.split(a).length)[0];
+      const rows=[];let i=0,f="",row=[],inQ=false;
+      const pF=()=>{row.push(f);f="";};const pR=()=>{if(row.length){rows.push(row);row=[];}};
+      while(i<text.length){const c=text[i];
+        if(inQ){if(c==='"'){if(text[i+1]==='"'){f+='"';i+=2;continue;}inQ=false;i++;continue;}f+=c;i++;continue;}
+        if(c==='"'){inQ=true;i++;continue;}if(c===dl){pF();i++;continue;}
+        if(c==="\n"){pF();pR();i++;continue;}if(c==="\r"){if(text[i+1]==="\n")i++;pF();pR();i++;continue;}
+        f+=c;i++;}
+      pF();pR();
+      if(rows.length<2)continue;
+      const headers=rows[0].map(h=>norm(h));
+      const data=rows.slice(1).filter(r=>!r.every(v=>!norm(v))).map(r=>{const o={};headers.forEach((h,i)=>o[h]=norm(r[i]||""));return o;});
+      if(data.length)return data;
     }catch(e){}
   }
-  throw new Error("No se pudo cargar el CSV.");
+  throw new Error("No se pudo cargar base3_datos.csv");
 }
 
-function parseCSV(text){
-  const dl=[";",",","\t"].sort((a,b)=>(text.split("\n")[0].split(b).length)-(text.split("\n")[0].split(a).length))[0];
-  const rows=[];let i=0,f="",row=[],inQ=false;
-  const pF=()=>{row.push(f);f=""};const pR=()=>{if(row.length){rows.push(row);row=[]}};
-  while(i<text.length){
-    const c=text[i];
-    if(inQ){if(c==='"'){if(text[i+1]==='"'){f+='"';i+=2;continue}inQ=false;i++;continue}f+=c;i++;continue}
-    if(c==='"'){inQ=true;i++;continue}
-    if(c===dl){pF();i++;continue}
-    if(c==="\n"){pF();pR();i++;continue}
-    if(c==="\r"){if(text[i+1]==="\n")i++;pF();pR();i++;continue}
-    f+=c;i++;
-  }
-  pF();pR();
-  if(rows.length<2)return{data:[],headers:[]};
-  let headers=rows[0].map(h=>norm(h));
-  // Normalizar BOM en primera columna
-  if(headers[0]&&headers[0].startsWith("\ufeff"))headers[0]=headers[0].slice(1);
-  const data=rows.slice(1).filter(r=>!r.every(v=>!norm(v))).map(r=>{const o={};headers.forEach((h,i)=>o[h]=norm(r[i]||""));return o});
-  return{data,headers};
+/* ═══ ENRIQUECIMIENTO ═════════════════════════════════════ */
+function enrich(raw){
+  return raw.map(r=>{
+    const gn=normGuarda(r["Nombre del guardarecursos"]);if(!gn)return null;
+    const dt=parseCreation(r["CreationDate"]);
+    const arboles=safeInt(r["Cantidad total de arboles a talar"]);
+    const cm=canonStr(r["Municipio"]);
+    const cg=canonStr(gn);
+    const ca=canonArea(r["Area protegida"]);
+    const cf=canonFuera(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"]);
+    const espMap={};ESPECIES.forEach(e=>{espMap[e.field]=safeInt(r[e.field]||"0");});
+    if(cm)LABELS.muni.set(cm,bestL(LABELS.muni.get(cm),r["Municipio"]));
+    if(cg)LABELS.guarda.set(cg,bestL(LABELS.guarda.get(cg),gn));
+    if(ca)LABELS.area.set(ca,bestL(LABELS.area.get(ca),r["Area protegida"]));
+    return{...r,__guarda:gn,__dt:dt,__mes:dt?mKey(dt):"",__dia:dt?dt.getDate():null,__arboles:arboles,__meta:Math.floor(arboles/10),__cm:cm,__cg:cg,__ca:ca,__cf:cf,...espMap};
+  }).filter(Boolean);
 }
 
-/* ══════════════════════════════════
-   FECHA
-══════════════════════════════════ */
-function parseDate(s){
-  const v=norm(s);if(!v)return null;
-  // Quitar parte de hora si la hay
-  const parteF=v.split(" ")[0];
-  let m=parteF.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if(m)return new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));
-  m=parteF.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if(m){
-    let y=+m[3];if(y<100)y=y<=50?2000+y:1900+y;
-    const p1=+m[1],p2=+m[2];
-    let mes,dia;
-    // si p1>12 → es día/mes/año (DMY)
-    if(p1>12&&p2>=1&&p2<=12){dia=p1;mes=p2;}
-    else{mes=p1;dia=p2;}  // asumir M/D/Y (formato Survey123)
-    return new Date(Date.UTC(y,mes-1,dia));
-  }
-  return null;
-}
-function fmtDate(dt){if(!dt)return"–";return String(dt.getUTCDate()).padStart(2,"0")+"/"+String(dt.getUTCMonth()+1).padStart(2,"0")+"/"+dt.getUTCFullYear()}
-function mKey(dt){return dt.getUTCFullYear()+"-"+String(dt.getUTCMonth()+1).padStart(2,"0")}
-function mShort(k){const[y,m]=k.split("-");return MESES_S[+m-1]+" '"+String(y).slice(2)}
-function mFull(k){const[y,m]=k.split("-");return MESES_F[+m-1]+" "+y}
-function dowMon(dt){return(dt.getUTCDay()+6)%7}
-
-/* ══════════════════════════════════
-   ENRIQUECIMIENTO
-══════════════════════════════════ */
-const LABELS={muni:new Map(),guarda:new Map(),area:new Map()};
-function canonArea(v){const c=canon(v);if(c.includes("rumcla")||c.includes("dentro"))return"rumcla";if(c.includes("fuera"))return"fuera";return c}
-function canonInter(v){const c=canon(v);return(c==="si"||c==="sí")?"si":c==="no"?"no":""}
-
-function enrich(data){
-  return data.map(r=>{
-    const rr={...r};
-    const fg=norm(r["Nombre del guardarecursos"])||norm(r["Nombre del guardarecurso"]);
-    rr.__dt  =parseDate(r["Fecha"]);
-    rr.__anio=rr.__dt?String(rr.__dt.getUTCFullYear()):"";
-    rr.__mes =rr.__dt?mKey(rr.__dt):"";
-    rr.__dow =rr.__dt?dowMon(rr.__dt):null;
-    rr.__cm  =canon(r["Municipio"]);
-    rr.__cg  =canon(fg);
-    rr.__ca  =canonArea(r["Area protegida"]);
-    rr.__ci  =canonInter(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"]);
-    rr.__arb =numV(r["Cantidad total de arboles a talar"]);
-    rr.__usr =norm(r["Nombre del usuario"])||"(Sin usuario)";
-    // Sumatoria por especie
-    ESPECIES.forEach(e=>{rr["__esp_"+e.label]=numV(r[e.campo]);});
-    if(rr.__cm)LABELS.muni.set(rr.__cm,bestL(LABELS.muni.get(rr.__cm),r["Municipio"]));
-    if(rr.__cg)LABELS.guarda.set(rr.__cg,bestL(LABELS.guarda.get(rr.__cg),fg));
-    if(rr.__ca)LABELS.area.set(rr.__ca,bestL(LABELS.area.get(rr.__ca),r["Area protegida"]));
-    return rr;
-  });
-}
-
-/* ══════════════════════════════════
-   FILTROS
-══════════════════════════════════ */
+/* ═══ FILTROS ═════════════════════════════════════════════ */
 let ROWS=[];
-function fillSel(id,opts,ph="Todos"){
-  const el=document.getElementById(id);el.innerHTML=`<option value="">${ph}</option>`;
-  opts.forEach(({v,l})=>{const o=document.createElement("option");o.value=v;o.textContent=l;el.appendChild(o)});
+
+function initSelects(){
+  const sM=[...LABELS.muni.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));
+  fillSel("f-muni",sM,"Todos los municipios");
+  const sA=[...LABELS.area.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));
+  fillSel("f-area",sA,"Todas las áreas");
+  const sG=[...LABELS.guarda.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));
+  fillSel("f-guarda",sG,"Todos");
+  const dates=ROWS.map(r=>r.__dt).filter(d=>d&&!isNaN(d)).sort((a,b)=>a-b);
+  if(dates.length){document.getElementById("f-desde").value=isoDate(dates[0]);document.getElementById("f-hasta").value=isoDate(dates[dates.length-1]);}
 }
-function initFilters(){
-  fillSel("f-anio",uniq(ROWS.map(r=>r.__anio)).sort().map(y=>({v:y,l:y})));
-  fillSel("f-mes",uniq(ROWS.map(r=>r.__mes)).sort().map(k=>({v:k,l:mFull(k)})));
-  const fm=m=>[...m.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));
-  fillSel("f-municipio",fm(LABELS.muni));
-  fillSel("f-guarda",fm(LABELS.guarda));
-  fillSel("f-area",fm(LABELS.area),"Todas");
-  const rSel=document.getElementById("f-radar-guarda");
-  rSel.innerHTML='<option value="">— Mostrar top 6 —</option>';
-  [...LABELS.guarda.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).forEach(([k,l])=>{const o=document.createElement("option");o.value=k;o.textContent=l;rSel.appendChild(o)});
-}
-function getF(){return{anio:document.getElementById("f-anio").value,mes:document.getElementById("f-mes").value,muni:document.getElementById("f-municipio").value,guar:document.getElementById("f-guarda").value,area:document.getElementById("f-area").value}}
-function applyF(f){return ROWS.filter(r=>{if(f.anio&&r.__anio!==f.anio)return false;if(f.mes&&r.__mes!==f.mes)return false;if(f.muni&&r.__cm!==f.muni)return false;if(f.guar&&r.__cg!==f.guar)return false;if(f.area&&r.__ca!==f.area)return false;return true})}
+function fillSel(id,opts,ph){const el=document.getElementById(id);if(!el)return;el.innerHTML=`<option value="">${ph}</option>`;opts.forEach(({v,l})=>{const o=document.createElement("option");o.value=v;o.textContent=l;el.appendChild(o);});}
+function getF(){return{desde:document.getElementById("f-desde")?.value||"",hasta:document.getElementById("f-hasta")?.value||"",muni:document.getElementById("f-muni")?.value||"",area:document.getElementById("f-area")?.value||"",guar:document.getElementById("f-guarda")?.value||""};}
+function applyF(f){return ROWS.filter(r=>{
+  if(f.desde&&r.__dt&&r.__dt<new Date(f.desde+"T00:00:00"))return false;
+  if(f.hasta&&r.__dt&&r.__dt>new Date(f.hasta+"T23:59:59"))return false;
+  if(f.muni&&r.__cm!==f.muni)return false;
+  if(f.area&&r.__ca!==f.area)return false;
+  if(f.guar&&r.__cg!==f.guar)return false;
+  return true;
+});}
 function renderChips(f){
-  const w=document.getElementById("chips-wrap");w.innerHTML="";
-  const items=[];
-  if(f.anio)items.push("Año: "+f.anio);
-  if(f.mes)items.push("Mes: "+mFull(f.mes));
-  if(f.muni)items.push("Municipio: "+(LABELS.muni.get(f.muni)||f.muni));
-  if(f.guar)items.push("Guardarecursos: "+(LABELS.guarda.get(f.guar)||f.guar));
-  if(f.area)items.push("Área: "+(LABELS.area.get(f.area)||f.area));
-  items.forEach(t=>{const s=document.createElement("span");s.className="chip";s.textContent=t;w.appendChild(s)});
+  const w=document.getElementById("chips-wrap");if(!w)return;w.innerHTML="";
+  const add=txt=>{const s=document.createElement("span");s.className="chip-activo";s.textContent=txt;w.appendChild(s);};
+  if(f.desde||f.hasta){const de=f.desde?f.desde.split("-").reverse().join("/"):"inicio";const ha=f.hasta?f.hasta.split("-").reverse().join("/"):"hoy";add(`${de} — ${ha}`);}
+  if(f.muni)add(LABELS.muni.get(f.muni)||f.muni);
+  if(f.area)add(LABELS.area.get(f.area)||f.area);
+  if(f.guar)add(LABELS.guarda.get(f.guar)||f.guar);
 }
 
-/* ══════════════════════════════════
-   KPIs
-══════════════════════════════════ */
+/* ═══ KPIs ════════════════════════════════════════════════ */
 function updateKPIs(rows){
-  const totalArb=Math.round(rows.reduce((a,r)=>a+(r.__arb||0),0));
-  document.getElementById("kpi-total").textContent=rows.length.toLocaleString("es");
-  document.getElementById("kpi-guardas").textContent=new Set(rows.map(r=>r.__cg).filter(Boolean)).size;
-  document.getElementById("kpi-arboles").textContent=totalArb.toLocaleString("es");
-  document.getElementById("kpi-prom").textContent=rows.length?(totalArb/rows.length).toFixed(1):"–";
-  const dates=rows.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
-  document.getElementById("kpi-rango").textContent=dates.length?fmtDate(dates[0])+" – "+fmtDate(dates[dates.length-1]):"–";
+  const total=rows.length;
+  const arboles=sum_(rows.map(r=>r.__arboles));
+  const meta=Math.floor(arboles/10);
+  document.getElementById("k-total").textContent=total.toLocaleString("es");
+  document.getElementById("k-arboles").textContent=arboles.toLocaleString("es");
+  document.getElementById("k-meta").textContent=meta.toLocaleString("es");
+  document.getElementById("k-prom").textContent=total?rnd(arboles/total,1):"–";
+  document.getElementById("k-munis").textContent=new Set(rows.map(r=>r.__cm).filter(Boolean)).size;
+  document.getElementById("k-guardas").textContent=new Set(rows.map(r=>r.__cg).filter(Boolean)).size;
 }
+function rnd(n,d){if(!isFinite(n))return"–";const f=Math.pow(10,d);return(Math.round(n*f)/f).toLocaleString("es",{minimumFractionDigits:d,maximumFractionDigits:d});}
 
-/* ══════════════════════════════════
-   HELPERS
-══════════════════════════════════ */
-function countBy(rows,fn){const m=new Map();rows.forEach(r=>{const k=fn(r);if(k!=null&&k!=="")m.set(k,(m.get(k)||0)+1)});return m}
-function topN(m,n){return[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n)}
-
-/* ══════════════════════════════════
-   G1 — Tendencia mensual
-══════════════════════════════════ */
+/* ═══ G1 — Tendencia mensual ══════════════════════════════ */
 function g1(rows){
-  const mm=countBy(rows,r=>r.__mes);
+  const mm=new Map();
+  rows.forEach(r=>{if(!r.__mes)return;if(!mm.has(r.__mes))mm.set(r.__mes,{cnt:0,arb:0});const e=mm.get(r.__mes);e.cnt++;e.arb+=r.__arboles;});
   const keys=[...mm.keys()].sort();
-  const vals=keys.map(k=>mm.get(k)||0);
-  const mean=avg(vals);
+  const cnts=keys.map(k=>mm.get(k).cnt);
+  const arbs=keys.map(k=>mm.get(k).arb);
   const ctx=document.getElementById("c-tendencia").getContext("2d");
-  const grad=ctx.createLinearGradient(0,0,0,300);
-  grad.addColorStop(0,"rgba(14,165,233,0.3)");grad.addColorStop(1,"rgba(14,165,233,0.01)");
-  mkChart("c-tendencia",{type:"line",data:{labels:keys.map(mShort),datasets:[
-    {label:"Consumos",data:vals,fill:true,tension:0.4,borderColor:"#0ea5e9",backgroundColor:grad,borderWidth:2.5,pointBackgroundColor:"#0ea5e9",pointRadius:5,pointHoverRadius:7},
-    {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(239,68,68,0.55)",borderWidth:1.5,borderDash:[6,4],pointRadius:0,fill:false,tension:0}
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}}}});
+  const gr=ctx.createLinearGradient(0,0,0,300);gr.addColorStop(0,"rgba(31,108,176,0.22)");gr.addColorStop(1,"rgba(31,108,176,0.01)");
+  mkChart("c-tendencia",{type:"bar",data:{labels:keys.map(mShort),datasets:[
+    {label:"Consumos",data:cnts,backgroundColor:gr,borderColor:PAL[0],borderWidth:1.5,borderRadius:5,borderSkipped:false,yAxisID:"y"},
+    {label:"Árboles aprobados",data:arbs,type:"line",borderColor:PAL[1],backgroundColor:PAL[1],borderWidth:2.5,pointRadius:6,pointHoverRadius:8,pointBackgroundColor:PAL[1],pointBorderColor:"#fff",pointBorderWidth:2,tension:0.3,fill:false,yAxisID:"y1"}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{tooltip:{...TT,callbacks:{label:c=>c.dataset.label==="Consumos"?` Consumos: ${c.parsed.y}`:` Árboles: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:true,pointStyleWidth:10}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:12.5},maxRotation:40}},y:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}},title:{display:true,text:"Consumos",font:{size:12,weight:"600"},color:"#6a8878"}},y1:{beginAtZero:true,position:"right",grid:{display:false},ticks:{font:{size:12}},title:{display:true,text:"Árboles",font:{size:12,weight:"600"},color:"#6a8878"}}}}});
 }
 
-/* ══════════════════════════════════
-   G2 — Heatmap SVG día × mes
-══════════════════════════════════ */
+/* ═══ G2 — Distribución por día del mes ══════════════════ */
 function g2(rows){
-  const meses=uniq(rows.map(r=>r.__mes)).sort();
-  const mat=Array.from({length:7},()=>new Array(meses.length).fill(0));
-  let maxV=0;
-  rows.forEach(r=>{
-    if(r.__dow===null||!r.__mes)return;
-    const mi=meses.indexOf(r.__mes);if(mi<0)return;
-    mat[r.__dow][mi]++;if(mat[r.__dow][mi]>maxV)maxV=mat[r.__dow][mi];
-  });
-  const CW=Math.max(36,Math.min(58,Math.floor(880/Math.max(meses.length,1)))),CH=30;
-  const PL=70,PT=34,PR=20,PB=32;
-  const W=PL+meses.length*CW+PR,H=PT+7*CH+PB;
-  const svg=document.getElementById("heatmap-svg");
-  svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
-  function hc(v,max){if(!max||!v)return"#f0f9ff";const t=Math.pow(v/max,0.55);return`rgb(${Math.round(14+t*(2-14))},${Math.round(165-t*107)},${Math.round(233-t*57)})`;}
-  let html="";
-  for(let d=0;d<7;d++){for(let mi=0;mi<meses.length;mi++){
-    const x=PL+mi*CW,y=PT+d*CH,v=mat[d][mi];
-    const fill=hc(v,maxV);const tc=v/maxV>0.45?"#fff":"#1e3a5f";
-    html+=`<rect x="${x}" y="${y}" width="${CW-2}" height="${CH-2}" rx="5" fill="${fill}" stroke="#dbeafe" stroke-width="0.5"/>`;
-    if(v>0)html+=`<text x="${x+CW/2-1}" y="${y+CH/2+4}" text-anchor="middle" font-size="9.5" fill="${tc}" font-family="DM Sans" font-weight="500">${v}</text>`;
-  }}
-  DIAS.forEach((d,i)=>html+=`<text x="${PL-8}" y="${PT+i*CH+CH/2+4}" text-anchor="end" font-size="11.5" fill="#6b7280" font-family="DM Sans">${d}</text>`);
-  meses.forEach((m,i)=>{if(i%2===0||meses.length<=8)html+=`<text x="${PL+i*CW+CW/2}" y="${PT-10}" text-anchor="middle" font-size="10" fill="#6b7280" font-family="DM Sans">${mShort(m)}</text>`;});
-  html+=`<defs><linearGradient id="lghC" x1="0" x2="1"><stop offset="0%" stop-color="#f0f9ff"/><stop offset="100%" stop-color="#0369a1"/></linearGradient></defs>`;
-  html+=`<rect x="${PL}" y="${H-18}" width="120" height="8" rx="3" fill="url(#lghC)"/>`;
-  html+=`<text x="${PL}" y="${H-4}" font-size="9" fill="#9ca3af" font-family="DM Sans">0</text>`;
-  html+=`<text x="${PL+120}" y="${H-4}" text-anchor="end" font-size="9" fill="#9ca3af" font-family="DM Sans">${maxV}</text>`;
-  html+=`<text x="${PL+130}" y="${H-10}" font-size="9" fill="#9ca3af" font-family="DM Sans">consumos</text>`;
-  svg.innerHTML=html;
+  const bins=new Array(31).fill(0);
+  rows.forEach(r=>{if(r.__dia!==null&&r.__dia>=1&&r.__dia<=31)bins[r.__dia-1]++;});
+  const ctx=document.getElementById("c-diames").getContext("2d");
+  const gr=ctx.createLinearGradient(0,0,0,280);gr.addColorStop(0,PAL[5]+"cc");gr.addColorStop(1,PAL[5]+"22");
+  mkChart("c-diames",{type:"bar",data:{labels:Array.from({length:31},(_,i)=>String(i+1)),datasets:[{label:"Consumos",data:bins,backgroundColor:gr,borderColor:PAL[5],borderWidth:1,borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`Día ${c[0].label} del mes`,label:c=>` ${c.parsed.y} consumos`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11.5}}},y:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}}}}}});
 }
 
-/* ══════════════════════════════════
-   G3 — Distribución de especies (donut)
-══════════════════════════════════ */
+/* ═══ G3 — Histograma árboles por consumo ════════════════ */
 function g3(rows){
-  const esp=ESPECIES.map(e=>({label:e.label,color:e.color,val:rows.reduce((a,r)=>a+(r["__esp_"+e.label]||0),0)})).filter(e=>e.val>0);
-  if(!esp.length){mkChart("c-especies",{type:"doughnut",data:{labels:["Sin datos"],datasets:[{data:[1],backgroundColor:["#e5e7eb"]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});return;}
-  mkChart("c-especies",{type:"doughnut",data:{labels:esp.map(e=>e.label),datasets:[{data:esp.map(e=>e.val),backgroundColor:esp.map(e=>e.color+"cc"),borderColor:esp.map(e=>e.color),borderWidth:2,hoverOffset:8}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:"58%",plugins:{legend:{position:"right",labels:{font:{size:11},padding:8,usePointStyle:true}},
-    tooltip:{...TT,callbacks:{label:c=>{const tot=esp.reduce((a,e)=>a+e.val,0);return ` ${c.label}: ${c.parsed.toLocaleString("es")} (${Math.round(c.parsed/tot*100)}%)`}}}}}});
+  const arbs=rows.map(r=>r.__arboles).filter(v=>v>0);
+  const bSize=5,nBins=12;
+  const bins=new Array(nBins).fill(0);
+  arbs.forEach(a=>{const i=Math.floor((a-1)/bSize);if(i>=0&&i<nBins)bins[i]++;});
+  const labels=Array.from({length:nBins},(_,i)=>`${i*bSize+1}–${(i+1)*bSize}`);
+  const ctx=document.getElementById("c-hist").getContext("2d");
+  const gr=ctx.createLinearGradient(0,0,0,280);gr.addColorStop(0,PAL[2]+"cc");gr.addColorStop(1,PAL[2]+"22");
+  mkChart("c-hist",{type:"bar",data:{labels,datasets:[{label:"Consumos",data:bins,backgroundColor:gr,borderColor:PAL[2],borderWidth:1,borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].label} árboles`,label:c=>` ${c.parsed.y} consumos`}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11.5}},title:{display:true,text:"Árboles por solicitud",font:{size:12,weight:"600"},color:"#6a8878"}},y:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}},title:{display:true,text:"Frecuencia",font:{size:12,weight:"600"},color:"#6a8878"}}}}});
 }
 
-/* ══════════════════════════════════
-   G4 — Árboles por especie (barra horizontal)
-══════════════════════════════════ */
+/* ═══ G4 — Especies totales (horizontal) ════════════════ */
 function g4(rows){
-  const esp=ESPECIES.map(e=>({label:e.label,color:e.color,val:rows.reduce((a,r)=>a+(r["__esp_"+e.label]||0),0)})).filter(e=>e.val>0).sort((a,b)=>b.val-a.val);
-  if(!esp.length)return;
-  mkChart("c-arbEsp",{type:"bar",data:{labels:esp.map(e=>e.label),datasets:[{label:"Árboles",data:esp.map(e=>e.val),backgroundColor:esp.map(e=>e.color+"bb"),borderColor:esp.map(e=>e.color),borderWidth:1,borderRadius:5,borderSkipped:false}]},
-    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("es")} árboles`}}},
-    scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
+  const totales=ESPECIES.map(e=>sum_(rows.map(r=>r[e.field]||0)));
+  const sorted=ESPECIES.map((e,i)=>({...e,total:totales[i]})).filter(e=>e.total>0).sort((a,b)=>b.total-a.total);
+  mkChart("c-especies",{type:"bar",data:{labels:sorted.map(e=>e.label),datasets:[{label:"Árboles",data:sorted.map(e=>e.total),backgroundColor:sorted.map(e=>e.color+"cc"),borderColor:sorted.map(e=>e.color),borderWidth:1.5,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} árboles (${Math.round(c.parsed.x/sum_(sorted.map(e=>e.total))*100)}%)`}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      scales:{x:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12.5}}},y:{grid:{display:false},ticks:{font:{size:12.5}}}}}});
 }
 
-/* ══════════════════════════════════
-   G5 — Stacked municipios × mes
-══════════════════════════════════ */
+/* ═══ G5 — Donut especies ═════════════════════════════════ */
 function g5(rows){
-  const mc=countBy(rows,r=>r.__cm);
-  const top6=topN(mc,6).map(([k])=>k);
-  const months=uniq(rows.map(r=>r.__mes)).sort();
-  const datasets=top6.map((cm,i)=>({
-    label:LABELS.muni.get(cm)||cm,
-    data:months.map(mo=>rows.filter(r=>r.__cm===cm&&r.__mes===mo).length),
-    backgroundColor:PALETTE[i]+"cc",borderColor:PALETTE[i],borderWidth:1,borderRadius:3,borderSkipped:false,
-  }));
-  mkChart("c-muniMes",{type:"bar",data:{labels:months.map(mShort),datasets},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-    plugins:{legend:{position:"top",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT}},
-    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},y:{stacked:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}}}});
+  const totales=ESPECIES.map(e=>sum_(rows.map(r=>r[e.field]||0)));
+  const filtered=ESPECIES.map((e,i)=>({...e,total:totales[i]})).filter(e=>e.total>0);
+  const grandTotal=sum_(filtered.map(e=>e.total));
+  mkChart("c-donut",{type:"doughnut",data:{labels:filtered.map(e=>e.label),datasets:[{data:filtered.map(e=>e.total),backgroundColor:filtered.map(e=>e.color+"cc"),borderColor:filtered.map(e=>e.color),borderWidth:2,hoverOffset:12}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"62%",
+      plugins:{legend:{position:"bottom",labels:{font:{size:12},padding:10,usePointStyle:true,pointStyleWidth:10}},
+               tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/grandTotal*100)}%)`}}}}});
 }
 
-/* ══════════════════════════════════
-   G6 — Radar guardarecursos
-   (top6 sin selección · seleccionado vs media con selección)
-══════════════════════════════════ */
+/* ═══ G6 — Especies por mes (stacked) ════════════════════ */
 function g6(rows){
-  const sel=document.getElementById("f-radar-guarda").value;
-  const allG=uniq(ROWS.map(r=>r.__cg)).filter(Boolean);
-  const metricOf=(cg,src)=>{
-    const s=src.filter(r=>r.__cg===cg);
-    const arb=s.reduce((a,r)=>a+(r.__arb||0),0);
-    return{p:s.length,m:uniq(s.map(r=>r.__cm)).length,arb,mes:uniq(s.map(r=>r.__mes)).length,inter:s.filter(r=>r.__ci==="si").length};
-  };
-  const nrm=(v,max)=>max?Math.round(v/max*100):0;
-  const AXES=["Volumen","Municipios\ncubiertos","Árboles\nautorizados","Meses\nactivos","Intermunicipales"];
-  if(sel){
-    const allM=allG.map(cg=>metricOf(cg,ROWS));
-    const globalAvg={p:avg(allM.map(x=>x.p)),m:avg(allM.map(x=>x.m)),arb:avg(allM.map(x=>x.arb)),mes:avg(allM.map(x=>x.mes)),inter:avg(allM.map(x=>x.inter))};
-    const selM=metricOf(sel,ROWS);
-    const maxP=Math.max(...allM.map(x=>x.p),1),maxM=Math.max(...allM.map(x=>x.m),1),maxA=Math.max(...allM.map(x=>x.arb),.1),maxMes=Math.max(...allM.map(x=>x.mes),1),maxI=Math.max(...allM.map(x=>x.inter),1);
-    const toArr=o=>[nrm(o.p,maxP),nrm(o.m,maxM),nrm(o.arb,maxA),nrm(o.mes,maxMes),nrm(o.inter,maxI)];
-    const label=(LABELS.guarda.get(sel)||sel).split(" ").slice(0,2).join(" ");
-    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:[
-      {label:label,data:toArr(selM),backgroundColor:"rgba(14,165,233,0.18)",borderColor:"#0ea5e9",borderWidth:2.5,pointBackgroundColor:"#0ea5e9",pointRadius:4},
-      {label:"Media global",data:toArr(globalAvg),backgroundColor:"rgba(239,68,68,0.12)",borderColor:"rgba(239,68,68,0.7)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(239,68,68,0.7)",pointRadius:3}
-    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.08)"},pointLabels:{font:{size:10}}}}}});
-  }else{
-    const gc=countBy(rows,r=>r.__cg);
-    const top6=topN(gc,6).map(([k])=>k);
-    const srcM=cg=>metricOf(cg,rows);
-    const allTop=top6.map(srcM);
-    const maxP=Math.max(...allTop.map(x=>x.p),1),maxM=Math.max(...allTop.map(x=>x.m),1),maxA=Math.max(...allTop.map(x=>x.arb),.1),maxMes=Math.max(...allTop.map(x=>x.mes),1),maxI=Math.max(...allTop.map(x=>x.inter),1);
-    const datasets=top6.map((cg,i)=>{const o=srcM(cg);return{label:(LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),data:[nrm(o.p,maxP),nrm(o.m,maxM),nrm(o.arb,maxA),nrm(o.mes,maxMes),nrm(o.inter,maxI)],backgroundColor:PALETTE[i]+"33",borderColor:PALETTE[i],borderWidth:2,pointBackgroundColor:PALETTE[i],pointRadius:3};});
-    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:10},padding:8,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.08)"},pointLabels:{font:{size:10}}}}}});
-  }
+  const months=uniq(rows.map(r=>r.__mes)).sort();
+  const datasets=ESPECIES.map(e=>({
+    label:e.label,
+    data:months.map(m=>sum_(rows.filter(r=>r.__mes===m).map(r=>r[e.field]||0))),
+    backgroundColor:e.color+"bb",borderColor:e.color,borderWidth:1,borderRadius:3,borderSkipped:false,
+  })).filter(d=>sum_(d.data)>0);
+  mkChart("c-especiesMes",{type:"bar",data:{labels:months.map(mShort),datasets},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+      plugins:{legend:{position:"top",labels:{font:{size:12},padding:12,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:12.5},maxRotation:40}},y:{stacked:true,beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}},title:{display:true,text:"Árboles",font:{size:12,weight:"600"},color:"#6a8878"}}}}});
 }
 
-/* ══════════════════════════════════
-   G7 — Donuts territorial + intermunicipal
-══════════════════════════════════ */
+/* ═══ G7 — Municipios consumos ═══════════════════════════ */
 function g7(rows){
+  const mc=new Map();rows.forEach(r=>{if(r.__cm)mc.set(r.__cm,(mc.get(r.__cm)||0)+1);});
+  const sorted=[...mc.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);
+  const labels=sorted.map(([k])=>LABELS.muni.get(k)||k);
+  const ctx=document.getElementById("c-muni").getContext("2d");
+  const gr=ctx.createLinearGradient(400,0,0,0);gr.addColorStop(0,PAL[0]+"cc");gr.addColorStop(1,PAL[0]+"44");
+  mkChart("c-muni",{type:"bar",data:{labels,datasets:[{label:"Consumos",data:sorted.map(([,v])=>v),backgroundColor:gr,borderColor:PAL[0],borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} consumos`}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      scales:{x:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}}},y:{grid:{display:false},ticks:{font:{size:12}}}},
+      onClick:(e,els)=>{if(!els.length)return;document.getElementById("f-muni").value=sorted[els[0].index][0];applyAll();}}});
+}
+
+/* ═══ G8 — Municipios árboles ════════════════════════════ */
+function g8(rows){
+  const ma=new Map();rows.forEach(r=>{if(r.__cm)ma.set(r.__cm,(ma.get(r.__cm)||0)+r.__arboles);});
+  const sorted=[...ma.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);
+  const labels=sorted.map(([k])=>LABELS.muni.get(k)||k);
+  const ctx=document.getElementById("c-muniArb").getContext("2d");
+  const gr=ctx.createLinearGradient(400,0,0,0);gr.addColorStop(0,PAL[1]+"cc");gr.addColorStop(1,PAL[5]+"66");
+  mkChart("c-muniArb",{type:"bar",data:{labels,datasets:[{label:"Árboles aprobados",data:sorted.map(([,v])=>v),backgroundColor:gr,borderColor:PAL[1],borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} árboles`}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      scales:{x:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}}},y:{grid:{display:false},ticks:{font:{size:12}}}}}});
+}
+
+/* ═══ G9 — RUMCLA donut ══════════════════════════════════ */
+function g9(rows){
   const ru=rows.filter(r=>r.__ca==="rumcla").length;
   const fu=rows.filter(r=>r.__ca==="fuera").length;
   const sd=rows.length-ru-fu;
-  const donutOpts=(labels,data,colors,borders)=>({type:"doughnut",data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2,hoverOffset:8}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom",labels:{font:{size:11},padding:10,usePointStyle:true}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
-  mkChart("c-rumcla",donutOpts(["RUMCLA","Fuera RUMCLA","Sin dato"].slice(0,sd>0?3:2),[ru,fu,...(sd>0?[sd]:[])],["#0ea5e9","#f59e0b","#e5e7eb"],["#0284c7","#d97706","#d1d5db"]));
-  const si=rows.filter(r=>r.__ci==="si").length;const no=rows.filter(r=>r.__ci==="no").length;
-  mkChart("c-inter",donutOpts(["Solo municipio","Intermunicipal"],[no,si],["#dcfce7","#dbeafe"],["#16a34a","#2563eb"]));
+  mkChart("c-rumcla",{type:"doughnut",data:{labels:["Dentro RUMCLA","Fuera RUMCLA",...(sd>0?["Sin dato"]:[])],datasets:[{data:[ru,fu,...(sd>0?[sd]:[])],backgroundColor:[PAL[0]+"cc",PAL[2]+"cc","#e5e7eb"],borderColor:[PAL[0],PAL[2],"#d1d5db"],borderWidth:2,hoverOffset:12}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"66%",
+      plugins:{legend:{position:"bottom",labels:{font:{size:13},padding:14,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
 }
 
-/* ══════════════════════════════════
-   G8 — Mix de especies por mes (stacked)
-══════════════════════════════════ */
-function g8(rows){
-  const meses=uniq(rows.map(r=>r.__mes)).filter(Boolean).sort();
-  const datasets=ESPECIES.map(e=>({
-    label:e.label,
-    data:meses.map(m=>rows.filter(r=>r.__mes===m).reduce((a,r)=>a+(r["__esp_"+e.label]||0),0)),
-    backgroundColor:e.color+"bb",borderColor:e.color,borderWidth:1,borderRadius:2,borderSkipped:false
-  })).filter(ds=>ds.data.some(v=>v>0));
-  mkChart("c-mixEsp",{type:"bar",data:{labels:meses.map(mShort),datasets},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-    plugins:{legend:{position:"top",labels:{font:{size:10},padding:8,usePointStyle:true}},tooltip:{...TT}},
-    scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11}}},y:{stacked:true,beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}},title:{display:true,text:"Árboles",font:{size:11}}}}}});
-}
-
-/* ══════════════════════════════════
-   G9 — Top municipios (combo)
-══════════════════════════════════ */
-function g9(rows){
-  const muniMap=new Map(),muniArb=new Map();
-  rows.forEach(r=>{const cm=r.__cm;muniMap.set(cm,(muniMap.get(cm)||0)+1);muniArb.set(cm,(muniArb.get(cm)||0)+(r.__arb||0));});
-  const sorted=[...muniMap.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);
-  const labels=sorted.map(([k])=>LABELS.muni.get(k)||k);
-  mkChart("c-topMuni",{type:"bar",data:{labels,datasets:[
-    {label:"Consumos",data:sorted.map(([k])=>muniMap.get(k)||0),backgroundColor:PALETTE.map(c=>c+"bb").concat(PALETTE.map(c=>c+"bb")),borderColor:PALETTE.concat(PALETTE),borderWidth:1,borderRadius:4,borderSkipped:false,order:2},
-    {label:"Árboles",data:sorted.map(([k])=>Math.round(muniArb.get(k)||0)),type:"line",borderColor:"#dc2626",backgroundColor:"#dc2626",borderWidth:2.5,pointRadius:6,pointHoverRadius:8,pointBackgroundColor:"#dc2626",pointBorderColor:"#fff",pointBorderWidth:1.5,tension:0,fill:false,order:1,yAxisID:"y2"}
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-    plugins:{legend:{position:"top",labels:{font:{size:11},padding:12,usePointStyle:true}},tooltip:{...TT}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:10},maxRotation:30}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}},title:{display:true,text:"Consumos",font:{size:11}}},y2:{beginAtZero:true,position:"right",grid:{display:false},ticks:{font:{size:11}},title:{display:true,text:"Árboles",font:{size:11}}}}}});
-}
-
-/* ══════════════════════════════════
-   G10 — Histograma árboles por consumo
-══════════════════════════════════ */
+/* ═══ G10 — Fuera municipio donut ════════════════════════ */
 function g10(rows){
-  const vals=rows.map(r=>r.__arb).filter(v=>v>0);
-  const bs=5,nB=12;
-  const bins=new Array(nB).fill(0);
-  vals.forEach(v=>{const i=Math.min(Math.floor((v-1)/bs),nB-1);bins[i]++;});
-  const labels=Array.from({length:nB},(_,i)=>`${i*bs+1}–${(i+1)*bs}`);
-  const ctx=document.getElementById("c-histArb").getContext("2d");
-  const g=ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,"rgba(245,158,11,.85)");g.addColorStop(1,"rgba(245,158,11,.3)");
-  mkChart("c-histArb",{type:"bar",data:{labels,datasets:[{label:"Consumos",data:bins,backgroundColor:g,borderColor:"#d97706",borderWidth:1,borderRadius:4,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].label} árboles`,label:c=>` ${c.parsed.y} consumos`}}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
+  const si=rows.filter(r=>r.__cf==="si").length;
+  const no=rows.filter(r=>r.__cf==="no").length;
+  const sd=rows.length-si-no;
+  mkChart("c-fuera",{type:"doughnut",data:{labels:["Dentro de su municipio","Fuera (cedido)",...(sd>0?["Sin dato"]:[])],datasets:[{data:[no,si,...(sd>0?[sd]:[])],backgroundColor:[PAL[1]+"cc",PAL[3]+"cc","#e5e7eb"],borderColor:[PAL[1],PAL[3],"#d1d5db"],borderWidth:2,hoverOffset:12}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"66%",
+      plugins:{legend:{position:"bottom",labels:{font:{size:13},padding:14,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
 }
 
-/* ══════════════════════════════════
-   G11 — Ranking guardarecursos
-   · color por guarda · etiquetas en barras
-   · etiquetas en nodos de línea
-   · filtro de rango propio
-══════════════════════════════════ */
+/* ═══ G11 — RANKING GUARDARECURSOS con meta reforestación */
 let G11_DESDE=null,G11_HASTA=null;
 
 function g11(rows){
@@ -651,132 +766,147 @@ function g11(rows){
     });
   }
 
-  const PAL=[
-    "#0ea5e9","#10b981","#f59e0b","#8b5cf6","#ef4444","#14b8a6",
-    "#f97316","#6366f1","#be185d","#65a30d","#0369a1","#059669",
-    "#d97706","#7c3aed","#dc2626","#0891b2","#ea580c","#4f46e5",
-    "#9d174d","#4d7c0f","#0284c7","#047857","#b45309","#6d28d9",
-    "#b91c1c","#0e7490","#c2410c","#4338ca","#831843","#3f6212"
-  ];
+  // Todos los guardarecursos activos
+  const allGuardas=[...LABELS.guarda.entries()].map(([k])=>k);
+  const resumen=new Map();
+  src.forEach(r=>{
+    if(!r.__cg)return;
+    if(!resumen.has(r.__cg))resumen.set(r.__cg,{cnt:0,arb:0});
+    const e=resumen.get(r.__cg);e.cnt++;e.arb+=r.__arboles;
+  });
 
-  const gc=countBy(src,r=>r.__cg);
-  const sorted=[...gc.entries()].sort((a,b)=>b[1]-a[1]);
-  const labels=sorted.map(([k])=>(LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
-  const consumos=sorted.map(([,v])=>v);
-  // Árboles totales por guarda
-  const arboles=sorted.map(([k])=>Math.round(src.filter(r=>r.__cg===k).reduce((a,r)=>a+(r.__arb||0),0)));
-  const bgColors=sorted.map((_,i)=>PAL[i%PAL.length]+"bb");
-  const bdColors=sorted.map((_,i)=>PAL[i%PAL.length]);
+  // Ordenar por árboles desc
+  const sorted=allGuardas
+    .map(k=>({k,cnt:resumen.get(k)?.cnt||0,arb:resumen.get(k)?.arb||0}))
+    .sort((a,b)=>b.arb-a.arb||(LABELS.guarda.get(a.k)||"").localeCompare(LABELS.guarda.get(b.k)||"","es"));
 
-  mkChart("c-rankGuarda",{type:"bar",data:{labels,datasets:[
+  const labels=sorted.map(({k})=>(LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
+  const consumos=sorted.map(s=>s.cnt);
+  const arboles=sorted.map(s=>s.arb);
+  const metas=sorted.map(s=>Math.floor(s.arb/10));
+
+  // Altura dinámica
+  const n=sorted.length;
+  const h=Math.max(420,n*22+80);
+  const cw=document.getElementById("c-ranking");if(cw)cw.parentElement.style.height=h+"px";
+
+  mkChart("c-ranking",{type:"bar",data:{labels,datasets:[
     {
-      label:"Consumos",
-      data:consumos,
-      backgroundColor:bgColors,
-      borderColor:bdColors,
-      borderWidth:1.5,
-      borderRadius:5,
-      borderSkipped:false,
-      order:2,
-      datalabels:{
-        display:true,
-        anchor:"end",
-        align:"top",
-        offset:3,
-        color:"#0d1f15",
-        font:{size:10,weight:"700",family:"'DM Sans',sans-serif"},
-        formatter:v=>v>0?v.toLocaleString("es"):""
-      }
+      label:"Consumos registrados",data:consumos,
+      backgroundColor:sorted.map((_,i)=>PAL[i%PAL.length]+"bb"),
+      borderColor:sorted.map((_,i)=>PAL[i%PAL.length]),
+      borderWidth:1.5,borderRadius:5,borderSkipped:false,order:3,yAxisID:"y",
+      datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#0c1e13",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}
     },
     {
-      label:"Árboles",
-      data:arboles,
-      type:"line",
-      borderColor:"#dc2626",
-      backgroundColor:"#dc2626",
-      borderWidth:2.5,
-      pointRadius:7,
-      pointHoverRadius:9,
-      pointStyle:"circle",
-      pointBackgroundColor:"#dc2626",
-      pointBorderColor:"#fff",
-      pointBorderWidth:1.5,
-      tension:0,
-      fill:false,
-      order:1,
-      datalabels:{
-        display:true,
-        anchor:"end",
-        align:"top",
-        offset:5,
-        color:"#dc2626",
-        font:{size:10,weight:"700",family:"'DM Sans',sans-serif"},
-        formatter:v=>v>0?v.toLocaleString("es"):""
-      }
+      label:"Árboles aprobados",data:arboles,type:"line",
+      borderColor:PAL[1],backgroundColor:PAL[1],borderWidth:2.5,
+      pointRadius:7,pointHoverRadius:9,pointBackgroundColor:PAL[1],
+      pointBorderColor:"#fff",pointBorderWidth:2,tension:0,fill:false,order:2,yAxisID:"y1",
+      datalabels:{display:true,anchor:"end",align:"top",offset:5,color:PAL[1],font:{size:10,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v:""}
+    },
+    {
+      label:"Meta reforestación (÷10)",data:metas,type:"line",
+      borderColor:PAL[4],backgroundColor:PAL[4],borderWidth:2.5,
+      borderDash:[6,4],
+      pointRadius:6,pointHoverRadius:8,pointBackgroundColor:PAL[4],
+      pointBorderColor:"#fff",pointBorderWidth:2,tension:0,fill:false,order:1,yAxisID:"y1",
+      datalabels:{display:true,anchor:"start",align:"bottom",offset:5,color:PAL[4],font:{size:10,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v:""}
     }
-  ]},options:{
-    responsive:true,
-    maintainAspectRatio:false,
+  ]},options:{responsive:true,maintainAspectRatio:false,
     interaction:{mode:"index",intersect:false},
     layout:{padding:{top:28}},
     plugins:{
-      legend:{position:"top",labels:{font:{size:12},padding:14,usePointStyle:true}},
-      tooltip:{...TT,callbacks:{
-        label:c=>c.dataset.label==="Consumos"
-          ?` Consumos: ${c.parsed.y}`
-          :` Árboles: ${c.parsed.y.toLocaleString("es")}`
-      }},
+      legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:true,pointStyleWidth:10}},
+      tooltip:{...TT,callbacks:{label:c=>{
+        if(c.dataset.label==="Consumos registrados")return` Consumos: ${c.parsed.y}`;
+        if(c.dataset.label==="Árboles aprobados")return` Árboles: ${c.parsed.y}`;
+        return` Meta reforestación: ${c.parsed.y} árbol${c.parsed.y!==1?"es":""}`;
+      }}},
       datalabels:{display:false}
     },
     scales:{
-      x:{grid:{display:false},ticks:{font:{size:10},maxRotation:38,minRotation:25}},
-      y:{beginAtZero:true,grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:11}}}
-    }
-  }});
+      x:{grid:{display:false},ticks:{font:{size:11.5},maxRotation:42,minRotation:28}},
+      y:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}},title:{display:true,text:"Consumos",font:{size:12,weight:"600"},color:"#6a8878"},position:"left"},
+      y1:{beginAtZero:true,grid:{display:false},ticks:{font:{size:12}},title:{display:true,text:"Árboles / Meta reforest.",font:{size:12,weight:"600"},color:"#6a8878"},position:"right"}
+    }}});
 }
 
-/* ══════════════════════════════════
-   RENDER & RESET
-══════════════════════════════════ */
+/* ═══ G12 — Especies por guardarecursos (stacked) ════════ */
+function g12(rows){
+  const gc=new Map();rows.forEach(r=>{if(r.__cg)gc.set(r.__cg,(gc.get(r.__cg)||0)+r.__arboles);});
+  const topGuardas=[...gc.entries()].sort((a,b)=>b[1]-a[1]).map(([k])=>k);
+  const gLabels=topGuardas.map(cg=>(LABELS.guarda.get(cg)||cg).split(" ").slice(0,3).join(" "));
+  const datasets=ESPECIES.map(e=>({
+    label:e.label,
+    data:topGuardas.map(cg=>sum_(rows.filter(r=>r.__cg===cg).map(r=>r[e.field]||0))),
+    backgroundColor:e.color+"bb",borderColor:e.color,borderWidth:1,borderRadius:3,borderSkipped:false,
+  })).filter(d=>sum_(d.data)>0);
+
+  const h=Math.max(380,topGuardas.length*22+60);
+  const cw=document.getElementById("c-espGuarda");if(cw)cw.parentElement.style.height=h+"px";
+
+  mkChart("c-espGuarda",{type:"bar",data:{labels:gLabels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+      plugins:{legend:{position:"top",labels:{font:{size:12},padding:12,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11.5},maxRotation:40}},y:{stacked:true,beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}},title:{display:true,text:"Árboles",font:{size:12,weight:"600"},color:"#6a8878"}}}}});
+}
+
+/* ═══ RENDER TOTAL ════════════════════════════════════════ */
 function applyAll(){
-  const f=getF();renderChips(f);
-  const rows=applyF(f);
+  const f=getF();renderChips(f);const rows=applyF(f);
   updateKPIs(rows);
-  g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);g9(rows);g10(rows);g11(rows);
-  document.getElementById("estado").textContent=`Mostrando ${rows.length.toLocaleString("es")} de ${ROWS.length.toLocaleString("es")} registros`;
+  g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);g9(rows);g10(rows);g11(rows);g12(rows);
+  const el=document.getElementById("estado");
+  if(el)el.innerHTML=`Mostrando <strong>${rows.length.toLocaleString("es")}</strong> de <strong>${ROWS.length.toLocaleString("es")}</strong> registros`;
 }
 
-function resetAll(){["f-anio","f-mes","f-municipio","f-guarda","f-area"].forEach(id=>document.getElementById(id).value="");applyAll()}
-
-/* ══════════════════════════════════
-   INICIO
-══════════════════════════════════ */
+/* ═══ INICIO ══════════════════════════════════════════════ */
 (async()=>{
   try{
-    const{data}=await loadCSV();
-    ROWS=enrich(data);
-    initFilters();
-    ["f-anio","f-mes","f-municipio","f-guarda","f-area"].forEach(id=>document.getElementById(id).addEventListener("change",applyAll));
-    document.getElementById("f-radar-guarda").addEventListener("change",()=>g6(applyF(getF())));
-    document.getElementById("btn-reset").addEventListener("click",resetAll);
-    document.getElementById("g11-aplicar").addEventListener("click",()=>{
-      const d=document.getElementById("g11-desde").value;
-      const h=document.getElementById("g11-hasta").value;
+    const raw=await loadCSV();
+    ROWS=enrich(raw);
+    initSelects();
+
+    document.getElementById("btn-aplicar").addEventListener("click",applyAll);
+    document.getElementById("btn-limpiar").addEventListener("click",()=>{
+      ["f-muni","f-area","f-guarda"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+      const dates=ROWS.map(r=>r.__dt).filter(d=>d&&!isNaN(d)).sort((a,b)=>a-b);
+      if(dates.length){document.getElementById("f-desde").value=isoDate(dates[0]);document.getElementById("f-hasta").value=isoDate(dates[dates.length-1]);}
+      applyAll();
+    });
+
+    // Filtro propio ranking
+    document.getElementById("g11-aplicar")?.addEventListener("click",()=>{
+      const d=document.getElementById("g11-desde")?.value;
+      const h=document.getElementById("g11-hasta")?.value;
       G11_DESDE=d?new Date(d+"T00:00:00"):null;
       G11_HASTA=h?new Date(h+"T23:59:59"):null;
       g11(applyF(getF()));
     });
-    document.getElementById("g11-limpiar").addEventListener("click",()=>{
-      document.getElementById("g11-desde").value="";
-      document.getElementById("g11-hasta").value="";
-      G11_DESDE=null;G11_HASTA=null;
-      g11(applyF(getF()));
+    document.getElementById("g11-limpiar")?.addEventListener("click",()=>{
+      const gd=document.getElementById("g11-desde"),gh=document.getElementById("g11-hasta");
+      if(gd)gd.value="";if(gh)gh.value="";
+      G11_DESDE=null;G11_HASTA=null;g11(applyF(getF()));
     });
+
+    // PNG buttons
+    document.getElementById("png-tendencia").addEventListener("click",()=>dlPNG("c-tendencia","ac297_tendencia"));
+    document.getElementById("png-diames").addEventListener("click",()=>dlPNG("c-diames","ac297_dia_mes"));
+    document.getElementById("png-hist").addEventListener("click",()=>dlPNG("c-hist","ac297_distribucion_arboles"));
+    document.getElementById("png-especies").addEventListener("click",()=>dlPNG("c-especies","ac297_especies"));
+    document.getElementById("png-donut").addEventListener("click",()=>dlPNG("c-donut","ac297_composicion_especies"));
+    document.getElementById("png-especiesMes").addEventListener("click",()=>dlPNG("c-especiesMes","ac297_especies_por_mes"));
+    document.getElementById("png-muni").addEventListener("click",()=>dlPNG("c-muni","ac297_municipios_consumos"));
+    document.getElementById("png-muniArb").addEventListener("click",()=>dlPNG("c-muniArb","ac297_municipios_arboles"));
+    document.getElementById("png-rumcla").addEventListener("click",()=>dlPNG("c-rumcla","ac297_cobertura"));
+    document.getElementById("png-fuera").addEventListener("click",()=>dlPNG("c-fuera","ac297_fuera_municipio"));
+    document.getElementById("png-ranking").addEventListener("click",()=>dlPNG("c-ranking","ac297_ranking_guardas"));
+    document.getElementById("png-espGuarda").addEventListener("click",()=>dlPNG("c-espGuarda","ac297_especies_por_guarda"));
+
     applyAll();
   }catch(e){
-    const el=document.getElementById("estado");
-    el.textContent="Error al cargar datos: "+(e.message||e);
-    el.className="estado-txt error";
+    const el=document.getElementById("estado");if(el){el.textContent="Error: "+(e.message||e);el.className="estado-txt error";}
   }
 })();
 </script>
