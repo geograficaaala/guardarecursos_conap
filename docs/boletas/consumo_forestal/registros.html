@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>AC297 · Registros y análisis por guardarecurso · Consumo Forestal</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>AC297 · Registros y verificación · Consumo Forestal Familiar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../assets/tabulator.min.css">
   <script src="../../assets/tabulator.min.js"></script>
   <script src="../../assets/papaparse.min.js"></script>
@@ -12,103 +12,171 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    :root{
-      --verde-oscuro:#0a3d2b;--verde-medio:#1a5c3a;
-      --bg:#f0f4f2;--blanco:#ffffff;
-      --ink:#0d1f15;--muted:#6b7280;--borde:#e2e8e4;
-      --sombra:rgba(10,61,43,0.08);--azul-m:#2563eb;
-      --p0:#0ea5e9;--p1:#10b981;--p2:#f59e0b;--p3:#8b5cf6;--p4:#ef4444;
+    :root {
+      --verde-oscuro:#0a3d2b; --verde-medio:#1a5c3a;
+      --bg:#f0f4f1; --surface:#ffffff; --surface-2:#f6faf7;
+      --ink:#0c1e13; --ink-2:#2a4535; --muted:#6a8878;
+      --borde:#d8e4dd; --sombra:rgba(10,61,43,0.06);
+      --acento:#1a5c3a; --acento-bg:rgba(26,92,58,0.06); --acento-borde:rgba(26,92,58,0.20);
+      --d0:#1f6cb0;--d1:#1a7a38;--d2:#b05608;--d3:#6b2680;--d4:#a81c2a;--d5:#016660;
     }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;opacity:0;animation:fadeIn .35s ease forwards}
-    @keyframes fadeIn{to{opacity:1}}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;font-size:14px;line-height:1.55;opacity:0;animation:bodyIn .45s cubic-bezier(.22,.68,0,1.2) forwards}
+    @keyframes bodyIn{to{opacity:1}}
     @media(prefers-reduced-motion:reduce){body{animation:none;opacity:1}}
 
-    header{background:linear-gradient(90deg,var(--verde-oscuro),var(--verde-medio));color:#fff;padding:12px 20px 14px;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.28)}
-    .header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:5px 10px}
-    .logo-group img{height:34px;max-width:110px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 7px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+    /* HEADER */
+    header{background:linear-gradient(105deg,var(--verde-oscuro) 0%,var(--verde-medio) 100%);color:#fff;padding:14px 28px 16px;position:sticky;top:0;z-index:200;box-shadow:0 2px 28px rgba(0,0,0,.26);flex-shrink:0}
+    .header-inner{max-width:1480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:5px 14px}
+    .logo-group img{height:36px;max-width:112px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 8px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
     .header-right{text-align:right;flex:1}
-    .header-right h1{font-size:17px;font-weight:600;margin-bottom:1px}
-    .header-right p{font-size:11.5px;opacity:.7;font-weight:300}
-    .header-chip{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:2px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-    .chip-dot{width:5px;height:5px;border-radius:50%;background:#86efac;animation:pulse 2s ease-in-out infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .header-right h1{font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:1px}
+    .header-right p{font-size:12px;opacity:.58;font-weight:300}
+    .header-chip{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.20);background:rgba(255,255,255,.08);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+    .chip-dot{width:6px;height:6px;border-radius:50%;background:#86efac;animation:blink 2.4s ease-in-out infinite}
+    @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.6)}}
 
-    .module-nav{background:var(--blanco);border-bottom:1px solid var(--borde);padding:0 20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-    .module-nav-inner{max-width:1400px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+    /* NAV */
+    .module-nav{background:var(--surface);border-bottom:1px solid var(--borde);padding:0 28px;box-shadow:0 1px 8px rgba(0,0,0,.04);flex-shrink:0}
+    .module-nav-inner{max-width:1480px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
     .module-nav-inner::-webkit-scrollbar{display:none}
-    .nav-back{display:flex;align-items:center;gap:6px;padding:12px 16px 12px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap;transition:color .2s}
+    .nav-back{display:flex;align-items:center;gap:6px;padding:13px 18px 13px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap;transition:color .18s}
     .nav-back:hover{color:var(--verde-medio)}
-    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s;height:48px}
-    .nav-tab:hover{color:var(--azul-m);border-bottom-color:rgba(37,99,235,.25)}
-    .nav-tab.active{color:var(--azul-m);border-bottom-color:var(--azul-m);font-weight:600}
+    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;height:50px;transition:color .18s,border-color .18s}
+    .nav-tab:hover{color:var(--acento);border-bottom-color:rgba(26,92,58,.2)}
+    .nav-tab.active{color:var(--acento);border-bottom-color:var(--acento);font-weight:600}
 
-    .page{max-width:1400px;width:100%;margin:0 auto;padding:20px 20px 48px;flex:1}
+    /* PÁGINA */
+    .page{max-width:1480px;width:100%;margin:0 auto;padding:28px 28px 72px;flex:1}
 
-    .inner-tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--blanco);border:1px solid var(--borde);border-radius:10px;padding:4px}
-    .inner-tab{flex:1;text-align:center;padding:8px 12px;border-radius:7px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;border:none;background:none;font-family:inherit}
-    .inner-tab.active{background:var(--verde-oscuro);color:#fff;font-weight:600}
+    /* TABS */
+    .inner-tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--borde);border-radius:12px;padding:4px;box-shadow:0 1px 8px var(--sombra)}
+    .inner-tab{flex:1;text-align:center;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;border:none;background:none;font-family:inherit}
+    .inner-tab.active{background:var(--verde-oscuro);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(10,61,43,.25)}
     .inner-tab:hover:not(.active){background:var(--bg);color:var(--ink)}
     .tab-panel{display:none}
-    .tab-panel.active{display:block}
+    .tab-panel.active{display:block;animation:panelIn .25s ease both}
+    @keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-    .card{background:var(--blanco);border:1px solid var(--borde);border-radius:14px;padding:20px;box-shadow:0 2px 10px var(--sombra);margin-bottom:16px}
+    /* CARDS */
+    .card{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:22px 24px;box-shadow:0 1px 10px var(--sombra);margin-bottom:16px}
     .card-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:4px}
-    .card-hint{font-size:12px;color:var(--muted);font-weight:300;margin-bottom:14px}
+    .card-hint{font-size:12.5px;color:var(--muted);font-weight:400;margin-bottom:16px;line-height:1.5}
 
-    .actions-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
-    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1px solid var(--borde);background:var(--blanco);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;color:var(--ink);transition:all .2s;text-decoration:none}
-    .btn:hover{border-color:#94a3b8;background:var(--bg)}
+    /* BOTONES */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;border:1.5px solid var(--borde);background:var(--surface);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;color:var(--ink);transition:all .18s;text-decoration:none}
+    .btn:hover{border-color:#94a3b8;background:var(--bg);transform:translateY(-1px)}
     .btn-primary{background:var(--verde-oscuro);color:#fff;border-color:var(--verde-oscuro)}
-    .btn-primary:hover{background:var(--verde-medio);border-color:var(--verde-medio)}
-    .btn-blue{background:var(--azul-m);color:#fff;border-color:var(--azul-m)}
-    .btn-blue:hover{background:#1d4ed8;border-color:#1d4ed8}
-    .btn:disabled{opacity:.4;cursor:not-allowed}
+    .btn-primary:hover{background:var(--verde-medio);box-shadow:0 4px 12px rgba(10,61,43,.25)}
+    .btn-blue{background:var(--d0);color:#fff;border-color:var(--d0)}
+    .btn-blue:hover{background:#1558a0;box-shadow:0 4px 12px rgba(31,108,176,.3)}
+    .btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+    .actions-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 
-    .informe-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px;background:rgba(37,99,235,.04);border:1px solid rgba(37,99,235,.15);border-radius:10px;margin-bottom:16px}
-    .informe-bar label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-    .informe-bar select{border:1px solid var(--borde);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;background:var(--blanco);color:var(--ink);outline:none}
-    .informe-bar select:focus{border-color:var(--azul-m)}
+    /* ESTADO */
+    .estado-txt{font-size:13px;color:var(--muted);font-weight:400;margin-bottom:16px}
+    .estado-txt.error{color:#9b1c1c;font-weight:600}
+    .estado-txt strong{color:var(--ink);font-weight:600}
 
-    .estado-txt{font-size:13px;color:var(--muted);font-weight:300;margin-bottom:12px}
-    .estado-txt.error{color:#dc2626;font-weight:600}
+    /* ═══ VERIFICACIÓN ════════════════════════════════ */
+    .verif-panel{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:22px 24px;box-shadow:0 1px 10px var(--sombra);margin-bottom:20px}
+    .verif-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:4px}
+    .verif-hint{font-size:12.5px;color:var(--muted);margin-bottom:18px;line-height:1.55}
+    .nota-meta{background:rgba(26,92,58,0.06);border:1px solid rgba(26,92,58,0.18);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--ink-2);line-height:1.55;margin-bottom:18px}
+    .nota-meta strong{color:var(--acento)}
 
-    #tabla-registros .tabulator{border-radius:10px;overflow:hidden;font-size:13px}
-    .tabulator-row.tabulator-selected{background:#dbeafe !important}
+    .verif-controls{display:grid;grid-template-columns:155px 155px 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:18px}
+    @media(max-width:900px){.verif-controls{grid-template-columns:1fr 1fr}}
+    @media(max-width:600px){.verif-controls{grid-template-columns:1fr}}
+    .vc-group{display:flex;flex-direction:column;gap:5px}
+    .vc-group label{font-size:10.5px;font-weight:700;color:var(--ink-2);letter-spacing:.07em;text-transform:uppercase}
+    .vc-group select,.vc-group input{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13.5px;font-family:inherit;background:var(--surface-2);color:var(--ink);outline:none;transition:border-color .18s,box-shadow .18s;width:100%}
+    .vc-group select:focus,.vc-group input:focus{border-color:var(--acento);box-shadow:0 0 0 3px rgba(26,92,58,.10);background:var(--surface)}
 
+    /* KPIs de verificación */
+    .verif-resumen{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:900px){.verif-resumen{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){.verif-resumen{grid-template-columns:repeat(2,1fr)}}
+    .vr-card{border-radius:12px;padding:14px 16px;border:1px solid var(--borde);background:var(--surface)}
+    .vr-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase;margin-bottom:8px}
+    .vr-value{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;line-height:1;margin-bottom:4px;color:var(--ink)}
+    .vr-sub{font-size:11.5px;color:var(--muted)}
+
+    .periodo-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:999px;background:var(--acento-bg);border:1px solid var(--acento-borde);font-size:12.5px;font-weight:600;color:var(--acento);margin-bottom:16px}
+
+    /* Tabla verificación */
+    .verif-table-wrap{overflow-x:auto}
+    .verif-table{width:100%;border-collapse:collapse;font-size:13px}
+    .verif-table th{background:var(--bg);padding:10px 14px;text-align:left;font-weight:700;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:2px solid var(--borde);white-space:nowrap}
+    .verif-table td{padding:10px 14px;border-bottom:1px solid var(--borde);vertical-align:middle}
+    .verif-table tr:last-child td{border-bottom:none}
+    .verif-table tr:hover td{background:var(--surface-2)}
+
+    /* Filas expandibles */
+    .vc-row-guarda{cursor:pointer;user-select:none}
+    .vc-row-guarda:hover td{background:rgba(26,92,58,0.04)!important}
+    .vc-toggle{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--surface-2);border:1px solid var(--borde);color:var(--muted);transition:transform .2s,background .15s;flex-shrink:0}
+    .vc-row-guarda.open .vc-toggle{transform:rotate(90deg);background:var(--acento);color:#fff;border-color:var(--acento)}
+    .vc-subrows{display:none}
+    .vc-subrows.open{display:table-row-group}
+    .vc-num{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:50%;background:var(--borde);font-size:10px;font-weight:700;color:var(--muted)}
+    .vc-coord{font-family:monospace;font-size:11px;color:var(--muted)}
+
+    /* Badges */
+    .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600}
+    .badge-verde{background:#dcfce7;color:#15803d}.badge-rojo{background:#fee2e2;color:#b91c1c}
+    .badge-amarillo{background:#fef9c3;color:#854d0e}.badge-azul{background:#dbeafe;color:#1e40af}
+    .badge-gris{background:#f3f4f6;color:#6b7280}.badge-naranja{background:#fff7ed;color:#9a3412}
+
+    /* Barra de progreso */
+    .prog-wrap{display:flex;align-items:center;gap:8px}
+    .prog-bar-bg{flex:1;height:7px;background:var(--borde);border-radius:999px;overflow:hidden;min-width:60px}
+    .prog-bar-fill{height:100%;border-radius:999px;transition:width .4s ease}
+    .prog-fill-verde{background:#22c55e}.prog-fill-amarillo{background:#f59e0b}.prog-fill-rojo{background:#ef4444}
+    .prog-num{font-size:12px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+
+    /* Meta reforestación badge especial */
+    .meta-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:rgba(168,28,42,0.08);border:1px solid rgba(168,28,42,0.25);font-size:11.5px;font-weight:700;color:#a81c2a}
+
+    /* TABLA TABULATOR */
+    #tabla-registros .tabulator{border-radius:12px;overflow:hidden;font-size:13px;font-family:'DM Sans',sans-serif}
+    .tabulator .tabulator-header{background:var(--bg)!important;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .tabulator-row:hover{background:var(--surface-2)!important}
+
+    /* ANÁLISIS */
     .guarda-selector{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:20px}
-    .guarda-selector label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:4px}
-    .guarda-selector select{border:1px solid var(--borde);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--blanco);color:var(--ink);outline:none;min-width:280px}
-    .guarda-selector select:focus{border-color:var(--azul-m)}
+    .guarda-selector label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:5px}
+    .guarda-selector select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface-2);color:var(--ink);outline:none;min-width:280px;transition:border-color .18s}
+    .guarda-selector select:focus{border-color:var(--acento)}
 
-    .kpis-guarda{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-    @media(max-width:800px){.kpis-guarda{grid-template-columns:repeat(2,1fr)}}
-    .kpi-g{background:var(--blanco);border:1px solid var(--borde);border-top:3px solid transparent;border-radius:14px;padding:14px 16px;box-shadow:0 2px 8px var(--sombra)}
-    .kpi-g-0{border-top-color:var(--p0)}.kpi-g-1{border-top-color:var(--p1)}.kpi-g-2{border-top-color:var(--p2)}.kpi-g-3{border-top-color:var(--p3)}
-    .kpi-g-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px}
-    .kpi-g-value{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;line-height:1;color:var(--ink);margin-bottom:3px}
-    .kpi-g-sub{font-size:11px;color:var(--muted);font-weight:300}
+    .kpis-guarda{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:900px){.kpis-guarda{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){.kpis-guarda{grid-template-columns:repeat(2,1fr)}}
+    .kpi-g{background:var(--surface);border:1px solid var(--borde);border-top:3px solid transparent;border-radius:14px;padding:14px 16px;box-shadow:0 1px 8px var(--sombra)}
+    .kpi-g-0{border-top-color:var(--d0)}.kpi-g-1{border-top-color:var(--d1)}.kpi-g-2{border-top-color:var(--d4)}.kpi-g-3{border-top-color:var(--d2)}.kpi-g-4{border-top-color:var(--d5)}
+    .kpi-g-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:8px}
+    .kpi-g-value{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;line-height:1;color:var(--ink);margin-bottom:3px}
+    .kpi-g-sub{font-size:11px;color:var(--muted)}
 
-    .charts-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
     .charts-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-    @media(max-width:900px){.charts-3{grid-template-columns:1fr 1fr}}
-    @media(max-width:600px){.charts-3,.charts-2{grid-template-columns:1fr}}
+    @media(max-width:700px){.charts-2{grid-column:1fr}}
     .cw{position:relative;height:240px}
 
     .resumen-table{width:100%;border-collapse:collapse;font-size:13px}
-    .resumen-table th{background:var(--bg);padding:8px 12px;text-align:left;font-weight:600;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--borde)}
-    .resumen-table td{padding:8px 12px;border-bottom:1px solid var(--borde)}
+    .resumen-table th{background:var(--bg);padding:9px 13px;text-align:left;font-weight:700;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--borde)}
+    .resumen-table td{padding:9px 13px;border-bottom:1px solid var(--borde)}
     .resumen-table tr:last-child td{border-bottom:none}
-    .resumen-table tr:hover td{background:var(--bg)}
-    .badge{display:inline-flex;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600}
-    .badge-verde{background:#dcfce7;color:#15803d}
-    .badge-naranja{background:#fff7ed;color:#c2410c}
-    .badge-azul{background:#dbeafe;color:#1d4ed8}
+    .resumen-table tr:hover td{background:var(--surface-2)}
 
-    .sin-datos{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
+    .informe-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:16px 18px;background:var(--surface-2);border:1px solid var(--borde);border-radius:12px;margin-bottom:16px}
+    .informe-bar label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:5px}
+    .informe-bar select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--ink);outline:none;transition:border-color .18s}
+    .sin-datos{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
 
-    footer{background:var(--verde-oscuro);color:rgba(255,255,255,.45);text-align:center;padding:14px 20px;font-size:11.5px;font-weight:300}
+    /* FOOTER */
+    footer{background:var(--verde-oscuro);color:rgba(255,255,255,.42);text-align:center;padding:16px 24px;font-size:12px;font-weight:300;letter-spacing:.04em;flex-shrink:0}
     footer strong{color:rgba(255,255,255,.75);font-weight:500}
   </style>
 </head>
@@ -123,7 +191,7 @@
     <div class="header-right">
       <h1>Centro de consulta de datos</h1>
       <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
-      <div class="header-chip"><span class="chip-dot"></span>AC297 · Registros y análisis</div>
+      <div class="header-chip"><span class="chip-dot"></span>AC297 · Registros y verificación</div>
     </div>
   </div>
 </header>
@@ -131,153 +199,202 @@
 <nav class="module-nav">
   <div class="module-nav-inner">
     <a href="../../index.html" class="nav-back">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Inicio
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Inicio
     </a>
     <a href="dashboard.html" class="nav-tab">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Mapa geográfico
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      Mapa geográfico
     </a>
     <a href="tablero.html" class="nav-tab">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Tablero dinámico
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Tablero dinámico
     </a>
     <a href="registros.html" class="nav-tab active">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>Registros y análisis
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      Registros y verificación
     </a>
   </div>
 </nav>
 
 <div class="page">
-
   <div class="inner-tabs">
-    <button class="inner-tab active" data-panel="panel-registros">Tabla de registros y exportación</button>
-    <button class="inner-tab" data-panel="panel-analisis">Análisis por guardarecurso</button>
+    <button class="inner-tab active" data-panel="panel-verif">Verificación de cumplimiento</button>
+    <button class="inner-tab" data-panel="panel-registros">Tabla de registros y exportación</button>
+    <button class="inner-tab" data-panel="panel-analisis">Análisis por guardarecursos</button>
   </div>
 
-  <!-- ══ PANEL 1: TABLA + REPORTES ══ -->
-  <div id="panel-registros" class="tab-panel active">
+  <!-- ══ PANEL 1 — VERIFICACIÓN ══════════════════════ -->
+  <div id="panel-verif" class="tab-panel active">
+    <div class="verif-panel">
+      <div class="verif-title">Verificación de consumo forestal familiar</div>
+      <div class="verif-hint">
+        El período de corte es del <strong>25 de cada mes al 25 del siguiente</strong>.
+        Seleccione el período para ver los consumos registrados, los árboles aprobados y la meta de reforestación por compromiso de cada guardarecursos.
+      </div>
 
+      <div class="nota-meta">
+        <strong>Regla de meta de reforestación:</strong> por cada 10 árboles aprobados en consumo forestal familiar, el guardarecursos genera 1 árbol de compromiso de reforestación.
+        La columna <strong>"Meta reforest."</strong> muestra cuántos árboles debe comprometerse a reponer en el período.
+      </div>
+
+      <div class="verif-controls">
+        <div class="vc-group"><label>Desde (25 del mes)</label><input type="date" id="vc-desde"/></div>
+        <div class="vc-group"><label>Hasta (25 del mes)</label><input type="date" id="vc-hasta"/></div>
+        <div class="vc-group"><label>Guardarecursos (opcional)</label><select id="vc-guarda"><option value="">Todos</option></select></div>
+        <div class="vc-group"><label>Meta de consumos</label><input type="number" id="vc-meta-consumos" value="0" min="0" placeholder="Ej: 4"/></div>
+        <button class="btn btn-primary" id="vc-aplicar" style="height:40px;align-self:flex-end">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Verificar
+        </button>
+      </div>
+
+      <div id="vc-periodo-tag" class="periodo-tag" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="vc-periodo-label"></span>
+      </div>
+
+      <!-- KPIs del período -->
+      <div class="verif-resumen" id="vc-resumen" style="display:none">
+        <div class="vr-card" style="border-top:3px solid var(--d0)"><div class="vr-label">Consumos en período</div><div class="vr-value" id="vc-total">–</div><div class="vr-sub">registros</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d1)"><div class="vr-label">Árboles aprobados</div><div class="vr-value" id="vc-arboles">–</div><div class="vr-sub">total a talar</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d4)"><div class="vr-label">Meta reforestación</div><div class="vr-value" id="vc-meta-ref">–</div><div class="vr-sub">árboles a reponer (÷10)</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d2)"><div class="vr-label">Guardarecursos activos</div><div class="vr-value" id="vc-guardas">–</div><div class="vr-sub">en el período</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d5)"><div class="vr-label">Municipios cubiertos</div><div class="vr-value" id="vc-munis">–</div><div class="vr-sub">distintos</div></div>
+      </div>
+
+      <!-- Tabla expandible -->
+      <div id="vc-tabla-wrap" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase">
+            Detalle por guardarecursos — haga clic en una fila para ver los consumos individuales con desglose de especies
+          </span>
+          <div style="display:flex;gap:6px">
+            <button class="btn" id="vc-expand-all" style="font-size:11.5px;padding:5px 12px">Expandir todos</button>
+            <button class="btn" id="vc-collapse-all" style="font-size:11.5px;padding:5px 12px">Colapsar todos</button>
+          </div>
+        </div>
+        <div class="verif-table-wrap">
+          <table class="verif-table">
+            <thead>
+              <tr>
+                <th style="width:28px"></th>
+                <th>Guardarecursos</th>
+                <th>Consumos</th>
+                <th>Árboles aprobados</th>
+                <th>Meta reforest.</th>
+                <th>Municipios</th>
+                <th>Especie principal</th>
+                <th id="th-cumplimiento" style="display:none">vs. Meta consumos</th>
+                <th id="th-avance" style="display:none">Avance</th>
+              </tr>
+            </thead>
+            <tbody id="vc-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="vc-export-xlsx">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar Excel (con desglose de especies)
+          </button>
+          <button class="btn" id="vc-export-csv">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      <div id="vc-empty" class="sin-datos">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <p style="margin-top:12px">Seleccione el período y haga clic en <strong>Verificar</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL 2 — TABLA ════════════════════════════ -->
+  <div id="panel-registros" class="tab-panel">
     <p class="estado-txt" id="estado-registros">Cargando datos…</p>
-
     <div class="card">
-      <div class="card-title">Exportar datos</div>
-      <div class="card-hint">Descarga todos los registros visibles en la tabla según los filtros de columna aplicados</div>
+      <div class="card-title">Exportar registros</div>
+      <div class="card-hint">Descarga todos los registros visibles en la tabla con los filtros de columna aplicados</div>
       <div class="actions-bar">
         <button class="btn" id="download-csv">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Descargar CSV
         </button>
         <button class="btn btn-primary" id="download-xlsx">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Descargar Excel
         </button>
       </div>
     </div>
-
     <div class="card">
-      <div class="card-title">Informe por consumo individual</div>
-      <div class="card-hint">Selecciona una fila en la tabla para generar el informe de ese consumo forestal</div>
+      <div class="card-title">Informe de registro individual</div>
+      <div class="card-hint">Selecciona una fila en la tabla y genera el informe de ese consumo específico</div>
       <div class="actions-bar">
-        <button class="btn btn-blue" id="generate-report-word" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Informe registro (Word)
+        <button class="btn btn-blue" id="generate-report-word">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe Word
         </button>
-        <button class="btn" id="generate-report-pdf" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Informe registro (PDF)
+        <button class="btn" id="generate-report-pdf">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe PDF
         </button>
       </div>
     </div>
-
     <div class="card">
       <div class="card-title">Informe mensual narrativo</div>
-      <div class="card-hint">Genera un informe ejecutivo completo para el mes seleccionado: consumos, especies, municipios y guardarecursos activos</div>
+      <div class="card-hint">Genera un resumen ejecutivo del mes con totales de árboles, especies, guardarecursos y meta de reforestación</div>
       <div class="informe-bar">
-        <div>
-          <label>Selecciona el mes</label>
-          <select id="monthly-month-select"></select>
-        </div>
+        <div><label>Selecciona el mes</label><select id="monthly-month-select"></select></div>
         <button class="btn btn-blue" id="generate-monthly-report-word" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Informe mensual (Word)
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe mensual Word
         </button>
         <button class="btn" id="generate-monthly-report-pdf" disabled>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Informe mensual (PDF)
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe mensual PDF
         </button>
       </div>
     </div>
-
-    <div class="card" style="padding:0;overflow:hidden">
-      <div id="tabla-registros"></div>
-    </div>
-
+    <div class="card" style="padding:0;overflow:hidden"><div id="tabla-registros"></div></div>
   </div>
 
-  <!-- ══ PANEL 2: ANÁLISIS POR GUARDARECURSO ══ -->
+  <!-- ══ PANEL 3 — ANÁLISIS ═════════════════════════ -->
   <div id="panel-analisis" class="tab-panel">
-
-    <p class="estado-txt" id="estado-analisis">Selecciona un guardarecurso para ver su perfil de actividad</p>
-
+    <p class="estado-txt" id="estado-analisis">Selecciona un guardarecursos para ver su perfil</p>
     <div class="guarda-selector">
-      <div>
-        <label>Guardarecurso</label>
-        <select id="sel-guarda"><option value="">Selecciona un guardarecurso…</option></select>
-      </div>
+      <div><label>Guardarecursos</label><select id="sel-guarda"><option value="">Selecciona…</option></select></div>
       <button class="btn btn-primary" id="btn-informe-guarda" disabled>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        Exportar informe Word
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Exportar perfil Word
       </button>
     </div>
-
     <div id="guarda-kpis" class="kpis-guarda" style="display:none">
-      <div class="kpi-g kpi-g-0"><div class="kpi-g-label">Consumos</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">registros totales</div></div>
-      <div class="kpi-g kpi-g-1"><div class="kpi-g-label">Árboles</div><div class="kpi-g-value" id="g-arboles">–</div><div class="kpi-g-sub">total autorizados</div></div>
-      <div class="kpi-g kpi-g-2"><div class="kpi-g-label">Municipios</div><div class="kpi-g-value" id="g-munis">–</div><div class="kpi-g-sub">distintos atendidos</div></div>
-      <div class="kpi-g kpi-g-3"><div class="kpi-g-label">Intermunicipales</div><div class="kpi-g-value" id="g-inter">–</div><div class="kpi-g-sub">consumos cedidos</div></div>
+      <div class="kpi-g kpi-g-0"><div class="kpi-g-label">Consumos</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">total registrados</div></div>
+      <div class="kpi-g kpi-g-1"><div class="kpi-g-label">Árboles aprobados</div><div class="kpi-g-value" id="g-arboles">–</div><div class="kpi-g-sub">total a talar</div></div>
+      <div class="kpi-g kpi-g-2"><div class="kpi-g-label">Meta reforestación</div><div class="kpi-g-value" id="g-meta">–</div><div class="kpi-g-sub">árboles a reponer (÷10)</div></div>
+      <div class="kpi-g kpi-g-3"><div class="kpi-g-label">Municipios</div><div class="kpi-g-value" id="g-munis">–</div><div class="kpi-g-sub">distintos cubiertos</div></div>
+      <div class="kpi-g kpi-g-4"><div class="kpi-g-label">Promedio</div><div class="kpi-g-value" id="g-prom">–</div><div class="kpi-g-sub">árboles por consumo</div></div>
     </div>
-
-    <div id="guarda-charts" class="charts-3" style="display:none">
-      <div class="card">
-        <div class="card-title">Consumos por mes</div>
-        <div class="card-hint">Evolución mensual de actividad</div>
-        <div class="cw"><canvas id="g-c-mes"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Especies más frecuentes</div>
-        <div class="card-hint">Árboles autorizados por especie</div>
-        <div class="cw"><canvas id="g-c-esp"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Municipios atendidos</div>
-        <div class="card-hint">Distribución por municipio</div>
-        <div class="cw"><canvas id="g-c-muni"></canvas></div>
-      </div>
+    <div id="guarda-charts" class="charts-2" style="display:none">
+      <div class="card"><div class="card-title">Consumos por período (corte 25)</div><div class="card-hint">Agrupados por período operativo mensual</div><div class="cw"><canvas id="g-c-mes"></canvas></div></div>
+      <div class="card"><div class="card-title">Especies aprobadas</div><div class="card-hint">Desglose por especie de los árboles autorizados</div><div class="cw"><canvas id="g-c-esp"></canvas></div></div>
     </div>
-
     <div id="guarda-tabla-wrap" class="card" style="display:none">
       <div class="card-title">Detalle por municipio</div>
-      <div class="card-hint">Consumos, árboles totales y promedio de árboles por municipio</div>
+      <div class="card-hint">Consumos, árboles aprobados y meta de reforestación por municipio de atención</div>
       <div style="overflow-x:auto">
         <table class="resumen-table">
-          <thead>
-            <tr>
-              <th>Municipio</th>
-              <th>Consumos</th>
-              <th>Árboles totales</th>
-              <th>Prom. árboles</th>
-              <th>Intermunicipales</th>
-              <th>Área protegida</th>
-            </tr>
-          </thead>
+          <thead><tr><th>Municipio</th><th>Consumos</th><th>Árboles aprobados</th><th>Meta reforest.</th><th>Prom. árboles</th><th>Fuera municipio</th></tr></thead>
           <tbody id="guarda-tbody"></tbody>
         </table>
       </div>
     </div>
-
     <div id="guarda-empty" class="sin-datos">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <p style="margin-top:12px">Selecciona un guardarecurso para ver su análisis individual</p>
+      <p style="margin-top:12px">Selecciona un guardarecursos para ver su análisis individual</p>
     </div>
-
   </div>
 </div>
 
@@ -286,406 +403,93 @@
 </footer>
 
 <script>
-/* ══════════════════════════════════════════════════════
-   VARIABLES GLOBALES
-══════════════════════════════════════════════════════ */
-let tablaConsumos;
-let datosConsumos = [];
-let mapaMeses = new Map();
-
-const MESES_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-const PALETTE  = ["#15803d","#0369a1","#7c3aed","#b45309","#be185d","#0891b2","#dc2626","#65a30d","#ea580c","#16a34a","#6d28d9","#64748b"];
-
-// Especies con etiquetas cortas y colores
+/* ═══ ESPECIES ════════════════════════════════════════════ */
 const ESPECIES = [
-  {campo:"Cantidad de Pino (Pinus pseudostrobus)",    label:"Pino",        color:"#15803d"},
-  {campo:"Cantidad de Cipres (Cupressus lusitanica)", label:"Ciprés",      color:"#0369a1"},
-  {campo:"Cantidad de Aliso (Alnus jorullensis)",     label:"Aliso",       color:"#7c3aed"},
-  {campo:"Cantidad de Encino (Quercus sp)",           label:"Encino",      color:"#b45309"},
-  {campo:"Cantidad de Palo Blanco (Vernonia patens)", label:"Palo Blanco", color:"#be185d"},
-  {campo:"Cantidad de Cajete (Heliocarpus donnellsmithii)",label:"Cajete", color:"#0891b2"},
-  {campo:"Cantidad de Madron (Arbutus xalapensis)",   label:"Madrón",      color:"#dc2626"},
-  {campo:"Cantidad de Mano de mono (Oreopanax xalapensis)",label:"Mano de mono",color:"#65a30d"},
-  {campo:"Cantidad de Matilisguate (Tabebuia rosea)", label:"Matilisguate",color:"#ea580c"},
-  {campo:"Cantidad de Aguacate (Persea americana)",   label:"Aguacate",    color:"#16a34a"},
-  {campo:"Cantidad de Casuarina (Casuarina equisetifolia)",label:"Casuarina",color:"#6d28d9"},
-  {campo:"Cantidad de Otro",                          label:"Otro",        color:"#64748b"},
+  {field:"Cantidad de Pino (Pinus pseudostrobus)",       label:"Pino",         color:"#1a7a38"},
+  {field:"Cantidad de Cipres (Cupressus lusitanica)",    label:"Ciprés",       color:"#1f6cb0"},
+  {field:"Cantidad de Aliso (Alnus jorullensis)",        label:"Aliso",        color:"#b05608"},
+  {field:"Cantidad de Encino (Quercus sp)",              label:"Encino",       color:"#6b2680"},
+  {field:"Cantidad de Palo Blanco (Vernonia patens)",    label:"Palo Blanco",  color:"#016660"},
+  {field:"Cantidad de Cajete (Heliocarpus donnellsmithii)", label:"Cajete",   color:"#7a4508"},
+  {field:"Cantidad de Madron (Arbutus xalapensis)",      label:"Madrón",      color:"#3d8fbf"},
+  {field:"Cantidad de Mano de mono (Oreopanax xalapensis)", label:"Mano de mono", color:"#b51a72"},
+  {field:"Cantidad de Matilisguate (Tabebuia rosea)",    label:"Matilisguate", color:"#448a1e"},
+  {field:"Cantidad de Aguacate (Persea americana)",      label:"Aguacate",     color:"#c85840"},
+  {field:"Cantidad de Casuarina (Casuarina equisetifolia)", label:"Casuarina", color:"#4e359a"},
+  {field:"Cantidad de Otro",                             label:"Otro",         color:"#94a3b8"},
 ];
 
-/* ══════════════════════════════════════════════════════
-   GTM · IGN-01/99
-══════════════════════════════════════════════════════ */
-function latLonAGTM(lat, lon) {
-  if (!isFinite(lat) || !isFinite(lon)) return { GTM_X: null, GTM_Y: null };
-  const a=6378137.0, f=1/298.257223563, e2=2*f-f*f, ep2=e2/(1-e2);
-  const k0=0.9998, lon0=-90.5*Math.PI/180, E0=500000;
-  const phi=lat*Math.PI/180, lam=lon*Math.PI/180;
-  const sp=Math.sin(phi), cp=Math.cos(phi), tp=Math.tan(phi);
-  const N=a/Math.sqrt(1-e2*sp*sp), T=tp*tp, C=ep2*cp*cp, A=cp*(lam-lon0);
-  const M=a*((1-e2/4-3*e2*e2/64-5*e2*e2*e2/256)*phi-(3*e2/8+3*e2*e2/32+45*e2*e2*e2/1024)*Math.sin(2*phi)+(15*e2*e2/256+45*e2*e2*e2/1024)*Math.sin(4*phi)-(35*e2*e2*e2/3072)*Math.sin(6*phi));
-  const X=E0+k0*N*(A+(1-T+C)*Math.pow(A,3)/6+(5-18*T+T*T+72*C-58*ep2)*Math.pow(A,5)/120);
-  const Y=k0*(M+N*tp*(Math.pow(A,2)/2+(5-T+9*C+4*C*C)*Math.pow(A,4)/24+(61-58*T+T*T+600*C-330*ep2)*Math.pow(A,6)/720));
-  return { GTM_X: Math.round(X*100)/100, GTM_Y: Math.round(Y*100)/100 };
+/* ═══ NORMALIZACIÓN ═══════════════════════════════════════ */
+const EXCLUIDOS = new Set([
+  "daniel estuardo barillas coo","daniel estuardo barillas",
+  "domingo alfonso mendoza quiacain","domingo alfonso mendoza",
+  "job' kotz'ij eligia morales quino","job kotzij eligia morales quino",
+  "jose manuel vasquez upun","pedro chiviliu esquina",
+  "ruben enrique sumoza mendoza","ruben enrique sumoza",
+]);
+const MERGE = {
+  "edgar bartolo batin navichoc":"Edgar Bartolo Batín Navichoc",
+  "edgar bartolo batín navichoc":"Edgar Bartolo Batín Navichoc",
+  "henry regino mendez chavajay":"Henry Regino Méndez Chavajay",
+  "mario cesar tale coche":"Mario César Talé Coché",
+  "rafaél enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "rafael enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "bernabe lopez sajvin":"Bernabé López Sajvín",
+  "santos maurico vicente mendoza":"Santos Mauricio Vicente Mendoza",
+  "santos mauricio vicente mendoza":"Santos Mauricio Vicente Mendoza",
+  "cornelio marco antonio perechu tzep":"Cornelio Marco Antonio Perechu Tzep",
+  "cornelio marco antonio perechú tzep":"Cornelio Marco Antonio Perechu Tzep",
+  "vicente francisco omar perez cox":"Vicente Francisco Omar Pérez Cox",
+  "antonio federico tzaj y tzaj":"Antonio Federico Tzaj Y Tzaj",
+};
+function canonStr(s){return String(s||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ");}
+function normGuarda(n){if(!n)return null;const c=canonStr(n);if(EXCLUIDOS.has(c))return null;return MERGE[c]||n.trim();}
+
+/* ═══ GLOBALS ═════════════════════════════════════════════ */
+let DATOS=[];
+let tablaTabulator;
+let mapaMeses=new Map();
+const PAL=["#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660","#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"];
+const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MESES_ES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const LABELS={muni:new Map(),guarda:new Map()};
+
+/* ═══ UTILIDADES ══════════════════════════════════════════ */
+const norm=v=>v==null?"":String(v).trim().replace(/\s+/g," ");
+const sum_=arr=>arr.reduce((a,b)=>a+b,0);
+function escH(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function slug(s){return String(s||"").toLowerCase().trim().replace(/\s+/g,"_").replace(/[^\w\-]/g,"");}
+function safeInt(v){const n=parseInt(String(v||"").trim());return isNaN(n)?0:n;}
+function bestL(a,b){a=norm(a);b=norm(b);if(!a)return b;if(!b)return a;const ht=s=>/[áéíóúüñÁÉÍÓÚÜÑ]/.test(s);if(ht(b)&&!ht(a))return b;return b.length>a.length?b:a;}
+
+function parseCreation(s){
+  s=String(s||"").trim();if(!s)return null;
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+  if(m)return new Date(+m[3],+m[1]-1,+m[2],+m[4],+m[5],+m[6]);
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+  const dt=new Date(s);return isNaN(dt)?null:dt;
+}
+function fmtDate(dt){if(!dt||isNaN(dt))return"–";return String(dt.getDate()).padStart(2,"0")+"/"+String(dt.getMonth()+1).padStart(2,"0")+"/"+dt.getFullYear();}
+function isoDate(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
+function periodoOp(dt){if(!dt||isNaN(dt))return null;const d=dt.getDate(),m=dt.getMonth(),y=dt.getFullYear();if(d>=26){const nm=m===11?0:m+1,ny=m===11?y+1:y;return ny+"-"+String(nm+1).padStart(2,"0");}return y+"-"+String(m+1).padStart(2,"0");}
+function mShort(k){const[y,m]=k.split("-");return MESES_S[+m-1]+"'"+String(y).slice(2);}
+
+/* ═══ CARGA Y PROCESO ═════════════════════════════════════ */
+function procesarDatos(raw){
+  return raw.map(r=>{
+    const gn=normGuarda(r["Nombre del guardarecursos"]);if(!gn)return null;
+    const dt=parseCreation(r["CreationDate"]);
+    const arboles=safeInt(r["Cantidad total de arboles a talar"]);
+    const cm=canonStr(r["Municipio"]);
+    const cg=canonStr(gn);
+    const espMap={};ESPECIES.forEach(e=>{espMap[e.field]=safeInt(r[e.field]||"0");});
+    if(cm)LABELS.muni.set(cm,bestL(LABELS.muni.get(cm),r["Municipio"]));
+    if(cg)LABELS.guarda.set(cg,bestL(LABELS.guarda.get(cg),gn));
+    return{...r,__guarda:gn,__dt:dt,__periodo:periodoOp(dt),__arboles:arboles,__meta:Math.floor(arboles/10),__cm:cm,__cg:cg,...espMap};
+  }).filter(Boolean);
 }
 
-function enriquecerConGTM(datos) {
-  return datos.map(r => {
-    const lat = parseFloat(String(r["Y"] || "").replace(",", "."));
-    const lon = parseFloat(String(r["X"] || "").replace(",", "."));
-    const gtm = (isFinite(lat) && isFinite(lon) && lat!==0 && lon!==0)
-      ? latLonAGTM(lat, lon)
-      : { GTM_X: "", GTM_Y: "" };
-    return { ...r, "GTM_X (m)": gtm.GTM_X !== null ? gtm.GTM_X : "", "GTM_Y (m)": gtm.GTM_Y !== null ? gtm.GTM_Y : "" };
-  });
-}
-
-/* ══════════════════════════════════════════════════════
-   UTILIDADES
-══════════════════════════════════════════════════════ */
-function slugify(s){return String(s||"").toLowerCase().trim().replace(/\s+/g,"_").replace(/[^\w\-]/g,"")}
-function escH(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
-function pct(p,t){return t?Math.round(p*1000/t)/10:0}
-function rdnd(n,d){if(!isFinite(n))return 0;const f=Math.pow(10,d);return Math.round(n*f)/f}
-function combinar(arr){if(!arr.length)return"";if(arr.length===1)return arr[0];if(arr.length===2)return arr[0]+" y "+arr[1];return arr.slice(0,-1).join(", ")+" y "+arr[arr.length-1]}
-function nombreMes(m){return MESES_ES[m-1]||""}
-function numVal(v){const n=parseFloat(String(v||"").replace(",","."));return isNaN(n)?0:n}
-function canonInter(v){const c=String(v||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");return(c==="si"||c==="sí")?"si":c==="no"?"no":""}
-
-/* ══════════════════════════════════════════════════════
-   FECHA ROBUSTA
-══════════════════════════════════════════════════════ */
-function detectarFormato(f){
-  if(!f)return null;const s=f.toString().trim();if(!s)return null;
-  const pf=s.split(" ")[0],sep=pf.includes("/")?"/":pf.includes("-")?"-":null;if(!sep)return null;
-  const p=pf.split(sep);if(p.length<3)return null;
-  const p1=p[0].trim(),p2=p[1].trim(),p3=p[2].trim();if(!p1||!p2||!p3)return null;
-  if(p1.length===4)return"YMD";
-  const a=parseInt(p1,10),b=parseInt(p2,10);
-  if(!isFinite(a)||!isFinite(b))return null;
-  if(a>12&&b>=1&&b<=12)return"DMY";if(b>12&&a>=1&&a<=12)return"MDY";return null;
-}
-function buildDate(y,m,d){const dt=new Date(y,m-1,d);return(dt.getFullYear()===y&&dt.getMonth()+1===m&&dt.getDate()===d)?dt:null}
-function prepararHints(data){
-  const h=data.map(r=>detectarFormato(r["Fecha"]));
-  let last=null;for(let i=0;i<h.length;i++){if(!h[i])h[i]=last;else last=h[i];}
-  let next=null;for(let i=h.length-1;i>=0;i--){if(!h[i])h[i]=next;else next=h[i];}
-  data.forEach((r,i)=>r._dh=h[i]||null);
-}
-function extraerFecha(f,hint){
-  if(!f)return null;const s=f.toString().trim();if(!s)return null;
-  const pf=s.split(" ")[0],sep=pf.includes("/")?"/":pf.includes("-")?"-":null;if(!sep)return null;
-  const p=pf.split(sep);if(p.length<3)return null;
-  const p1=p[0].trim(),p2=p[1].trim(),p3=p[2].trim();
-  let a=parseInt(p1,10),b=parseInt(p2,10);const ym=p3.match(/\d{1,4}/);if(!ym)return null;
-  let c=parseInt(ym[0],10);if(!isFinite(a)||!isFinite(b)||!isFinite(c))return null;
-  if(p1.length===4||hint==="YMD"){const dt=buildDate(a,b,c);return dt?{anio:a,mes:b,dia:c,_date:dt}:null}
-  if(c<100)c=c<=50?2000+c:1900+c;
-  if(a>12&&b>=1&&b<=12){const dt=buildDate(c,b,a);return dt?{anio:c,mes:b,dia:a,_date:dt}:null}
-  if(b>12&&a>=1&&a<=12){const dt=buildDate(c,a,b);return dt?{anio:c,mes:a,dia:b,_date:dt}:null}
-  const dMDY=buildDate(c,a,b),dDMY=buildDate(c,b,a);
-  if(hint==="MDY"&&dMDY)return{anio:c,mes:a,dia:b,_date:dMDY};
-  if(hint==="DMY"&&dDMY)return{anio:c,mes:b,dia:a,_date:dDMY};
-  if(dMDY)return{anio:c,mes:a,dia:b,_date:dMDY};if(dDMY)return{anio:c,mes:b,dia:a,_date:dDMY};return null;
-}
-function extraerAnioMes(f,hint){const i=extraerFecha(f,hint);return i?{anio:i.anio,mes:i.mes}:null}
-
-/* ══════════════════════════════════════════════════════
-   DOCUMENTOS
-══════════════════════════════════════════════════════ */
-const ESTILOS=`<style>body{font-family:"Times New Roman",serif;font-size:10pt;line-height:1.4}.ic h1{font-size:14pt;font-weight:bold;margin:0 0 8pt;text-align:center}.ic h2{font-size:12pt;font-weight:bold;margin:12pt 0 6pt}.ic p{margin:0 0 6pt;text-align:justify}.is{page-break-inside:avoid;margin-bottom:8pt}</style>`;
-
-function crearWord(nombre,html){
-  const src="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+ESTILOS+"</head><body>"+html+"</body></html>";
-  const blob=new Blob(["\ufeff",src],{type:"application/msword"});
-  const url=URL.createObjectURL(blob),a=document.createElement("a");
-  a.href=url;a.download=nombre.endsWith(".doc")?nombre:nombre+".doc";
-  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-}
-function crearPDF(nombre,html){
-  if(typeof html2pdf==="undefined"){alert("No se pudo cargar html2pdf.");return}
-  const div=document.createElement("div");div.style.padding="10px";div.innerHTML=ESTILOS+html;document.body.appendChild(div);
-  html2pdf().set({margin:10,filename:nombre.endsWith(".pdf")?nombre:nombre+".pdf",image:{type:"jpeg",quality:.98},html2canvas:{scale:2},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}})
-    .from(div).save().then(()=>document.body.removeChild(div)).catch(()=>document.body.removeChild(div));
-}
-
-/* ══════════════════════════════════════════════════════
-   INFORME MENSUAL
-══════════════════════════════════════════════════════ */
-function inicializarSelectorMeses(){
-  const sel=document.getElementById("monthly-month-select");
-  const btnW=document.getElementById("generate-monthly-report-word");
-  const btnP=document.getElementById("generate-monthly-report-pdf");
-  mapaMeses=new Map();
-  datosConsumos.forEach(r=>{
-    const i=extraerAnioMes(r["Fecha"],r._dh);if(!i)return;
-    const k=i.anio+"-"+String(i.mes).padStart(2,"0");if(!mapaMeses.has(k))mapaMeses.set(k,i);
-  });
-  const claves=[...mapaMeses.keys()].sort();
-  sel.innerHTML="";
-  if(!claves.length){sel.innerHTML="<option value='' disabled selected>No hay meses</option>";btnW.disabled=btnP.disabled=true;return}
-  sel.innerHTML="<option value='' disabled selected>Seleccione un mes…</option>";
-  claves.forEach(k=>{
-    const i=mapaMeses.get(k);const nm=nombreMes(i.mes);
-    const o=document.createElement("option");o.value=k;o.textContent=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+i.anio;sel.appendChild(o);
-  });
-  sel.addEventListener("change",()=>{const h=!!sel.value;btnW.disabled=btnP.disabled=!h});
-}
-
-function generarInformeMensual(formato){
-  if(!datosConsumos.length){alert("No hay datos cargados.");return}
-  const sel=document.getElementById("monthly-month-select");
-  if(!sel.value){alert("Seleccione un mes.");return}
-  const info=mapaMeses.get(sel.value);if(!info){alert("Mes no encontrado.");return}
-  const {anio:anioSel,mes:mesSel}=info;
-  const nm=nombreMes(mesSel);const etiqueta=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+anioSel;
-  const regs=datosConsumos.filter(r=>{const i=extraerAnioMes(r["Fecha"],r._dh);return i&&i.anio===anioSel&&i.mes===mesSel});
-  if(!regs.length){alert("No hay registros para "+etiqueta);return}
-
-  const total=regs.length;
-  const muniSet=new Set(),guarSet=new Set(),cMuni={},cGuar={},cEsp={};
-  let totalArb=0,interSi=0,interNo=0,coordOk=0;
-  const cFecha={},semanas=[0,0,0,0];
-
-  regs.forEach(r=>{
-    const mu=(r["Municipio"]||"").toString().trim();if(mu){muniSet.add(mu);cMuni[mu]=(cMuni[mu]||0)+1}
-    const gu=(r["Nombre del guardarecursos"]||r["Nombre del guardarecurso"]||"").toString().trim();if(gu){guarSet.add(gu);cGuar[gu]=(cGuar[gu]||0)+1}
-    const arb=numVal(r["Cantidad total de arboles a talar"]);totalArb+=arb;
-    ESPECIES.forEach(e=>{const v=numVal(r[e.campo]);if(v>0)cEsp[e.label]=(cEsp[e.label]||0)+v;});
-    const ci=canonInter(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"]);
-    if(ci==="si")interSi++;else if(ci==="no")interNo++;
-    const fi=extraerFecha(r["Fecha"],r._dh);
-    if(fi){const dk=fi.anio+"-"+String(fi.mes).padStart(2,"0")+"-"+String(fi.dia).padStart(2,"0");cFecha[dk]=(cFecha[dk]||0)+1;const d=fi.dia;semanas[d<=7?0:d<=14?1:d<=21?2:3]++;}
-    const x=parseFloat(String(r["X"]||"").replace(",","."));const y=parseFloat(String(r["Y"]||"").replace(",","."));
-    if(isFinite(x)&&isFinite(y)&&x!==0&&y!==0)coordOk++;
-  });
-
-  const muOrd=Object.entries(cMuni).sort((a,b)=>b[1]-a[1]);
-  const guOrd=Object.entries(cGuar).sort((a,b)=>b[1]-a[1]);
-  const espOrd=Object.entries(cEsp).sort((a,b)=>b[1]-a[1]);
-  const fOrd=Object.entries(cFecha).sort((a,b)=>b[1]-a[1]);
-  const diasAct=Object.keys(cFecha).length;
-  const diasTot=new Date(anioSel,mesSel,0).getDate();
-  const promDia=diasTot?total/diasTot:0;
-  const diaPico=fOrd[0]?fOrd[0][0]:null,valPico=fOrd[0]?fOrd[0][1]:0;
-  function fBon(k){if(!k)return"-";const[a,m,d]=k.split("-");return(+d)+" de "+nombreMes(+m)+" de "+a}
-  const topMu=muOrd.slice(0,6),otrMu=muOrd.slice(6);
-  const topGu=guOrd.slice(0,5);
-
-  let h="<div class='ic'>";
-  h+="<div class='is'><h1>Informe mensual de consumo forestal familiar</h1><p style='text-align:center'>Sistema de monitoreo CONAP – DRAC – Altiplano Central · AC297</p><p style='text-align:center'><strong>Mes analizado: "+escH(etiqueta)+"</strong></p><hr/></div>";
-
-  h+="<div class='is'><h2>1. Volumen total y distribución general</h2>";
-  h+="<p>Durante <strong>"+escH(etiqueta)+"</strong> se registraron <strong>"+total+"</strong> consumos forestales familiares, con un total de <strong>"+totalArb.toLocaleString("es")+"</strong> árboles autorizados para tala.</p>";
-  h+="<p>Participaron <strong>"+guarSet.size+"</strong> guardarecurso(s) responsable(s), cubriendo <strong>"+muniSet.size+"</strong> municipio(s). Promedio de árboles por consumo: <strong>"+(total?rdnd(totalArb/total,1):0)+"</strong>.</p>";
-  if(interSi+interNo>0)h+="<p>De los consumos con dato registrado: <strong>"+interSi+"</strong> ("+pct(interSi,interSi+interNo)+"%) fueron intermunicipales y <strong>"+interNo+"</strong> ("+pct(interNo,interSi+interNo)+"%) en el municipio de intervención habitual.</p>";
-  h+="</div>";
-
-  h+="<div class='is'><h2>2. Distribución temporal</h2>";
-  h+="<p>Se registró actividad en <strong>"+diasAct+"</strong> día(s) de los "+diasTot+" del mes. Promedio: <strong>"+rdnd(promDia,2)+"</strong> consumos/día calendario.</p>";
-  h+="<p>Distribución semanal: "+["primera","segunda","tercera","cuarta"].map((t,i)=>"<strong>"+t+" semana</strong>: "+semanas[i]).join(", ")+".</p>";
-  if(diaPico)h+="<p>Día con más registros: <strong>"+fBon(diaPico)+"</strong> ("+valPico+" consumo(s)).</p>";
-  h+="</div>";
-
-  h+="<div class='is'><h2>3. Municipios con mayor actividad</h2>";
-  if(topMu.length)h+="<p>Principales municipios: "+combinar(topMu.map(([m,c])=>"<strong>"+escH(m)+"</strong> ("+c+" consumo(s), "+pct(c,total)+"%)"))+"."+(otrMu.length?" Presencia adicional en: "+combinar(otrMu.map(([m])=>"<strong>"+escH(m)+"</strong>"))+".":"")+"</p>";
-  h+="</div>";
-
-  h+="<div class='is'><h2>4. Guardarecursos más activos</h2>";
-  if(topGu.length)h+="<p>Guardarecursos con mayor número de consumos atendidos: "+combinar(topGu.map(([g,c])=>"<strong>"+escH(g)+"</strong> ("+c+")"))+". </p>";
-  h+="</div>";
-
-  h+="<div class='is'><h2>5. Composición de especies</h2>";
-  if(espOrd.length){
-    const totalEsp=espOrd.reduce((a,[,v])=>a+v,0);
-    h+="<p>Especies con mayor demanda (por cantidad de árboles): "+combinar(espOrd.slice(0,5).map(([e,v])=>"<strong>"+escH(e)+"</strong> ("+v+", "+pct(v,totalEsp)+"%)"))+".</p>";
-  }else{h+="<p>No se registraron cantidades por especie en el período.</p>"}
-  h+="</div>";
-
-  h+="<div class='is'><h2>6. Calidad de registros</h2>";
-  h+="<p>Registros con coordenadas válidas: <strong>"+coordOk+"</strong>"+(total-coordOk>0?"; sin coordenadas: <strong>"+(total-coordOk)+"</strong>":"")+".</p>";
-  h+="<p>Informe generado automáticamente desde el sistema de monitoreo AC297 CONAP–DRAC Altiplano Central.</p></div>";
-  h+="</div>";
-
-  const base="informe_mensual_consumo_"+anioSel+"_"+String(mesSel).padStart(2,"0");
-  formato==="pdf"?crearPDF(base+".pdf",h):crearWord(base+".doc",h);
-}
-
-/* ══════════════════════════════════════════════════════
-   INFORME POR REGISTRO INDIVIDUAL
-══════════════════════════════════════════════════════ */
-function generarInformeRegistro(formato){
-  if(!tablaConsumos){alert("Tabla no lista.");return}
-  const sel=tablaConsumos.getSelectedData();
-  if(!sel||!sel.length){alert("Selecciona una fila en la tabla.");return}
-  const r=sel[0];
-
-  const gu=r["Nombre del guardarecursos"]||r["Nombre del guardarecurso"]||"";
-  const mu=r["Municipio"]||"",fe=r["Fecha"]||"",hr=r["Hora"]||"";
-  const ap=r["Area protegida"]||"",usr=r["Nombre del usuario"]||"";
-  const ref=r["Referencia de ubicacion"]||"",obs=r["Observaciones"]||"";
-  const totalArb=r["Cantidad total de arboles a talar"]||"",esp=r["Especies a talar"]||"";
-  const espOtro=r["Especifique otra especie"]||"";
-  const interRaw=canonInter(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"]);
-  const guarCedente=r["Nombre del guardarecurso"]||"",muniCedente=r["Municipio del guardarecurso"]||"";
-  const lon=r["X"]||"",lat=r["Y"]||"",gtmX=r["GTM_X (m)"]||"",gtmY=r["GTM_Y (m)"]||"";
-
-  // Especies con cantidad
-  const detEsp=ESPECIES.filter(e=>numVal(r[e.campo])>0).map(e=>"<strong>"+escH(e.label)+"</strong>: "+numVal(r[e.campo])+" árbol(es)");
-
-  let h="<div class='ic'>";
-  h+="<div class='is'><h1>Informe de consumo forestal familiar</h1><p style='text-align:center'>Sistema de monitoreo CONAP – DRAC – Altiplano Central · AC297</p><hr/></div>";
-
-  h+="<div class='is'><h2>1. Datos de identificación</h2>";
-  h+="<p><strong>Guardarecursos responsable:</strong> "+escH(gu||"(no reportado)")+"</p>";
-  h+="<p><strong>Fecha:</strong> "+escH(fe||"(no reportada)")+"</p>";
-  h+="<p><strong>Hora:</strong> "+escH(hr||"(no reportada)")+"</p>";
-  h+="<p><strong>Municipio:</strong> "+escH(mu||"(no reportado)")+"</p>";
-  h+="<p><strong>Área protegida:</strong> "+escH(ap||"–")+"</p>";
-  h+="<p><strong>Usuario beneficiario:</strong> "+escH(usr||"(no reportado)")+"</p>";
-  h+="<p><strong>Referencia de ubicación:</strong> "+escH(ref||"–")+"</p>";
-  h+="</div>";
-
-  h+="<div class='is'><h2>2. Descripción del consumo</h2>";
-  h+="<p>El guardarecursos <strong>"+escH(gu||"(sin nombre)")+"</strong> atendió un consumo forestal familiar en fecha "+escH(fe||"(sin fecha)")+" en el municipio de <strong>"+escH(mu||"(sin municipio)")+"</strong>, dentro de "+escH(ap||"(sin área)")+".</p>";
-  h+="<p><strong>Cantidad total de árboles a talar:</strong> "+escH(String(totalArb))+"</p>";
-  h+="<p><strong>Especies autorizadas:</strong> "+escH(esp||"(no especificadas)")+(espOtro?" (Otra: "+escH(espOtro)+")":"")+"</p>";
-  if(detEsp.length)h+="<p><strong>Detalle por especie:</strong> "+detEsp.join(" · ")+"</p>";
-  if(obs)h+="<p><strong>Observaciones:</strong> "+escH(obs)+"</p>";
-  h+="</div>";
-
-  h+="<div class='is'><h2>3. Consumo intermunicipal</h2>";
-  if(interRaw==="si")h+="<p>Este consumo fue atendido de manera intermunicipal, cedido por el guardarecursos <strong>"+escH(guarCedente||"(no reportado)")+"</strong> del municipio de <strong>"+escH(muniCedente||"(no reportado)")+"</strong>.</p>";
-  else if(interRaw==="no")h+="<p>El consumo fue atendido dentro del municipio de intervención habitual del guardarecursos.</p>";
-  else h+="<p>Sin datos de consumo intermunicipal.</p>";
-  h+="</div>";
-
-  if(lon||lat||gtmX||gtmY){
-    h+="<div class='is'><h2>4. Coordenadas de la ubicación</h2>";
-    if(lon||lat)h+="<p><strong>Geográficas (WGS84):</strong> Longitud "+escH(String(lon))+" · Latitud "+escH(String(lat))+"</p>";
-    if(gtmX||gtmY)h+="<p><strong>Proyectadas GTM (IGN-01/99):</strong> X = "+escH(String(gtmX))+" m · Y = "+escH(String(gtmY))+" m</p>";
-    h+="</div>";
-  }
-
-  h+="<div class='is'><h2>5. Firmas</h2>";
-  h+="<p>______________________________<br/>Guardarecursos / Responsable</p>";
-  h+="<p>______________________________<br/>Usuario beneficiario</p>";
-  h+="<p>______________________________<br/>Supervisión</p></div>";
-  h+="</div>";
-
-  const base="consumo_"+slugify(gu)+"_"+slugify(fe.toString().split(" ")[0]);
-  formato==="pdf"?crearPDF(base+".pdf",h):crearWord(base+".doc",h);
-}
-
-/* ══════════════════════════════════════════════════════
-   ANÁLISIS POR GUARDARECURSO
-══════════════════════════════════════════════════════ */
-const GC={};
-function mkGChart(id,cfg){if(GC[id])GC[id].destroy();GC[id]=new Chart(document.getElementById(id),cfg)}
-Chart.defaults.font.family="'DM Sans',sans-serif";Chart.defaults.color="#6b7280";
-const TT={backgroundColor:"rgba(10,61,43,.92)",titleFont:{size:13,weight:"600"},bodyFont:{size:12},padding:10,cornerRadius:8};
-
-function initGuardaSelector(){
-  const guardas=[...new Set(datosConsumos.map(r=>(r["Nombre del guardarecursos"]||r["Nombre del guardarecurso"]||"").toString().trim()).filter(Boolean))].sort();
-  const sel=document.getElementById("sel-guarda");
-  sel.innerHTML="<option value=''>Selecciona un guardarecurso…</option>";
-  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o)});
-  sel.addEventListener("change",()=>{
-    const g=sel.value;
-    document.getElementById("btn-informe-guarda").disabled=!g;
-    if(g)renderGuarda(g);else clearGuarda();
-  });
-}
-
-function clearGuarda(){
-  document.getElementById("guarda-kpis").style.display="none";
-  document.getElementById("guarda-charts").style.display="none";
-  document.getElementById("guarda-tabla-wrap").style.display="none";
-  document.getElementById("guarda-empty").style.display="";
-  document.getElementById("estado-analisis").textContent="Selecciona un guardarecurso para ver su perfil de actividad";
-}
-
-function renderGuarda(nombre){
-  const regs=datosConsumos.filter(r=>(r["Nombre del guardarecursos"]||r["Nombre del guardarecurso"]||"").toString().trim()===nombre);
-  if(!regs.length){clearGuarda();return}
-  document.getElementById("guarda-empty").style.display="none";
-  document.getElementById("estado-analisis").textContent=`Perfil de ${nombre} · ${regs.length} registro(s)`;
-
-  // KPIs
-  const munis=new Set(regs.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
-  const totalArb=regs.reduce((a,r)=>a+numVal(r["Cantidad total de arboles a talar"]),0);
-  const interSi=regs.filter(r=>canonInter(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"])==="si").length;
-  document.getElementById("g-total").textContent=regs.length;
-  document.getElementById("g-arboles").textContent=Math.round(totalArb).toLocaleString("es");
-  document.getElementById("g-munis").textContent=munis.size;
-  document.getElementById("g-inter").textContent=interSi;
-  document.getElementById("guarda-kpis").style.display="grid";
-
-  // G1: por mes
-  const mMes=new Map();
-  regs.forEach(r=>{const i=extraerAnioMes(r["Fecha"],r._dh);if(!i)return;const k=i.anio+"-"+String(i.mes).padStart(2,"0");mMes.set(k,(mMes.get(k)||0)+1)});
-  const mesKeys=[...mMes.keys()].sort();
-  const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-  const mShort=k=>{const[y,m]=k.split("-");return MESES_S[+m-1]+"'"+y.slice(2)};
-  mkGChart("g-c-mes",{type:"bar",data:{labels:mesKeys.map(mShort),datasets:[{label:"Consumos",data:mesKeys.map(k=>mMes.get(k)),backgroundColor:"rgba(14,116,110,.75)",borderColor:"#0f766e",borderWidth:1,borderRadius:5,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
-
-  // G2: especies (árboles por especie)
-  const espMap=new Map();
-  ESPECIES.forEach(e=>{const v=regs.reduce((a,r)=>a+numVal(r[e.campo]),0);if(v>0)espMap.set(e.label,{v,color:e.color})});
-  const espSorted=[...espMap.entries()].sort((a,b)=>b[1].v-a[1].v).slice(0,8);
-  mkGChart("g-c-esp",{type:"bar",data:{labels:espSorted.map(([l])=>l),datasets:[{label:"Árboles",data:espSorted.map(([,e])=>e.v),backgroundColor:espSorted.map(([,e])=>e.color+"bb"),borderColor:espSorted.map(([,e])=>e.color),borderWidth:1,borderRadius:5,borderSkipped:false}]},
-    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}});
-
-  // G3: por municipio
-  const mMuni=new Map();
-  regs.forEach(r=>{const m=(r["Municipio"]||"").trim();if(m)mMuni.set(m,(mMuni.get(m)||0)+1)});
-  const muniTop=[...mMuni.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
-  mkGChart("g-c-muni",{type:"bar",data:{labels:muniTop.map(([m])=>m),datasets:[{label:"Consumos",data:muniTop.map(([,v])=>v),backgroundColor:PALETTE.slice(0,muniTop.length).map(c=>c+"bb"),borderColor:PALETTE.slice(0,muniTop.length),borderWidth:1,borderRadius:5,borderSkipped:false}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{grid:{display:false},ticks:{font:{size:10},maxRotation:30}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11}}}}}});
-
-  document.getElementById("guarda-charts").style.display="grid";
-
-  // Tabla resumen por municipio
-  const tbody=document.getElementById("guarda-tbody");tbody.innerHTML="";
-  const allMunis=[...mMuni.entries()].sort((a,b)=>b[1]-a[1]);
-  allMunis.forEach(([mu,cnt])=>{
-    const sub=regs.filter(r=>(r["Municipio"]||"").trim()===mu);
-    const arb=sub.reduce((a,r)=>a+numVal(r["Cantidad total de arboles a talar"]),0);
-    const prom=cnt?rdnd(arb/cnt,1):0;
-    const inter=sub.filter(r=>canonInter(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"])==="si").length;
-    const area=(sub[0]||{})["Area protegida"]||"–";
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td><strong>${escH(mu)}</strong></td><td>${cnt}</td><td>${Math.round(arb).toLocaleString("es")}</td><td>${prom}</td><td>${inter>0?`<span class="badge badge-naranja">${inter}</span>`:`<span class="badge badge-verde">0</span>`}</td><td>${escH(area)}</td>`;
-    tbody.appendChild(tr);
-  });
-  document.getElementById("guarda-tabla-wrap").style.display="";
-}
-
-function generarInformeGuarda(){
-  const nombre=document.getElementById("sel-guarda").value;if(!nombre)return;
-  const regs=datosConsumos.filter(r=>(r["Nombre del guardarecursos"]||r["Nombre del guardarecurso"]||"").toString().trim()===nombre);
-  if(!regs.length){alert("Sin registros para "+nombre);return}
-
-  const munis=new Set(regs.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
-  const totalArb=regs.reduce((a,r)=>a+numVal(r["Cantidad total de arboles a talar"]),0);
-  const interSi=regs.filter(r=>canonInter(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"])==="si").length;
-  const espMap={};ESPECIES.forEach(e=>{const v=regs.reduce((a,r)=>a+numVal(r[e.campo]),0);if(v>0)espMap[e.label]=v;});
-  const espTop=Object.entries(espMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  const mMuni={};regs.forEach(r=>{const m=(r["Municipio"]||"").trim();if(m)mMuni[m]=(mMuni[m]||0)+1});
-  const topMu=Object.entries(mMuni).sort((a,b)=>b[1]-a[1]).slice(0,5);
-
-  let h="<div class='ic'>";
-  h+="<div class='is'><h1>Perfil de actividad del guardarecursos</h1><p style='text-align:center'>Sistema de monitoreo CONAP – DRAC – Altiplano Central · AC297</p><p style='text-align:center'><strong>"+escH(nombre)+"</strong></p><hr/></div>";
-  h+="<div class='is'><h2>Resumen de actividad</h2><p><strong>Total de consumos atendidos:</strong> "+regs.length+"</p><p><strong>Municipios cubiertos:</strong> "+munis.size+"</p><p><strong>Total de árboles autorizados:</strong> "+Math.round(totalArb).toLocaleString("es")+"</p><p><strong>Promedio de árboles por consumo:</strong> "+rdnd(regs.length?totalArb/regs.length:0,1)+"</p><p><strong>Consumos intermunicipales:</strong> "+interSi+" ("+pct(interSi,regs.length)+"%)</p></div>";
-  h+="<div class='is'><h2>Municipios con mayor actividad</h2><p>"+combinar(topMu.map(([m,c])=>"<strong>"+escH(m)+"</strong> ("+c+" consumo(s))"))+". </p></div>";
-  if(espTop.length){const totE=espTop.reduce((a,[,v])=>a+v,0);h+="<div class='is'><h2>Especies más frecuentes</h2><p>"+combinar(espTop.map(([e,v])=>"<strong>"+escH(e)+"</strong> ("+v+" árbol(es), "+pct(v,totE)+"%)"))+". </p></div>";}
-  h+="<div class='is'><h2>Nota metodológica</h2><p>Informe generado automáticamente desde el formulario AC297 del sistema de monitoreo CONAP–DRAC Altiplano Central.</p></div></div>";
-  crearWord("perfil_guardarecurso_"+slugify(nombre)+".doc",h);
-}
-
-/* ══════════════════════════════════════════════════════
-   TABS INTERNOS
-══════════════════════════════════════════════════════ */
+/* ═══ TABS ════════════════════════════════════════════════ */
 document.querySelectorAll(".inner-tab").forEach(tab=>{
   tab.addEventListener("click",()=>{
     document.querySelectorAll(".inner-tab").forEach(t=>t.classList.remove("active"));
@@ -695,99 +499,378 @@ document.querySelectorAll(".inner-tab").forEach(tab=>{
   });
 });
 
-/* ══════════════════════════════════════════════════════
-   INICIO
-══════════════════════════════════════════════════════ */
+/* ═══ VERIFICACIÓN ════════════════════════════════════════ */
+function initVcSelects(){
+  const guardas=[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
+  const sel=document.getElementById("vc-guarda");
+  sel.innerHTML='<option value="">Todos los guardarecursos</option>';
+  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o);});
+  const dates=DATOS.map(r=>r.__dt).filter(d=>d&&!isNaN(d)).sort((a,b)=>a-b);
+  if(dates.length){
+    const hoy=new Date();
+    const hasta=new Date(hoy.getFullYear(),hoy.getMonth(),25);
+    const desde=new Date(hoy.getFullYear(),hoy.getMonth()-1,26);
+    document.getElementById("vc-desde").value=isoDate(desde);
+    document.getElementById("vc-hasta").value=isoDate(hasta);
+  }
+}
+
+function ejecutarVerificacion(){
+  const desdeStr=document.getElementById("vc-desde").value;
+  const hastaStr=document.getElementById("vc-hasta").value;
+  const guardaFiltro=document.getElementById("vc-guarda").value;
+  const metaConsumos=parseInt(document.getElementById("vc-meta-consumos").value)||0;
+  if(!desdeStr||!hastaStr){alert("Defina el período completo.");return;}
+  const desde=new Date(desdeStr+"T00:00:00");
+  const hasta=new Date(hastaStr+"T23:59:59");
+
+  const enPeriodo=DATOS.filter(r=>{
+    if(!r.__dt||isNaN(r.__dt))return false;
+    if(r.__dt<desde||r.__dt>hasta)return false;
+    if(guardaFiltro&&r.__guarda!==guardaFiltro)return false;
+    return true;
+  });
+
+  // Tag de período
+  document.getElementById("vc-periodo-tag").style.display="";
+  document.getElementById("vc-periodo-label").textContent=`Período: ${fmtDate(desde)} al ${fmtDate(hasta)}${guardaFiltro?" · "+guardaFiltro:""}`;
+
+  // KPIs globales
+  const totalArboles=sum_(enPeriodo.map(r=>r.__arboles));
+  const metaRef=Math.floor(totalArboles/10);
+  document.getElementById("vc-total").textContent=enPeriodo.length.toLocaleString("es");
+  document.getElementById("vc-arboles").textContent=totalArboles.toLocaleString("es");
+  document.getElementById("vc-meta-ref").textContent=metaRef.toLocaleString("es");
+  document.getElementById("vc-guardas").textContent=new Set(enPeriodo.map(r=>r.__guarda)).size;
+  document.getElementById("vc-munis").textContent=new Set(enPeriodo.map(r=>r.__cm).filter(Boolean)).size;
+  document.getElementById("vc-resumen").style.display="grid";
+
+  document.getElementById("th-cumplimiento").style.display=metaConsumos>0?"":"none";
+  document.getElementById("th-avance").style.display=metaConsumos>0?"":"none";
+
+  // Construir filas
+  const tbody=document.getElementById("vc-tbody");tbody.innerHTML="";
+  const todosGuardas=guardaFiltro?[guardaFiltro]:[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
+  const filasSummary=[];
+  const totalCols=9+(metaConsumos>0?2:0);
+
+  todosGuardas.forEach(g=>{
+    const sub=enPeriodo.filter(r=>r.__guarda===g).sort((a,b)=>a.__dt-b.__dt);
+    const cnt=sub.length;
+    const arb=sum_(sub.map(r=>r.__arboles));
+    const metaG=Math.floor(arb/10);
+    const munis=new Set(sub.map(r=>r.__cm).filter(Boolean)).size;
+
+    // Especie principal
+    const espTotales=ESPECIES.map(e=>({label:e.label,total:sum_(sub.map(r=>r[e.field]||0))})).filter(e=>e.total>0);
+    espTotales.sort((a,b)=>b.total-a.total);
+    const espPrincipal=espTotales[0]?.label||"–";
+
+    filasSummary.push({g,cnt,arb,metaG,munis,espPrincipal,registros:sub});
+  });
+  filasSummary.sort((a,b)=>b.arb-a.arb);
+
+  filasSummary.forEach(({g,cnt,arb,metaG,munis,espPrincipal,registros},idx)=>{
+    const uid="grp-"+idx;
+    let cumpleCel="",avanceCel="";
+    if(metaConsumos>0){
+      const cumple=cnt>=metaConsumos,pctAv=Math.min(Math.round(cnt/metaConsumos*100),100);
+      const colP=pctAv>=100?"prog-fill-verde":pctAv>=60?"prog-fill-amarillo":"prog-fill-rojo";
+      const bCls=cumple?"badge-verde":cnt>0?"badge-amarillo":"badge-rojo";
+      cumpleCel=`<td><span class="badge ${bCls}">${cumple?"Cumplido":cnt>0?"Parcial":"Sin registro"} (${cnt}/${metaConsumos})</span></td>`;
+      avanceCel=`<td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar-fill ${colP}" style="width:${pctAv}%"></div></div><span class="prog-num">${pctAv}%</span></div></td>`;
+    }
+
+    const trHead=document.createElement("tr");
+    trHead.className="vc-row-guarda";trHead.dataset.uid=uid;
+    trHead.innerHTML=`
+      <td><span class="vc-toggle"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg></span></td>
+      <td><strong>${escH(g)}</strong></td>
+      <td><span class="badge ${cnt>0?"badge-azul":"badge-gris"}">${cnt} consumo${cnt!==1?"s":""}</span></td>
+      <td><strong style="color:var(--d1)">${arb.toLocaleString("es")}</strong> árbol${arb!==1?"es":""}</td>
+      <td><span class="meta-tag">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        ${metaG} a reponer
+      </span></td>
+      <td>${munis}</td>
+      <td><span class="badge badge-gris" style="font-size:11px">${escH(espPrincipal)}</span></td>
+      ${cumpleCel}${avanceCel}`;
+    tbody.appendChild(trHead);
+
+    // Sub-tabla con cada consumo individual + desglose de especies
+    const trSub=document.createElement("tr");
+    trSub.className="vc-subrows";trSub.dataset.uid=uid;
+    trSub.innerHTML=`<td colspan="${totalCols}" style="padding:0">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#eef4f0">
+          <td style="width:28px;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">#</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Fecha</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Municipio</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Usuario</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Referencia</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Total árboles</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Meta reforest.</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Especies (desglose)</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Latitud</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Longitud</td>
+        </tr></thead>
+        <tbody>
+          ${registros.map((r,i)=>{
+            const espDetalle=ESPECIES.filter(e=>(r[e.field]||0)>0).map(e=>`${e.label}: ${r[e.field]}`).join(" · ")||"–";
+            return `<tr style="border-left:3px solid ${r.__arboles>10?"var(--d2)":"transparent"}">
+              <td style="padding:7px 8px;border-bottom:1px solid #e8f0eb;text-align:center"><span class="vc-num">${i+1}</span></td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;white-space:nowrap;font-weight:500">${fmtDate(r.__dt)}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb">${escH(norm(r["Municipio"])||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-size:11.5px">${escH(norm(r["Nombre del usuario"])||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-size:11px;color:var(--muted)">${escH(norm(r["Referencia de ubicacion"])||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;text-align:center">
+                <strong style="font-size:14px;color:var(--d1)">${r.__arboles}</strong>
+              </td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;text-align:center">
+                <span class="meta-tag" style="font-size:10.5px">${r.__meta}</span>
+              </td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-size:11px;color:var(--ink-2)">${escH(espDetalle)}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${norm(r["Y"]||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${norm(r["X"]||"–")}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table></td>`;
+    tbody.appendChild(trSub);
+  });
+
+  // Toggle
+  tbody.querySelectorAll(".vc-row-guarda").forEach(row=>{
+    row.addEventListener("click",()=>{
+      const uid=row.dataset.uid,isOpen=row.classList.contains("open");
+      row.classList.toggle("open",!isOpen);
+      tbody.querySelectorAll(`.vc-subrows[data-uid="${uid}"]`).forEach(s=>s.classList.toggle("open",!isOpen));
+    });
+  });
+  document.getElementById("vc-expand-all").onclick=()=>{
+    tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));
+    tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"));
+  };
+  document.getElementById("vc-collapse-all").onclick=()=>{
+    tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.remove("open"));
+    tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.remove("open"));
+  };
+  if(guardaFiltro){setTimeout(()=>{tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"));},80);}
+
+  document.getElementById("vc-tabla-wrap").style.display="";
+  document.getElementById("vc-empty").style.display="none";
+  document.getElementById("vc-export-csv").onclick=()=>exportVcCSV(filasSummary,desde,hasta);
+  document.getElementById("vc-export-xlsx").onclick=()=>exportVcXLSX(filasSummary,desde,hasta);
+}
+
+function exportVcCSV(filas,desde,hasta){
+  const header=["Guardarecursos","#","Fecha","Municipio","Usuario","Referencia","Total árboles","Meta reforest.",...ESPECIES.map(e=>e.label),"Latitud","Longitud"];
+  const rows=[];
+  filas.forEach(({g,cnt,arb,metaG,registros})=>{
+    registros.forEach((r,i)=>rows.push([g,i+1,fmtDate(r.__dt),norm(r["Municipio"]),norm(r["Nombre del usuario"]),norm(r["Referencia de ubicacion"]),r.__arboles,r.__meta,...ESPECIES.map(e=>r[e.field]||0),norm(r["Y"]),norm(r["X"])]));
+  });
+  const csv=[header,...rows].map(r=>r.map(v=>'"'+String(v||"").replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+  a.download=`verificacion_consumo_${fmtDate(desde).replace(/\//g,"-")}_al_${fmtDate(hasta).replace(/\//g,"-")}.csv`;a.click();
+}
+
+function exportVcXLSX(filas,desde,hasta){
+  if(typeof XLSX==="undefined"){alert("XLSX no disponible");return}
+  const hSum=[["Guardarecursos","Consumos","Árboles aprobados","Meta reforest.","Municipios","Especie principal"]];
+  filas.forEach(({g,cnt,arb,metaG,munis,espPrincipal})=>hSum.push([g,cnt,arb,metaG,munis,espPrincipal]));
+  const hDet=[["Guardarecursos","#","Fecha","Municipio","Usuario","Referencia","Total árboles","Meta reforest.",...ESPECIES.map(e=>e.label),"Latitud","Longitud"]];
+  filas.forEach(({g,registros})=>registros.forEach((r,i)=>hDet.push([g,i+1,fmtDate(r.__dt),norm(r["Municipio"]),norm(r["Nombre del usuario"]),norm(r["Referencia de ubicacion"]),r.__arboles,r.__meta,...ESPECIES.map(e=>r[e.field]||0),norm(r["Y"]),norm(r["X"])])));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(hSum),"Resumen");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(hDet),"Consumos individuales");
+  XLSX.writeFile(wb,`verificacion_consumo_${fmtDate(desde).replace(/\//g,"-")}_al_${fmtDate(hasta).replace(/\//g,"-")}.xlsx`);
+}
+
+/* ═══ TABLA TABULATOR ════════════════════════════════════ */
+function inicializarTabla(){
+  const espCols=ESPECIES.map(e=>({title:e.label,field:e.field,width:90,hozAlign:"center",formatter:c=>{const v=safeInt(c.getValue());return v>0?`<strong style="color:${e.color}">${v}</strong>`:'<span style="color:#d1d5db">–</span>';}}));
+  const cols=[
+    {title:"Guardarecursos",field:"Nombre del guardarecursos",headerFilter:"input",width:210,frozen:true},
+    {title:"Fecha",field:"CreationDate",headerFilter:"input",width:150,formatter:c=>{const d=parseCreation(c.getValue());return d&&!isNaN(d)?fmtDate(d):c.getValue()||"–";}},
+    {title:"Municipio",field:"Municipio",headerFilter:"input",width:160},
+    {title:"Usuario",field:"Nombre del usuario",headerFilter:"input",width:200},
+    {title:"Referencia",field:"Referencia de ubicacion",headerFilter:"input",width:200},
+    {title:"Total árboles",field:"Cantidad total de arboles a talar",width:120,hozAlign:"center",formatter:c=>{const v=safeInt(c.getValue());return v>0?`<strong style="font-size:14px;color:#1a7a38">${v}</strong>`:"–";}},
+    {title:"Meta reforest.",field:"__meta_display",width:120,hozAlign:"center",formatter:c=>{const r=c.getRow().getData();const m=Math.floor(safeInt(r["Cantidad total de arboles a talar"])/10);return m>0?`<span style="background:rgba(168,28,42,0.08);border:1px solid rgba(168,28,42,0.25);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;color:#a81c2a">${m}</span>`:"<span style='color:#d1d5db'>0</span>";}},
+    {title:"Área protegida",field:"Area protegida",headerFilter:"input",width:180},
+    ...espCols,
+    {title:"Latitud",field:"Y",width:100,hozAlign:"right"},
+    {title:"Longitud",field:"X",width:100,hozAlign:"right"},
+  ];
+  tablaTabulator=new Tabulator("#tabla-registros",{data:DATOS,layout:"fitDataStretch",pagination:"local",paginationSize:25,paginationSizeSelector:[15,25,50,100],columns:cols,movableColumns:true,selectableRows:1});
+  document.getElementById("download-csv").addEventListener("click",()=>tablaTabulator.download("csv","ac297_consumo_forestal.csv"));
+  document.getElementById("download-xlsx").addEventListener("click",()=>tablaTabulator.download("xlsx","ac297_consumo_forestal.xlsx",{sheetName:"Datos"}));
+  document.getElementById("estado-registros").innerHTML=`<strong>${DATOS.length.toLocaleString("es")}</strong> registros cargados · las celdas en verde muestran el total de árboles, en rojo la meta de reforestación`;
+}
+
+/* ═══ SELECTOR MESES ═════════════════════════════════════ */
+function inicializarSelectorMeses(){
+  mapaMeses=new Map();
+  DATOS.forEach(r=>{if(!r.__dt||isNaN(r.__dt))return;const y=r.__dt.getFullYear(),m=r.__dt.getMonth()+1,k=y+"-"+String(m).padStart(2,"0");if(!mapaMeses.has(k))mapaMeses.set(k,{anio:y,mes:m});});
+  const sel=document.getElementById("monthly-month-select");
+  const claves=[...mapaMeses.keys()].sort();
+  if(!claves.length){sel.innerHTML="<option>Sin meses</option>";return}
+  sel.innerHTML='<option value="" disabled selected>Seleccione un mes…</option>';
+  claves.forEach(k=>{const{anio,mes}=mapaMeses.get(k);const nm=MESES_ES[mes-1];const o=document.createElement("option");o.value=k;o.textContent=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+anio;sel.appendChild(o);});
+  sel.addEventListener("change",()=>{const h=!!sel.value;document.getElementById("generate-monthly-report-word").disabled=!h;document.getElementById("generate-monthly-report-pdf").disabled=!h;});
+}
+
+/* ═══ ANÁLISIS POR GUARDA ════════════════════════════════ */
+const GC={};
+function mkGChart(id,cfg){if(GC[id])GC[id].destroy();GC[id]=new Chart(document.getElementById(id),cfg);}
+Chart.defaults.font.family="'DM Sans',sans-serif";Chart.defaults.color="#6a8878";
+const TT={backgroundColor:"rgba(7,24,15,0.93)",titleFont:{size:13,weight:"600"},bodyFont:{size:12.5},padding:12,cornerRadius:10};
+
+function initGuardaSelector(){
+  const guardas=[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
+  const sel=document.getElementById("sel-guarda");
+  sel.innerHTML="<option value=''>Selecciona…</option>";
+  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o);});
+  sel.addEventListener("change",()=>{const g=sel.value;document.getElementById("btn-informe-guarda").disabled=!g;g?renderGuarda(g):clearGuarda();});
+}
+
+function clearGuarda(){
+  ["guarda-kpis","guarda-charts","guarda-tabla-wrap"].forEach(id=>document.getElementById(id).style.display="none");
+  document.getElementById("guarda-empty").style.display="";
+  document.getElementById("estado-analisis").textContent="Selecciona un guardarecursos para ver su perfil";
+}
+
+function renderGuarda(nombre){
+  const regs=DATOS.filter(r=>r.__guarda===nombre);if(!regs.length){clearGuarda();return;}
+  document.getElementById("guarda-empty").style.display="none";
+  document.getElementById("estado-analisis").textContent=`Perfil de ${nombre} · ${regs.length} consumos`;
+  const arboles=sum_(regs.map(r=>r.__arboles));
+  const meta=Math.floor(arboles/10);
+  const munis=new Set(regs.map(r=>r.__cm).filter(Boolean));
+  const prom=regs.length?arboles/regs.length:0;
+  document.getElementById("g-total").textContent=regs.length;
+  document.getElementById("g-arboles").textContent=arboles.toLocaleString("es");
+  document.getElementById("g-meta").textContent=meta.toLocaleString("es");
+  document.getElementById("g-munis").textContent=munis.size;
+  document.getElementById("g-prom").textContent=regs.length?prom.toFixed(1):"–";
+  document.getElementById("guarda-kpis").style.display="grid";
+
+  // Por período
+  const mPer=new Map();regs.forEach(r=>{if(r.__periodo)mPer.set(r.__periodo,(mPer.get(r.__periodo)||0)+1);});
+  const perKeys=[...mPer.keys()].sort();
+  mkGChart("g-c-mes",{type:"bar",data:{labels:perKeys.map(mShort),datasets:[{label:"Consumos",data:perKeys.map(k=>mPer.get(k)),backgroundColor:PAL[0]+"cc",borderColor:PAL[0],borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} consumos`}}},scales:{x:{grid:{display:false},ticks:{font:{size:11.5}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11.5}}}}}});
+
+  // Especies
+  const espFilt=ESPECIES.map(e=>({...e,total:sum_(regs.map(r=>r[e.field]||0))})).filter(e=>e.total>0).sort((a,b)=>b.total-a.total);
+  mkGChart("g-c-esp",{type:"doughnut",data:{labels:espFilt.map(e=>e.label),datasets:[{data:espFilt.map(e=>e.total),backgroundColor:espFilt.map(e=>e.color+"cc"),borderColor:espFilt.map(e=>e.color),borderWidth:2,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"60%",plugins:{legend:{position:"bottom",labels:{font:{size:12},padding:10,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/arboles*100)}%)`}}}}});
+  document.getElementById("guarda-charts").style.display="grid";
+
+  // Tabla por municipio
+  const mMuni=new Map();regs.forEach(r=>{if(r.__cm)mMuni.set(r.__cm,(mMuni.get(r.__cm)||{cnt:0,arb:0}));const e=mMuni.get(r.__cm);e.cnt++;e.arb+=r.__arboles;});
+  const tbody=document.getElementById("guarda-tbody");tbody.innerHTML="";
+  [...mMuni.entries()].sort((a,b)=>b[1].arb-a[1].arb).forEach(([cm,{cnt,arb}])=>{
+    const metaMu=Math.floor(arb/10);
+    const muLabel=LABELS.muni.get(cm)||cm;
+    const sub=regs.filter(r=>r.__cm===cm);
+    const fueraCount=sub.filter(r=>canonStr(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"])==="si"||canonStr(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"]).includes("si")).length;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><strong>${escH(muLabel)}</strong></td><td>${cnt}</td><td><strong style="color:var(--d1)">${arb}</strong></td><td><span class="meta-tag" style="font-size:11px">${metaMu}</span></td><td>${cnt>0?(arb/cnt).toFixed(1):"–"}</td><td>${fueraCount>0?`<span class="badge badge-azul">${fueraCount}</span>`:`<span class="badge badge-gris">0</span>`}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById("guarda-tabla-wrap").style.display="";
+}
+
+/* ═══ DOCUMENTOS ══════════════════════════════════════════ */
+const CSS_DOC=`<style>body,p,td,th{font-family:"Times New Roman",serif;font-size:10pt;line-height:1.4}h1{font-size:14pt;font-weight:bold;margin:0 0 8pt;text-align:center}h2{font-size:12pt;font-weight:bold;margin:12pt 0 6pt}p{margin:0 0 6pt;text-align:justify}section{page-break-inside:avoid;margin-bottom:8pt}</style>`;
+function docWord(n,h){const s="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_DOC+"</head><body>"+h+"</body></html>";const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff",s],{type:"application/msword"}));a.download=n;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function docPDF(n,h){if(typeof html2pdf==="undefined"){alert("html2pdf no disponible");return}const d=document.createElement("div");d.style.padding="10px";d.innerHTML=CSS_DOC+h;document.body.appendChild(d);html2pdf().set({margin:10,filename:n,image:{type:"jpeg",quality:.98},html2canvas:{scale:2},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(d).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d));}
+
+function generarInformeRegistro(fmt){
+  if(!tablaTabulator)return;
+  const sel=tablaTabulator.getSelectedData();if(!sel||!sel.length){alert("Selecciona una fila en la tabla.");return}
+  const r=sel[0];
+  const guarda=r["Nombre del guardarecursos"]||"",muni=r["Municipio"]||"",usuario=r["Nombre del usuario"]||"";
+  const ref=r["Referencia de ubicacion"]||"",area=r["Area protegida"]||"",obs=r["Observaciones"]||"";
+  const dt=parseCreation(r["CreationDate"]);
+  const arboles=safeInt(r["Cantidad total de arboles a talar"]);
+  const meta=Math.floor(arboles/10);
+  const espDetalle=ESPECIES.filter(e=>safeInt(r[e.field]||"0")>0).map(e=>`${e.label}: ${r[e.field]}`).join(", ")||"–";
+  let h=`<section><h1>Informe de consumo forestal familiar (AC297)</h1><p style="text-align:center">Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><hr/></section>`;
+  h+=`<section><h2>1. Datos de identificación</h2><p><strong>Guardarecursos:</strong> ${escH(guarda)}</p><p><strong>Fecha:</strong> ${fmtDate(dt)}</p><p><strong>Municipio:</strong> ${escH(muni)}</p><p><strong>Nombre del usuario:</strong> ${escH(usuario)}</p><p><strong>Referencia de ubicación:</strong> ${escH(ref)}</p><p><strong>Área protegida:</strong> ${escH(area)}</p></section>`;
+  h+=`<section><h2>2. Árboles aprobados y meta de reforestación</h2><p><strong>Total de árboles a talar:</strong> ${arboles}</p><p><strong>Meta de reforestación por compromiso:</strong> ${meta} árbol${meta!==1?"es":""} (${arboles} ÷ 10)</p><p><strong>Desglose por especie:</strong> ${escH(espDetalle)}</p></section>`;
+  h+=`<section><h2>3. Observaciones</h2><p>${escH(obs||"Sin observaciones registradas.")}</p></section>`;
+  h+=`<section><h2>4. Firmas</h2><p>______________________________<br/>Guardarecursos / Responsable</p><p>______________________________<br/>Supervisión</p></section>`;
+  const base="informe_ac297_"+slug(guarda)+"_"+slug(fmtDate(dt));
+  fmt==="pdf"?docPDF(base+".pdf",h):docWord(base+".doc",h);
+}
+
+function generarInformeMensual(fmt){
+  if(!DATOS.length){alert("Sin datos cargados.");return}
+  const sel=document.getElementById("monthly-month-select");if(!sel.value){alert("Seleccione un mes.");return}
+  const{anio,mes}=mapaMeses.get(sel.value)||{};if(!anio)return;
+  const nm=MESES_ES[mes-1];const etiq=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+anio;
+  const regs=DATOS.filter(r=>r.__dt&&!isNaN(r.__dt)&&r.__dt.getFullYear()===anio&&r.__dt.getMonth()+1===mes);
+  if(!regs.length){alert("Sin registros para "+etiq);return}
+  const total=regs.length;
+  const arboles=sum_(regs.map(r=>r.__arboles));
+  const meta=Math.floor(arboles/10);
+  const munis=new Set(regs.map(r=>norm(r["Municipio"])).filter(Boolean));
+  const guardas=new Set(regs.map(r=>r.__guarda).filter(Boolean));
+  const mGuar={};regs.forEach(r=>{if(r.__guarda)mGuar[r.__guarda]={cnt:(mGuar[r.__guarda]?.cnt||0)+1,arb:(mGuar[r.__guarda]?.arb||0)+r.__arboles};});
+  const gOrd=Object.entries(mGuar).sort((a,b)=>b[1].arb-a[1].arb);
+  const espTot=ESPECIES.map(e=>({label:e.label,total:sum_(regs.map(r=>r[e.field]||0))})).filter(e=>e.total>0).sort((a,b)=>b.total-a.total);
+  let h=`<section><h1>Informe mensual de consumo forestal familiar (AC297)</h1><p style="text-align:center">CONAP - DRAC - Altiplano Central · <strong>${escH(etiq)}</strong></p><hr/></section>`;
+  h+=`<section><h2>1. Resumen general</h2><p>En ${escH(etiq)} se registraron <strong>${total}</strong> consumos forestales familiares en <strong>${munis.size}</strong> municipio(s), atendidos por <strong>${guardas.size}</strong> guardarecursos.</p><p>Total de árboles aprobados: <strong>${arboles.toLocaleString("es")}</strong> · Meta de reforestación por compromiso: <strong>${meta.toLocaleString("es")}</strong> árbol${meta!==1?"es":""} (razón 1:10)</p></section>`;
+  h+=`<section><h2>2. Guardarecursos con más árboles aprobados</h2><p>${gOrd.slice(0,5).map(([g,{cnt,arb}])=>`<strong>${escH(g)}</strong>: ${cnt} consumo${cnt!==1?"s":""}, ${arb} árbol${arb!==1?"es":""}, meta: ${Math.floor(arb/10)}`).join("<br/>")}</p></section>`;
+  h+=`<section><h2>3. Especies más solicitadas</h2><ul>${espTot.slice(0,6).map(e=>`<li>${escH(e.label)}: ${e.total} árbol${e.total!==1?"es":""} (${Math.round(e.total/arboles*100)}%)</li>`).join("")}</ul></section>`;
+  h+=`<section><h2>4. Nota metodológica</h2><p>Generado automáticamente desde el sistema AC297 de CONAP-DRAC. La meta de reforestación se calcula dividiendo el total de árboles aprobados entre 10.</p></section>`;
+  const base="informe_mensual_ac297_"+anio+"_"+String(mes).padStart(2,"0");
+  fmt==="pdf"?docPDF(base+".pdf",h):docWord(base+".doc",h);
+}
+
+function generarInformeGuarda(){
+  const nombre=document.getElementById("sel-guarda").value;if(!nombre)return;
+  const regs=DATOS.filter(r=>r.__guarda===nombre);if(!regs.length){alert("Sin registros");return}
+  const arboles=sum_(regs.map(r=>r.__arboles));const meta=Math.floor(arboles/10);
+  const munis=[...new Set(regs.map(r=>norm(r["Municipio"])).filter(Boolean))];
+  const espFilt=ESPECIES.map(e=>({...e,total:sum_(regs.map(r=>r[e.field]||0))})).filter(e=>e.total>0).sort((a,b)=>b.total-a.total);
+  let h=`<section><h1>Perfil de consumo forestal familiar</h1><p style="text-align:center">AC297 · <strong>${escH(nombre)}</strong></p><hr/></section>`;
+  h+=`<section><h2>Resumen</h2><p><strong>Consumos registrados:</strong> ${regs.length}</p><p><strong>Árboles aprobados:</strong> ${arboles.toLocaleString("es")}</p><p><strong>Meta de reforestación por compromiso:</strong> ${meta.toLocaleString("es")} árbol${meta!==1?"es":""}</p><p><strong>Municipios atendidos:</strong> ${munis.map(m=>`<strong>${escH(m)}</strong>`).join(", ")}</p></section>`;
+  h+=`<section><h2>Especies aprobadas</h2><ul>${espFilt.map(e=>`<li>${escH(e.label)}: ${e.total} árbol${e.total!==1?"es":""} (${Math.round(e.total/arboles*100)}%)</li>`).join("")}</ul></section>`;
+  docWord("perfil_ac297_"+slug(nombre)+".doc",h);
+}
+
+/* ═══ INICIO ══════════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded",function(){
   if(typeof Tabulator==="undefined"){alert("No se pudo cargar Tabulator.");return}
-
   document.getElementById("btn-informe-guarda").addEventListener("click",generarInformeGuarda);
   document.getElementById("generate-report-word").addEventListener("click",()=>generarInformeRegistro("word"));
   document.getElementById("generate-report-pdf").addEventListener("click",()=>generarInformeRegistro("pdf"));
   document.getElementById("generate-monthly-report-word").addEventListener("click",()=>generarInformeMensual("word"));
   document.getElementById("generate-monthly-report-pdf").addEventListener("click",()=>generarInformeMensual("pdf"));
+  document.getElementById("vc-aplicar").addEventListener("click",ejecutarVerificacion);
 
-  fetch("../../datos/base3_datos.csv",{cache:"no-store"})
-    .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.arrayBuffer()})
-    .then(buf=>{
-      // Detectar encoding
-      const u8=new Uint8Array(buf);
-      const t1=new TextDecoder("utf-8",{fatal:false}).decode(u8);
-      const t2=new TextDecoder("windows-1252",{fatal:false}).decode(u8);
-      const csv=(t2.match(/\uFFFD/g)||[]).length<(t1.match(/\uFFFD/g)||[]).length?t2:t1;
-
-      const parsed=Papa.parse(csv,{header:true,skipEmptyLines:true,delimiter:";"});
-      if(!parsed.data||!parsed.data.length){
-        document.getElementById("estado-registros").textContent="CSV vacío o sin encabezados.";return;
-      }
-
-      // Normalizar BOM en primera columna
-      if(parsed.data.length&&parsed.data[0]){
-        const keys=Object.keys(parsed.data[0]);
-        if(keys[0].startsWith("\ufeff")){
-          const clean=keys[0].replace(/^\ufeff/,"");
-          parsed.data.forEach(r=>{r[clean]=r[keys[0]];delete r[keys[0]];});
-        }
-      }
-
-      datosConsumos=parsed.data;
-      prepararHints(datosConsumos);
-      datosConsumos=enriquecerConGTM(datosConsumos);
-
-      const fmtN=c=>{const v=c.getValue();return(v!==""&&v!==null)?`<span style="font-family:monospace;font-size:11px">${Number(v).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:"<span style='color:#d1d5db'>—</span>";};
-
-      const camposBase=[
-        {title:"Fecha",field:"Fecha",headerFilter:"input",width:130},
-        {title:"Guardarecursos",field:"Nombre del guardarecursos",headerFilter:"input",minWidth:200},
-        {title:"Municipio",field:"Municipio",headerFilter:"input",width:150},
-        {title:"Área protegida",field:"Area protegida",headerFilter:"input",width:130},
-        {title:"Usuario",field:"Nombre del usuario",headerFilter:"input",width:180},
-        {title:"Referencia",field:"Referencia de ubicacion",headerFilter:"input",minWidth:160},
-        {title:"Total árboles",field:"Cantidad total de arboles a talar",hozAlign:"right",headerFilter:"input",width:110},
-        {title:"Especies",field:"Especies a talar",headerFilter:"input",width:160},
-        {title:"Otra especie",field:"Especifique otra especie",headerFilter:"input",width:130},
-        {title:"Hora",field:"Hora",headerFilter:"input",width:80},
-        {title:"Observaciones",field:"Observaciones",headerFilter:"input",minWidth:180},
-        {title:"Intermunicipal",field:"Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?",headerFilter:"input",width:120},
-        {title:"Guarda cedente",field:"Nombre del guardarecurso",headerFilter:"input",width:160},
-        {title:"Muni. cedente",field:"Municipio del guardarecurso",headerFilter:"input",width:130},
-        {title:"Lon (X)",field:"X",headerFilter:"input",width:110,formatter:fmtN},
-        {title:"Lat (Y)",field:"Y",headerFilter:"input",width:110,formatter:fmtN},
-        {title:"GTM X (m)",field:"GTM_X (m)",headerFilter:"input",width:120,formatter:fmtN},
-        {title:"GTM Y (m)",field:"GTM_Y (m)",headerFilter:"input",width:120,formatter:fmtN},
-      ];
-      const espCols=ESPECIES.map(e=>({title:e.label,field:e.campo,hozAlign:"right",headerFilter:"input",width:90}));
-
-      const tablaEl=new Tabulator("#tabla-registros",{
-        data:datosConsumos,
-        layout:"fitDataStretch",
-        pagination:"local",
-        paginationSize:20,
-        paginationSizeSelector:[10,20,50,100],
-        columns:[...camposBase,...espCols],
-        movableColumns:true,
-        selectableRows:1,
-      });
-      tablaConsumos=tablaEl;
-
-      tablaEl.on("rowSelectionChanged",(data)=>{
-        const has=data.length>0;
-        document.getElementById("generate-report-word").disabled=!has;
-        document.getElementById("generate-report-pdf").disabled=!has;
-      });
-
-      document.getElementById("download-csv").addEventListener("click",()=>tablaConsumos.download("csv","consumo_forestal.csv"));
-      document.getElementById("download-xlsx").addEventListener("click",()=>tablaConsumos.download("xlsx","consumo_forestal.xlsx",{sheetName:"Consumos"}));
-
-      inicializarSelectorMeses();
-      initGuardaSelector();
-      document.getElementById("estado-registros").textContent=`${datosConsumos.length.toLocaleString("es")} registros cargados · selecciona una fila para generar informe individual`;
-    })
-    .catch(e=>{
-      const el=document.getElementById("estado-registros");
-      el.textContent="Error al cargar datos: "+e.message;
-      el.className="estado-txt error";
-    });
+  const urls=["../../datos/base3_datos.csv","https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base3_datos.csv"];
+  let p=Promise.reject();
+  urls.forEach(url=>{p=p.catch(()=>fetch(url,{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.arrayBuffer();}));});
+  p.then(buf=>{
+    const u8=new Uint8Array(buf);
+    const t1=new TextDecoder("utf-8",{fatal:false}).decode(u8);
+    const t2=new TextDecoder("windows-1252",{fatal:false}).decode(u8);
+    const text=(t2.match(/\uFFFD/g)||[]).length<(t1.match(/\uFFFD/g)||[]).length?t2:t1;
+    const l0=text.split("\n")[0];
+    const dl=[";",",","\t"].sort((a,b)=>l0.split(b).length-l0.split(a).length)[0];
+    const parsed=Papa.parse(text,{header:true,skipEmptyLines:true,delimiter:dl});
+    DATOS=procesarDatos(parsed.data||[]);
+    inicializarTabla();
+    initVcSelects();
+    inicializarSelectorMeses();
+    initGuardaSelector();
+  }).catch(e=>{
+    const el=document.getElementById("estado-registros");if(el){el.textContent="Error: "+e.message;el.className="estado-txt error";}
+  });
 });
 </script>
 </body>
