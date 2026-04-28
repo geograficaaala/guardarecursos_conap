@@ -1,68 +1,177 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AC210 · Tabla de datos · Asistencia a viveros</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link href="../../assets/tabulator.min.css" rel="stylesheet"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>AC210 · Registros y verificación · Asistencia a viveros</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/tabulator.min.css">
+  <script src="../../assets/tabulator.min.js"></script>
+  <script src="../../assets/papaparse.min.js"></script>
+  <script src="../../assets/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    :root{
-      --verde-oscuro:#0a3d2b;--verde-medio:#1a5c3a;--bg:#f0f4f2;--blanco:#fff;--ink:#0d1f15;
-      --muted:#6b7280;--borde:#e2e8e4;--sombra:rgba(10,61,43,.08);--azul-m:#2563eb;
+    :root {
+      --verde-oscuro: #0a3d2b; --verde-medio: #1a5c3a;
+      --bg: #f0f4f1; --surface: #ffffff; --surface-2: #f6faf7;
+      --ink: #0c1e13; --ink-2: #2a4535; --muted: #6a8878;
+      --borde: #d8e4dd; --sombra: rgba(10,61,43,0.06);
+      --acento: #1a5c3a; --acento-bg: rgba(26,92,58,0.06); --acento-borde: rgba(26,92,58,0.20);
+      --d0:#1f6cb0; --d1:#1a7a38; --d2:#b05608; --d3:#6b2680;
+      --d4:#a81c2a; --d5:#016660; --d6:#7a4508; --d7:#3d8fbf;
     }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;opacity:0;animation:fadeIn .35s ease forwards}
-    @keyframes fadeIn{to{opacity:1}}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;font-size:14px;line-height:1.55;opacity:0;animation:bodyIn .45s cubic-bezier(.22,.68,0,1.2) forwards}
+    @keyframes bodyIn{to{opacity:1}}
     @media(prefers-reduced-motion:reduce){body{animation:none;opacity:1}}
-    header{background:linear-gradient(90deg,var(--verde-oscuro),var(--verde-medio));color:#fff;padding:12px 20px 14px;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.28)}
-    .header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:5px 10px}
-    .logo-group img{height:34px;max-width:110px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 7px;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+
+    /* HEADER */
+    header{background:linear-gradient(105deg,var(--verde-oscuro) 0%,var(--verde-medio) 100%);color:#fff;padding:14px 28px 16px;position:sticky;top:0;z-index:200;box-shadow:0 2px 28px rgba(0,0,0,.26);flex-shrink:0}
+    .header-inner{max-width:1480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:5px 14px}
+    .logo-group img{height:36px;max-width:112px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 8px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
     .header-right{text-align:right;flex:1}
-    .header-right h1{font-size:17px;font-weight:600;margin-bottom:1px}
-    .header-right p{font-size:11.5px;opacity:.7;font-weight:300}
-    .header-chip{display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:2px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-    .chip-dot{width:5px;height:5px;border-radius:50%;background:#86efac;animation:pulse 2s ease-in-out infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-    .module-nav{background:var(--blanco);border-bottom:1px solid var(--borde);padding:0 20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-    .module-nav-inner{max-width:1400px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+    .header-right h1{font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:1px}
+    .header-right p{font-size:12px;opacity:.58;font-weight:300}
+    .header-chip{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.20);background:rgba(255,255,255,.08);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+    .chip-dot{width:6px;height:6px;border-radius:50%;background:#86efac;animation:blink 2.4s ease-in-out infinite}
+    @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.6)}}
+
+    /* NAV */
+    .module-nav{background:var(--surface);border-bottom:1px solid var(--borde);padding:0 28px;box-shadow:0 1px 8px rgba(0,0,0,.04);flex-shrink:0}
+    .module-nav-inner{max-width:1480px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
     .module-nav-inner::-webkit-scrollbar{display:none}
-    .nav-back{display:flex;align-items:center;gap:6px;padding:12px 16px 12px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap}
+    .nav-back{display:flex;align-items:center;gap:6px;padding:13px 18px 13px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap;transition:color .18s}
     .nav-back:hover{color:var(--verde-medio)}
-    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;transition:color .2s,border-color .2s}
-    .nav-tab:hover{color:var(--azul-m);border-bottom-color:rgba(37,99,235,.25)}
-    .nav-tab.active{color:var(--azul-m);border-bottom-color:var(--azul-m);font-weight:600}
-    .page{max-width:1400px;width:100%;margin:0 auto;padding:20px 20px 48px;flex:1}
-    .hero{background:var(--blanco);border:1px solid var(--borde);border-radius:16px;padding:20px;box-shadow:0 2px 12px var(--sombra);margin-bottom:16px}
-    .hero-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
-    .hero-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;margin-bottom:4px}
-    .hero-copy{font-size:13px;color:var(--muted);line-height:1.55;max-width:780px}
-    .buttons{display:flex;gap:8px;flex-wrap:wrap}
-    .buttons button{padding:8px 14px;border-radius:10px;border:1px solid var(--borde);background:var(--blanco);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;color:var(--ink);transition:all .2s}
-    .buttons button:hover{border-color:#94a3b8;transform:translateY(-1px)}
-    #download-csv{background:var(--azul-m);border-color:var(--azul-m);color:#fff}
-    #download-csv:hover{background:#1d4ed8;border-color:#1d4ed8}
-    #download-xlsx{background:#10b981;border-color:#10b981;color:#fff}
-    #download-xlsx:hover{background:#059669;border-color:#059669}
-    #generate-report-pdf,#generate-monthly-report-pdf{background:#fff1f2;border-color:#fecdd3;color:#be123c}
-    #generate-report-word,#generate-monthly-report-word{background:#eef2ff;border-color:#c7d2fe;color:#3730a3}
-    .monthly-report-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px;border-radius:12px;background:#f8fafc;border:1px solid var(--borde)}
-    .monthly-report-bar label{font-size:13px;font-weight:600;color:var(--ink)}
-    .monthly-report-bar select{min-width:240px}
-    .monthly-report-bar select,.monthly-report-bar button{padding:8px 12px;border-radius:10px;border:1px solid var(--borde);background:#fff;font-family:inherit;font-size:13px}
-    .table-card{background:var(--blanco);border:1px solid var(--borde);border-radius:16px;padding:14px;box-shadow:0 2px 12px var(--sombra)}
-    #tabla{margin-top:2px}
-    .tabulator{border:1px solid var(--borde);border-radius:12px;overflow:hidden;font-size:12.5px;box-shadow:none}
-    .tabulator .tabulator-header{background:#f8fafc;border-bottom:1px solid var(--borde)}
-    .tabulator .tabulator-header .tabulator-col{background:#f8fafc;color:var(--ink);font-weight:700;border-right:1px solid #edf2f7}
-    .tabulator .tabulator-row{background:#fff}
-    .tabulator .tabulator-row:nth-child(even){background:#fcfdfd}
-    .tabulator .tabulator-row:hover{background:#f8fbff}
-    footer{text-align:center;font-size:12px;color:#6b7280;padding:10px 20px 18px;border-top:1px solid #e5e7eb;background-color:rgba(248,250,252,.9)}
+    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;height:50px;transition:color .18s,border-color .18s}
+    .nav-tab:hover{color:var(--acento);border-bottom-color:rgba(26,92,58,.2)}
+    .nav-tab.active{color:var(--acento);border-bottom-color:var(--acento);font-weight:600}
+
+    /* PÁGINA */
+    .page{max-width:1480px;width:100%;margin:0 auto;padding:28px 28px 72px;flex:1}
+
+    /* TABS */
+    .inner-tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--borde);border-radius:12px;padding:4px;box-shadow:0 1px 8px var(--sombra)}
+    .inner-tab{flex:1;text-align:center;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;border:none;background:none;font-family:inherit}
+    .inner-tab.active{background:var(--verde-oscuro);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(10,61,43,.25)}
+    .inner-tab:hover:not(.active){background:var(--bg);color:var(--ink)}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block;animation:panelIn .25s ease both}
+    @keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* CARDS */
+    .card{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:22px 24px;box-shadow:0 1px 10px var(--sombra);margin-bottom:16px}
+    .card-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:4px}
+    .card-hint{font-size:12.5px;color:var(--muted);font-weight:400;margin-bottom:16px;line-height:1.5}
+
+    /* BOTONES */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;border:1.5px solid var(--borde);background:var(--surface);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;color:var(--ink);transition:all .18s;text-decoration:none}
+    .btn:hover{border-color:#94a3b8;background:var(--bg);transform:translateY(-1px)}
+    .btn-primary{background:var(--verde-oscuro);color:#fff;border-color:var(--verde-oscuro)}
+    .btn-primary:hover{background:var(--verde-medio);box-shadow:0 4px 12px rgba(10,61,43,.25)}
+    .btn-blue{background:var(--d0);color:#fff;border-color:var(--d0)}
+    .btn-blue:hover{background:#1558a0;box-shadow:0 4px 12px rgba(31,108,176,.3)}
+    .btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+    .actions-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+    /* ESTADO */
+    .estado-txt{font-size:13px;color:var(--muted);font-weight:400;margin-bottom:16px}
+    .estado-txt.error{color:#9b1c1c;font-weight:600}
+    .estado-txt strong{color:var(--ink);font-weight:600}
+
+    /* ═══ VERIFICACIÓN ══════════════════════════════════ */
+    .verif-panel{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:22px 24px;box-shadow:0 1px 10px var(--sombra);margin-bottom:20px}
+    .verif-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:4px}
+    .verif-hint{font-size:12.5px;color:var(--muted);margin-bottom:18px;line-height:1.55}
+    .verif-controls{display:grid;grid-template-columns:160px 160px 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:18px}
+    @media(max-width:900px){.verif-controls{grid-template-columns:1fr 1fr}}
+    @media(max-width:600px){.verif-controls{grid-template-columns:1fr}}
+    .vc-group{display:flex;flex-direction:column;gap:5px}
+    .vc-group label{font-size:10.5px;font-weight:700;color:var(--ink-2);letter-spacing:.07em;text-transform:uppercase}
+    .vc-group select,.vc-group input{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13.5px;font-family:inherit;background:var(--surface-2);color:var(--ink);outline:none;transition:border-color .18s,box-shadow .18s;width:100%}
+    .vc-group select:focus,.vc-group input:focus{border-color:var(--acento);box-shadow:0 0 0 3px rgba(26,92,58,.10);background:var(--surface)}
+
+    .verif-resumen{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:900px){.verif-resumen{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){.verif-resumen{grid-template-columns:repeat(2,1fr)}}
+    .vr-card{border-radius:12px;padding:14px 16px;border:1px solid var(--borde);background:var(--surface)}
+    .vr-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase;margin-bottom:8px}
+    .vr-value{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;line-height:1;margin-bottom:4px;color:var(--ink)}
+    .vr-sub{font-size:11.5px;color:var(--muted)}
+
+    .periodo-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:999px;background:var(--acento-bg);border:1px solid var(--acento-borde);font-size:12.5px;font-weight:600;color:var(--acento);margin-bottom:16px}
+
+    /* Tabla verificación */
+    .verif-table-wrap{overflow-x:auto}
+    .verif-table{width:100%;border-collapse:collapse;font-size:13px}
+    .verif-table th{background:var(--bg);padding:10px 14px;text-align:left;font-weight:700;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:2px solid var(--borde);white-space:nowrap}
+    .verif-table td{padding:10px 14px;border-bottom:1px solid var(--borde);vertical-align:middle}
+    .verif-table tr:last-child td{border-bottom:none}
+    .verif-table tr:hover td{background:var(--surface-2)}
+
+    /* Filas expandibles */
+    .vc-row-guarda{cursor:pointer;user-select:none}
+    .vc-row-guarda:hover td{background:rgba(26,92,58,0.04)!important}
+    .vc-toggle{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--surface-2);border:1px solid var(--borde);color:var(--muted);transition:transform .2s,background .15s;flex-shrink:0}
+    .vc-row-guarda.open .vc-toggle{transform:rotate(90deg);background:var(--acento);color:#fff;border-color:var(--acento)}
+    .vc-subrows{display:none}
+    .vc-subrows.open{display:table-row-group}
+    .vc-num{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:50%;background:var(--borde);font-size:10px;font-weight:700;color:var(--muted)}
+    .vc-coord{font-family:monospace;font-size:11px;color:var(--muted)}
+
+    /* Badges y progreso */
+    .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;gap:4px}
+    .badge-verde{background:#dcfce7;color:#15803d}.badge-rojo{background:#fee2e2;color:#b91c1c}
+    .badge-amarillo{background:#fef9c3;color:#854d0e}.badge-azul{background:#dbeafe;color:#1e40af}
+    .badge-gris{background:#f3f4f6;color:#6b7280}
+    .prog-wrap{display:flex;align-items:center;gap:8px}
+    .prog-bar-bg{flex:1;height:7px;background:var(--borde);border-radius:999px;overflow:hidden;min-width:60px}
+    .prog-bar-fill{height:100%;border-radius:999px;transition:width .4s ease}
+    .prog-fill-verde{background:#22c55e}.prog-fill-amarillo{background:#f59e0b}.prog-fill-rojo{background:#ef4444}
+    .prog-num{font-size:12px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+
+    /* TABLA TABULATOR */
+    #tabla-registros .tabulator{border-radius:12px;overflow:hidden;font-size:13px;font-family:'DM Sans',sans-serif}
+    .tabulator .tabulator-header{background:var(--bg)!important;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .tabulator-row:hover{background:var(--surface-2)!important}
+
+    /* ANÁLISIS */
+    .guarda-selector{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:20px}
+    .guarda-selector label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:5px}
+    .guarda-selector select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface-2);color:var(--ink);outline:none;min-width:280px;transition:border-color .18s}
+    .guarda-selector select:focus{border-color:var(--acento)}
+    .kpis-guarda{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:900px){.kpis-guarda{grid-template-columns:repeat(2,1fr)}}
+    .kpi-g{background:var(--surface);border:1px solid var(--borde);border-top:3px solid transparent;border-radius:14px;padding:14px 16px;box-shadow:0 1px 8px var(--sombra)}
+    .kpi-g-0{border-top-color:var(--d0)}.kpi-g-1{border-top-color:var(--d1)}.kpi-g-2{border-top-color:var(--d2)}.kpi-g-3{border-top-color:var(--d4)}
+    .kpi-g-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:8px}
+    .kpi-g-value{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;line-height:1;color:var(--ink);margin-bottom:3px}
+    .kpi-g-sub{font-size:11px;color:var(--muted)}
+    .charts-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    @media(max-width:700px){.charts-2{grid-template-columns:1fr}}
+    .cw{position:relative;height:240px}
+    .resumen-table{width:100%;border-collapse:collapse;font-size:13px}
+    .resumen-table th{background:var(--bg);padding:9px 13px;text-align:left;font-weight:700;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--borde)}
+    .resumen-table td{padding:9px 13px;border-bottom:1px solid var(--borde)}
+    .resumen-table tr:last-child td{border-bottom:none}
+    .resumen-table tr:hover td{background:var(--surface-2)}
+
+    /* Selector informe mensual */
+    .informe-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:16px 18px;background:var(--surface-2);border:1px solid var(--borde);border-radius:12px;margin-bottom:16px}
+    .informe-bar label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:5px}
+    .informe-bar select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--ink);outline:none;transition:border-color .18s}
+    .informe-bar select:focus{border-color:var(--acento)}
+    .sin-datos{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
+
+    /* FOOTER */
+    footer{background:var(--verde-oscuro);color:rgba(255,255,255,.42);text-align:center;padding:16px 24px;font-size:12px;font-weight:300;letter-spacing:.04em;flex-shrink:0}
+    footer strong{color:rgba(255,255,255,.75);font-weight:500}
   </style>
 </head>
 <body>
+
 <header>
   <div class="header-inner">
     <div class="logo-group">
@@ -72,1180 +181,699 @@
     <div class="header-right">
       <h1>Centro de consulta de datos</h1>
       <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
-      <div class="header-chip"><span class="chip-dot"></span>AC210 · Tabla de datos</div>
+      <div class="header-chip"><span class="chip-dot"></span>AC210 · Registros y verificación</div>
     </div>
   </div>
 </header>
 
 <nav class="module-nav">
   <div class="module-nav-inner">
-    <a href="../../index.html" class="nav-back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Inicio</a>
-    <a href="dashboard.html" class="nav-tab"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Mapa geográfico</a>
-    <a href="tablero.html" class="nav-tab"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Tablero dinámico</a>
-    <a href="datos.html" class="nav-tab active"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>Tabla de datos</a>
+    <a href="../../index.html" class="nav-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Inicio
+    </a>
+    <a href="dashboard.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      Mapa geográfico
+    </a>
+    <a href="tablero.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Tablero dinámico
+    </a>
+    <a href="datos.html" class="nav-tab active">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      Registros y verificación
+    </a>
   </div>
 </nav>
 
-<main class="page">
-  <section class="hero">
-    <div class="hero-top">
-      <div>
-        <div class="hero-title">AC210 · Registros de asistencia técnica a viveros</div>
-        <div class="hero-copy">Vista tabular completa del módulo, con descargas y generación de informes por registro y por mes. Se actualiza a partir de <code>docs/datos/base2_datos.csv</code>.</div>
-      </div>
-      <div class="buttons">
-        <button id="download-csv">Descargar CSV</button>
-        <button id="download-xlsx">Descargar Excel</button>
-        <button id="generate-report-word">Informe registro (Word)</button>
-        <button id="generate-report-pdf">Informe registro (PDF)</button>
-      </div>
-    </div>
-    <div class="monthly-report-bar">
-      <label for="monthly-month-select">Informe mensual de asistencia técnica a viveros:</label>
-      <select id="monthly-month-select"><option value="">Cargando meses…</option></select>
-      <button id="generate-monthly-report-word" disabled>Informe mensual (Word)</button>
-      <button id="generate-monthly-report-pdf" disabled>Informe mensual (PDF)</button>
-    </div>
-  </section>
+<div class="page">
+  <div class="inner-tabs">
+    <button class="inner-tab active" data-panel="panel-verif">Verificación de cumplimiento</button>
+    <button class="inner-tab" data-panel="panel-registros">Tabla de registros y exportación</button>
+    <button class="inner-tab" data-panel="panel-analisis">Análisis por guardarecursos</button>
+  </div>
 
-  <section class="table-card">
-    <div id="tabla"></div>
-  </section>
-</main>
+  <!-- ══ PANEL 1 — VERIFICACIÓN ══════════════════════ -->
+  <div id="panel-verif" class="tab-panel active">
+    <div class="verif-panel">
+      <div class="verif-title">Verificación de cumplimiento — asistencia a viveros</div>
+      <div class="verif-hint">
+        El período de corte es del <strong>25 de cada mes al 25 del siguiente</strong>.
+        Seleccione el período y el guardarecursos para confirmar si cumplió con las asistencias declaradas.
+        Deje la meta en 0 para ver solo el conteo sin verificar contra una meta específica.
+      </div>
+      <div class="verif-controls">
+        <div class="vc-group"><label>Desde (25 del mes)</label><input type="date" id="vc-desde"/></div>
+        <div class="vc-group"><label>Hasta (25 del mes)</label><input type="date" id="vc-hasta"/></div>
+        <div class="vc-group"><label>Guardarecursos (opcional)</label><select id="vc-guarda"><option value="">Todos</option></select></div>
+        <div class="vc-group"><label>Meta de asistencias</label><input type="number" id="vc-meta" value="0" min="0" placeholder="Ej: 6"/></div>
+        <button class="btn btn-primary" id="vc-aplicar" style="height:40px;align-self:flex-end">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Verificar
+        </button>
+      </div>
+
+      <div id="vc-periodo-tag" class="periodo-tag" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="vc-periodo-label"></span>
+      </div>
+
+      <div class="verif-resumen" id="vc-resumen" style="display:none">
+        <div class="vr-card" style="border-top:3px solid var(--d0)"><div class="vr-label">Asistencias en período</div><div class="vr-value" id="vc-total">–</div><div class="vr-sub">registros</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d1)"><div class="vr-label">Guardarecursos activos</div><div class="vr-value" id="vc-guardas">–</div><div class="vr-sub">en el período</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d2)"><div class="vr-label">Municipios cubiertos</div><div class="vr-value" id="vc-munis">–</div><div class="vr-sub">distintos</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d4)"><div class="vr-label">Meta definida</div><div class="vr-value" id="vc-meta-display">–</div><div class="vr-sub">asistencias esperadas</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d5)"><div class="vr-label">Cumplimiento general</div><div class="vr-value" id="vc-pct">–</div><div class="vr-sub">del equipo</div></div>
+      </div>
+
+      <div id="vc-tabla-wrap" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase">
+            Detalle por guardarecursos — haga clic en una fila para ver las asistencias individuales
+          </span>
+          <div style="display:flex;gap:6px">
+            <button class="btn" id="vc-expand-all" style="font-size:11.5px;padding:5px 12px">Expandir todos</button>
+            <button class="btn" id="vc-collapse-all" style="font-size:11.5px;padding:5px 12px">Colapsar todos</button>
+          </div>
+        </div>
+        <div class="verif-table-wrap">
+          <table class="verif-table">
+            <thead>
+              <tr>
+                <th style="width:28px"></th>
+                <th>Guardarecursos</th>
+                <th>Asistencias</th>
+                <th>Municipios</th>
+                <th>Jornada media</th>
+                <th>Dentro RUMCLA</th>
+                <th>Apoyo externo</th>
+                <th id="th-cumplimiento" style="display:none">vs. Meta</th>
+                <th id="th-avance" style="display:none">Avance</th>
+              </tr>
+            </thead>
+            <tbody id="vc-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="vc-export-xlsx">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar Excel (con filas individuales)
+          </button>
+          <button class="btn" id="vc-export-csv">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      <div id="vc-empty" class="sin-datos">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <p style="margin-top:12px">Seleccione el período y haga clic en <strong>Verificar</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL 2 — TABLA ════════════════════════════ -->
+  <div id="panel-registros" class="tab-panel">
+    <p class="estado-txt" id="estado-registros">Cargando datos…</p>
+    <div class="card">
+      <div class="card-title">Exportar registros filtrados</div>
+      <div class="card-hint">Descarga todos los registros visibles en la tabla con los filtros de columna aplicados</div>
+      <div class="actions-bar">
+        <button class="btn" id="download-csv">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar CSV
+        </button>
+        <button class="btn btn-primary" id="download-xlsx">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar Excel
+        </button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Informe de registro individual</div>
+      <div class="card-hint">Selecciona una fila en la tabla y genera el informe de esa asistencia específica</div>
+      <div class="actions-bar">
+        <button class="btn btn-blue" id="generate-report-word">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe Word
+        </button>
+        <button class="btn" id="generate-report-pdf">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe PDF
+        </button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Informe mensual narrativo</div>
+      <div class="card-hint">Genera un informe ejecutivo completo del mes seleccionado</div>
+      <div class="informe-bar">
+        <div><label>Selecciona el mes</label><select id="monthly-month-select"></select></div>
+        <button class="btn btn-blue" id="generate-monthly-report-word" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe mensual Word
+        </button>
+        <button class="btn" id="generate-monthly-report-pdf" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe mensual PDF
+        </button>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden"><div id="tabla-registros"></div></div>
+  </div>
+
+  <!-- ══ PANEL 3 — ANÁLISIS ═════════════════════════ -->
+  <div id="panel-analisis" class="tab-panel">
+    <p class="estado-txt" id="estado-analisis">Selecciona un guardarecursos para ver su perfil</p>
+    <div class="guarda-selector">
+      <div><label>Guardarecursos</label><select id="sel-guarda"><option value="">Selecciona un guardarecursos…</option></select></div>
+      <button class="btn btn-primary" id="btn-informe-guarda" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Exportar perfil Word
+      </button>
+    </div>
+    <div id="guarda-kpis" class="kpis-guarda" style="display:none">
+      <div class="kpi-g kpi-g-0"><div class="kpi-g-label">Asistencias</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">total registradas</div></div>
+      <div class="kpi-g kpi-g-1"><div class="kpi-g-label">Municipios</div><div class="kpi-g-value" id="g-munis">–</div><div class="kpi-g-sub">distintos cubiertos</div></div>
+      <div class="kpi-g kpi-g-2"><div class="kpi-g-label">Jornada media</div><div class="kpi-g-value" id="g-dur">–</div><div class="kpi-g-sub">horas por asistencia</div></div>
+      <div class="kpi-g kpi-g-3"><div class="kpi-g-label">Viveros distintos</div><div class="kpi-g-value" id="g-viveros">–</div><div class="kpi-g-sub">lugares únicos</div></div>
+    </div>
+    <div id="guarda-charts" class="charts-2" style="display:none">
+      <div class="card"><div class="card-title">Asistencias por período (corte 25)</div><div class="card-hint">Agrupadas por período operativo mensual</div><div class="cw"><canvas id="g-c-mes"></canvas></div></div>
+      <div class="card"><div class="card-title">Municipios visitados</div><div class="card-hint">Distribución por municipio de asistencia</div><div class="cw"><canvas id="g-c-muni"></canvas></div></div>
+    </div>
+    <div id="guarda-tabla-wrap" class="card" style="display:none">
+      <div class="card-title">Actividades más frecuentes</div>
+      <div class="card-hint">Desglose de tipos de actividad realizados por este guardarecursos</div>
+      <div style="overflow-x:auto">
+        <table class="resumen-table">
+          <thead><tr><th>Municipio</th><th>Asistencias</th><th>Viveros</th><th>Jornada media</th><th>Actividades más frecuentes</th><th>Dentro RUMCLA</th></tr></thead>
+          <tbody id="guarda-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="guarda-empty" class="sin-datos">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <p style="margin-top:12px">Selecciona un guardarecursos para ver su análisis individual</p>
+    </div>
+  </div>
+</div>
 
 <footer>
-  <p><strong>CONAP · Dirección Regional Altiplano Central</strong> · Sistema desarrollado por el Laboratorio SIG · AALA · © 2026</p>
+  <strong>CONAP · Dirección Regional Altiplano Central</strong> · Laboratorio SIG AALA · © 2026
 </footer>
 
-<script src="../../assets/tabulator.min.js"></script>
-<script src="../../assets/papaparse.min.js"></script>
-<script src="../../assets/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
+/* ═══ CAMPOS CSV ════════════════════════════════════════ */
+const F = {
+  guarda:   "Nombre del guarda recurso",
+  municipio:"Municipio",
+  apoyo:    "Esta en apoyo a un vivero fuera de su municipio",
+  hIni:     "Hora de inicio de actividades",
+  hFin:     "Hora de finalizacion de actividades",
+  area:     "Area protegida",
+  vivero:   "Nombre del area y/o lugar del vivero establecido (Barrio, Caserio, Canton, Aldea, etc.)",
+  act:      "Actividades realizadas",
+  obs:      "Observaciones",
+  fecha:    "CreationDate",
+  edit:     "EditDate",
+  x:"X", y:"Y",
+};
 
-    // Referencias globales
-    let tablaAC210;
-    let datosAC210 = [];
-    let mapaMeses = new Map();
+/* ═══ NORMALIZACIÓN ═════════════════════════════════════ */
+const EXCLUIDOS = new Set([
+  "daniel estuardo barillas coo","daniel estuardo barillas",
+  "domingo alfonso mendoza quiacain","domingo alfonso mendoza",
+  "job' kotz'ij eligia morales quino","job kotzij eligia morales quino",
+  "pedro chiviliu esquina",
+  "ruben enrique sumoza mendoza","ruben enrique sumoza",
+]);
+const MERGE = {
+  "jose bacajol simaji":"José Bacajol Simají",
+  "edgar bartolo batin navichoc":"Edgar Bartolo Batín Navichoc",
+  "henry regino mendez chavajay":"Henry Regino Méndez Chavajay",
+  "mario cesar tale coche":"Mario César Talé Coché",
+  "rafaél enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "rafael enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "bernabe lopez sajvin":"Bernabé López Sajvín",
+  "jose ramiro vasquez perez":"José Ramiro Vásquez Pérez",
+  "santos maurico vicente mendoza":"Santos Mauricio Vicente Mendoza",
+  "santos mauricio vicente mendoza":"Santos Mauricio Vicente Mendoza",
+  "diego martin ramirez ixbalan":"Diego Martín Ramírez Ixbalan",
+  "sebastian tinuar cipriano":"Sebastián Tinuar Cipriano",
+  "cornelio marco antonio perechu tzep":"Cornelio Marco Antonio Perechu Tzep",
+  "cornelio marco antonio perechú tzep":"Cornelio Marco Antonio Perechu Tzep",
+  "vicente francisco omar perez cox":"Vicente Francisco Omar Pérez Cox",
+};
+function canonStr(s){ return String(s||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," "); }
+function normGuarda(n){ if(!n)return null; const c=canonStr(n); if(EXCLUIDOS.has(c))return null; return MERGE[c]||n.trim(); }
 
-    const CSV_CANDIDATES = [
-      "../../datos/base2_datos.csv",
-      "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base2_datos.csv"
-    ];
+/* ═══ GLOBALS ════════════════════════════════════════════ */
+let DATOS=[];
+let tablaTabulator;
+let mapaMeses=new Map();
 
-    function detectDelimiter(sampleText){
-      const lines = String(sampleText || "").split(/
-?
-/).slice(0,5).join("
-");
-      const semi = (lines.match(/;/g)||[]).length;
-      const comma = (lines.match(/,/g)||[]).length;
-      const tab = (lines.match(/	/g)||[]).length;
-      if (tab > semi && tab > comma) return "	";
-      if (semi >= comma) return ";";
-      return ",";
-    }
+const PAL=["#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660","#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"];
+const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MESES_ES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
-    function fetchCsvText(){
-      let p = Promise.reject();
-      CSV_CANDIDATES.forEach(function(url){
-        p = p.catch(function(){
-          return fetch(url, { cache: "no-store" }).then(function(response){
-            if (!response.ok) {
-              throw new Error("HTTP " + response.status + " " + response.statusText);
-            }
-            return response.arrayBuffer().then(function(buf){
-              return decodeArrayBuffer(buf);
-            });
-          });
-        });
-      });
-      return p;
-    }
+/* ═══ UTILIDADES ═════════════════════════════════════════ */
+const norm=v=>v==null?"":String(v).trim().replace(/\s+/g," ");
+function escH(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function pct(p,t){ return t?Math.round(p*1000/t)/10:0; }
+function rnd(n,d){ if(!isFinite(n))return 0; const f=Math.pow(10,d); return Math.round(n*f)/f; }
+function slug(s){ return String(s||"").toLowerCase().trim().replace(/\s+/g,"_").replace(/[^\w\-]/g,""); }
+function canonApoyo(v){ const c=canonStr(v); return(c==="si"||c==="sí")?"si":c==="no"?"no":""; }
+function canonArea(v){ const c=canonStr(v); if(c.includes("rumcla"))return"rumcla"; if(c.includes("fuera"))return"fuera"; return c; }
 
+function parseCreation(s){
+  s=String(s||"").trim(); if(!s)return null;
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+  if(m)return new Date(+m[3],+m[1]-1,+m[2],+m[4],+m[5],+m[6]);
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+  const dt=new Date(s); return isNaN(dt)?null:dt;
+}
+function fmtDate(dt){ if(!dt||isNaN(dt))return"–"; return String(dt.getDate()).padStart(2,"0")+"/"+String(dt.getMonth()+1).padStart(2,"0")+"/"+dt.getFullYear(); }
+function isoDate(dt){ return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0"); }
+function periodoOp(dt){ if(!dt||isNaN(dt))return null; const d=dt.getDate(),m=dt.getMonth(),y=dt.getFullYear(); if(d>=26){const nm=m===11?0:m+1,ny=m===11?y+1:y;return ny+"-"+String(nm+1).padStart(2,"0");} return y+"-"+String(m+1).padStart(2,"0"); }
+function mShort(k){ const[y,m]=k.split("-"); return MESES_S[+m-1]+"'"+String(y).slice(2); }
+function parseHora(s){ const v=norm(s); if(!v)return null; const m=v.match(/^(\d{1,2}):(\d{2})/); return m?+m[1]+Math.round(+m[2]/60*100)/100:null; }
+function calcDur(a,b){ const x=parseHora(a),y=parseHora(b); if(x===null||y===null)return null; let d=y-x; if(d<0)d+=24; return(d>20||d<0.08)?null:d; }
 
-    function decodeArrayBuffer(buf){
-      // Intentos de decodificación para evitar símbolos raros (UTF-8 / Latin-1)
-      const tries = ["utf-8","iso-8859-1","windows-1252"];
-      for (let i=0;i<tries.length;i++){
-        try{
-          const t = new TextDecoder(tries[i], {fatal:false}).decode(buf);
-          const bad = (t.match(/\uFFFD/g)||[]).length;
-          if(bad <= 2) return t;
-        }catch(e){}
-      }
-      return new TextDecoder("utf-8", {fatal:false}).decode(buf);
-    }
- // "YYYY-MM" -> { anio, mes }
+/* ═══ CARGA Y PROCESO ════════════════════════════════════ */
+function procesarDatos(raw){
+  return raw.map(r=>{
+    const gn=normGuarda(r[F.guarda]); if(!gn)return null;
+    const dt=parseCreation(r[F.fecha]);
+    const acts=norm(r[F.act]).split(/[,;]+/).map(a=>norm(a).replace(/_/g," ").trim()).filter(Boolean);
+    return{
+      ...r,
+      __guarda:gn, __dt:dt,
+      __periodo:periodoOp(dt),
+      __cm:canonStr(r[F.municipio]),
+      __cg:canonStr(gn),
+      __ca:canonArea(r[F.area]),
+      __apoyo:canonApoyo(r[F.apoyo]),
+      __dur:calcDur(r[F.hIni],r[F.hFin]),
+      __acts:acts,
+      __vivero:norm(r[F.vivero]),
+    };
+  }).filter(Boolean);
+}
 
-    // Función para nombre de archivo "limpio"
-    function slugify(texto) {
-      return String(texto || "")
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, "_")
-        .replace(/[^\w\-]/g, "");
-    }
+/* ═══ TABS ═══════════════════════════════════════════════ */
+document.querySelectorAll(".inner-tab").forEach(tab=>{
+  tab.addEventListener("click",()=>{
+    document.querySelectorAll(".inner-tab").forEach(t=>t.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(tab.dataset.panel).classList.add("active");
+  });
+});
 
-    function escapeHtml(texto) {
-      return String(texto || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-
-    // Estilos comunes para informes (Word y PDF)
-    const ESTILOS_INFORME = `
-<style>
-  body {
-    font-family: "Times New Roman", serif;
-    font-size: 10pt;
-    line-height: 1;
+/* ═══ SELECTS VERIFICACIÓN ════════════════════════════════ */
+function initVcSelects(){
+  const guardas=[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
+  const sel=document.getElementById("vc-guarda");
+  sel.innerHTML='<option value="">Todos los guardarecursos</option>';
+  guardas.forEach(g=>{ const o=document.createElement("option"); o.value=g; o.textContent=g; sel.appendChild(o); });
+  const dates=DATOS.map(r=>r.__dt).filter(d=>d&&!isNaN(d)).sort((a,b)=>a-b);
+  if(dates.length){
+    const hoy=new Date();
+    const hasta=new Date(hoy.getFullYear(),hoy.getMonth(),25);
+    const desde=new Date(hoy.getFullYear(),hoy.getMonth()-1,26);
+    document.getElementById("vc-desde").value=isoDate(desde);
+    document.getElementById("vc-hasta").value=isoDate(hasta);
   }
-  .informe-contenido {
-    font-family: "Times New Roman", serif;
-    font-size: 10pt;
-    line-height: 1;
+}
+
+/* ═══ VERIFICACIÓN ════════════════════════════════════════ */
+function ejecutarVerificacion(){
+  const desdeStr=document.getElementById("vc-desde").value;
+  const hastaStr=document.getElementById("vc-hasta").value;
+  const guardaFiltro=document.getElementById("vc-guarda").value;
+  const meta=parseInt(document.getElementById("vc-meta").value)||0;
+  if(!desdeStr||!hastaStr){alert("Defina el período completo.");return;}
+  const desde=new Date(desdeStr+"T00:00:00");
+  const hasta=new Date(hastaStr+"T23:59:59");
+
+  const enPeriodo=DATOS.filter(r=>{
+    if(!r.__dt||isNaN(r.__dt))return false;
+    if(r.__dt<desde||r.__dt>hasta)return false;
+    if(guardaFiltro&&r.__guarda!==guardaFiltro)return false;
+    return true;
+  });
+
+  document.getElementById("vc-periodo-tag").style.display="";
+  document.getElementById("vc-periodo-label").textContent=`Período: ${fmtDate(desde)} al ${fmtDate(hasta)}${guardaFiltro?" · "+guardaFiltro:""}`;
+
+  const guardas=[...new Set(enPeriodo.map(r=>r.__guarda))];
+  document.getElementById("vc-total").textContent=enPeriodo.length.toLocaleString("es");
+  document.getElementById("vc-guardas").textContent=guardas.length;
+  document.getElementById("vc-munis").textContent=new Set(enPeriodo.map(r=>r.__cm).filter(Boolean)).size;
+  document.getElementById("vc-meta-display").textContent=meta>0?meta+" por guarda":"Sin meta";
+  let cumplePct="–";
+  if(meta>0&&guardas.length){
+    const cumplen=guardas.filter(g=>enPeriodo.filter(r=>r.__guarda===g).length>=meta).length;
+    cumplePct=Math.round(cumplen/guardas.length*100)+"%";
   }
-  .informe-contenido h1 {
-    font-size: 14pt;
-    font-weight: bold;
-    margin: 0 0 8pt 0;
-    text-align: center;
-  }
-  .informe-contenido h2 {
-    font-size: 12pt;
-    font-weight: bold;
-    margin: 12pt 0 6pt 0;
-  }
-  .informe-contenido p {
-    margin: 0 0 6pt 0;
-    text-align: justify;
-  }
-  .informe-seccion {
-    page-break-inside: avoid;
-    margin-bottom: 8pt;
-  }
-</style>
-`;
+  document.getElementById("vc-pct").textContent=cumplePct;
+  document.getElementById("vc-resumen").style.display="grid";
+  document.getElementById("th-cumplimiento").style.display=meta>0?"":"none";
+  document.getElementById("th-avance").style.display=meta>0?"":"none";
 
-    // Crear y descargar Word
-    function crearDocumentoWord(nombreArchivo, contenidoHTML) {
-      const header =
-        "<html xmlns:o='urn:schemas-microsoft-com:office:office' " +
-        "xmlns:w='urn:schemas-microsoft-com:office:word' " +
-        "xmlns='http://www.w3.org/TR/REC-html40'>" +
-        "<head><meta charset='utf-8'><title>Informe</title>" +
-        ESTILOS_INFORME +
-        "</head><body>";
-      const footer = "</body></html>";
-      const source = header + contenidoHTML + footer;
+  const tbody=document.getElementById("vc-tbody"); tbody.innerHTML="";
+  const todosGuardas=guardaFiltro?[guardaFiltro]:[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
+  const filasSummary=[];
 
-      const blob = new Blob(["\ufeff", source], {
-        type: "application/msword"
-      });
+  todosGuardas.forEach(g=>{
+    const sub=enPeriodo.filter(r=>r.__guarda===g).sort((a,b)=>a.__dt-b.__dt);
+    const cnt=sub.length;
+    const munis=new Set(sub.map(r=>r.__cm).filter(Boolean)).size;
+    const durs=sub.map(r=>r.__dur).filter(v=>v!==null);
+    const durMedia=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1)+"h":"–";
+    const rumcla=sub.filter(r=>r.__ca==="rumcla").length;
+    const apoyo=sub.filter(r=>r.__apoyo==="si").length;
+    filasSummary.push({g,cnt,munis,durMedia,rumcla,apoyo,registros:sub});
+  });
+  filasSummary.sort((a,b)=>b.cnt-a.cnt);
 
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = nombreArchivo.endsWith(".doc") ? nombreArchivo : nombreArchivo + ".doc";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+  const totalCols=9+(meta>0?2:0);
+
+  filasSummary.forEach(({g,cnt,munis,durMedia,rumcla,apoyo,registros},idx)=>{
+    const uid="grp-"+idx;
+    let cumpleCel="",avanceCel="";
+    if(meta>0){
+      const cumple=cnt>=meta, pctAv=Math.min(Math.round(cnt/meta*100),100);
+      const colP=pctAv>=100?"prog-fill-verde":pctAv>=60?"prog-fill-amarillo":"prog-fill-rojo";
+      const bCls=cumple?"badge-verde":cnt>0?"badge-amarillo":"badge-rojo";
+      cumpleCel=`<td><span class="badge ${bCls}">${cumple?"Cumplido":cnt>0?"Parcial":"Sin registro"} (${cnt}/${meta})</span></td>`;
+      avanceCel=`<td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar-fill ${colP}" style="width:${pctAv}%"></div></div><span class="prog-num">${pctAv}%</span></div></td>`;
     }
-
-    // Crear y descargar PDF usando html2pdf
-    function crearDocumentoPDF(nombreArchivo, contenidoHTML) {
-      if (typeof html2pdf === "undefined") {
-        alert("No se encontró la librería para exportar a PDF (html2pdf). Verifique que se haya cargado correctamente.");
-        return;
-      }
-
-      const contenedor = document.createElement("div");
-      contenedor.style.padding = "10px";
-      contenedor.innerHTML = ESTILOS_INFORME + contenidoHTML;
-      document.body.appendChild(contenedor);
-
-      const opt = {
-        margin:       10,
-        filename:     nombreArchivo.endsWith(".pdf") ? nombreArchivo : nombreArchivo + ".pdf",
-        image:        { type: "jpeg", quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: "mm", format: "a4", orientation: "portrait" }
-      };
-
-      html2pdf().set(opt).from(contenedor).save().then(function() {
-        document.body.removeChild(contenedor);
-      }).catch(function() {
-        document.body.removeChild(contenedor);
-      });
-    }
-
-    // Extraer fecha completa (anio, mes, dia) desde CreationDate
-    function extraerFechaCompleta(fechaRaw) {
-      if (!fechaRaw) return null;
-      const str = String(fechaRaw).trim();
-      if (!str) return null;
-      const parteFecha = str.split(" ")[0]; // antes de la hora
-      let sep = null;
-      if (parteFecha.includes("/")) sep = "/";
-      else if (parteFecha.includes("-")) sep = "-";
-      if (!sep) return null;
-
-      const partes = parteFecha.split(sep);
-      if (partes.length < 3) return null;
-
-      const p1 = parseInt(partes[0], 10);
-      const p2 = parseInt(partes[1], 10);
-      const p3 = parseInt(partes[2], 10);
-      if (isNaN(p1) || isNaN(p2) || isNaN(p3)) return null;
-
-      let dia, mes, anio;
-      // si p1 > 12 y p2 <= 12: asumimos formato dd/mm/aaaa
-      if (p1 > 12 && p2 >= 1 && p2 <= 12) {
-        dia = p1;
-        mes = p2;
-        anio = p3;
-      } else {
-        // asumimos mm/dd/aaaa
-        mes = p1;
-        dia = p2;
-        anio = p3;
-      }
-
-      if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
-      return { anio: anio, mes: mes, dia: dia };
-    }
-
-    function extraerAnioMes(fechaRaw) {
-      const f = extraerFechaCompleta(fechaRaw);
-      if (!f) return null;
-      return { anio: f.anio, mes: f.mes };
-    }
-
-    function nombreMesEspanol(mes) {
-      const nombres = [
-        "enero", "febrero", "marzo", "abril", "mayo", "junio",
-        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-      ];
-      return nombres[mes - 1] || "";
-    }
-
-    function porcentaje(parte, total) {
-      if (!total) return 0;
-      return Math.round((parte * 1000) / total) / 10; // 1 decimal
-    }
-
-    function formatearNumero(valor, decimales) {
-      if (typeof valor !== "number" || isNaN(valor)) return "";
-      return valor.toFixed(decimales);
-    }
-
-    function obtenerDiasEnMes(anio, mes) {
-      // mes: 1-12
-      return new Date(anio, mes, 0).getDate();
-    }
-
-    function formatearClaveDia(claveDia) {
-      // "YYYY-MM-DD" -> "D de mes"
-      if (!claveDia) return "";
-      const partes = claveDia.split("-");
-      if (partes.length !== 3) return claveDia;
-      const dia = parseInt(partes[2], 10);
-      const mes = parseInt(partes[1], 10);
-      const nombreMes = nombreMesEspanol(mes);
-      return (isNaN(dia) ? claveDia : dia + " de " + nombreMes);
-    }
-
-    function parseHora(valor) {
-      if (!valor) return null;
-      const str = String(valor).trim();
-      if (!str) return null;
-      const m = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-      if (!m) return null;
-      const h = parseInt(m[1], 10);
-      const min = parseInt(m[2], 10);
-      const sec = m[3] ? parseInt(m[3], 10) : 0;
-      if (isNaN(h) || isNaN(min) || isNaN(sec)) return null;
-      return h * 60 + min + sec / 60; // minutos (con decimales)
-    }
-
-    function calcularEstadisticasHoras(listaHoras) {
-      if (!listaHoras || listaHoras.length === 0) {
-        return { promedio: null, desviacion: null, total: 0 };
-      }
-      let suma = 0;
-      for (let i = 0; i < listaHoras.length; i++) {
-        suma += listaHoras[i];
-      }
-      const promedio = suma / listaHoras.length;
-
-      let sumaCuadrados = 0;
-      for (let i = 0; i < listaHoras.length; i++) {
-        const diff = listaHoras[i] - promedio;
-        sumaCuadrados += diff * diff;
-      }
-      const desviacion = Math.sqrt(sumaCuadrados / listaHoras.length);
-      return { promedio: promedio, desviacion: desviacion, total: suma };
-    }
-
-    function etiquetaActividad(codigo) {
-      const map = {
-        "limpieza_areas_plantas": "Limpieza de áreas y plantas",
-        "limpieza_areas": "Limpieza de áreas",
-        "limpieza_plantas": "Limpieza de plantas",
-        "llenado_bolsas": "Llenado de bolsas",
-        "riego": "Riego",
-        "recoleccion_semillas": "Recolección de semillas",
-        "mantenimiento_infraestructura": "Mantenimiento de infraestructura",
-        "apoyo_tecnico_capacitacion": "Apoyo técnico o capacitación",
-        "germinacion": "Actividades de germinación",
-        "preparacion_sustrato": "Preparación de sustrato",
-        "otro": "Otras actividades"
-      };
-      if (map[codigo]) return map[codigo];
-      const limpio = codigo.replace(/_/g, " ");
-      return limpio.charAt(0).toUpperCase() + limpio.slice(1);
-    }
-
-    // Inicializar selector de meses para informe mensual
-    function inicializarSelectorMeses() {
-      const select = document.getElementById("monthly-month-select");
-      const btnWord = document.getElementById("generate-monthly-report-word");
-      const btnPdf  = document.getElementById("generate-monthly-report-pdf");
-      if (!select || !btnWord || !btnPdf) return;
-
-      mapaMeses = new Map();
-
-      datosAC210.forEach(function (reg) {
-        const infoFecha = extraerAnioMes(reg["CreationDate"]);
-        if (!infoFecha) return;
-        const clave = infoFecha.anio + "-" + String(infoFecha.mes).padStart(2, "0");
-        if (!mapaMeses.has(clave)) {
-          mapaMeses.set(clave, infoFecha);
-        }
-      });
-
-      const clavesOrdenadas = Array.from(mapaMeses.keys()).sort();
-      select.innerHTML = "";
-
-      if (clavesOrdenadas.length === 0) {
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = "No hay meses disponibles";
-        opt.disabled = true;
-        opt.selected = true;
-        select.appendChild(opt);
-        btnWord.disabled = true;
-        btnPdf.disabled = true;
-        return;
-      }
-
-      const optDefault = document.createElement("option");
-      optDefault.value = "";
-      optDefault.textContent = "Seleccione un mes…";
-      optDefault.disabled = true;
-      optDefault.selected = true;
-      select.appendChild(optDefault);
-
-      clavesOrdenadas.forEach(function (clave) {
-        const info = mapaMeses.get(clave);
-        const nombreMesSel = nombreMesEspanol(info.mes);
-        const etiqueta = nombreMesSel.charAt(0).toUpperCase() + nombreMesSel.slice(1) + " " + info.anio;
-        const opt = document.createElement("option");
-        opt.value = clave;
-        opt.textContent = etiqueta;
-        select.appendChild(opt);
-      });
-
-      select.addEventListener("change", function () {
-        const haySeleccion = !!this.value;
-        btnWord.disabled = !haySeleccion;
-        btnPdf.disabled = !haySeleccion;
-      });
-    }
-
-    // -------- INFORME POR REGISTRO (Word / PDF) --------
-    function generarInformeRegistro(formato) {
-      if (!tablaAC210) {
-        alert("La tabla aún no está lista.");
-        return;
-      }
-
-      const seleccionadas = tablaAC210.getSelectedData();
-      if (!seleccionadas || seleccionadas.length === 0) {
-        alert("Por favor, seleccione un registro en la tabla antes de generar el informe.");
-        return;
-      }
-
-      const registro = seleccionadas[0];
-      console.log("Registro AC210 seleccionado para el informe:", registro);
-
-      // Campos reales según base2_datos.csv
-      const guarda = registro["Nombre del guarda recurso"] || "";
-      const municipio = registro["Municipio"] || "";
-      const apoyoFuera = (registro["Esta en apoyo a un vivero fuera de su municipio"] || "").toString().trim();
-      const municipioApoyo = registro["Especifique el municipio o lugar de apoyo"] || "";
-      const horaInicio = registro["Hora de inicio de actividades"] || "";
-      const horaFin = registro["Hora de finalizacion de actividades"] || "";
-      const region = registro["Region"] || "";
-      const areaProtegida = registro["Area protegida"] || "";
-      const areaFuera = registro["Especifique area (Fuera de RUMCLA)"] || "";
-      const nombreVivero = registro["Nombre del area y/o lugar del vivero establecido (Barrio, Caserio, Canton, Aldea, etc.)"] || "";
-      const actividades = registro["Actividades realizadas"] || "";
-      const otraActividad = registro["Especifique otra actividad"] || "";
-      const observaciones = registro["Observaciones"] || "";
-      const fechaCreacion = registro["CreationDate"] || "";
-      const fechaModificacion = registro["EditDate"] || "";
-      const coordX = registro["X"] || "";
-      const coordY = registro["Y"] || "";
-
-      let fechaReferencia = "";
-      const fechaObj = extraerFechaCompleta(fechaCreacion);
-      if (fechaObj) {
-        const nombreMes = nombreMesEspanol(fechaObj.mes);
-        fechaReferencia = fechaObj.dia + " de " + nombreMes + " " + fechaObj.anio;
-      } else {
-        fechaReferencia = fechaCreacion;
-      }
-
-      let textoAmbito = "";
-      const areaUpper = (areaProtegida || "").toString().toUpperCase();
-      if (areaUpper.includes("RUMCLA")) {
-        textoAmbito = "dentro de la Reserva de Usos Múltiples de la Cuenca del Lago de Atitlán (RUMCLA)";
-      } else if (areaUpper.includes("FUERA")) {
-        textoAmbito = "en un vivero ubicado fuera de la RUMCLA";
-      } else if (areaFuera) {
-        textoAmbito = "en un vivero ubicado fuera de la RUMCLA (" + areaFuera + ")";
-      }
-
-      let textoApoyo = "";
-      if (apoyoFuera) {
-        const v = apoyoFuera.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        if (v === "si" || v === "sí") {
-          textoApoyo =
-            "La jornada se registró como apoyo a un vivero fuera de su municipio de base, " +
-            (municipioApoyo ? "en el municipio o lugar de " + municipioApoyo + "." : "en un vivero de apoyo externo.");
-        } else {
-          textoApoyo =
-            "La actividad se realizó dentro del municipio de asignación del guarda recurso.";
-        }
-      }
-
-      const textoDescripcion =
-        "Este informe corresponde a un registro del formulario AC210 de asistencia técnica a viveros. " +
-        "La atención se realizó en torno a la fecha " + (fechaReferencia || "(sin fecha de visita reportada)") +
-        ", en el vivero o área denominada " + (nombreVivero || "(sin nombre de vivero reportado)") +
-        ", ubicado en el municipio de " + (municipio || "(sin municipio reportado)") +
-        (region ? ", región " + region : "") +
-        (textoAmbito ? ", " + textoAmbito : "") +
-        ". La asistencia fue brindada por el guarda recurso " + (guarda || "(sin nombre reportado)") +
-        ", en el marco del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central de CONAP.";
-
-      const textoHorario =
-        "De acuerdo con el registro, la jornada inició a las " +
-        (horaInicio || "(hora de inicio no registrada)") +
-        " y finalizó a las " +
-        (horaFin || "(hora de finalización no registrada)") +
-        ", dentro de la jornada laboral ordinaria.";
-
-      let textoActividades = "";
-      if (actividades) {
-        const partes = actividades.toString().split(/[,;]+/).map(function (p) {
-          return p.trim();
-        }).filter(Boolean);
-
-        const codigosUnicos = Array.from(new Set(partes));
-        const etiquetas = codigosUnicos.map(function (cod) {
-          return etiquetaActividad(cod);
-        });
-        if (etiquetas.length > 0) {
-          textoActividades =
-            "Las actividades realizadas incluyeron principalmente: " +
-            etiquetas.join(", ") + ".";
-        }
-      }
-
-      if (otraActividad) {
-        textoActividades +=
-          (textoActividades ? " Además, " : "En el registro se menciona que ") +
-          "se reportó la siguiente actividad adicional: " + otraActividad + ".";
-      }
-
-      // Detalle de variables como lista
-      const entries = Object.entries(registro || {});
-      let detalleHtml = "<ul>";
-      entries.forEach(function (par) {
-        const campo = par[0];
-        const valor = par[1];
-        detalleHtml +=
-          "<li><strong>" +
-          escapeHtml(campo) +
-          ":</strong> " +
-          escapeHtml(String(valor)) +
-          "</li>";
-      });
-      detalleHtml += "</ul>";
-
-      const html =
-        "<div class='informe-contenido'>" +
-
-          "<div class='informe-seccion'>" +
-            "<h1>Informe de asistencia técnica a viveros (AC210)</h1>" +
-            "<p style='text-align:center;'>Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central</p>" +
-            "<hr />" +
-          "</div>" +
-
-          "<div class='informe-seccion'>" +
-            "<h2>1. Datos básicos del registro</h2>" +
-            "<p><strong>Nombre del guarda recurso:</strong> " + escapeHtml(guarda || "(sin nombre reportado)") + "</p>" +
-            "<p><strong>Nombre del vivero o área de trabajo:</strong> " + escapeHtml(nombreVivero || "(sin nombre de vivero reportado)") + "</p>" +
-            "<p><strong>Municipio:</strong> " + escapeHtml(municipio || "(sin municipio reportado)") + "</p>" +
-            "<p><strong>Región:</strong> " + escapeHtml(region || "(sin región reportada)") + "</p>" +
-            "<p><strong>Área protegida / ámbito:</strong> " + escapeHtml(areaProtegida || areaFuera || "(sin área reportada)") + "</p>" +
-            (textoApoyo ? "<p><strong>Apoyo fuera de municipio:</strong> " + escapeHtml(textoApoyo) + "</p>" : "") +
-          "</div>" +
-
-          "<div class='informe-seccion'>" +
-            "<h2>2. Descripción de la asistencia técnica</h2>" +
-            "<p>" + escapeHtml(textoDescripcion) + "</p>" +
-            "<p>" + escapeHtml(textoHorario) + "</p>" +
-            (textoActividades ? "<p>" + escapeHtml(textoActividades) + "</p>" : "") +
-          "</div>" +
-
-          "<div class='informe-seccion'>" +
-            "<h2>3. Observaciones de campo</h2>" +
-            (observaciones
-              ? "<p>" + escapeHtml(observaciones) + "</p>"
-              : "<p>No se registraron observaciones adicionales en este formulario.</p>") +
-          "</div>" +
-
-          "<div class='informe-seccion'>" +
-            "<h2>4. Detalle de las variables registradas</h2>" +
-            detalleHtml +
-          "</div>" +
-
-          "<div class='informe-seccion'>" +
-            "<h2>5. Metadatos del formulario</h2>" +
-            "<p><strong>Fecha de creación del registro:</strong> " + escapeHtml(fechaCreacion || "(no especificada)") + "</p>" +
-            "<p><strong>Fecha de última modificación del registro:</strong> " + escapeHtml(fechaModificacion || "(no especificada)") + "</p>" +
-            "<p><strong>Coordenadas (X, Y):</strong> " + escapeHtml(coordX || "-") + ", " + escapeHtml(coordY || "-") + "</p>" +
-          "</div>" +
-
-          "<div class='informe-seccion'>" +
-            "<h2>6. Firmas (para uso institucional)</h2>" +
-            "<p>______________________________<br/>Responsable de la asistencia / guarda recurso</p>" +
-            "<p>______________________________<br/>Revisión / Supervisión</p>" +
-          "</div>" +
-
-        "</div>";
-
-      const slugVivero = slugify(nombreVivero || municipio || "sin_vivero");
-      const slugFecha  = slugify(fechaReferencia || "sin_fecha");
-      const baseNombreArchivo = "informe_ac210_" + slugVivero + "_" + slugFecha;
-
-      if (formato === "pdf") {
-        crearDocumentoPDF(baseNombreArchivo + ".pdf", html);
-      } else {
-        crearDocumentoWord(baseNombreArchivo + ".doc", html);
-      }
-    }
-
-    // -------- INFORME MENSUAL (Word / PDF) --------
-    function generarInformeMensual(formato) {
-      if (!datosAC210 || datosAC210.length === 0) {
-        alert("No hay datos cargados para generar el informe mensual.");
-        return;
-      }
-
-      const select = document.getElementById("monthly-month-select");
-      if (!select || !select.value) {
-        alert("Por favor, seleccione un mes para generar el informe mensual.");
-        return;
-      }
-
-      const claveSeleccionada = select.value;
-      const infoSeleccionada = mapaMeses.get(claveSeleccionada);
-      if (!infoSeleccionada) {
-        alert("No se encontró información para el mes seleccionado.");
-        return;
-      }
-
-      const anioSel = infoSeleccionada.anio;
-      const mesSel = infoSeleccionada.mes;
-      const nombreMesSel = nombreMesEspanol(mesSel);
-      const etiquetaMes = nombreMesSel.charAt(0).toUpperCase() + nombreMesSel.slice(1) + " " + anioSel;
-
-      // Filtrar registros de ese mes
-      const registrosMes = datosAC210.filter(function (reg) {
-        const infoF = extraerAnioMes(reg["CreationDate"]);
-        return infoF && infoF.anio === anioSel && infoF.mes === mesSel;
-      });
-
-      if (!registrosMes || registrosMes.length === 0) {
-        alert("No se encontraron registros para " + etiquetaMes + ".");
-        return;
-      }
-
-      const total = registrosMes.length;
-
-      const municipiosSet = new Set();
-      const conteoMunicipios = {};
-      const guardasSet = new Set();
-      const conteoGuardas = {};
-      const conteoDias = {};
-
-      let dentroRUMCLA = 0;
-      let fueraRUMCLA = 0;
-      let sinArea = 0;
-
-      const duracionesHoras = [];
-      const duracionesDentro = [];
-      const duracionesFuera = [];
-      const horasPorGuarda = {};
-
-      const actividadesConteo = {};
-      const otrasActividadesTexto = [];
-
-      let apoyoSi = 0;
-      let apoyoNo = 0;
-      let apoyoSin = 0;
-      const ejemplosApoyo = [];
-
-      registrosMes.forEach(function (reg) {
-        const muni = (reg["Municipio"] || "").toString().trim();
-        if (muni) {
-          municipiosSet.add(muni);
-          conteoMunicipios[muni] = (conteoMunicipios[muni] || 0) + 1;
-        }
-
-        const guarda = (reg["Nombre del guarda recurso"] || "").toString().trim();
-        if (guarda) {
-          guardasSet.add(guarda);
-          conteoGuardas[guarda] = (conteoGuardas[guarda] || 0) + 1;
-        }
-
-        const fechaObj = extraerFechaCompleta(reg["CreationDate"]);
-        if (fechaObj) {
-          const claveDia =
-            fechaObj.anio + "-" +
-            String(fechaObj.mes).padStart(2, "0") + "-" +
-            String(fechaObj.dia).padStart(2, "0");
-          conteoDias[claveDia] = (conteoDias[claveDia] || 0) + 1;
-        }
-
-        const areaRaw = (reg["Area protegida"] || "").toString().trim().toUpperCase();
-        const fueraRaw = (reg["Especifique area (Fuera de RUMCLA)"] || "").toString().trim();
-        if (!areaRaw && !fueraRaw) {
-          sinArea++;
-        } else if (areaRaw.includes("FUERA") || fueraRaw) {
-          fueraRUMCLA++;
-        } else if (areaRaw.includes("RUMCLA")) {
-          dentroRUMCLA++;
-        } else {
-          dentroRUMCLA++;
-        }
-
-        const hIni = parseHora(reg["Hora de inicio de actividades"]);
-        const hFin = parseHora(reg["Hora de finalizacion de actividades"]);
-        if (hIni !== null && hFin !== null) {
-          let durMin = hFin - hIni;
-          if (durMin < 0) {
-            durMin += 24 * 60; // cruzó medianoche
-          }
-          const durHoras = durMin / 60.0;
-          duracionesHoras.push(durHoras);
-
-          const esDentro = areaRaw.includes("RUMCLA") && !areaRaw.includes("FUERA") && !fueraRaw;
-          if (esDentro) {
-            duracionesDentro.push(durHoras);
-          } else {
-            duracionesFuera.push(durHoras);
-          }
-
-          if (guarda) {
-            if (!horasPorGuarda[guarda]) {
-              horasPorGuarda[guarda] = { totalHoras: 0, numJornadas: 0 };
-            }
-            horasPorGuarda[guarda].totalHoras += durHoras;
-            horasPorGuarda[guarda].numJornadas += 1;
-          }
-        }
-
-        // Actividades (conteo por registro)
-        const actStr = (reg["Actividades realizadas"] || "").toString().trim();
-        if (actStr) {
-          const partes = actStr.split(/[,;]+/).map(function (p) {
-            return p.trim();
-          }).filter(Boolean);
-          const codigosUnicos = Array.from(new Set(partes));
-          codigosUnicos.forEach(function (cod) {
-            actividadesConteo[cod] = (actividadesConteo[cod] || 0) + 1;
-          });
-        }
-
-        const otraAct = (reg["Especifique otra actividad"] || "").toString().trim();
-        if (otraAct) {
-          otrasActividadesTexto.push(otraAct);
-        }
-
-        const apoyoRaw = (reg["Esta en apoyo a un vivero fuera de su municipio"] || "").toString().trim().toLowerCase();
-        if (!apoyoRaw) {
-          apoyoSin++;
-        } else {
-          const norm = apoyoRaw.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          if (norm === "si" || norm === "sí") {
-            apoyoSi++;
-            if (ejemplosApoyo.length < 3) {
-              const muniBase = (reg["Municipio"] || "").toString().trim();
-              const lugarApoyo = (reg["Especifique el municipio o lugar de apoyo"] || "").toString().trim();
-              ejemplosApoyo.push({
-                guarda: guarda,
-                municipioBase: muniBase,
-                lugarApoyo: lugarApoyo
-              });
-            }
-          } else {
-            apoyoNo++;
-          }
-        }
-      });
-
-      const numMunicipios = municipiosSet.size;
-      const numGuardas = guardasSet.size;
-
-      const diasActivos = Object.keys(conteoDias).length;
-      const diasEnMes = obtenerDiasEnMes(anioSel, mesSel);
-      const coberturaTemporal = porcentaje(diasActivos, diasEnMes);
-      const promedioPorDiaActivo = diasActivos > 0 ? (total / diasActivos) : 0;
-
-      let primeraFechaClave = "";
-      let ultimaFechaClave = "";
-      let maxRegDia = 0;
-      let diasPico = [];
-
-      const clavesDias = Object.keys(conteoDias).sort();
-      if (clavesDias.length > 0) {
-        primeraFechaClave = clavesDias[0];
-        ultimaFechaClave = clavesDias[clavesDias.length - 1];
-      }
-
-      for (const claveDia in conteoDias) {
-        if (!Object.prototype.hasOwnProperty.call(conteoDias, claveDia)) continue;
-        const c = conteoDias[claveDia];
-        if (c > maxRegDia) {
-          maxRegDia = c;
-          diasPico = [claveDia];
-        } else if (c === maxRegDia) {
-          diasPico.push(claveDia);
-        }
-      }
-
-      const listaMunicipios = Object.keys(conteoMunicipios).map(function (muni) {
-        return { nombre: muni, conteo: conteoMunicipios[muni] };
-      }).sort(function (a, b) {
-        return b.conteo - a.conteo;
-      });
-
-      const listaGuardas = Object.keys(conteoGuardas).map(function (g) {
-        const info = horasPorGuarda[g] || { totalHoras: 0, numJornadas: 0 };
-        return {
-          nombre: g,
-          conteo: conteoGuardas[g],
-          totalHoras: info.totalHoras,
-          numJornadas: info.numJornadas
-        };
-      }).sort(function (a, b) {
-        return b.conteo - a.conteo;
-      });
-
-      const statsHoras = calcularEstadisticasHoras(duracionesHoras);
-      const statsDentro = calcularEstadisticasHoras(duracionesDentro);
-      const statsFuera = calcularEstadisticasHoras(duracionesFuera);
-
-      const totalDentroFuera = dentroRUMCLA + fueraRUMCLA;
-      const pctDentro = porcentaje(dentroRUMCLA, total);
-      const pctFuera = porcentaje(fueraRUMCLA, total);
-
-      const listaActividades = Object.keys(actividadesConteo).map(function (cod) {
-        return { codigo: cod, conteo: actividadesConteo[cod] };
-      }).sort(function (a, b) {
-        return b.conteo - a.conteo;
-      });
-
-      const htmlParts = [];
-
-      htmlParts.push("<div class='informe-contenido'>");
-
-      // 1. Cantidad total y distribución general
-      htmlParts.push(
-        "<div class='informe-seccion'>" +
-          "<h1>Informe mensual de asistencia técnica a viveros (AC210)</h1>" +
-          "<p style='text-align:center;'>Sistema de monitoreo de actividades CONAP - DRAC - Altiplano Central</p>" +
-          "<p style='text-align:center;'><strong>Mes analizado: " + escapeHtml(etiquetaMes) + "</strong></p>" +
-          "<hr />" +
-        "</div>" +
-
-        "<div class='informe-seccion'>" +
-          "<h2>1. Cantidad total y distribución general de actividades en viveros</h2>" +
-          "<p>Durante el mes de " + escapeHtml(etiquetaMes) +
-          ", el cuerpo operativo de guarda recursos del Altiplano Central registró un total de <strong>" +
-          total + "</strong> actividades válidas de asistencia técnica a viveros forestales en el sistema de monitoreo.</p>"
-      );
-
-      if (numMunicipios > 0) {
-        htmlParts.push(
-          "<p>Las acciones se distribuyeron en <strong>" + numMunicipios +
-          "</strong> municipio(s): " +
-          escapeHtml(Array.from(municipiosSet).join(", ")) + ".</p>"
-        );
-      }
-
-      if (totalDentroFuera > 0) {
-        htmlParts.push(
-          "<p>De acuerdo con el campo de área protegida, aproximadamente <strong>" +
-          formatearNumero(pctDentro, 1) + "%</strong> de las actividades (" + dentroRUMCLA +
-          " registro(s)) se realizaron dentro de la RUMCLA u otras áreas asociadas, " +
-          "mientras que alrededor de <strong>" + formatearNumero(pctFuera, 1) + "%</strong> (" +
-          fueraRUMCLA + " registro(s)) corresponden a viveros ubicados fuera de la reserva. " +
-          (sinArea > 0 ? "En " + sinArea + " registro(s) no se cuenta con información clara sobre el ámbito territorial." : "") +
-          "</p>"
-        );
-      }
-
-      if (diasActivos > 0) {
-        htmlParts.push(
-          "<p>Las fechas de registro se concentran entre el " +
-          escapeHtml(formatearClaveDia(primeraFechaClave)) + " y el " +
-          escapeHtml(formatearClaveDia(ultimaFechaClave)) +
-          ", con presencia documentada en <strong>" + diasActivos +
-          "</strong> días distintos del mes. Esto representa aproximadamente el " +
-          formatearNumero(coberturaTemporal, 1) +
-          "% del periodo analizado, con un promedio de " +
-          formatearNumero(promedioPorDiaActivo, 1) +
-          " actividades por día con registro.</p>"
-        );
-      }
-
-      htmlParts.push("</div>");
-
-      // 2. Distribución temporal y ritmo operativo
-      htmlParts.push("<div class='informe-seccion'><h2>2. Distribución temporal y ritmo operativo</h2>");
-      if (diasActivos > 0) {
-        if (maxRegDia > 0) {
-          const ejemplosDias = diasPico.slice(0, 3).map(function (c) {
-            return formatearClaveDia(c);
-          });
-          htmlParts.push(
-            "<p>El ritmo operativo durante el mes fue constante, con variaciones moderadas en el número de jornadas por día. " +
-            "Los picos de actividad se concentraron en fechas como " +
-            escapeHtml(ejemplosDias.join("; ")) +
-            ", con hasta <strong>" + maxRegDia +
-            "</strong> registros en una misma jornada.</p>"
-          );
-        } else {
-          htmlParts.push(
-            "<p>La distribución temporal de las actividades muestra un patrón estable a lo largo del mes, sin concentraciones extremas de trabajo en días específicos.</p>"
-          );
-        }
-      } else {
-        htmlParts.push(
-          "<p>No se dispone de información suficiente sobre la distribución temporal de las actividades en este mes.</p>"
-        );
-      }
-      htmlParts.push("</div>");
-
-      // 3. Municipios
-      htmlParts.push("<div class='informe-seccion'><h2>3. Desempeño por áreas operativas</h2>");
-      if (listaMunicipios.length > 0) {
-        const topMuns = listaMunicipios.slice(0, 3);
-        const partesTop = topMuns.map(function (m) {
-          return escapeHtml(m.nombre) + " (" + m.conteo + " registro" + (m.conteo !== 1 ? "s" : "") + ")";
-        });
-        htmlParts.push(
-          "<p>En términos de volumen operativo, los municipios con mayor número de actividades fueron: " +
-          partesTop.join(", ") + ". " +
-          "En estos casos, las labores se desarrollaron principalmente en viveros municipales y áreas adyacentes, " +
-          "enfocándose en tareas de mantenimiento, producción de plantas y fortalecimiento de la infraestructura viverista.</p>"
-        );
-
-        if (listaMunicipios.length > 3) {
-          const minResto = listaMunicipios[listaMunicipios.length - 1].conteo;
-          const maxResto = listaMunicipios[3].conteo;
-          htmlParts.push(
-            "<p>El resto de municipios registró entre " + minResto + " y " + maxResto +
-            " actividades cada uno, manteniendo una presencia de trabajo regular en los viveros comunales y municipales del Altiplano Central.</p>"
-          );
-        }
-      } else {
-        htmlParts.push("<p>No se cuenta con información detallada sobre la distribución por municipio para este mes.</p>");
-      }
-      htmlParts.push("</div>");
-
-      // 4. Duración y eficiencia
-      htmlParts.push("<div class='informe-seccion'><h2>4. Duración, frecuencia y eficiencia operativa</h2>");
-      if (duracionesHoras.length > 0) {
-        const pctConHoras = porcentaje(duracionesHoras.length, total);
-        htmlParts.push(
-          "<p>El análisis de los registros de campo con horario válido (" +
-          duracionesHoras.length + " registro(s), equivalente(s) al " +
-          formatearNumero(pctConHoras, 1) +
-          "% del total) indica que las jornadas de trabajo en viveros tuvieron una duración promedio de <strong>" +
-          formatearNumero(statsHoras.promedio, 1) + " horas</strong>, con una desviación estándar de aproximadamente " +
-          formatearNumero(statsHoras.desviacion, 1) +
-          " horas. El total estimado de horas efectivas de trabajo acumuladas durante el mes asciende a alrededor de " +
-          formatearNumero(statsHoras.total, 1) + " horas.</p>"
-        );
-
-        if (duracionesDentro.length > 0 && duracionesFuera.length > 0) {
-          htmlParts.push(
-            "<p>Al comparar la duración de las jornadas según el ámbito territorial, se observa que los trabajos dentro de la RUMCLA presentan un promedio de " +
-            formatearNumero(statsDentro.promedio, 1) +
-            " horas por registro, mientras que las actividades realizadas en viveros fuera de la cuenca muestran un promedio de " +
-            formatearNumero(statsFuera.promedio, 1) +
-            " horas. Esta diferencia responde principalmente a los tiempos de desplazamiento y a la naturaleza de las tareas ejecutadas en cada ámbito.</p>"
-          );
-        }
-      } else {
-        htmlParts.push(
-          "<p>En este mes no se dispone de información suficiente sobre las horas de inicio y finalización de las jornadas, " +
-          "por lo que no es posible estimar de forma confiable la duración promedio del trabajo en viveros.</p>"
-        );
-      }
-      htmlParts.push("</div>");
-
-      // 5. Variabilidad diaria
-      htmlParts.push("<div class='informe-seccion'><h2>5. Variabilidad diaria y continuidad operativa</h2>");
-      if (diasActivos > 0) {
-        htmlParts.push(
-          "<p>En total se registraron actividades en <strong>" + diasActivos +
-          "</strong> días distintos del mes de " + escapeHtml(etiquetaMes) +
-          ", lo que representa una cobertura temporal de aproximadamente " +
-          formatearNumero(coberturaTemporal, 1) +
-          "% del periodo. Este comportamiento evidencia una presencia continua del personal técnico en campo " +
-          "y un seguimiento regular a las tareas de mantenimiento y producción de plantas forestales.</p>"
-        );
-
-        htmlParts.push(
-          "<p>El promedio general fue de " +
-          formatearNumero(promedioPorDiaActivo, 1) +
-          " jornadas por día con actividad registrada, sin concentraciones excesivas que indiquen sobrecarga operativa en fechas específicas.</p>"
-        );
-      } else {
-        htmlParts.push("<p>No se registraron días con actividad en el conjunto de datos correspondiente a este mes.</p>");
-      }
-      htmlParts.push("</div>");
-
-      // 6. Desempeño por guarda recurso
-      htmlParts.push("<div class='informe-seccion'><h2>6. Desempeño por guarda recurso y eficiencia operativa</h2>");
-      if (listaGuardas.length > 0) {
-        const topGuardas = listaGuardas.slice(0, 4);
-        const partesGuardas = topGuardas.map(function (g) {
-          let texto = escapeHtml(g.nombre) + " (" + g.conteo + " registro" + (g.conteo !== 1 ? "s" : "");
-          if (g.totalHoras && g.totalHoras > 0) {
-            texto += ", ~" + formatearNumero(g.totalHoras, 1) + " horas acumuladas";
-          }
-          texto += ")";
-          return texto;
-        });
-
-        htmlParts.push(
-          "<p>El conjunto de registros muestra la participación activa de varios guarda recursos en la ejecución de actividades en viveros forestales. " +
-          "Destacan, por volumen de registros y horas de trabajo asociadas, los siguientes técnicos: " +
-          partesGuardas.join("; ") +
-          ". En conjunto, este grupo concentra una proporción importante del esfuerzo operativo mensual.</p>"
-        );
-
-        htmlParts.push(
-          "<p>El resto del personal mantiene rangos intermedios de participación, lo que sugiere una distribución relativamente equilibrada del trabajo entre los distintos municipios y viveros atendidos.</p>"
-        );
-      } else {
-        htmlParts.push("<p>No se dispone de información detallada por guarda recurso para este mes.</p>");
-      }
-      htmlParts.push("</div>");
-
-      // 7. Actividades
-      htmlParts.push("<div class='informe-seccion'><h2>7. Distribución de actividades y tipos de labores ejecutadas</h2>");
-      if (listaActividades.length > 0) {
-        const topActs = listaActividades.slice(0, 6);
-        htmlParts.push(
-          "<p>Durante el periodo analizado, los guarda recursos desarrollaron un conjunto diverso de actividades orientadas al mantenimiento, " +
-          "operación y fortalecimiento de los viveros forestales. La distribución de los principales tipos de labores se resume a continuación:</p>"
-        );
-        htmlParts.push("<ul>");
-        topActs.forEach(function (a) {
-          const pct = porcentaje(a.conteo, total);
-          htmlParts.push(
-            "<li>" + escapeHtml(etiquetaActividad(a.codigo)) +
-            ": " + a.conteo + " registro(s), aproximadamente " +
-            formatearNumero(pct, 1) + "% del total.</li>"
-          );
-        });
-        htmlParts.push("</ul>");
-
-        if (otrasActividadesTexto.length > 0) {
-          const ejemplosOtras = Array.from(new Set(otrasActividadesTexto)).slice(0, 3);
-          htmlParts.push(
-            "<p>Además, en los campos de descripción libre se reportaron otras actividades complementarias, tales como: " +
-            escapeHtml(ejemplosOtras.join("; ")) +
-            ", que refuerzan el carácter técnico y de apoyo comunitario del componente viveros.</p>"
-          );
-        }
-
-        htmlParts.push(
-          "<p>En conjunto, la mayoría de las actividades se concentran en fases de mantenimiento y producción primaria, " +
-          "asegurando la disponibilidad de plantas y la preparación de materiales para las jornadas de reforestación en la región.</p>"
-        );
-      } else {
-        htmlParts.push("<p>En los registros de este mes no se cuenta con información estructurada sobre los tipos de actividades realizadas.</p>");
-      }
-      htmlParts.push("</div>");
-
-      // 8. Participación intermunicipal
-      htmlParts.push("<div class='informe-seccion'><h2>8. Participación interinstitucional y apoyo entre municipios</h2>");
-      if ((apoyoSi + apoyoNo + apoyoSin) > 0) {
-        const pctApoyoSi = porcentaje(apoyoSi, total);
-        htmlParts.push(
-          "<p>El programa de viveros del Altiplano Central registra una participación intermunicipal e interinstitucional que se refleja en los campos de apoyo fuera del municipio de origen. " +
-          "En <strong>" + apoyoSi + "</strong> registro(s) (" +
-          formatearNumero(pctApoyoSi, 1) +
-          "% del total) se indica que las actividades se realizaron en apoyo a viveros de otros municipios, " +
-          "mientras que el resto corresponde a acciones desarrolladas dentro del municipio de asignación del guarda recurso.</p>"
-        );
-
-        if (ejemplosApoyo.length > 0) {
-          const frasesEjemplos = ejemplosApoyo.map(function (e) {
-            return escapeHtml(e.guarda || "(sin nombre)") +
-                   (e.municipioBase ? " (" + escapeHtml(e.municipioBase) + ")" : "") +
-                   (e.lugarApoyo ? " apoyó en " + escapeHtml(e.lugarApoyo) : "");
-          });
-          htmlParts.push(
-            "<p>Entre los casos documentados de cooperación destacan ejemplos como: " +
-            frasesEjemplos.join("; ") +
-            ". Estos apoyos fortalecen la gestión compartida de los viveros municipales y comunitarios.</p>"
-          );
-        }
-      } else {
-        htmlParts.push("<p>No se dispone de información suficiente para caracterizar la participación interinstitucional y el apoyo entre municipios en este mes.</p>");
-      }
-      htmlParts.push("</div>");
-
-      // 9. Notas metodológicas
-      htmlParts.push(
-        "<div class='informe-seccion'>" +
-          "<h2>9. Notas metodológicas</h2>" +
-          "<p>El presente informe mensual se genera de forma automática a partir de los registros del formulario AC210 de asistencia técnica a viveros " +
-          "del sistema de monitoreo de actividades de la Dirección Regional Altiplano Central del CONAP. " +
-          "Los totales y porcentajes se calculan únicamente con base en los registros correspondientes al mes seleccionado, " +
-          "por lo que pueden variar conforme se incorporen nuevos datos o se actualicen los existentes.</p>" +
-        "</div>"
-      );
-
-      htmlParts.push("</div>"); // cierre informe-contenido
-
-      const html = htmlParts.join("");
-      const baseNombreArchivo = "informe_mensual_ac210_viveros_" +
-                                anioSel + "_" + String(mesSel).padStart(2, "0");
-
-      if (formato === "pdf") {
-        crearDocumentoPDF(baseNombreArchivo + ".pdf", html);
-      } else {
-        crearDocumentoWord(baseNombreArchivo + ".doc", html);
-      }
-    }
-
-    // --------- INICIALIZACIÓN DE LA PÁGINA ---------
-    document.addEventListener("DOMContentLoaded", function () {
-      console.log("Página de datos de AC210 cargada, intentando leer base2_datos.csv ...");
-
-      if (typeof Tabulator === "undefined") {
-        alert("No se pudo cargar la librería Tabulator desde archivos locales.");
-        return;
-      }
-
-      fetchCsvText()
-        .then(function (csvText) {
-          console.log("Contenido bruto de base2_datos.csv (primeros 200 caracteres):");
-          console.log(csvText.slice(0, 200));
-
-          const parsed = Papa.parse(csvText, {
-            header: true,
-            skipEmptyLines: true,
-            delimiter: detectDelimiter(csvText)
-          });
-
-          console.log("Resultado de Papa.parse:", parsed);
-
-          const data = parsed.data;
-
-          if (!data || data.length === 0) {
-            alert("No se encontraron datos en base2_datos.csv (archivo vacío o encabezados incorrectos).");
-            return;
-          }
-
-          datosAC210 = data; // guardamos para el informe mensual
-
-          // No se oculta ninguna columna: se usan todos los encabezados
-          const columns = Object.keys(data[0]).map(function (field) {
-            return {
-              title: field,
-              field: field,
-              headerFilter: "input"
-            };
-          });
-
-          console.log("Columnas detectadas:", columns);
-
-          tablaAC210 = new Tabulator("#tabla", {
-            data: data,
-            layout: "fitDataStretch",
-            pagination: "local",
-            paginationSize: 20,
-            paginationSizeSelector: [10, 20, 50, 100],
-            columns: columns,
-            movableColumns: true,
-            selectableRows: 1 // solo una fila seleccionada
-          });
-
-          // Inicializar selector de meses
-          inicializarSelectorMeses();
-
-          document.getElementById("download-csv").addEventListener("click", function () {
-            tablaAC210.download("csv", "ac210_asistencia_viveros.csv");
-          });
-
-          document.getElementById("download-xlsx").addEventListener("click", function () {
-            tablaAC210.download("xlsx", "ac210_asistencia_viveros.xlsx", { sheetName: "Datos" });
-          });
-
-          // Botones informe por registro
-          document.getElementById("generate-report-word").addEventListener("click", function () {
-            generarInformeRegistro("word");
-          });
-
-          document.getElementById("generate-report-pdf").addEventListener("click", function () {
-            generarInformeRegistro("pdf");
-          });
-
-          // Botones informe mensual
-          document.getElementById("generate-monthly-report-word").addEventListener("click", function () {
-            generarInformeMensual("word");
-          });
-
-          document.getElementById("generate-monthly-report-pdf").addEventListener("click", function () {
-            generarInformeMensual("pdf");
-          });
-
-        })
-        .catch(function (error) {
-          console.error("Error cargando base2_datos.csv:", error);
-          alert("Error al cargar base2_datos.csv: " + error);
-        });
+    const trHead=document.createElement("tr");
+    trHead.className="vc-row-guarda"; trHead.dataset.uid=uid;
+    trHead.innerHTML=`
+      <td><span class="vc-toggle"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg></span></td>
+      <td><strong>${escH(g)}</strong></td>
+      <td><span class="badge ${cnt>0?"badge-azul":"badge-gris"}">${cnt} asistencia${cnt!==1?"s":""}</span></td>
+      <td>${munis}</td>
+      <td>${durMedia}</td>
+      <td><span class="badge badge-gris">${rumcla} sí / ${cnt-rumcla} no</span></td>
+      <td>${apoyo>0?`<span class="badge badge-azul">${apoyo} con apoyo</span>`:`<span class="badge badge-gris">Ninguno</span>`}</td>
+      ${cumpleCel}${avanceCel}`;
+    tbody.appendChild(trHead);
+
+    const trSub=document.createElement("tr");
+    trSub.className="vc-subrows"; trSub.dataset.uid=uid;
+    trSub.innerHTML=`<td colspan="${totalCols}" style="padding:0">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#eef4f0">
+          <td style="width:28px;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">#</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Fecha</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Municipio</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Vivero / lugar</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Inicio</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Fin</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Duración</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Área</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Actividades</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Apoyo externo</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Latitud</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Longitud</td>
+        </tr></thead>
+        <tbody>
+          ${registros.map((r,i)=>{
+            const dur=r.__dur!==null?r.__dur.toFixed(1)+"h":"–";
+            const apoyoBadge=r.__apoyo==="si"?'<span class="badge badge-azul" style="font-size:10.5px">Sí</span>':'<span class="badge badge-gris" style="font-size:10.5px">No</span>';
+            const areaBadge=r.__ca==="rumcla"?'<span class="badge badge-verde" style="font-size:10.5px">RUMCLA</span>':'<span class="badge badge-gris" style="font-size:10.5px">Fuera</span>';
+            const lat=norm(r[F.y]||""), lon=norm(r[F.x]||"");
+            return `<tr style="border-left:3px solid transparent">
+              <td style="padding:7px 8px;border-bottom:1px solid #e8f0eb;text-align:center"><span class="vc-num">${i+1}</span></td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;white-space:nowrap;font-weight:500">${fmtDate(r.__dt)}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb">${escH(norm(r[F.municipio])||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-size:11.5px;max-width:180px">${escH(r.__vivero||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-family:monospace">${escH(norm(r[F.hIni])||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-family:monospace">${escH(norm(r[F.hFin])||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-weight:500">${dur}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb">${areaBadge}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-size:11.5px">${escH(r.__acts.join(", ")||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb">${apoyoBadge}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${lat||"–"}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${lon||"–"}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table></td>`;
+    tbody.appendChild(trSub);
+  });
+
+  // Toggle
+  tbody.querySelectorAll(".vc-row-guarda").forEach(row=>{
+    row.addEventListener("click",()=>{
+      const uid=row.dataset.uid, isOpen=row.classList.contains("open");
+      row.classList.toggle("open",!isOpen);
+      tbody.querySelectorAll(`.vc-subrows[data-uid="${uid}"]`).forEach(s=>s.classList.toggle("open",!isOpen));
     });
-  
+  });
+
+  document.getElementById("vc-expand-all").onclick=()=>{
+    tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));
+    tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"));
+  };
+  document.getElementById("vc-collapse-all").onclick=()=>{
+    tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.remove("open"));
+    tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.remove("open"));
+  };
+  if(guardaFiltro){ setTimeout(()=>{ tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open")); tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open")); },80); }
+
+  document.getElementById("vc-tabla-wrap").style.display="";
+  document.getElementById("vc-empty").style.display="none";
+  document.getElementById("vc-export-csv").onclick=()=>exportVcCSV(filasSummary,desde,hasta,meta);
+  document.getElementById("vc-export-xlsx").onclick=()=>exportVcXLSX(filasSummary,desde,hasta,meta);
+}
+
+function exportVcCSV(filas,desde,hasta,meta){
+  const header=["Guardarecursos","#","Fecha","Municipio","Vivero / lugar","Hora inicio","Hora fin","Duración (h)","Área","Actividades","Apoyo externo","Latitud","Longitud",...(meta>0?["Meta","Cumple"]:["Total asistencias"])];
+  const rows=[];
+  filas.forEach(({g,cnt,registros})=>{
+    registros.forEach((r,i)=>{
+      rows.push([g,i+1,fmtDate(r.__dt),norm(r[F.municipio]),r.__vivero||"",norm(r[F.hIni]),norm(r[F.hFin]),r.__dur!==null?r.__dur.toFixed(1):"",norm(r[F.area]),r.__acts.join(", "),r.__apoyo==="si"?"Sí":r.__apoyo==="no"?"No":"",norm(r[F.y]),norm(r[F.x]),...(meta>0?[meta,cnt>=meta?"Sí":"No"]:[cnt])]);
+    });
+  });
+  const csv=[header,...rows].map(r=>r.map(v=>'"'+String(v||"").replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+  a.download=`verificacion_viveros_${fmtDate(desde).replace(/\//g,"-")}_al_${fmtDate(hasta).replace(/\//g,"-")}.csv`; a.click();
+}
+
+function exportVcXLSX(filas,desde,hasta,meta){
+  if(typeof XLSX==="undefined"){alert("XLSX no disponible");return}
+  const hSum=[["Guardarecursos","Asistencias","Municipios","Jornada media","Dentro RUMCLA","Apoyo externo",...(meta>0?["Meta","Cumple","% avance"]:[])]];
+  filas.forEach(({g,cnt,munis,durMedia,rumcla,apoyo})=>{ hSum.push([g,cnt,munis,durMedia,rumcla,apoyo,...(meta>0?[meta,cnt>=meta?"Sí":"No",Math.min(Math.round(cnt/meta*100),100)]:[])]); });
+  const hDet=[["Guardarecursos","#","Fecha","Municipio","Vivero / lugar","Hora inicio","Hora fin","Duración (h)","Área","Actividades","Apoyo externo","Latitud","Longitud"]];
+  filas.forEach(({g,registros})=>{ registros.forEach((r,i)=>{ hDet.push([g,i+1,fmtDate(r.__dt),norm(r[F.municipio]),r.__vivero||"",norm(r[F.hIni]),norm(r[F.hFin]),r.__dur!==null?parseFloat(r.__dur.toFixed(1)):null,norm(r[F.area]),r.__acts.join(", "),r.__apoyo==="si"?"Sí":r.__apoyo==="no"?"No":"",norm(r[F.y]),norm(r[F.x])]); }); });
+  const ws1=XLSX.utils.aoa_to_sheet(hSum), ws2=XLSX.utils.aoa_to_sheet(hDet);
+  const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws1,"Resumen"); XLSX.utils.book_append_sheet(wb,ws2,"Asistencias individuales");
+  XLSX.writeFile(wb,`verificacion_viveros_${fmtDate(desde).replace(/\//g,"-")}_al_${fmtDate(hasta).replace(/\//g,"-")}.xlsx`);
+}
+
+/* ═══ TABLA TABULATOR ════════════════════════════════════ */
+function inicializarTabla(){
+  const cols=[
+    {title:"Guardarecursos",field:F.guarda,headerFilter:"input",width:200,frozen:true},
+    {title:"Fecha",field:F.fecha,headerFilter:"input",width:140,formatter:c=>{ const d=parseCreation(c.getValue()); return d&&!isNaN(d)?fmtDate(d):c.getValue()||"–"; }},
+    {title:"Municipio",field:F.municipio,headerFilter:"input",width:160},
+    {title:"Vivero / lugar",field:F.vivero,headerFilter:"input",width:220},
+    {title:"Hora inicio",field:F.hIni,width:100},
+    {title:"Hora fin",field:F.hFin,width:100},
+    {title:"Área protegida",field:F.area,headerFilter:"input",width:170},
+    {title:"Actividades",field:F.act,headerFilter:"input",width:220,formatter:c=>{ const v=String(c.getValue()||""); return v.replace(/_/g," "); }},
+    {title:"Apoyo externo",field:F.apoyo,width:120,hozAlign:"center",formatter:c=>{ const v=canonApoyo(c.getValue()||""); return v==="si"?'<span class="badge badge-azul" style="font-size:10.5px">Sí</span>':v==="no"?'<span class="badge badge-gris" style="font-size:10.5px">No</span>':'–'; }},
+    {title:"Observaciones",field:F.obs,headerFilter:"input",width:200},
+    {title:"Latitud",field:F.y,width:100,hozAlign:"right"},
+    {title:"Longitud",field:F.x,width:100,hozAlign:"right"},
+  ];
+  tablaTabulator=new Tabulator("#tabla-registros",{data:DATOS,layout:"fitDataStretch",pagination:"local",paginationSize:25,paginationSizeSelector:[15,25,50,100],columns:cols,movableColumns:true,selectableRows:1});
+  document.getElementById("download-csv").addEventListener("click",()=>tablaTabulator.download("csv","ac210_viveros.csv"));
+  document.getElementById("download-xlsx").addEventListener("click",()=>tablaTabulator.download("xlsx","ac210_viveros.xlsx",{sheetName:"Datos"}));
+  document.getElementById("estado-registros").innerHTML=`<strong>${DATOS.length.toLocaleString("es")}</strong> registros cargados · selecciona una fila para generar informe individual`;
+}
+
+/* ═══ SELECTOR MESES ═════════════════════════════════════ */
+function inicializarSelectorMeses(){
+  mapaMeses=new Map();
+  DATOS.forEach(r=>{ if(!r.__dt||isNaN(r.__dt))return; const y=r.__dt.getFullYear(),m=r.__dt.getMonth()+1,k=y+"-"+String(m).padStart(2,"0"); if(!mapaMeses.has(k))mapaMeses.set(k,{anio:y,mes:m}); });
+  const sel=document.getElementById("monthly-month-select");
+  const claves=[...mapaMeses.keys()].sort();
+  if(!claves.length){sel.innerHTML="<option>Sin meses</option>";return}
+  sel.innerHTML='<option value="" disabled selected>Seleccione un mes…</option>';
+  claves.forEach(k=>{ const{anio,mes}=mapaMeses.get(k); const nm=MESES_ES[mes-1]; const o=document.createElement("option"); o.value=k; o.textContent=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+anio; sel.appendChild(o); });
+  sel.addEventListener("change",()=>{ const h=!!sel.value; document.getElementById("generate-monthly-report-word").disabled=!h; document.getElementById("generate-monthly-report-pdf").disabled=!h; });
+}
+
+/* ═══ ANÁLISIS POR GUARDA ════════════════════════════════ */
+const GC={};
+function mkGChart(id,cfg){ if(GC[id])GC[id].destroy(); GC[id]=new Chart(document.getElementById(id),cfg); }
+Chart.defaults.font.family="'DM Sans',sans-serif"; Chart.defaults.color="#6a8878";
+const TT={backgroundColor:"rgba(7,24,15,0.93)",titleFont:{size:13,weight:"600"},bodyFont:{size:12.5},padding:12,cornerRadius:10};
+
+function initGuardaSelector(){
+  const guardas=[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
+  const sel=document.getElementById("sel-guarda");
+  sel.innerHTML="<option value=''>Selecciona un guardarecursos…</option>";
+  guardas.forEach(g=>{ const o=document.createElement("option"); o.value=g; o.textContent=g; sel.appendChild(o); });
+  sel.addEventListener("change",()=>{ const g=sel.value; document.getElementById("btn-informe-guarda").disabled=!g; g?renderGuarda(g):clearGuarda(); });
+}
+
+function clearGuarda(){
+  document.getElementById("guarda-kpis").style.display="none";
+  document.getElementById("guarda-charts").style.display="none";
+  document.getElementById("guarda-tabla-wrap").style.display="none";
+  document.getElementById("guarda-empty").style.display="";
+  document.getElementById("estado-analisis").textContent="Selecciona un guardarecursos para ver su perfil";
+}
+
+function renderGuarda(nombre){
+  const regs=DATOS.filter(r=>r.__guarda===nombre); if(!regs.length){clearGuarda();return;}
+  document.getElementById("guarda-empty").style.display="none";
+  document.getElementById("estado-analisis").textContent=`Perfil de ${nombre} · ${regs.length} registros`;
+  const munis=new Set(regs.map(r=>r.__cm).filter(Boolean));
+  const durs=regs.map(r=>r.__dur).filter(v=>v!==null);
+  const viveros=new Set(regs.map(r=>r.__vivero).filter(Boolean));
+  document.getElementById("g-total").textContent=regs.length;
+  document.getElementById("g-munis").textContent=munis.size;
+  document.getElementById("g-dur").textContent=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1)+"h":"–";
+  document.getElementById("g-viveros").textContent=viveros.size;
+  document.getElementById("guarda-kpis").style.display="grid";
+
+  // Por período
+  const mPer=new Map(); regs.forEach(r=>{ if(r.__periodo)mPer.set(r.__periodo,(mPer.get(r.__periodo)||0)+1); });
+  const perKeys=[...mPer.keys()].sort();
+  mkGChart("g-c-mes",{type:"bar",data:{labels:perKeys.map(mShort),datasets:[{label:"Asistencias",data:perKeys.map(k=>mPer.get(k)),backgroundColor:PAL[1]+"cc",borderColor:PAL[1],borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} asistencias`}}},scales:{x:{grid:{display:false},ticks:{font:{size:11.5}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11.5}}}}}});
+
+  // Por municipio
+  const mMuni=new Map(); regs.forEach(r=>{ if(r.__cm)mMuni.set(r.__cm,(mMuni.get(r.__cm)||0)+1); });
+  const muniTop=[...mMuni.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
+  mkGChart("g-c-muni",{type:"bar",data:{labels:muniTop.map(([k])=>{ const v=[...new Set(DATOS.filter(r=>r.__cm===k).map(r=>norm(r[F.municipio])))][0]||k; return v; }),datasets:[{label:"Asistencias",data:muniTop.map(([,v])=>v),backgroundColor:PAL.slice(0,muniTop.length),borderWidth:0,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11.5}}},y:{grid:{display:false},ticks:{font:{size:11.5}}}}}});
+  document.getElementById("guarda-charts").style.display="grid";
+
+  // Tabla por municipio
+  const tbody=document.getElementById("guarda-tbody"); tbody.innerHTML="";
+  [...mMuni.entries()].sort((a,b)=>b[1]-a[1]).forEach(([cm,cnt])=>{
+    const sub=regs.filter(r=>r.__cm===cm);
+    const viverosM=new Set(sub.map(r=>r.__vivero).filter(Boolean));
+    const dMu=sub.map(r=>r.__dur).filter(v=>v!==null);
+    const durM=dMu.length?(dMu.reduce((a,b)=>a+b,0)/dMu.length).toFixed(1)+"h":"–";
+    const actC=new Map(); sub.forEach(r=>r.__acts.forEach(a=>{ actC.set(a,(actC.get(a)||0)+1); }));
+    const topActs=[...actC.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k])=>k).join(", ")||"–";
+    const rumcla=sub.filter(r=>r.__ca==="rumcla").length;
+    const muLabel=[...new Set(sub.map(r=>norm(r[F.municipio])))][0]||cm;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><strong>${escH(muLabel)}</strong></td><td>${cnt}</td><td>${viverosM.size}</td><td>${durM}</td><td style="font-size:11.5px">${escH(topActs)}</td><td><span class="badge badge-gris">${rumcla}R/${cnt-rumcla}F</span></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById("guarda-tabla-wrap").style.display="";
+}
+
+/* ═══ DOCUMENTOS ══════════════════════════════════════════ */
+const CSS_DOC=`<style>body,p,td,th{font-family:"Times New Roman",serif;font-size:10pt;line-height:1.4}h1{font-size:14pt;font-weight:bold;margin:0 0 8pt;text-align:center}h2{font-size:12pt;font-weight:bold;margin:12pt 0 6pt}p{margin:0 0 6pt;text-align:justify}section{page-break-inside:avoid;margin-bottom:8pt}</style>`;
+function docWord(nombre,html){ const src="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_DOC+"</head><body>"+html+"</body></html>"; const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob(["\ufeff",src],{type:"application/msword"})); a.download=nombre; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+function docPDF(nombre,html){ if(typeof html2pdf==="undefined"){alert("html2pdf no disponible");return} const d=document.createElement("div"); d.style.padding="10px"; d.innerHTML=CSS_DOC+html; document.body.appendChild(d); html2pdf().set({margin:10,filename:nombre,image:{type:"jpeg",quality:.98},html2canvas:{scale:2},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(d).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d)); }
+
+function generarInformeRegistro(fmt){
+  if(!tablaTabulator)return;
+  const sel=tablaTabulator.getSelectedData();
+  if(!sel||!sel.length){alert("Selecciona una fila en la tabla.");return}
+  const r=sel[0];
+  const guarda=r[F.guarda]||"",muni=r[F.municipio]||"",fecha=parseCreation(r[F.fecha]);
+  const vivero=r[F.vivero]||"",area=r[F.area]||"",obs=r[F.obs]||"";
+  const acts=(r[F.act]||"").replace(/_/g," ");
+  const apoyo=(r[F.apoyo]||"").toLowerCase().includes("si")?"Sí":"No";
+  const lat=r[F.y]||"",lon=r[F.x]||"";
+  let h=`<section><h1>Informe de asistencia técnica a viveros (AC210)</h1><p style="text-align:center">Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><hr/></section>`;
+  h+=`<section><h2>1. Datos de identificación</h2><p><strong>Guardarecursos:</strong> ${escH(guarda)}</p><p><strong>Fecha:</strong> ${fmtDate(fecha)}</p><p><strong>Municipio:</strong> ${escH(muni)}</p><p><strong>Vivero / lugar:</strong> ${escH(vivero)}</p><p><strong>Área protegida:</strong> ${escH(area)}</p><p><strong>Hora inicio:</strong> ${escH(norm(r[F.hIni])||"–")} · <strong>Hora fin:</strong> ${escH(norm(r[F.hFin])||"–")}</p><p><strong>Actividades:</strong> ${escH(acts)}</p><p><strong>Apoyo fuera de municipio:</strong> ${apoyo}</p></section>`;
+  h+=`<section><h2>2. Observaciones de campo</h2><p>${escH(obs||"Sin observaciones registradas.")}</p></section>`;
+  h+=`<section><h2>3. Metadatos</h2><p><strong>Fecha de creación:</strong> ${escH(norm(r[F.fecha])||"–")}</p>${(lat||lon)?`<p><strong>Coordenadas:</strong> Lat ${escH(lat)} · Lon ${escH(lon)}</p>`:""}</section>`;
+  h+=`<section><h2>4. Firmas</h2><p>______________________________<br/>Guardarecursos / Responsable</p><p>______________________________<br/>Supervisión</p></section>`;
+  const base="informe_ac210_"+slug(guarda)+"_"+slug(fmtDate(fecha));
+  fmt==="pdf"?docPDF(base+".pdf",h):docWord(base+".doc",h);
+}
+
+function generarInformeMensual(fmt){
+  if(!DATOS.length){alert("Sin datos cargados.");return}
+  const sel=document.getElementById("monthly-month-select");
+  if(!sel.value){alert("Seleccione un mes.");return}
+  const{anio,mes}=mapaMeses.get(sel.value)||{};
+  if(!anio)return;
+  const nm=MESES_ES[mes-1]; const etiq=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+anio;
+  const regs=DATOS.filter(r=>r.__dt&&!isNaN(r.__dt)&&r.__dt.getFullYear()===anio&&r.__dt.getMonth()+1===mes);
+  if(!regs.length){alert("Sin registros para "+etiq);return}
+  const total=regs.length;
+  const munis=new Set(),guardas=new Set(); let rumcla=0,fuera=0,apoyo=0;
+  const actC=new Map(),mMuni={},mGuar={};
+  const durs=[];
+  regs.forEach(r=>{ const mu=norm(r[F.municipio]); if(mu){munis.add(mu);mMuni[mu]=(mMuni[mu]||0)+1} const g=r.__guarda; if(g){guardas.add(g);mGuar[g]=(mGuar[g]||0)+1} if(r.__ca==="rumcla")rumcla++;else fuera++; if(r.__apoyo==="si")apoyo++; if(r.__dur!==null)durs.push(r.__dur); r.__acts.forEach(a=>actC.set(a,(actC.get(a)||0)+1)); });
+  const muOrd=Object.entries(mMuni).sort((a,b)=>b[1]-a[1]);
+  const gOrd=Object.entries(mGuar).sort((a,b)=>b[1]-a[1]);
+  const actOrd=[...actC.entries()].sort((a,b)=>b[1]-a[1]);
+  const prom=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:null;
+  let h=`<section><h1>Informe mensual de asistencia técnica a viveros (AC210)</h1><p style="text-align:center">CONAP - DRAC - Altiplano Central · <strong>${escH(etiq)}</strong></p><hr/></section>`;
+  h+=`<section><h2>1. Resumen general</h2><p>Se registraron <strong>${total}</strong> asistencias en <strong>${munis.size}</strong> municipio(s) con <strong>${guardas.size}</strong> guardarecurso(s). ${prom!==null?"Duración promedio de jornada: <strong>"+rnd(prom,2)+"h</strong>.":""}</p><p>Dentro de RUMCLA: <strong>${rumcla}</strong> (${pct(rumcla,total)}%) · Fuera: <strong>${fuera}</strong> (${pct(fuera,total)}%) · Con apoyo externo: <strong>${apoyo}</strong> (${pct(apoyo,total)}%)</p></section>`;
+  h+=`<section><h2>2. Municipios con mayor actividad</h2><p>${muOrd.slice(0,6).map(([m,c])=>`<strong>${escH(m)}</strong> (${c})`).join(", ")}</p></section>`;
+  h+=`<section><h2>3. Guardarecursos más activos</h2><p>${gOrd.slice(0,5).map(([g,c])=>`<strong>${escH(g)}</strong> (${c} asistencias)`).join(", ")}</p></section>`;
+  h+=`<section><h2>4. Actividades realizadas</h2><ul>${actOrd.slice(0,8).map(([a,c])=>`<li>${escH(a.replace(/_/g," "))}: ${c} registros (${pct(c,total)}%)</li>`).join("")}</ul></section>`;
+  h+=`<section><h2>5. Nota metodológica</h2><p>Generado automáticamente desde el sistema AC210 de CONAP-DRAC Altiplano Central.</p></section>`;
+  const base="informe_mensual_ac210_"+anio+"_"+String(mes).padStart(2,"0");
+  fmt==="pdf"?docPDF(base+".pdf",h):docWord(base+".doc",h);
+}
+
+function generarInformeGuarda(){
+  const nombre=document.getElementById("sel-guarda").value; if(!nombre)return;
+  const regs=DATOS.filter(r=>r.__guarda===nombre); if(!regs.length){alert("Sin registros");return}
+  const durs=regs.map(r=>r.__dur).filter(v=>v!==null); const prom=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:null;
+  const munis=new Set(regs.map(r=>norm(r[F.municipio])).filter(Boolean));
+  const actC=new Map(); regs.forEach(r=>r.__acts.forEach(a=>actC.set(a,(actC.get(a)||0)+1)));
+  const topActs=[...actC.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
+  let h=`<section><h1>Perfil de actividad</h1><p style="text-align:center">AC210 · Asistencia técnica a viveros · <strong>${escH(nombre)}</strong></p><hr/></section>`;
+  h+=`<section><h2>Resumen</h2><p><strong>Asistencias totales:</strong> ${regs.length}</p><p><strong>Municipios cubiertos:</strong> ${munis.size}</p>${prom!==null?`<p><strong>Jornada promedio:</strong> ${rnd(prom,2)}h</p>`:""}</section>`;
+  h+=`<section><h2>Actividades más frecuentes</h2><ul>${topActs.map(([a,c])=>`<li>${escH(a.replace(/_/g," "))}: ${c} registros</li>`).join("")}</ul></section>`;
+  h+=`<section><h2>Municipios atendidos</h2><p>${[...munis].map(m=>`<strong>${escH(m)}</strong>`).join(", ")}</p></section>`;
+  docWord("perfil_ac210_"+slug(nombre)+".doc",h);
+}
+
+/* ═══ INICIO ══════════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded",function(){
+  if(typeof Tabulator==="undefined"){alert("No se pudo cargar Tabulator.");return}
+  document.getElementById("btn-informe-guarda").addEventListener("click",generarInformeGuarda);
+  document.getElementById("generate-report-word").addEventListener("click",()=>generarInformeRegistro("word"));
+  document.getElementById("generate-report-pdf").addEventListener("click",()=>generarInformeRegistro("pdf"));
+  document.getElementById("generate-monthly-report-word").addEventListener("click",()=>generarInformeMensual("word"));
+  document.getElementById("generate-monthly-report-pdf").addEventListener("click",()=>generarInformeMensual("pdf"));
+  document.getElementById("vc-aplicar").addEventListener("click",ejecutarVerificacion);
+
+  const urls=["../../datos/base2_datos.csv","https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base2_datos.csv"];
+  let p=Promise.reject();
+  urls.forEach(url=>{ p=p.catch(()=>fetch(url,{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.arrayBuffer();})); });
+  p.then(buf=>{
+    const u8=new Uint8Array(buf);
+    const t1=new TextDecoder("utf-8",{fatal:false}).decode(u8);
+    const t2=new TextDecoder("windows-1252",{fatal:false}).decode(u8);
+    const text=(t2.match(/\uFFFD/g)||[]).length<(t1.match(/\uFFFD/g)||[]).length?t2:t1;
+    const l0=text.split("\n")[0];
+    const dl=[";",",","\t"].sort((a,b)=>l0.split(b).length-l0.split(a).length)[0];
+    const parsed=Papa.parse(text,{header:true,skipEmptyLines:true,delimiter:dl});
+    DATOS=procesarDatos(parsed.data||[]);
+    inicializarTabla();
+    initVcSelects();
+    inicializarSelectorMeses();
+    initGuardaSelector();
+  }).catch(e=>{
+    const el=document.getElementById("estado-registros"); if(el){el.textContent="Error al cargar datos: "+e.message; el.className="estado-txt error";}
+  });
+});
 </script>
 </body>
 </html>
