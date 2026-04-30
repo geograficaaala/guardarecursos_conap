@@ -353,26 +353,25 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Exportar CSV completo (con filas individuales)
           </button>
-          <button class="btn btn-blue" id="vc-informe-word">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Informe corte Word
-          </button>
-          <button class="btn" id="vc-informe-pdf">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Informe corte PDF
-          </button>
-        </div>
-        <div style="margin-top:16px;display:flex;justify-content:flex-end">
-          <button class="btn btn-informe-periodo" id="vc-informe-periodo-pdf">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
-            Generar informe del periodo seleccionado
-          </button>
         </div>
       </div>
 
       <div id="vc-empty" class="sin-datos">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <p style="margin-top:12px">Seleccione el período y haga clic en <strong>Verificar</strong> para ver el cumplimiento</p>
+      </div>
+    </div>
+
+    <div class="card informe-general-card">
+      <div class="card-title">Informe general del periodo seleccionado</div>
+      <div class="card-hint">
+        Este informe usa únicamente las fechas seleccionadas arriba. No depende del guardarecurso elegido, de la meta ni de haber presionado Verificar. Siempre consolida todos los guardarecursos del periodo.
+      </div>
+      <div class="actions-bar" style="justify-content:flex-end">
+        <button class="btn btn-informe-periodo" id="btn-informe-general-periodo">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+          Generar informe del periodo seleccionado
+        </button>
       </div>
     </div>
 
@@ -1289,16 +1288,24 @@ function inicializarSelectorMeses(){
 
 const CSS_REPORTE_CORTE=`<style>
   @page{size:A4;margin:16mm 15mm 15mm 15mm}
-  .report-doc,.report-doc p,.report-doc li{font-family:"Times New Roman",serif;font-size:12pt;line-height:1.0;text-align:justify;color:#000}
+  .report-doc{font-family:"Times New Roman",serif;color:#000;background:#fff;width:100%;box-sizing:border-box}
+  .report-doc,.report-doc p,.report-doc li{font-size:12pt;line-height:1.0;text-align:justify;color:#000}
   .report-doc h1{font-family:"Times New Roman",serif;font-size:16pt;font-weight:bold;text-align:center;margin:0 0 8pt;color:#000;line-height:1.0}
-  .report-doc h2{font-family:"Times New Roman",serif;font-size:13pt;font-weight:bold;margin:0 0 8pt;color:#000;line-height:1.0}
+  .report-doc h2{font-family:"Times New Roman",serif;font-size:13pt;font-weight:bold;margin:9pt 0 5pt;color:#000;line-height:1.0}
   .report-doc h3{font-family:"Times New Roman",serif;font-size:12pt;font-weight:bold;margin:7pt 0 4pt;color:#000;line-height:1.0}
-  .report-doc p{margin:0 0 7pt}.report-doc .page{page-break-after:always;min-height:258mm;box-sizing:border-box}.report-doc .page:last-child{page-break-after:auto}
-  .report-doc .center{text-align:center}.report-doc .small{font-size:10pt}
-  .report-doc table{width:100%;border-collapse:collapse;margin-top:6pt;font-family:"Times New Roman",serif;color:#000}
-  .report-doc th{background:#e9f0ec;border:1px solid #777;padding:3pt 4pt;font-weight:bold;text-align:center;font-size:8.8pt;line-height:1.0}
-  .report-doc td{border:1px solid #999;padding:3pt 4pt;font-size:8.8pt;line-height:1.0;vertical-align:top}.report-doc td.num{text-align:right;white-space:nowrap}.report-doc td.center{text-align:center}
-  .report-doc .firma{margin-top:24pt;text-align:center}
+  .report-doc p{margin:0 0 6pt}
+  .report-doc .center{text-align:center}.report-doc .small{font-size:10.5pt}.report-doc .mini{font-size:9pt}
+  .report-doc .portada{margin-bottom:10pt;padding-bottom:8pt;border-bottom:1px solid #999}
+  .report-doc .section{break-inside:auto;page-break-inside:auto}
+  .report-doc .firma{margin-top:16pt;text-align:center;display:grid;grid-template-columns:1fr 1fr;gap:22pt}
+  .report-doc .tabla-final{break-before:page;page-break-before:always}
+  .report-doc table{width:100%;border-collapse:collapse;margin-top:6pt;font-family:"Times New Roman",serif;color:#000;table-layout:fixed;page-break-inside:auto;break-inside:auto}
+  .report-doc thead{display:table-header-group}.report-doc tfoot{display:table-footer-group}
+  .report-doc tr{page-break-inside:avoid;break-inside:avoid}
+  .report-doc th{background:#e9f0ec;border:1px solid #777;padding:3pt 3pt;font-weight:bold;text-align:center;font-size:8.4pt;line-height:1.0;vertical-align:middle}
+  .report-doc td{border:1px solid #999;padding:3pt 3pt;font-size:8.4pt;line-height:1.0;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere}
+  .report-doc td.num{text-align:right;white-space:nowrap}.report-doc td.center{text-align:center}
+  .report-doc .w-num{width:5%}.report-doc .w-name{width:31%}.report-doc .w-sm{width:8%}.report-doc .w-med{width:11%}
 </style>`;
 
 function construirInformeCorteHTML(inicio,fin,regs){
@@ -1325,22 +1332,106 @@ function construirInformeCorteHTML(inicio,fin,regs){
   const topGuardas=guardasConsol.slice(0,5);
   const etiqueta=`${fmtDateDisplay(inicio)} al ${fmtDateDisplay(fin)}`;
   const tablaGuardas=guardasConsol.map((o,i)=>`<tr><td class="center">${i+1}</td><td>${escH(o.g)}</td><td class="num">${fmtGT(o.total,0)}</td><td class="num">${fmtGT(o.km,1,1)}</td><td class="num">${fmtGT(o.inc,0)}</td><td class="num">${fmtGT(o.municipios,0)}</td><td class="num">${o.dur!==null?fmtGT(o.dur,1,1)+" h":"–"}</td><td class="num">${fmtGT(o.rumcla,0)}</td><td class="num">${fmtGT(o.fuera,0)}</td></tr>`).join("");
+
   return `<div class="report-doc">
-    <div class="page"><h1>INFORME MENSUAL DE PATRULLAJES</h1><p class="center"><strong>Periodo operativo de corte 25 a 25: ${escH(etiqueta)}</strong></p><p class="center small">Consejo Nacional de Áreas Protegidas – Dirección Regional Altiplano Central</p><p class="center small">Sistema de monitoreo de patrullajes AC192</p><br/><h2>1. Introducción</h2><p>El presente informe resume de manera técnica, operativa y territorial los patrullajes registrados en el módulo de patrullajes durante el periodo operativo comprendido del <strong>${fmtDateDisplay(inicio)}</strong> al <strong>${fmtDateDisplay(fin)}</strong>. El corte mensual se interpreta de 25 a 25 de cada mes, por lo que el análisis consolida únicamente los registros cuya fecha de patrullaje se encuentre dentro del intervalo seleccionado.</p><p>El objetivo del documento es facilitar la revisión mensual del trabajo de campo, identificar los municipios con mayor presencia operativa, cuantificar los kilómetros recorridos, resumir los incidentes reportados y presentar una tabla consolidada por guardarecurso. La información se genera automáticamente a partir del archivo de datos del módulo, por lo que el contenido numérico cambia según el periodo de corte elegido por el usuario.</p><h2>2. Resumen ejecutivo del periodo</h2><p>Durante el periodo analizado se registraron <strong>${fmtGT(total,0)}</strong> patrullajes válidos, realizados por <strong>${fmtGT(guardas.size,0)}</strong> guardarecursos activos. En conjunto, los patrullajes reportaron <strong>${fmtGT(km,1,1)}</strong> kilómetros recorridos, con una duración media estimada de <strong>${durProm!==null?fmtGT(durProm,1,1):"–"}</strong> horas por patrullaje y un total acumulado aproximado de <strong>${fmtGT(totalHoras,1,1)}</strong> horas efectivas de actividad.</p><p>Del total de registros, <strong>${fmtGT(incidentes,0)}</strong> patrullajes reportaron actividad ilegal observada, equivalente al <strong>${fmtGT(pct(incidentes,total),1,1)}%</strong> del periodo. Además, se registraron <strong>${fmtGT(rumcla,0)}</strong> patrullajes dentro de RUMCLA y <strong>${fmtGT(fuera,0)}</strong> patrullajes fuera de dicha ubicación.</p><h2>3. Principales indicadores</h2><p>La operación mensual cubrió <strong>${fmtGT(municipios.size,0)}</strong> municipios y <strong>${fmtGT(areas.size,0)}</strong> áreas o zonas protegidas registradas en el formulario. El promedio de kilómetros por patrullaje fue de <strong>${total?fmtGT(km/total,1,1):"–"}</strong> km, mientras que la relación de incidentes por cada 100 patrullajes fue de <strong>${total?fmtGT((incidentes/total)*100,1,1):"–"}</strong>.</p></div>
-    <div class="page"><h2>4. Análisis territorial de patrullajes</h2><p>La mayor concentración territorial de patrullajes se observó en ${textListTop(topMunicipios,5,"patrullajes")}. Esta distribución permite identificar los municipios con mayor presencia operativa y orientar la revisión de cobertura según prioridades de conservación, presión territorial y necesidades de seguimiento.</p><p>En términos de kilómetros reportados, los municipios con mayor acumulación fueron ${textListTop(topMunicipiosKm,5,"km")}. La comparación entre volumen de patrullajes y kilómetros recorridos ayuda a diferenciar territorios con recorridos frecuentes pero cortos de territorios con menor frecuencia y mayor extensión operativa.</p><h3>4.1 Cobertura por área protegida</h3><p>Las áreas o zonas registradas con mayor cantidad de patrullajes fueron ${textListTop(topAreas,5,"registros")}. Este resultado permite observar la concentración de trabajo por zona de conservación.</p><h3>4.2 Cobertura RUMCLA y fuera de RUMCLA</h3><p>Del total de patrullajes, <strong>${fmtGT(rumcla,0)}</strong> se reportaron dentro de RUMCLA y <strong>${fmtGT(fuera,0)}</strong> fuera de RUMCLA. Esta distribución es relevante porque permite evaluar si el esfuerzo operativo se concentró dentro del área protegida principal o si existió una proporción importante de recorridos en zonas externas, comunidades, rutas de acceso o áreas de influencia.</p><h3>4.3 Municipios con mayor presencia operativa</h3><p>Los municipios con mayor número de registros pueden interpretarse como áreas de atención prioritaria durante el periodo. Sin embargo, el volumen de patrullajes debe complementarse con la revisión de incidentes, kilómetros recorridos y tipo de patrullaje.</p></div>
-    <div class="page"><h2>5. Incidentes y actividad ilegal observada</h2><p>Durante el periodo de corte se reportaron <strong>${fmtGT(incidentes,0)}</strong> patrullajes con actividad ilegal observada y <strong>${fmtGT(sinInc,0)}</strong> patrullajes sin incidente reportado. El porcentaje de patrullajes con incidente fue de <strong>${fmtGT(pct(incidentes,total),1,1)}%</strong>, lo cual permite dimensionar la frecuencia relativa de hallazgos durante las actividades de vigilancia y control.</p><p>Los municipios con mayor cantidad de incidentes fueron ${textListTop(topIncMunicipios,5,"incidentes")}. Este apartado debe revisarse junto con los recorridos de campo y las observaciones específicas de cada boleta.</p><h2>6. Modalidad de patrullaje y coordinación institucional</h2><p>El tipo de patrullaje más frecuente fue ${textListTop(topTipos,4,"registros")}. Esta distribución permite observar si el periodo estuvo orientado principalmente a patrullajes de control, monitoreo, verificación, acompañamiento u otras modalidades registradas.</p><p>Respecto a la participación de otras instituciones, se registraron <strong>${fmtGT(instSi,0)}</strong> patrullajes interinstitucionales y <strong>${fmtGT(instNo,0)}</strong> patrullajes sin participación externa reportada. La coordinación interinstitucional es relevante para interpretar acciones de control, operativos conjuntos y seguimiento a incidentes.</p><h2>7. Lectura operativa del periodo</h2><p>El comportamiento general del periodo muestra la relación entre presencia territorial, esfuerzo acumulado en kilómetros, cantidad de guardarecursos activos e incidentes reportados. Cuando el volumen de patrullajes aumenta en municipios con incidentes, se recomienda revisar si la cobertura responde a acciones preventivas, seguimiento de puntos críticos o necesidades recurrentes de control y vigilancia.</p></div>
-    <div class="page"><h2>8. Desempeño consolidado por guardarecurso</h2><p>El análisis por guardarecurso resume la participación individual durante el periodo seleccionado. Para evitar duplicidad visual y facilitar la lectura ejecutiva, el informe no lista cada registro individual como fila separada. En su lugar, consolida por guardarecurso la cantidad total de patrullajes, los kilómetros recorridos, el número de incidentes reportados, los municipios cubiertos, la duración media y la distribución de patrullajes dentro y fuera de RUMCLA.</p><p>Los guardarecursos con mayor cantidad de patrullajes fueron ${textListTop(topGuardas.map(o=>[o.g,o.total]),5,"patrullajes")}. La revisión de estos valores debe considerar que una mayor cantidad de registros puede relacionarse con asignaciones territoriales, disponibilidad de rutas, carga operativa del mes o necesidades específicas de seguimiento.</p><p>En kilómetros recorridos, el mayor esfuerzo acumulado se observó en ${textListTop(guardasConsol.map(o=>[o.g,o.km]).sort((a,b)=>b[1]-a[1]),5,"km")}. Este indicador permite complementar el número de patrullajes con una lectura de intensidad espacial del trabajo realizado.</p><h2>9. Consideraciones metodológicas</h2><p>El informe fue generado automáticamente a partir de los registros disponibles en el archivo de patrullajes. Los cálculos de patrullajes, incidentes y kilómetros se realizan sobre los registros incluidos en el periodo de corte seleccionado. La duración media se calcula únicamente cuando los campos de hora de inicio y hora de finalización permiten estimar una duración válida.</p><p>Los nombres de guardarecursos se presentan de forma consolidada según la normalización aplicada en el sistema. La tabla final agrupa los registros por persona y no por boleta individual, por lo que cada fila representa un resumen operativo del guardarecurso durante el periodo.</p><div class="firma"><p>______________________________<br/>Responsable de revisión</p><p>______________________________<br/>Coordinación / Supervisión</p></div></div>
-    <div class="page"><h2>10. Tabla consolidada final por guardarecurso</h2><p>La siguiente tabla presenta el consolidado del periodo seleccionado. Cada fila corresponde a un guardarecurso y resume los patrullajes reportados, kilómetros acumulados, incidentes, municipios cubiertos, duración media y ubicación general de los patrullajes.</p><table><thead><tr><th>#</th><th>Guardarecurso</th><th>Patrullajes</th><th>Km recorridos</th><th>Incidentes</th><th>Municipios</th><th>Duración media</th><th>RUMCLA</th><th>Fuera</th></tr></thead><tbody>${tablaGuardas||`<tr><td colspan="9" class="center">Sin registros para el periodo seleccionado.</td></tr>`}</tbody></table></div>
+    <div class="portada">
+      <h1>INFORME MENSUAL DE PATRULLAJES</h1>
+      <p class="center"><strong>Periodo operativo de corte 25 a 25: ${escH(etiqueta)}</strong></p>
+      <p class="center small">Consejo Nacional de Áreas Protegidas – Dirección Regional Altiplano Central</p>
+      <p class="center small">Sistema de monitoreo de patrullajes AC192</p>
+    </div>
+
+    <div class="section">
+      <h2>1. Introducción</h2>
+      <p>El presente informe resume de manera técnica, operativa y territorial los patrullajes registrados en el módulo de patrullajes durante el periodo operativo comprendido del <strong>${fmtDateDisplay(inicio)}</strong> al <strong>${fmtDateDisplay(fin)}</strong>. El corte mensual se interpreta de 25 a 25 de cada mes, por lo que el análisis consolida únicamente los registros cuya fecha de patrullaje se encuentra dentro del intervalo seleccionado.</p>
+      <p>El objetivo del documento es facilitar la revisión mensual del trabajo de campo, identificar los municipios con mayor presencia operativa, cuantificar los kilómetros recorridos, resumir los incidentes reportados y presentar una tabla consolidada por guardarecurso. La información se genera automáticamente a partir del archivo de datos del módulo, por lo que el contenido numérico cambia según el periodo de corte elegido por el usuario.</p>
+    </div>
+
+    <div class="section">
+      <h2>2. Resumen ejecutivo del periodo</h2>
+      <p>Durante el periodo analizado se registraron <strong>${fmtGT(total,0)}</strong> patrullajes válidos, realizados por <strong>${fmtGT(guardas.size,0)}</strong> guardarecursos activos. En conjunto, los patrullajes reportaron <strong>${fmtGT(km,1,1)}</strong> kilómetros recorridos, con una duración media estimada de <strong>${durProm!==null?fmtGT(durProm,1,1):"–"}</strong> horas por patrullaje y un total acumulado aproximado de <strong>${fmtGT(totalHoras,1,1)}</strong> horas efectivas de actividad.</p>
+      <p>Del total de registros, <strong>${fmtGT(incidentes,0)}</strong> patrullajes reportaron actividad ilegal observada, equivalente al <strong>${fmtGT(pct(incidentes,total),1,1)}%</strong> del periodo. Además, se registraron <strong>${fmtGT(rumcla,0)}</strong> patrullajes dentro de RUMCLA y <strong>${fmtGT(fuera,0)}</strong> patrullajes fuera de dicha ubicación.</p>
+    </div>
+
+    <div class="section">
+      <h2>3. Principales indicadores</h2>
+      <p>La operación mensual cubrió <strong>${fmtGT(municipios.size,0)}</strong> municipios y <strong>${fmtGT(areas.size,0)}</strong> áreas o zonas protegidas registradas en el formulario. El promedio de kilómetros por patrullaje fue de <strong>${total?fmtGT(km/total,1,1):"–"}</strong> km, mientras que la relación de incidentes por cada 100 patrullajes fue de <strong>${total?fmtGT((incidentes/total)*100,1,1):"–"}</strong>.</p>
+      <p>Estos indicadores permiten interpretar el esfuerzo operativo del periodo desde tres dimensiones: volumen de patrullajes, cobertura territorial y reporte de hallazgos. La lectura conjunta evita reducir el análisis únicamente al número de boletas registradas y permite observar también intensidad espacial, duración operativa y presencia en áreas priorizadas.</p>
+    </div>
+
+    <div class="section">
+      <h2>4. Análisis territorial de patrullajes</h2>
+      <p>La mayor concentración territorial de patrullajes se observó en ${textListTop(topMunicipios,5,"patrullajes")}. Esta distribución permite identificar los municipios con mayor presencia operativa y orientar la revisión de cobertura según prioridades de conservación, presión territorial y necesidades de seguimiento.</p>
+      <p>En términos de kilómetros reportados, los municipios con mayor acumulación fueron ${textListTop(topMunicipiosKm,5,"km")}. La comparación entre volumen de patrullajes y kilómetros recorridos ayuda a diferenciar territorios con recorridos frecuentes pero cortos de territorios con menor frecuencia y mayor extensión operativa.</p>
+      <h3>4.1 Cobertura por área protegida</h3>
+      <p>Las áreas o zonas registradas con mayor cantidad de patrullajes fueron ${textListTop(topAreas,5,"registros")}. Este resultado permite observar la concentración de trabajo por zona de conservación y facilita la revisión de la presencia institucional en las áreas de mayor atención durante el periodo.</p>
+      <h3>4.2 Cobertura RUMCLA y fuera de RUMCLA</h3>
+      <p>Del total de patrullajes, <strong>${fmtGT(rumcla,0)}</strong> se reportaron dentro de RUMCLA y <strong>${fmtGT(fuera,0)}</strong> fuera de RUMCLA. Esta distribución es relevante porque permite evaluar si el esfuerzo operativo se concentró dentro del área protegida principal o si existió una proporción importante de recorridos en zonas externas, comunidades, rutas de acceso o áreas de influencia.</p>
+    </div>
+
+    <div class="section">
+      <h2>5. Incidentes y actividad ilegal observada</h2>
+      <p>Durante el periodo de corte se reportaron <strong>${fmtGT(incidentes,0)}</strong> patrullajes con actividad ilegal observada y <strong>${fmtGT(sinInc,0)}</strong> patrullajes sin incidente reportado. El porcentaje de patrullajes con incidente fue de <strong>${fmtGT(pct(incidentes,total),1,1)}%</strong>, lo cual permite dimensionar la frecuencia relativa de hallazgos durante las actividades de vigilancia y control.</p>
+      <p>Los municipios con mayor cantidad de incidentes fueron ${textListTop(topIncMunicipios,5,"incidentes")}. Este apartado debe revisarse junto con los recorridos de campo y las observaciones específicas de cada boleta, ya que el número de incidentes no sustituye la lectura cualitativa de los hallazgos reportados.</p>
+    </div>
+
+    <div class="section">
+      <h2>6. Modalidad de patrullaje y coordinación institucional</h2>
+      <p>El tipo de patrullaje más frecuente fue ${textListTop(topTipos,4,"registros")}. Esta distribución permite observar si el periodo estuvo orientado principalmente a patrullajes de control, monitoreo, verificación, acompañamiento u otras modalidades registradas.</p>
+      <p>Respecto a la participación de otras instituciones, se registraron <strong>${fmtGT(instSi,0)}</strong> patrullajes interinstitucionales y <strong>${fmtGT(instNo,0)}</strong> patrullajes sin participación externa reportada. La coordinación interinstitucional es relevante para interpretar acciones de control, operativos conjuntos y seguimiento a incidentes.</p>
+    </div>
+
+    <div class="section">
+      <h2>7. Lectura operativa del periodo</h2>
+      <p>El comportamiento general del periodo muestra la relación entre presencia territorial, esfuerzo acumulado en kilómetros, cantidad de guardarecursos activos e incidentes reportados. Cuando el volumen de patrullajes aumenta en municipios con incidentes, se recomienda revisar si la cobertura responde a acciones preventivas, seguimiento de puntos críticos o necesidades recurrentes de control y vigilancia.</p>
+      <p>Cuando el volumen de kilómetros es alto pero la cantidad de patrullajes es menor, puede interpretarse como una mayor extensión de los recorridos o una cobertura territorial más amplia por patrullaje. Por el contrario, muchos patrullajes con pocos kilómetros pueden indicar recorridos de control más focalizados, presencia repetida en puntos específicos o actividades de seguimiento en áreas cercanas.</p>
+    </div>
+
+    <div class="section">
+      <h2>8. Desempeño consolidado por guardarecurso</h2>
+      <p>El análisis por guardarecurso resume la participación individual durante el periodo seleccionado. Para evitar duplicidad visual y facilitar la lectura ejecutiva, el informe no lista cada registro individual como fila separada. En su lugar, consolida por guardarecurso la cantidad total de patrullajes, los kilómetros recorridos, el número de incidentes reportados, los municipios cubiertos, la duración media y la distribución de patrullajes dentro y fuera de RUMCLA.</p>
+      <p>Los guardarecursos con mayor cantidad de patrullajes fueron ${textListTop(topGuardas.map(o=>[o.g,o.total]),5,"patrullajes")}. La revisión de estos valores debe considerar que una mayor cantidad de registros puede relacionarse con asignaciones territoriales, disponibilidad de rutas, carga operativa del mes o necesidades específicas de seguimiento.</p>
+      <p>En kilómetros recorridos, el mayor esfuerzo acumulado se observó en ${textListTop(guardasConsol.map(o=>[o.g,o.km]).sort((a,b)=>b[1]-a[1]),5,"km")}. Este indicador permite complementar el número de patrullajes con una lectura de intensidad espacial del trabajo realizado.</p>
+    </div>
+
+    <div class="section">
+      <h2>9. Consideraciones metodológicas</h2>
+      <p>El informe fue generado automáticamente a partir de los registros disponibles en el archivo de patrullajes. Los cálculos de patrullajes, incidentes y kilómetros se realizan sobre los registros incluidos en el periodo de corte seleccionado. La duración media se calcula únicamente cuando los campos de hora de inicio y hora de finalización permiten estimar una duración válida.</p>
+      <p>Los nombres de guardarecursos se presentan de forma consolidada según la normalización aplicada en el sistema. La tabla final agrupa los registros por persona y no por boleta individual, por lo que cada fila representa un resumen operativo del guardarecurso durante el periodo.</p>
+      <div class="firma"><p>______________________________<br/>Responsable de revisión</p><p>______________________________<br/>Coordinación / Supervisión</p></div>
+    </div>
+
+    <div class="section tabla-final">
+      <h2>10. Tabla consolidada final por guardarecurso</h2>
+      <p>La siguiente tabla presenta el consolidado del periodo seleccionado. Cada fila corresponde a un guardarecurso y resume los patrullajes reportados, kilómetros acumulados, incidentes, municipios cubiertos, duración media y ubicación general de los patrullajes.</p>
+      <table>
+        <thead><tr><th class="w-num">#</th><th class="w-name">Guardarecurso</th><th class="w-sm">Patrullajes</th><th class="w-med">Km recorridos</th><th class="w-sm">Incidentes</th><th class="w-sm">Municipios</th><th class="w-med">Duración media</th><th class="w-sm">RUMCLA</th><th class="w-sm">Fuera</th></tr></thead>
+        <tbody>${tablaGuardas||`<tr><td colspan="9" class="center">Sin registros para el periodo seleccionado.</td></tr>`}</tbody>
+      </table>
+    </div>
   </div>`;
 }
+
 function docWordReporteCorte(nombre,html){
   const src="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_REPORTE_CORTE+"</head><body>"+html+"</body></html>";
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff",src],{type:"application/msword"}));a.download=nombre;document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 function docPDFReporteCorte(nombre,html){
   if(typeof html2pdf==="undefined"){alert("No se pudo cargar html2pdf.");return}
-  const d=document.createElement("div");d.innerHTML=CSS_REPORTE_CORTE+html;document.body.appendChild(d);
-  html2pdf().set({margin:0,filename:nombre,image:{type:"jpeg",quality:.98},html2canvas:{scale:2,useCORS:true},pagebreak:{mode:["css","legacy"]},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(d).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d));
+  const d=document.createElement("div");
+  d.innerHTML=CSS_REPORTE_CORTE+html;
+  d.style.background="#fff";
+  d.style.width="210mm";
+  d.style.minHeight="297mm";
+  document.body.appendChild(d);
+  html2pdf().set({
+    margin:0,
+    filename:nombre,
+    image:{type:"jpeg",quality:.98},
+    html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",scrollY:0},
+    pagebreak:{mode:["css","legacy"],avoid:["tr","thead","h1","h2","h3"]},
+    jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
+  }).from(d).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d));
 }
 function descargarInformeCorte(fmt,inicio,fin,regs){
   if(!regs.length){alert("No hay registros para el periodo seleccionado.");return}
@@ -1392,9 +1483,10 @@ document.addEventListener("DOMContentLoaded",function(){
   document.getElementById("generate-monthly-report-word").addEventListener("click",()=>generarInformeMensual("word"));
   document.getElementById("generate-monthly-report-pdf").addEventListener("click",()=>generarInformeMensual("pdf"));
   document.getElementById("vc-aplicar").addEventListener("click",ejecutarVerificacion);
-  document.getElementById("vc-informe-word").addEventListener("click",()=>generarInformeCorteDesdeVerificacion("word"));
-  document.getElementById("vc-informe-pdf").addEventListener("click",()=>generarInformeCorteDesdeVerificacion("pdf"));
-  document.getElementById("vc-informe-periodo-pdf").addEventListener("click",generarInformePeriodoSeleccionadoPDF);
+  document.getElementById("vc-informe-word")?.addEventListener("click",()=>generarInformeCorteDesdeVerificacion("word"));
+  document.getElementById("vc-informe-pdf")?.addEventListener("click",()=>generarInformeCorteDesdeVerificacion("pdf"));
+  document.getElementById("vc-informe-periodo-pdf")?.addEventListener("click",generarInformePeriodoSeleccionadoPDF);
+  document.getElementById("btn-informe-general-periodo")?.addEventListener("click",generarInformePeriodoSeleccionadoPDF);
 
   sugerirPeriodo();
 
