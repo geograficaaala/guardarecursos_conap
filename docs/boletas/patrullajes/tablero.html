@@ -1015,65 +1015,11 @@
 
 <script>
 /* ─── PALETA UNIFICADA ─────────────────────────────────────── */
-const DASH_GREEN = "#2f6f4e";
-const DASH_GREEN_HOVER = "#285f43";
-const SOFT_BLACK = "rgba(0,0,0,0.48)";
-const INCIDENT_RED = "#a8323e";
-const GT_LOCALE = "en-US"; // Guatemala: coma para miles y punto para decimales
 const PAL = [
-  DASH_GREEN,"#496a59","#8a7354","#6c7f7a","#a8323e","#355844",
-  "#557b61","#7a8f6a","#6f8579","#4e6f5d","#2a4f3a","#9aa99f"
+  "#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660",
+  "#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"
 ];
 const PAL_A = PAL.map(c => c + "bb"); // versión semitransparente
-const LEGEND_LABELS = {
-  boxWidth:14,
-  boxHeight:14,
-  padding:16,
-  color:"#425a4d",
-  font:{size:12.5,weight:"700",family:"'Inter',system-ui,sans-serif"},
-  usePointStyle:false
-};
-function fmtNum(v,decimals=0){
-  const n=Number(v);
-  if(!Number.isFinite(n))return "0";
-  return n.toLocaleString(GT_LOCALE,{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
-}
-function fmtPct(part,total){return total?Math.round((Number(part)||0)/total*100):0;}
-function cleanLabel(value){
-  let s=String(value??"").trim();
-  if(!s)return "Sin dato";
-  s=s.replace(/[_]+/g," ").replace(/\s+/g," ").trim();
-  const isAllCaps=s===s.toUpperCase();
-  const isAllLower=s===s.toLowerCase();
-  if(isAllCaps||isAllLower){
-    s=s.toLowerCase().replace(/(^|\s)([a-záéíóúüñ])/g,(m,sp,ch)=>sp+ch.toUpperCase());
-  }
-  return s
-    .replace(/\bRumcla\b/g,"RUMCLA")
-    .replace(/\bConap\b/g,"CONAP")
-    .replace(/\bAala\b/g,"AALA")
-    .replace(/\bSig\b/g,"SIG")
-    .replace(/\bKm\b/g,"km")
-    .replace(/\bSi\b/g,"Sí");
-}
-function shortLabel(value,max=42){
-  const s=cleanLabel(value);
-  return s.length>max?s.slice(0,Math.max(1,max-1)).trim()+"…":s;
-}
-function shortName(value,n=3){return cleanLabel(value).split(" ").slice(0,n).join(" ");}
-function legendOpts(position="top"){return{position,align:"center",labels:{...LEGEND_LABELS}};}
-function simpleBarDataset(extra={}){
-  return {
-    backgroundColor: DASH_GREEN,
-    hoverBackgroundColor: DASH_GREEN_HOVER,
-    borderColor: SOFT_BLACK,
-    hoverBorderColor: SOFT_BLACK,
-    borderWidth: 1.15,
-    borderRadius: 3,
-    borderSkipped: false,
-    ...extra
-  };
-}
 
 /* ─── NORMALIZACIÓN ────────────────────────────────────────── */
 const EXCLUIDOS = new Set([
@@ -1085,7 +1031,7 @@ const EXCLUIDOS = new Set([
 ]);
 const MERGE = {
   "5 juan marcos saquic":"Juan Marcos Saquic",
-  "9 heriberto chavez chavez":"Heriberto Chávez Chávez",
+  "9 heriberto chavez chavez":"Heriberto Chavez Chavez",
   "antonio federico tzaj y tzaj":"Antonio Federico Tzaj Y Tzaj",
   "diego martin ramirez ixbalan":"Diego Martín Ramírez Ixbalan",
   "diego martín ramírez ixbalan":"Diego Martín Ramírez Ixbalan",
@@ -1097,8 +1043,8 @@ const MERGE = {
   "josé bacajol simají":"José Bacajol Simají",
   "mario cesar tale coche":"Mario César Talé Coché",
   "mario césar talé coché":"Mario César Talé Coché",
-  "rafael enrique chiciy chocoy":"Rafael Enrique Chocoy",
-  "rafael enrique chocoy chocoy":"Rafael Enrique Chocoy",
+  "rafael enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "rafael enrique chocoy chocoy":"Rafael Enrique Chiciy Chocoy",
   "sebastian tinuar":"Sebastián Tinuar Cipriano",
   "sebastian tinuar cipriano":"Sebastián Tinuar Cipriano",
   "vicente francisco omar perez cox":"Vicente Francisco Omar Pérez Cox",
@@ -1107,13 +1053,28 @@ const MERGE = {
   "santos maurico vicente mendoza":"Santos Mauricio Vicente Mendoza",
 };
 function canonStr(s){return String(s||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ");}
+function cleanLabel(value){
+  let s=String(value??"").trim();
+  if(!s)return "Sin dato";
+  s=s.replace(/[_]+/g," ").replace(/\s+/g," ").trim();
+  const isAllCaps=s===s.toUpperCase();
+  const isAllLower=s===s.toLowerCase();
+  if(isAllCaps||isAllLower){
+    s=s.toLowerCase().replace(/(^|\s)([a-záéíóúüñ])/g,(m,sp,ch)=>sp+ch.toUpperCase());
+  }
+  return s.replace(/\bRumcla\b/g,"RUMCLA").replace(/\bConap\b/g,"CONAP").replace(/\bAala\b/g,"AALA").replace(/\bSig\b/g,"SIG").replace(/\bKm\b/g,"km").replace(/\bSi\b/g,"Sí");
+}
+function fmtNum(v,decimals=0){
+  const n=Number(v);
+  if(!Number.isFinite(n))return "0";
+  return n.toLocaleString("en-US",{minimumFractionDigits:decimals,maximumFractionDigits:decimals});
+}
 function normGuarda(n){if(!n)return null;const c=canonStr(n);if(EXCLUIDOS.has(c))return null;return MERGE[c]||n.trim();}
 
 /* ─── CHART.JS GLOBALES ────────────────────────────────────── */
 Chart.defaults.font.family="'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
 Chart.defaults.font.size=13;
-Chart.defaults.color="#6f8579";
-Chart.defaults.animation={duration:720,easing:"easeOutQuart"};
+Chart.defaults.color="#6a8878";
 if(typeof ChartDataLabels!=="undefined"){Chart.register(ChartDataLabels);Chart.defaults.set("plugins.datalabels",{display:false});}
 
 // Tooltip unificado — fondo muy oscuro, bordes sutiles
@@ -1261,7 +1222,7 @@ function applyF(f){return ROWS.filter(r=>{
 });}
 function renderChips(f){
   const w=document.getElementById("chips-wrap");if(!w)return;w.innerHTML="";
-  const add=txt=>{const s=document.createElement("span");s.className="chip-activo";s.textContent=cleanLabel(txt);w.appendChild(s);};
+  const add=txt=>{const s=document.createElement("span");s.className="chip-activo";s.textContent=txt;w.appendChild(s);};
   if(f.desde||f.hasta){const de=f.desde?f.desde.split("-").reverse().join("/"):"inicio";const ha=f.hasta?f.hasta.split("-").reverse().join("/"):"hoy";add(`${de} — ${ha}`);}
   if(f.muni)add(LABELS.muni.get(f.muni)||f.muni);
   if(f.guar)add(LABELS.guarda.get(f.guar)||f.guar);
@@ -1269,24 +1230,14 @@ function renderChips(f){
 }
 
 /* ─── KPIs ──────────────────────────────────────────────────── */
-function animateKPI(id,target,{decimals=0,suffix="",duration=650}={}){
-  const el=document.getElementById(id);if(!el)return;
-  const end=Number(target)||0;
-  const start=Number(el.dataset.value||0)||0;
-  el.dataset.value=end;
-  if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches){el.textContent=fmtNum(end,decimals)+suffix;return;}
-  const t0=performance.now();const ease=t=>1-Math.pow(1-t,3);
-  function frame(now){const p=Math.min(1,(now-t0)/duration);const val=start+(end-start)*ease(p);el.textContent=fmtNum(decimals?Number(val.toFixed(decimals)):Math.round(val),decimals)+suffix;if(p<1)requestAnimationFrame(frame);}
-  requestAnimationFrame(frame);
-}
 function updateKPIs(rows){
-  animateKPI("kpi-total",rows.length,{duration:620});
-  animateKPI("kpi-guardas",new Set(rows.map(r=>r.__cg).filter(Boolean)).size,{duration:620});
+  document.getElementById("kpi-total").textContent=rows.length.toLocaleString("en-US");
+  document.getElementById("kpi-guardas").textContent=new Set(rows.map(r=>r.__cg).filter(Boolean)).size;
   const durs=rows.map(r=>r.__dur).filter(v=>v!==null);
-  if(durs.length)animateKPI("kpi-duracion",avg_(durs),{decimals:1,suffix:"h",duration:680});else{const el=document.getElementById("kpi-duracion");if(el){el.textContent="–";el.dataset.value=0;}}
-  animateKPI("kpi-ilegales",rows.filter(r=>r.__ci==="si").length,{duration:620});
+  document.getElementById("kpi-duracion").textContent=durs.length?avg_(durs).toFixed(1)+"h":"–";
+  document.getElementById("kpi-ilegales").textContent=rows.filter(r=>r.__ci==="si").length;
   const kms=rows.map(r=>r.__km).filter(v=>v!==null);
-  if(kms.length)animateKPI("kpi-km",sum_(kms),{decimals:0,duration:720});else{const el=document.getElementById("kpi-km");if(el){el.textContent="–";el.dataset.value=0;}}
+  document.getElementById("kpi-km").textContent=kms.length?sum_(kms).toLocaleString("en-US",{maximumFractionDigits:0}):"–";
   const dates=rows.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
   document.getElementById("kpi-rango").textContent=dates.length?fmtDate(dates[0])+" – "+fmtDate(dates[dates.length-1]):"–";
 }
@@ -1322,15 +1273,15 @@ function g2(rows){
     const x=PL+h*CW,y=PT+d*CH,v=mat[d][h];
     const fill=hc(v,maxV),tc=v/maxV>0.45?"#fff":"#162a1c";
     html+=`<rect x="${x}" y="${y}" width="${CW-2}" height="${CH-2}" rx="5" fill="${fill}" stroke="#d8e4dd" stroke-width="0.5"/>`;
-    if(v>0)html+=`<text x="${x+CW/2-1}" y="${y+CH/2+4.5}" text-anchor="middle" font-size="10" fill="${tc}" font-family="Inter,system-ui,sans-serif" font-weight="500">${v}</text>`;
+    if(v>0)html+=`<text x="${x+CW/2-1}" y="${y+CH/2+4.5}" text-anchor="middle" font-size="10" fill="${tc}" font-family="DM Sans,sans-serif" font-weight="500">${v}</text>`;
   }
-  DIAS.forEach((d,i)=>html+=`<text x="${PL-8}" y="${PT+i*CH+CH/2+4.5}" text-anchor="end" font-size="12" fill="#6a8878" font-family="Inter,system-ui,sans-serif" font-weight="500">${d}</text>`);
-  for(let h=0;h<24;h+=2)html+=`<text x="${PL+h*CW+CW/2}" y="${PT-12}" text-anchor="middle" font-size="10.5" fill="#6a8878" font-family="Inter,system-ui,sans-serif">${String(h).padStart(2,"0")}h</text>`;
+  DIAS.forEach((d,i)=>html+=`<text x="${PL-8}" y="${PT+i*CH+CH/2+4.5}" text-anchor="end" font-size="12" fill="#6a8878" font-family="DM Sans,sans-serif" font-weight="500">${d}</text>`);
+  for(let h=0;h<24;h+=2)html+=`<text x="${PL+h*CW+CW/2}" y="${PT-12}" text-anchor="middle" font-size="10.5" fill="#6a8878" font-family="DM Sans,sans-serif">${String(h).padStart(2,"0")}h</text>`;
   html+=`<defs><linearGradient id="lgh" x1="0" x2="1"><stop offset="0%" stop-color="#edf2ee"/><stop offset="100%" stop-color="${PAL[0]}"/></linearGradient></defs>`;
   html+=`<rect x="${PL}" y="${H-22}" width="120" height="8" rx="3" fill="url(#lgh)"/>`;
-  html+=`<text x="${PL}" y="${H-6}" font-size="10" fill="#9ab0a6" font-family="Inter,system-ui,sans-serif">0</text>`;
-  html+=`<text x="${PL+120}" y="${H-6}" text-anchor="end" font-size="10" fill="#9ab0a6" font-family="Inter,system-ui,sans-serif">${maxV}</text>`;
-  html+=`<text x="${PL+132}" y="${H-13}" font-size="10" fill="#9ab0a6" font-family="Inter,system-ui,sans-serif">patrullajes</text>`;
+  html+=`<text x="${PL}" y="${H-6}" font-size="10" fill="#9ab0a6" font-family="DM Sans,sans-serif">0</text>`;
+  html+=`<text x="${PL+120}" y="${H-6}" text-anchor="end" font-size="10" fill="#9ab0a6" font-family="DM Sans,sans-serif">${maxV}</text>`;
+  html+=`<text x="${PL+132}" y="${H-13}" font-size="10" fill="#9ab0a6" font-family="DM Sans,sans-serif">patrullajes</text>`;
   svg.innerHTML=html;
 }
 
@@ -1340,9 +1291,9 @@ function g3(rows){
   const bins=new Array(16).fill(0);durs.forEach(d=>{const i=Math.floor(d/0.5);if(i>=0&&i<16)bins[i]++;});
   const ctx=document.getElementById("c-duracion").getContext("2d");
   const gr=ctx.createLinearGradient(0,0,0,260);gr.addColorStop(0,"rgba(26,122,56,0.88)");gr.addColorStop(1,"rgba(26,122,56,0.18)");
-  mkChart("c-duracion",{type:"bar",data:{labels:Array.from({length:16},(_,i)=>i%2===0?(i*0.5)+"h":""),datasets:[simpleBarDataset({label:"Patrullajes",data:bins})]},
+  mkChart("c-duracion",{type:"bar",data:{labels:Array.from({length:16},(_,i)=>i%2===0?(i*0.5)+"h":""),datasets:[{label:"Patrullajes",data:bins,backgroundColor:gr,borderColor:PAL[1],borderWidth:1,borderRadius:4,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].dataIndex*0.5}h – ${(c[0].dataIndex+1)*0.5}h`,label:c=>` ${fmtNum(c.parsed.y)} patrullajes`}}},
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].dataIndex*0.5}h – ${(c[0].dataIndex+1)*0.5}h`,label:c=>` ${c.parsed.y} patrullajes`}}},
       scales:{x:{grid:{display:false},...TICK_FONT,title:{display:true,text:"Duración (horas)",...AXIS_TITLE_FONT}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Frecuencia",...AXIS_TITLE_FONT}}}}});
 }
 
@@ -1359,7 +1310,7 @@ function g4(rows){
 function g5(rows){
   const mc=countBy(rows,r=>r.__cm);const top8=topN(mc,8).map(([k])=>k);
   const months=uniq(rows.map(r=>r.__mes)).sort();
-  const datasets=top8.map((cm,i)=>({label:cleanLabel(LABELS.muni.get(cm)||cm),data:months.map(mo=>rows.filter(r=>r.__cm===cm&&r.__mes===mo).length),backgroundColor:PAL_A[i%PAL.length],borderColor:PAL[i%PAL.length],borderWidth:1,borderRadius:3,borderSkipped:false}));
+  const datasets=top8.map((cm,i)=>({label:LABELS.muni.get(cm)||cm,data:months.map(mo=>rows.filter(r=>r.__cm===cm&&r.__mes===mo).length),backgroundColor:PAL_A[i%PAL.length],borderColor:PAL[i%PAL.length],borderWidth:1,borderRadius:3,borderSkipped:false}));
   mkChart("c-muniMes",{type:"bar",data:{labels:months.map(mShort),datasets},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
       plugins:{legend:{position:"top",labels:{font:{size:12.5},padding:14,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT}},
@@ -1373,14 +1324,14 @@ function g6(rows){
   const metOf=(cg,src)=>{const s=src.filter(r=>r.__cg===cg);const d=s.map(r=>r.__dur).filter(v=>v!==null);return{p:s.length,m:uniq(s.map(r=>r.__cm)).length,d:d.length?avg_(d):0,mes:uniq(s.map(r=>r.__mes)).length,i:s.filter(r=>r.__ci==="si").length};};
   const nrm=(v,mx)=>mx?Math.round(v/mx*100):0;
   const AXES=["Volumen","Municipios\ncubiertos","Duración\nmedia","Meses\nactivos","Incidentes"];
-  const radarOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:12,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.07)"},pointLabels:{font:{size:12.5}}}}};
+  const radarOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:12,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.07)"},pointLabels:{font:{size:12.5}}}}};
   if(sel){
     const allM=allG.map(cg=>metOf(cg,ROWS));
     const gAvg={p:avg_(allM.map(x=>x.p)),m:avg_(allM.map(x=>x.m)),d:avg_(allM.map(x=>x.d)),mes:avg_(allM.map(x=>x.mes)),i:avg_(allM.map(x=>x.i))};
     const sM=metOf(sel,ROWS);
     const mxP=Math.max(...allM.map(x=>x.p),1),mxM=Math.max(...allM.map(x=>x.m),1),mxD=Math.max(...allM.map(x=>x.d),.1),mxMes=Math.max(...allM.map(x=>x.mes),1),mxI=Math.max(...allM.map(x=>x.i),1);
     const toA=o=>[nrm(o.p,mxP),nrm(o.m,mxM),nrm(o.d,mxD),nrm(o.mes,mxMes),nrm(o.i,mxI)];
-    const lbl=(cleanLabel(LABELS.guarda.get(sel)||sel)).split(" ").slice(0,3).join(" ");
+    const lbl=cleanLabel(LABELS.guarda.get(sel)||sel).split(" ").slice(0,3).join(" ");
     mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:[
       {label:lbl,data:toA(sM),backgroundColor:PAL[0]+"2a",borderColor:PAL[0],borderWidth:2.5,pointBackgroundColor:PAL[0],pointRadius:4,pointBorderColor:"#fff",pointBorderWidth:1.5},
       {label:"Media global",data:toA(gAvg),backgroundColor:"rgba(168,28,42,0.10)",borderColor:"rgba(168,28,42,0.60)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(168,28,42,0.6)",pointRadius:3}
@@ -1389,7 +1340,7 @@ function g6(rows){
     const gc=countBy(rows,r=>r.__cg);const top6=topN(gc,6).map(([k])=>k);
     const allT=top6.map(cg=>metOf(cg,rows));
     const mxP=Math.max(...allT.map(x=>x.p),1),mxM=Math.max(...allT.map(x=>x.m),1),mxD=Math.max(...allT.map(x=>x.d),.1),mxMes=Math.max(...allT.map(x=>x.mes),1),mxI=Math.max(...allT.map(x=>x.i),1);
-    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:top6.map((cg,i)=>{const o=metOf(cg,rows);return{label:(cleanLabel(LABELS.guarda.get(cg)||cg)).split(" ").slice(0,2).join(" "),data:[nrm(o.p,mxP),nrm(o.m,mxM),nrm(o.d,mxD),nrm(o.mes,mxMes),nrm(o.i,mxI)],backgroundColor:PAL[i]+"2a",borderColor:PAL[i],borderWidth:2,pointBackgroundColor:PAL[i],pointRadius:3};})},options:radarOpts});
+    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:top6.map((cg,i)=>{const o=metOf(cg,rows);return{label:cleanLabel(LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),data:[nrm(o.p,mxP),nrm(o.m,mxM),nrm(o.d,mxD),nrm(o.mes,mxMes),nrm(o.i,mxI)],backgroundColor:PAL[i]+"2a",borderColor:PAL[i],borderWidth:2,pointBackgroundColor:PAL[i],pointRadius:3};})},options:radarOpts});
   }
 }
 
@@ -1407,7 +1358,7 @@ function g7(rows){
 /* ─── G8 Ilegal por municipio ──────────────────────────────── */
 function g8(rows){
   const mc=countBy(rows,r=>r.__cm);const top=topN(mc,12).map(([k])=>k);
-  const lbls=top.map(cm=>cleanLabel(LABELS.muni.get(cm)||cm));
+  const lbls=top.map(cm=>LABELS.muni.get(cm)||cm);
   const si=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="si").length);
   const no=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="no").length);
   mkChart("c-ilegalMuni",{type:"bar",data:{labels:lbls,datasets:[
@@ -1422,13 +1373,13 @@ function g8(rows){
 /* ─── G9 Área protegida ────────────────────────────────────── */
 function g9(rows){
   const mc=countBy(rows,r=>r.__cap);const sorted=topN(mc,14);
-  const labels=sorted.map(([k])=>{const l=cleanLabel(LABELS.ap.get(k)||k);return l.length>52?l.slice(0,50)+"…":l;});
+  const labels=sorted.map(([k])=>{const l=LABELS.ap.get(k)||k;return l.length>52?l.slice(0,50)+"…":l;});
   const vals=sorted.map(([,v])=>v);
   const ctx=document.getElementById("c-areaProt").getContext("2d");
   const gr=ctx.createLinearGradient(500,0,0,0);gr.addColorStop(0,PAL[1]+"cc");gr.addColorStop(1,PAL[0]+"88");
-  mkChart("c-areaProt",{type:"bar",data:{labels,datasets:[simpleBarDataset({label:"Patrullajes",data:vals})]},
+  mkChart("c-areaProt",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:vals,backgroundColor:gr,borderColor:PAL[1],borderWidth:1,borderRadius:5,borderSkipped:false}]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${fmtNum(c.parsed.x)} patrullajes`}},
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} patrullajes`}},
         datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:11,weight:"700",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?fmtNum(v):""}},
       scales:{x:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12}}}}}});
 }
@@ -1436,7 +1387,7 @@ function g9(rows){
 /* ─── G10 Tipo de patrullaje ───────────────────────────────── */
 function g10(rows){
   const mc=countBy(rows,r=>r.__ctp);const sorted=topN(mc,7);
-  const labels=sorted.map(([k])=>{const l=cleanLabel(LABELS.tp.get(k)||k);return l.length>38?l.slice(0,36)+"…":l;});
+  const labels=sorted.map(([k])=>{const l=LABELS.tp.get(k)||k;return l.length>38?l.slice(0,36)+"…":l;});
   const vals=sorted.map(([,v])=>v);const cols=PAL.slice(0,vals.length);
   mkChart("c-tipoPat",{type:"doughnut",data:{labels,datasets:[{data:vals,backgroundColor:cols.map(c=>c+"cc"),borderColor:cols,borderWidth:2,hoverOffset:12}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"60%",
@@ -1448,10 +1399,10 @@ function g11(rows){
   const counts=new Array(7).fill(0);rows.forEach(r=>{if(r.__dow!==null)counts[r.__dow]++;});
   const ctx=document.getElementById("c-diaSem").getContext("2d");
   const gr=ctx.createLinearGradient(0,0,0,260);gr.addColorStop(0,PAL[0]+"dd");gr.addColorStop(1,PAL[0]+"33");
-  mkChart("c-diaSem",{type:"bar",data:{labels:DIAS,datasets:[simpleBarDataset({label:"Patrullajes",data:counts})]},
+  mkChart("c-diaSem",{type:"bar",data:{labels:DIAS,datasets:[{label:"Patrullajes",data:counts,backgroundColor:gr,borderColor:PAL[0],borderWidth:1,borderRadius:7,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${fmtNum(c.parsed.y)} patrullajes`}},
-        datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#2a4535",font:{size:12,weight:"700",family:"'Inter',system-ui,sans-serif"},formatter:v=>v?fmtNum(v):""}},
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} patrullajes`}},
+        datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#2a4535",font:{size:12,weight:"700",family:"'Inter',system-ui,sans-serif"},formatter:v=>v||""}},
       scales:{x:{grid:{display:false},...TICK_FONT,ticks:{font:{size:13}}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
@@ -1462,18 +1413,18 @@ function gKmMes(rows){
   const gr=ctx.createLinearGradient(0,0,0,260);gr.addColorStop(0,PAL[5]+"cc");gr.addColorStop(1,PAL[5]+"22");
   mkChart("c-kmMes",{type:"bar",data:{labels:keys.map(mShort),datasets:[{label:"Kilómetros",data:vals,backgroundColor:gr,borderColor:PAL[5],borderWidth:1,borderRadius:5,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y.toLocaleString(GT_LOCALE)} km`}}},
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y.toLocaleString("en-US")} km`}}},
       scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Kilómetros",...AXIS_TITLE_FONT}}}}});
 }
 
 /* ─── G km/guarda ──────────────────────────────────────────── */
 function gKmGuarda(rows){
   const km=sumBy(rows,r=>r.__cg,r=>r.__km);const sorted=[...km.entries()].sort((a,b)=>b[1]-a[1]);
-  const labels=sorted.map(([k])=>{const l=cleanLabel(LABELS.guarda.get(k)||k);return l.split(" ").slice(0,3).join(" ");});
+  const labels=sorted.map(([k])=>{const l=LABELS.guarda.get(k)||k;return l.split(" ").slice(0,3).join(" ");});
   const vals=sorted.map(([,v])=>parseFloat(v.toFixed(1)));
   mkChart("c-kmGuarda",{type:"bar",data:{labels,datasets:[{label:"Kilómetros",data:vals,backgroundColor:sorted.map((_,i)=>PAL[i%PAL.length]+"bb"),borderColor:sorted.map((_,i)=>PAL[i%PAL.length]),borderWidth:1.5,borderRadius:5,borderSkipped:false}]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString(GT_LOCALE)} km`}},
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("en-US")} km`}},
         datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:10.5,weight:"700",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?fmtNum(v):""}},
       scales:{x:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Kilómetros",...AXIS_TITLE_FONT}},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12}}}}}});
 }
@@ -1494,18 +1445,18 @@ function g12(rows){
   const allG=[...LABELS.guarda.entries()].map(([k])=>k);
   const gc=countBy(src,r=>r.__cg);
   const sorted=allG.map(k=>([k,gc.get(k)||0])).sort((a,b)=>b[1]-a[1]||(LABELS.guarda.get(a[0])||"").localeCompare(LABELS.guarda.get(b[0])||"","es"));
-  const labels=sorted.map(([k])=>(cleanLabel(LABELS.guarda.get(k)||k)).split(" ").slice(0,3).join(" "));
+  const labels=sorted.map(([k])=>cleanLabel(LABELS.guarda.get(k)||k).split(" ").slice(0,3).join(" "));
   const totales=sorted.map(([,v])=>v);
   const ilegales=sorted.map(([k])=>src.filter(r=>r.__cg===k&&r.__ci==="si").length);
   const h=Math.max(460,sorted.length*22+80);
   const cw=document.getElementById("c-rankGuarda");if(cw)cw.parentElement.style.height=h+"px";
   mkChart("c-rankGuarda",{type:"bar",data:{labels,datasets:[
-    simpleBarDataset({label:"Patrullajes",data:totales,order:2,maxBarThickness:34,
-      datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#0c1e13",font:{size:10.5,weight:"700",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?fmtNum(v):""}}),
+    {label:"Patrullajes",data:totales,backgroundColor:sorted.map((_,i)=>PAL[i%PAL.length]+"bb"),borderColor:sorted.map((_,i)=>PAL[i%PAL.length]),borderWidth:1.5,borderRadius:5,borderSkipped:false,order:2,
+      datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#0c1e13",font:{size:10.5,weight:"700",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?fmtNum(v):""}},
     {label:"Incidentes",data:ilegales,type:"line",borderColor:PAL[4],backgroundColor:PAL[4],borderWidth:2.5,pointRadius:7,pointHoverRadius:9,pointBackgroundColor:PAL[4],pointBorderColor:"#fff",pointBorderWidth:2,tension:0,fill:false,order:1,
       datalabels:{display:true,anchor:"end",align:"top",offset:7,color:"#fff",backgroundColor:"#7f1d28",borderRadius:5,padding:{top:2,bottom:2,left:5,right:5},font:{size:10.8,weight:"900",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?fmtNum(v):""}}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},layout:{padding:{top:28}},
-    plugins:{legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT,callbacks:{label:c=>c.dataset.label==="Patrullajes"?` Patrullajes: ${fmtNum(c.parsed.y)}`:` Incidentes: ${fmtNum(c.parsed.y)}`}},datalabels:{display:false}},
+    plugins:{legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT,callbacks:{label:c=>c.dataset.label==="Patrullajes"?` Patrullajes: ${c.parsed.y}`:` Incidentes: ${c.parsed.y}`}},datalabels:{display:false}},
     scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:42,minRotation:28}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
@@ -1513,10 +1464,9 @@ function g12(rows){
 function applyAll(){
   const f=getF();renderChips(f);const rows=applyF(f);
   updateKPIs(rows);
-  const renderers=[g1,g2,g3,g4,g5,g6,g7,g8,g9,g10,g11,g12,gKmMes,gKmGuarda,gInst];
-  renderers.forEach(fn=>{try{fn(rows);}catch(err){console.error("Error en gráfica",fn.name,err);}});
+  g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);g9(rows);g10(rows);g11(rows);g12(rows);gKmMes(rows);gKmGuarda(rows);gInst(rows);
   const el=document.getElementById("estado");
-  if(el)el.innerHTML=`Mostrando <strong>${fmtNum(rows.length)}</strong> de <strong>${fmtNum(ROWS.length)}</strong> registros`;
+  if(el)el.innerHTML=`Mostrando <strong>${rows.length.toLocaleString("en-US")}</strong> de <strong>${ROWS.length.toLocaleString("en-US")}</strong> registros`;
 }
 
 /* ─── INICIO ───────────────────────────────────────────────── */
