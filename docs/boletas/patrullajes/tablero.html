@@ -4,7 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>AC192 · Tablero dinámico · Patrullajes</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
@@ -33,7 +33,7 @@
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--ink);
       min-height: 100vh;
@@ -96,37 +96,93 @@
 
     /* ═══ NAV ═══════════════════════════════════════════ */
     .module-nav {
-      background: var(--surface);
-      border-bottom: 1px solid var(--borde);
+      background: rgba(255,255,255,.88);
+      border-bottom: 1px solid rgba(26,92,58,.12);
       padding: 0 28px;
-      box-shadow: 0 1px 8px rgba(0,0,0,.04);
+      box-shadow: 0 10px 30px rgba(10,61,43,.055);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       flex-shrink: 0;
+      animation: navDrop .55s cubic-bezier(.22,.68,0,1.08) both;
+    }
+    @keyframes navDrop {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
     .module-nav-inner {
       max-width: 1480px; margin: 0 auto;
-      display: flex; align-items: stretch;
+      display: flex; align-items: center;
       overflow-x: auto; scrollbar-width: none;
+      gap: 4px; min-height: 62px;
     }
     .module-nav-inner::-webkit-scrollbar { display: none; }
     .nav-back {
-      display: flex; align-items: center; gap: 6px;
-      padding: 13px 18px 13px 0;
-      text-decoration: none; font-size: 13px; font-weight: 500;
-      color: var(--muted); border-right: 1px solid var(--borde);
-      margin-right: 8px; white-space: nowrap;
-      transition: color .18s;
-    }
-    .nav-back:hover { color: var(--verde-medio); }
-    .nav-tab {
+      position: relative;
       display: flex; align-items: center; gap: 7px;
-      padding: 0 18px; text-decoration: none;
-      font-size: 13px; font-weight: 500; color: var(--muted);
-      border-bottom: 3px solid transparent;
-      white-space: nowrap; height: 50px;
-      transition: color .18s, border-color .18s;
+      padding: 10px 18px 10px 2px;
+      text-decoration: none; font-size: 13px; font-weight: 700;
+      color: var(--muted); border-right: 1px solid var(--borde);
+      margin-right: 10px; white-space: nowrap;
+      transition: color .22s ease, transform .22s ease;
     }
-    .nav-tab:hover  { color: var(--acento); border-bottom-color: rgba(26,92,58,.2); }
-    .nav-tab.active { color: var(--acento); border-bottom-color: var(--acento); font-weight: 600; }
+    .nav-back svg, .nav-tab svg {
+      transition: transform .24s cubic-bezier(.2,.75,.25,1), opacity .24s;
+    }
+    .nav-back:hover { color: var(--verde-medio); transform: translateX(-2px); }
+    .nav-back:hover svg { transform: translateX(-3px); }
+    .nav-tab {
+      position: relative; isolation: isolate;
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 18px; text-decoration: none;
+      font-size: 13px; font-weight: 700; color: var(--muted);
+      border-bottom: 0;
+      white-space: nowrap; height: 46px;
+      border-radius: 14px;
+      transition: color .22s ease, transform .22s ease, letter-spacing .22s ease;
+      animation: navItemIn .48s cubic-bezier(.22,.68,0,1.12) both;
+    }
+    .nav-tab:nth-of-type(2){ animation-delay:.04s; }
+    .nav-tab:nth-of-type(3){ animation-delay:.09s; }
+    .nav-tab:nth-of-type(4){ animation-delay:.14s; }
+    @keyframes navItemIn {
+      from { opacity: 0; transform: translateY(-6px) scale(.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .nav-tab::before {
+      content: ""; position: absolute; inset: 4px;
+      border-radius: 13px;
+      background: linear-gradient(135deg, rgba(26,92,58,.10), rgba(10,61,43,.045));
+      border: 1px solid rgba(26,92,58,.10);
+      box-shadow: 0 8px 18px rgba(10,61,43,.06);
+      opacity: 0; transform: scale(.94);
+      transition: opacity .22s ease, transform .22s cubic-bezier(.2,.75,.25,1);
+      z-index: -1;
+    }
+    .nav-tab::after {
+      content: ""; position: absolute; left: 22px; right: 22px; bottom: 4px;
+      height: 3px; border-radius: 999px;
+      background: var(--acento);
+      opacity: 0; transform: scaleX(.42);
+      transition: opacity .22s ease, transform .22s ease;
+      transform-origin: center;
+    }
+    .nav-tab:hover  { color: var(--acento); transform: translateY(-2px); letter-spacing: .01em; }
+    .nav-tab:hover::before { opacity: 1; transform: scale(1); }
+    .nav-tab:hover svg { transform: translateY(-1px) scale(1.08); }
+    .nav-tab.active { color: var(--acento); font-weight: 800; }
+    .nav-tab.active::before {
+      opacity: 1; transform: scale(1);
+      background: linear-gradient(135deg, rgba(26,92,58,.16), rgba(26,92,58,.07));
+      border-color: rgba(26,92,58,.22);
+    }
+    .nav-tab.active::after {
+      opacity: 1; transform: scaleX(1);
+      animation: navUnderlinePulse 2.4s ease-in-out infinite;
+    }
+    @keyframes navUnderlinePulse {
+      0%,100% { box-shadow: 0 0 0 rgba(26,92,58,0); }
+      50%     { box-shadow: 0 0 16px rgba(26,92,58,.34); }
+    }
 
     /* ═══ PÁGINA ════════════════════════════════════════ */
     .page {
@@ -256,8 +312,8 @@
       letter-spacing: .10em; text-transform: uppercase; margin-bottom: 10px;
     }
     .kpi-value {
-      font-family: 'Playfair Display', serif;
-      font-size: 32px; font-weight: 900;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 34px; font-weight: 900; letter-spacing: -.045em;
       line-height: 1; color: var(--ink); margin-bottom: 5px;
     }
     .kpi-sub { font-size: 11.5px; color: var(--muted); font-weight: 400; }
@@ -380,6 +436,15 @@
 
     #heatmap-container { overflow-x: auto; padding-bottom: 6px; }
 
+
+    .cc.chart-refresh {
+      animation: chartRefresh .38s cubic-bezier(.22,.68,0,1.08);
+    }
+    @keyframes chartRefresh {
+      from { transform: translateY(4px); box-shadow: 0 14px 36px rgba(10,61,43,.12); }
+      to   { transform: translateY(0); }
+    }
+
     /* ═══ FOOTER ════════════════════════════════════════ */
     footer {
       background: var(--verde-oscuro);
@@ -389,6 +454,236 @@
       flex-shrink: 0;
     }
     footer strong { color: rgba(255,255,255,.75); font-weight: 500; }
+    /* ═══ REFINAMIENTO DASHBOARD PROFESIONAL — 2026 ═════════════ */
+    :root {
+      --verde-oscuro: #0b2f20;
+      --verde-medio:  #2f6f4e;
+      --verde-grafica:#2f6f4e;
+      --bg:           #edf3ef;
+      --surface:      #ffffff;
+      --surface-2:    #f7faf8;
+      --ink:          #102318;
+      --ink-2:        #294638;
+      --muted:        #6f8579;
+      --borde:        #dce6df;
+      --sombra:       rgba(18, 56, 38, .075);
+      --acento:       #2f6f4e;
+      --acento-bg:    rgba(47,111,78,.08);
+      --acento-borde: rgba(47,111,78,.22);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(47,111,78,.10), transparent 30%),
+        linear-gradient(180deg, #f6faf7 0%, var(--bg) 42%, #eaf1ed 100%);
+      letter-spacing: -.01em;
+    }
+
+    header {
+      background:
+        radial-gradient(circle at 12% 20%, rgba(255,255,255,.15), transparent 28%),
+        linear-gradient(135deg, #081f16 0%, #0f3a28 58%, #174c35 100%);
+      box-shadow: 0 16px 42px rgba(5, 24, 15, .22);
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+
+    .header-right h1,
+    .cc-title,
+    .kpi-value {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .module-nav {
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(14px);
+    }
+
+    .page {
+      max-width: 1540px;
+      padding-top: 30px;
+    }
+
+    .filtros-panel,
+    .cc,
+    .kpi {
+      border: 1px solid rgba(16, 35, 24, .10);
+      box-shadow: 0 16px 42px rgba(18, 56, 38, .075);
+    }
+
+    .filtros-panel {
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(247,250,248,.96));
+    }
+
+    .fg select,
+    .fg input[type="date"],
+    .cc-filters select,
+    .cc-filters input[type="date"] {
+      border-radius: 11px;
+      border-color: rgba(16,35,24,.14);
+      background: #fff;
+      min-height: 38px;
+    }
+
+    .btn-filtro,
+    .cc-btn,
+    .btn-png {
+      border-radius: 11px;
+      font-weight: 700;
+    }
+
+    .btn-aplicar,
+    .cc-btn {
+      background: #0f3a28;
+      border-color: #0f3a28;
+      box-shadow: 0 8px 18px rgba(15,58,40,.16);
+    }
+
+    .btn-aplicar:hover,
+    .cc-btn:hover {
+      background: #2f6f4e;
+      border-color: #2f6f4e;
+    }
+
+    .kpis {
+      gap: 18px;
+      margin-bottom: 34px;
+    }
+
+    .kpi {
+      position: relative;
+      overflow: hidden;
+      border-radius: 22px;
+      border-top: 1px solid rgba(16,35,24,.10);
+      padding: 22px 21px 19px;
+      background:
+        radial-gradient(circle at 100% 0%, rgba(47,111,78,.12), transparent 34%),
+        linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+      min-height: 142px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transform: translateZ(0);
+    }
+
+    .kpi::before {
+      content: '';
+      width: 42px;
+      height: 42px;
+      border-radius: 16px;
+      background: rgba(47,111,78,.10);
+      border: 1px solid rgba(47,111,78,.16);
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      box-shadow: inset 0 0 0 6px rgba(255,255,255,.45);
+    }
+
+    .kpi::after {
+      content: '';
+      position: absolute;
+      inset: auto -20% -45% -20%;
+      height: 80px;
+      background: radial-gradient(ellipse at center, rgba(47,111,78,.10), transparent 65%);
+      pointer-events: none;
+    }
+
+    .kpi:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 22px 54px rgba(18, 56, 38, .13);
+    }
+
+    .kpi-label {
+      color: #61776b;
+      font-size: 10.5px;
+      letter-spacing: .12em;
+      margin-bottom: 14px;
+      padding-right: 52px;
+    }
+
+    .kpi-value {
+      color: #0f2419;
+      font-size: clamp(30px, 2.8vw, 42px);
+      font-weight: 850;
+      letter-spacing: -.045em;
+      line-height: .95;
+      margin-bottom: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-value[id="kpi-rango"] {
+      font-size: 13.5px !important;
+      letter-spacing: -.01em;
+      line-height: 1.35;
+      color: #163a28;
+      padding-right: 40px;
+    }
+
+    .kpi-sub {
+      color: #748b7f;
+      font-weight: 500;
+    }
+
+    .cc {
+      border-radius: 22px;
+      background: rgba(255,255,255,.96);
+      padding: 24px 26px 22px;
+    }
+
+    .cc:hover {
+      box-shadow: 0 22px 54px rgba(18, 56, 38, .11);
+    }
+
+    .cc-title {
+      color: #102318;
+      font-size: 17px;
+      font-weight: 780;
+      letter-spacing: -.025em;
+    }
+
+    .cc-hint {
+      color: #72897d;
+      font-size: 12.5px;
+    }
+
+    .cc-sep {
+      background: linear-gradient(90deg, rgba(47,111,78,.24), rgba(16,35,24,.05));
+      margin-top: 13px;
+    }
+
+    .sec-divider {
+      color: #476457;
+      letter-spacing: .16em;
+      margin: 38px 0 22px;
+    }
+
+    .btn-png {
+      background: #fff;
+      border-color: rgba(16,35,24,.12);
+      color: #61776b;
+      box-shadow: 0 4px 14px rgba(18,56,38,.06);
+    }
+
+    .btn-png:hover {
+      background: #0f3a28;
+      border-color: #0f3a28;
+    }
+
+    canvas {
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .kpi, .cc, .filtros-panel, body, .chip-dot {
+        animation: none !important;
+      }
+      .kpi:hover, .cc:hover {
+        transform: none !important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -785,11 +1080,39 @@
 
 <script>
 /* ─── PALETA UNIFICADA ─────────────────────────────────────── */
+const DASH_GREEN = "#2f6f4e";
+const DASH_GREEN_HOVER = "#285f43";
+const SOFT_BLACK = "rgba(0,0,0,0.48)";
+const SOFT_BLACK_HOVER = "rgba(0,0,0,0.66)";
+const INCIDENT_RED = "#a8323e";
 const PAL = [
-  "#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660",
-  "#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"
+  DASH_GREEN,          // verde institucional
+  "#2a6f97",           // azul petróleo
+  "#b7791f",           // ámbar ejecutivo
+  "#8b5e83",           // ciruela sobrio
+  "#c0564a",           // rojo arcilla
+  "#4d8076",           // teal profundo
+  "#7a8f47",           // oliva
+  "#6f5e9c",           // violeta grisáceo
+  "#997950",           // café dorado
+  "#2d806d",           // esmeralda sobrio
+  "#a6583c",           // terracota
+  "#5f7f8e"            // azul gris
 ];
 const PAL_A = PAL.map(c => c + "bb"); // versión semitransparente
+
+function barDataset(extra={}){
+  return {
+    backgroundColor: DASH_GREEN,
+    hoverBackgroundColor: DASH_GREEN_HOVER,
+    borderColor: SOFT_BLACK,
+    hoverBorderColor: SOFT_BLACK_HOVER,
+    borderWidth: 1.25,
+    borderRadius: 2,
+    borderSkipped: false,
+    ...extra
+  };
+}
 
 /* ─── NORMALIZACIÓN ────────────────────────────────────────── */
 const EXCLUIDOS = new Set([
@@ -801,7 +1124,7 @@ const EXCLUIDOS = new Set([
 ]);
 const MERGE = {
   "5 juan marcos saquic":"Juan Marcos Saquic",
-  "9 heriberto chavez chavez":"Heriberto Chavez Chavez",
+  "9 heriberto chavez chavez":"Heriberto Chávez Chávez",
   "antonio federico tzaj y tzaj":"Antonio Federico Tzaj Y Tzaj",
   "diego martin ramirez ixbalan":"Diego Martín Ramírez Ixbalan",
   "diego martín ramírez ixbalan":"Diego Martín Ramírez Ixbalan",
@@ -813,8 +1136,8 @@ const MERGE = {
   "josé bacajol simají":"José Bacajol Simají",
   "mario cesar tale coche":"Mario César Talé Coché",
   "mario césar talé coché":"Mario César Talé Coché",
-  "rafael enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
-  "rafael enrique chocoy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "rafael enrique chiciy chocoy":"Rafael Enrique Chocoy",
+  "rafael enrique chocoy chocoy":"Rafael Enrique Chocoy",
   "sebastian tinuar":"Sebastián Tinuar Cipriano",
   "sebastian tinuar cipriano":"Sebastián Tinuar Cipriano",
   "vicente francisco omar perez cox":"Vicente Francisco Omar Pérez Cox",
@@ -826,16 +1149,17 @@ function canonStr(s){return String(s||"").trim().normalize("NFD").replace(/[\u03
 function normGuarda(n){if(!n)return null;const c=canonStr(n);if(EXCLUIDOS.has(c))return null;return MERGE[c]||n.trim();}
 
 /* ─── CHART.JS GLOBALES ────────────────────────────────────── */
-Chart.defaults.font.family="'DM Sans',sans-serif";
+Chart.defaults.font.family="'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
 Chart.defaults.font.size=13;
-Chart.defaults.color="#6a8878";
+Chart.defaults.color="#6f8579";
+Chart.defaults.animation={duration:720,easing:"easeOutQuart"};
 if(typeof ChartDataLabels!=="undefined"){Chart.register(ChartDataLabels);Chart.defaults.set("plugins.datalabels",{display:false});}
 
 // Tooltip unificado — fondo muy oscuro, bordes sutiles
 const TT={
   backgroundColor:"rgba(7,24,15,0.93)",
-  titleFont:{size:13,weight:"600",family:"'DM Sans',sans-serif"},
-  bodyFont:{size:12.5,family:"'DM Sans',sans-serif"},
+  titleFont:{size:13,weight:"600",family:"'Inter',system-ui,sans-serif"},
+  bodyFont:{size:12.5,family:"'Inter',system-ui,sans-serif"},
   padding:13,cornerRadius:10,
   borderColor:"rgba(255,255,255,0.06)",borderWidth:1,
   titleMarginBottom:6,
@@ -984,14 +1308,35 @@ function renderChips(f){
 }
 
 /* ─── KPIs ──────────────────────────────────────────────────── */
+function animateKPI(id,target,{decimals=0,suffix="",duration=650}={}){
+  const el=document.getElementById(id);if(!el)return;
+  const end=Number(target)||0;
+  const start=Number(el.dataset.value||0)||0;
+  el.dataset.value=end;
+  if(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+    el.textContent=end.toLocaleString("es",{minimumFractionDigits:decimals,maximumFractionDigits:decimals})+suffix;
+    return;
+  }
+  const t0=performance.now();
+  const ease=t=>1-Math.pow(1-t,3);
+  const fmt=v=>v.toLocaleString("es",{minimumFractionDigits:decimals,maximumFractionDigits:decimals})+suffix;
+  function frame(now){
+    const p=Math.min(1,(now-t0)/duration);
+    const val=start+(end-start)*ease(p);
+    el.textContent=fmt(decimals?Number(val.toFixed(decimals)):Math.round(val));
+    if(p<1)requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
 function updateKPIs(rows){
-  document.getElementById("kpi-total").textContent=rows.length.toLocaleString("es");
-  document.getElementById("kpi-guardas").textContent=new Set(rows.map(r=>r.__cg).filter(Boolean)).size;
+  animateKPI("kpi-total",rows.length,{duration:620});
+  animateKPI("kpi-guardas",new Set(rows.map(r=>r.__cg).filter(Boolean)).size,{duration:620});
   const durs=rows.map(r=>r.__dur).filter(v=>v!==null);
-  document.getElementById("kpi-duracion").textContent=durs.length?avg_(durs).toFixed(1)+"h":"–";
-  document.getElementById("kpi-ilegales").textContent=rows.filter(r=>r.__ci==="si").length;
+  if(durs.length)animateKPI("kpi-duracion",avg_(durs),{decimals:1,suffix:"h",duration:680});else{const el=document.getElementById("kpi-duracion");if(el){el.textContent="–";el.dataset.value=0;}}
+  animateKPI("kpi-ilegales",rows.filter(r=>r.__ci==="si").length,{duration:620});
   const kms=rows.map(r=>r.__km).filter(v=>v!==null);
-  document.getElementById("kpi-km").textContent=kms.length?sum_(kms).toLocaleString("es",{maximumFractionDigits:0}):"–";
+  if(kms.length)animateKPI("kpi-km",sum_(kms),{decimals:0,duration:720});else{const el=document.getElementById("kpi-km");if(el){el.textContent="–";el.dataset.value=0;}}
   const dates=rows.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
   document.getElementById("kpi-rango").textContent=dates.length?fmtDate(dates[0])+" – "+fmtDate(dates[dates.length-1]):"–";
 }
@@ -1004,13 +1349,11 @@ function topN(m,n){return[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n);}
 /* ─── G1 Tendencia mensual ─────────────────────────────────── */
 function g1(rows){
   const mm=countBy(rows,r=>r.__mes);const keys=[...mm.keys()].sort();const vals=keys.map(k=>mm.get(k)||0);const mean=avg_(vals);
-  const ctx=document.getElementById("c-tendencia").getContext("2d");
-  const gr=ctx.createLinearGradient(0,0,0,300);gr.addColorStop(0,"rgba(31,108,176,0.22)");gr.addColorStop(1,"rgba(31,108,176,0.01)");
   mkChart("c-tendencia",{type:"line",data:{labels:keys.map(mShort),datasets:[
-    {label:"Patrullajes",data:vals,fill:true,tension:0.38,borderColor:PAL[0],backgroundColor:gr,borderWidth:2.5,pointBackgroundColor:PAL[0],pointRadius:4.5,pointHoverRadius:7,pointBorderColor:"#fff",pointBorderWidth:2},
-    {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(168,28,42,0.50)",borderWidth:1.5,borderDash:[6,5],pointRadius:0,fill:false,tension:0}
+    {label:"Patrullajes",data:vals,fill:false,tension:0.34,borderColor:DASH_GREEN,backgroundColor:DASH_GREEN,borderWidth:2.75,pointBackgroundColor:"#ffffff",pointRadius:4.5,pointHoverRadius:7,pointBorderColor:DASH_GREEN,pointBorderWidth:2},
+    {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(0,0,0,0.38)",borderWidth:1.4,borderDash:[6,5],pointRadius:0,fill:false,tension:0}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-    plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:true,pointStyleWidth:10}}},
+    plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:13,weight:"600"},padding:18,usePointStyle:true,pointStyle:"rect",pointStyleWidth:12,boxWidth:12,boxHeight:12}}},
     scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
@@ -1027,15 +1370,15 @@ function g2(rows){
     const x=PL+h*CW,y=PT+d*CH,v=mat[d][h];
     const fill=hc(v,maxV),tc=v/maxV>0.45?"#fff":"#162a1c";
     html+=`<rect x="${x}" y="${y}" width="${CW-2}" height="${CH-2}" rx="5" fill="${fill}" stroke="#d8e4dd" stroke-width="0.5"/>`;
-    if(v>0)html+=`<text x="${x+CW/2-1}" y="${y+CH/2+4.5}" text-anchor="middle" font-size="10" fill="${tc}" font-family="DM Sans,sans-serif" font-weight="500">${v}</text>`;
+    if(v>0)html+=`<text x="${x+CW/2-1}" y="${y+CH/2+4.5}" text-anchor="middle" font-size="10" fill="${tc}" font-family="Inter,system-ui,sans-serif" font-weight="500">${v}</text>`;
   }
-  DIAS.forEach((d,i)=>html+=`<text x="${PL-8}" y="${PT+i*CH+CH/2+4.5}" text-anchor="end" font-size="12" fill="#6a8878" font-family="DM Sans,sans-serif" font-weight="500">${d}</text>`);
-  for(let h=0;h<24;h+=2)html+=`<text x="${PL+h*CW+CW/2}" y="${PT-12}" text-anchor="middle" font-size="10.5" fill="#6a8878" font-family="DM Sans,sans-serif">${String(h).padStart(2,"0")}h</text>`;
+  DIAS.forEach((d,i)=>html+=`<text x="${PL-8}" y="${PT+i*CH+CH/2+4.5}" text-anchor="end" font-size="12" fill="#6a8878" font-family="Inter,system-ui,sans-serif" font-weight="500">${d}</text>`);
+  for(let h=0;h<24;h+=2)html+=`<text x="${PL+h*CW+CW/2}" y="${PT-12}" text-anchor="middle" font-size="10.5" fill="#6a8878" font-family="Inter,system-ui,sans-serif">${String(h).padStart(2,"0")}h</text>`;
   html+=`<defs><linearGradient id="lgh" x1="0" x2="1"><stop offset="0%" stop-color="#edf2ee"/><stop offset="100%" stop-color="${PAL[0]}"/></linearGradient></defs>`;
   html+=`<rect x="${PL}" y="${H-22}" width="120" height="8" rx="3" fill="url(#lgh)"/>`;
-  html+=`<text x="${PL}" y="${H-6}" font-size="10" fill="#9ab0a6" font-family="DM Sans,sans-serif">0</text>`;
-  html+=`<text x="${PL+120}" y="${H-6}" text-anchor="end" font-size="10" fill="#9ab0a6" font-family="DM Sans,sans-serif">${maxV}</text>`;
-  html+=`<text x="${PL+132}" y="${H-13}" font-size="10" fill="#9ab0a6" font-family="DM Sans,sans-serif">patrullajes</text>`;
+  html+=`<text x="${PL}" y="${H-6}" font-size="10" fill="#9ab0a6" font-family="Inter,system-ui,sans-serif">0</text>`;
+  html+=`<text x="${PL+120}" y="${H-6}" text-anchor="end" font-size="10" fill="#9ab0a6" font-family="Inter,system-ui,sans-serif">${maxV}</text>`;
+  html+=`<text x="${PL+132}" y="${H-13}" font-size="10" fill="#9ab0a6" font-family="Inter,system-ui,sans-serif">patrullajes</text>`;
   svg.innerHTML=html;
 }
 
@@ -1043,9 +1386,7 @@ function g2(rows){
 function g3(rows){
   const durs=rows.map(r=>r.__dur).filter(v=>v!==null);
   const bins=new Array(16).fill(0);durs.forEach(d=>{const i=Math.floor(d/0.5);if(i>=0&&i<16)bins[i]++;});
-  const ctx=document.getElementById("c-duracion").getContext("2d");
-  const gr=ctx.createLinearGradient(0,0,0,260);gr.addColorStop(0,"rgba(26,122,56,0.88)");gr.addColorStop(1,"rgba(26,122,56,0.18)");
-  mkChart("c-duracion",{type:"bar",data:{labels:Array.from({length:16},(_,i)=>i%2===0?(i*0.5)+"h":""),datasets:[{label:"Patrullajes",data:bins,backgroundColor:gr,borderColor:PAL[1],borderWidth:1,borderRadius:4,borderSkipped:false}]},
+  mkChart("c-duracion",{type:"bar",data:{labels:Array.from({length:16},(_,i)=>i%2===0?(i*0.5)+"h":""),datasets:[barDataset({label:"Patrullajes",data:bins})]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].dataIndex*0.5}h – ${(c[0].dataIndex+1)*0.5}h`,label:c=>` ${c.parsed.y} patrullajes`}}},
       scales:{x:{grid:{display:false},...TICK_FONT,title:{display:true,text:"Duración (horas)",...AXIS_TITLE_FONT}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Frecuencia",...AXIS_TITLE_FONT}}}}});
@@ -1064,11 +1405,11 @@ function g4(rows){
 function g5(rows){
   const mc=countBy(rows,r=>r.__cm);const top8=topN(mc,8).map(([k])=>k);
   const months=uniq(rows.map(r=>r.__mes)).sort();
-  const datasets=top8.map((cm,i)=>({label:LABELS.muni.get(cm)||cm,data:months.map(mo=>rows.filter(r=>r.__cm===cm&&r.__mes===mo).length),backgroundColor:PAL_A[i%PAL.length],borderColor:PAL[i%PAL.length],borderWidth:1,borderRadius:3,borderSkipped:false}));
+  const datasets=top8.map((cm,i)=>{const col=PAL[i%PAL.length];return barDataset({label:LABELS.muni.get(cm)||cm,data:months.map(mo=>rows.filter(r=>r.__cm===cm&&r.__mes===mo).length),backgroundColor:col,borderColor:"rgba(0,0,0,.52)",hoverBackgroundColor:col,hoverBorderColor:"rgba(0,0,0,.72)",borderWidth:1.1});});
   mkChart("c-muniMes",{type:"bar",data:{labels:months.map(mShort),datasets},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-      plugins:{legend:{position:"top",labels:{font:{size:12.5},padding:14,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT}},
-      scales:{x:{stacked:true,grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{stacked:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
+      plugins:{legend:{position:"top",labels:{font:{size:12.5,weight:"600"},padding:14,usePointStyle:true,pointStyle:"rect",pointStyleWidth:12,boxWidth:12,boxHeight:12}},tooltip:{...TT}},
+      scales:{x:{stacked:false,grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{stacked:false,beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
 /* ─── G6 Radar ─────────────────────────────────────────────── */
@@ -1078,7 +1419,7 @@ function g6(rows){
   const metOf=(cg,src)=>{const s=src.filter(r=>r.__cg===cg);const d=s.map(r=>r.__dur).filter(v=>v!==null);return{p:s.length,m:uniq(s.map(r=>r.__cm)).length,d:d.length?avg_(d):0,mes:uniq(s.map(r=>r.__mes)).length,i:s.filter(r=>r.__ci==="si").length};};
   const nrm=(v,mx)=>mx?Math.round(v/mx*100):0;
   const AXES=["Volumen","Municipios\ncubiertos","Duración\nmedia","Meses\nactivos","Incidentes"];
-  const radarOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:12,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.07)"},pointLabels:{font:{size:12.5}}}}};
+  const radarOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:12,usePointStyle:true,pointStyle:"rect",pointStyleWidth:12,boxWidth:12,boxHeight:12}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.07)"},pointLabels:{font:{size:12.5}}}}};
   if(sel){
     const allM=allG.map(cg=>metOf(cg,ROWS));
     const gAvg={p:avg_(allM.map(x=>x.p)),m:avg_(allM.map(x=>x.m)),d:avg_(allM.map(x=>x.d)),mes:avg_(allM.map(x=>x.mes)),i:avg_(allM.map(x=>x.i))};
@@ -1103,7 +1444,7 @@ function g7(rows){
   const ru=rows.filter(r=>r.__cu==="rumcla").length,fu=rows.filter(r=>r.__cu==="fuera").length,sd=rows.length-ru-fu;
   const dOpts=(labels,data,colors,borders)=>({type:"doughnut",data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2,hoverOffset:12}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"66%",
-      plugins:{legend:{position:"bottom",labels:{font:{size:13},padding:14,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+      plugins:{legend:{position:"bottom",labels:{font:{size:13},padding:14,usePointStyle:true,pointStyle:"rect",pointStyleWidth:12,boxWidth:12,boxHeight:12}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
   mkChart("c-rumcla",dOpts(["Dentro RUMCLA","Fuera RUMCLA",...(sd>0?["Sin dato"]:[])],[ru,fu,...(sd>0?[sd]:[])],[PAL[0]+"cc",PAL[2]+"cc","#e5e7eb"],[PAL[0],PAL[2],"#d1d5db"]));
   const si=rows.filter(r=>r.__ci==="si").length,no=rows.filter(r=>r.__ci==="no").length;
   mkChart("c-ilegal",dOpts(["Sin incidente","Con incidente"],[no,si],["#d8f0e2","#fde8e8"],[PAL[1],PAL[4]]));
@@ -1113,14 +1454,14 @@ function g7(rows){
 function g8(rows){
   const mc=countBy(rows,r=>r.__cm);const top=topN(mc,12).map(([k])=>k);
   const lbls=top.map(cm=>LABELS.muni.get(cm)||cm);
+  const total=top.map(cm=>rows.filter(r=>r.__cm===cm).length);
   const si=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="si").length);
-  const no=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="no").length);
   mkChart("c-ilegalMuni",{type:"bar",data:{labels:lbls,datasets:[
-    {label:"Sin incidente",data:no,backgroundColor:PAL[1]+"bb",borderColor:PAL[1],borderWidth:1,borderRadius:4,borderSkipped:false},
-    {label:"Con incidente",data:si,backgroundColor:PAL[4]+"cc",borderColor:PAL[4],borderWidth:1,borderRadius:4,borderSkipped:false}
+    barDataset({label:"Patrullajes",data:total,order:2}),
+    {label:"Incidentes",data:si,type:"line",borderColor:INCIDENT_RED,backgroundColor:INCIDENT_RED,borderWidth:2.4,pointRadius:5.5,pointHoverRadius:8,pointBackgroundColor:INCIDENT_RED,pointBorderColor:"#fff",pointBorderWidth:2,tension:0,fill:false,order:1}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-    plugins:{legend:{position:"top",labels:{font:{size:13},padding:14,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT}},
-    scales:{x:{stacked:true,grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:35}},y:{stacked:true,beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}},
+    plugins:{legend:{position:"top",labels:{font:{size:13,weight:"600"},padding:14,usePointStyle:true,pointStyle:"rect",pointStyleWidth:12,boxWidth:12,boxHeight:12}},tooltip:{...TT}},
+    scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:35}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}},
     onClick:(e,els)=>{if(!els.length)return;document.getElementById("f-municipio").value=top[els[0].index];applyAll();}}});
 }
 
@@ -1129,13 +1470,11 @@ function g9(rows){
   const mc=countBy(rows,r=>r.__cap);const sorted=topN(mc,14);
   const labels=sorted.map(([k])=>{const l=LABELS.ap.get(k)||k;return l.length>52?l.slice(0,50)+"…":l;});
   const vals=sorted.map(([,v])=>v);
-  const ctx=document.getElementById("c-areaProt").getContext("2d");
-  const gr=ctx.createLinearGradient(500,0,0,0);gr.addColorStop(0,PAL[1]+"cc");gr.addColorStop(1,PAL[0]+"88");
-  mkChart("c-areaProt",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:vals,backgroundColor:gr,borderColor:PAL[1],borderWidth:1,borderRadius:5,borderSkipped:false}]},
+  mkChart("c-areaProt",{type:"bar",data:{labels,datasets:[barDataset({label:"Patrullajes",data:vals})]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} patrullajes`}},
-        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
-      scales:{x:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12}}}}}});
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#102318",font:{size:11,weight:"800",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      scales:{x:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12,weight:"500"}}}}}});
 }
 
 /* ─── G10 Tipo de patrullaje ───────────────────────────────── */
@@ -1145,27 +1484,23 @@ function g10(rows){
   const vals=sorted.map(([,v])=>v);const cols=PAL.slice(0,vals.length);
   mkChart("c-tipoPat",{type:"doughnut",data:{labels,datasets:[{data:vals,backgroundColor:cols.map(c=>c+"cc"),borderColor:cols,borderWidth:2,hoverOffset:12}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"60%",
-      plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:10,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+      plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:10,usePointStyle:true,pointStyle:"rect",pointStyleWidth:12,boxWidth:12,boxHeight:12}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
 }
 
 /* ─── G11 Día de semana ────────────────────────────────────── */
 function g11(rows){
   const counts=new Array(7).fill(0);rows.forEach(r=>{if(r.__dow!==null)counts[r.__dow]++;});
-  const ctx=document.getElementById("c-diaSem").getContext("2d");
-  const gr=ctx.createLinearGradient(0,0,0,260);gr.addColorStop(0,PAL[0]+"dd");gr.addColorStop(1,PAL[0]+"33");
-  mkChart("c-diaSem",{type:"bar",data:{labels:DIAS,datasets:[{label:"Patrullajes",data:counts,backgroundColor:gr,borderColor:PAL[0],borderWidth:1,borderRadius:7,borderSkipped:false}]},
+  mkChart("c-diaSem",{type:"bar",data:{labels:DIAS,datasets:[barDataset({label:"Patrullajes",data:counts})]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} patrullajes`}},
-        datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#2a4535",font:{size:12,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v||""}},
-      scales:{x:{grid:{display:false},...TICK_FONT,ticks:{font:{size:13}}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
+        datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#102318",font:{size:12,weight:"800",family:"'Inter',system-ui,sans-serif"},formatter:v=>v||""}},
+      scales:{x:{grid:{display:false},...TICK_FONT,ticks:{font:{size:13,weight:"500"}}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
 /* ─── G km/mes ─────────────────────────────────────────────── */
 function gKmMes(rows){
   const mm=sumBy(rows,r=>r.__mes,r=>r.__km);const keys=[...mm.keys()].sort();const vals=keys.map(k=>parseFloat((mm.get(k)||0).toFixed(1)));
-  const ctx=document.getElementById("c-kmMes").getContext("2d");
-  const gr=ctx.createLinearGradient(0,0,0,260);gr.addColorStop(0,PAL[5]+"cc");gr.addColorStop(1,PAL[5]+"22");
-  mkChart("c-kmMes",{type:"bar",data:{labels:keys.map(mShort),datasets:[{label:"Kilómetros",data:vals,backgroundColor:gr,borderColor:PAL[5],borderWidth:1,borderRadius:5,borderSkipped:false}]},
+  mkChart("c-kmMes",{type:"bar",data:{labels:keys.map(mShort),datasets:[barDataset({label:"Kilómetros",data:vals})]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y.toLocaleString("es")} km`}}},
       scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Kilómetros",...AXIS_TITLE_FONT}}}}});
@@ -1176,11 +1511,11 @@ function gKmGuarda(rows){
   const km=sumBy(rows,r=>r.__cg,r=>r.__km);const sorted=[...km.entries()].sort((a,b)=>b[1]-a[1]);
   const labels=sorted.map(([k])=>{const l=LABELS.guarda.get(k)||k;return l.split(" ").slice(0,3).join(" ");});
   const vals=sorted.map(([,v])=>parseFloat(v.toFixed(1)));
-  mkChart("c-kmGuarda",{type:"bar",data:{labels,datasets:[{label:"Kilómetros",data:vals,backgroundColor:sorted.map((_,i)=>PAL[i%PAL.length]+"bb"),borderColor:sorted.map((_,i)=>PAL[i%PAL.length]),borderWidth:1.5,borderRadius:5,borderSkipped:false}]},
+  mkChart("c-kmGuarda",{type:"bar",data:{labels,datasets:[barDataset({label:"Kilómetros",data:vals})]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("es")} km`}},
-        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
-      scales:{x:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Kilómetros",...AXIS_TITLE_FONT}},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12}}}}}});
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#102318",font:{size:10.5,weight:"800",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      scales:{x:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Kilómetros",...AXIS_TITLE_FONT}},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12,weight:"500"}}}}}});
 }
 
 /* ─── G inst ───────────────────────────────────────────────── */
@@ -1188,7 +1523,7 @@ function gInst(rows){
   const si=rows.filter(r=>r.__cin==="si").length,no=rows.filter(r=>r.__cin==="no").length,nd=rows.length-si-no;
   mkChart("c-inst",{type:"doughnut",data:{labels:["Sin otras instituciones","Con instituciones involucradas",...(nd>0?["Sin dato"]:[])],datasets:[{data:[no,si,...(nd>0?[nd]:[])],backgroundColor:[PAL[0]+"cc",PAL[2]+"cc","#e5e7eb"],borderColor:[PAL[0],PAL[2],"#d1d5db"],borderWidth:2,hoverOffset:12}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"66%",
-      plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:12,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+      plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:12,usePointStyle:true,pointStyle:"rect",pointStyleWidth:12,boxWidth:12,boxHeight:12}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
 }
 
 /* ─── G12 Ranking ──────────────────────────────────────────── */
@@ -1205,18 +1540,19 @@ function g12(rows){
   const h=Math.max(460,sorted.length*22+80);
   const cw=document.getElementById("c-rankGuarda");if(cw)cw.parentElement.style.height=h+"px";
   mkChart("c-rankGuarda",{type:"bar",data:{labels,datasets:[
-    {label:"Patrullajes",data:totales,backgroundColor:sorted.map((_,i)=>PAL[i%PAL.length]+"bb"),borderColor:sorted.map((_,i)=>PAL[i%PAL.length]),borderWidth:1.5,borderRadius:5,borderSkipped:false,order:2,
-      datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#0c1e13",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
-    {label:"Incidentes",data:ilegales,type:"line",borderColor:PAL[4],backgroundColor:PAL[4],borderWidth:2.5,pointRadius:7,pointHoverRadius:9,pointBackgroundColor:PAL[4],pointBorderColor:"#fff",pointBorderWidth:2,tension:0,fill:false,order:1,
-      datalabels:{display:true,anchor:"end",align:"top",offset:5,color:PAL[4],font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v:""}}
+    barDataset({label:"Patrullajes",data:totales,order:2,
+      datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#102318",font:{size:10.5,weight:"800",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}}),
+    {label:"Incidentes",data:ilegales,type:"line",borderColor:INCIDENT_RED,backgroundColor:INCIDENT_RED,borderWidth:2.5,pointRadius:7,pointHoverRadius:9,pointBackgroundColor:INCIDENT_RED,pointBorderColor:"#fff",pointBorderWidth:2,tension:0,fill:false,order:1,
+      datalabels:{display:true,anchor:"center",align:"center",offset:0,color:"#ffffff",backgroundColor:INCIDENT_RED,borderRadius:999,padding:{top:3,bottom:3,left:6,right:6},font:{size:10.5,weight:"900",family:"\'Inter\',system-ui,sans-serif"},formatter:v=>v>0?v:""}}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},layout:{padding:{top:28}},
-    plugins:{legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>c.dataset.label==="Patrullajes"?` Patrullajes: ${c.parsed.y}`:` Incidentes: ${c.parsed.y}`}},datalabels:{display:false}},
+    plugins:{legend:{position:"top",labels:{font:{size:13,weight:"600"},padding:18,usePointStyle:true,pointStyle:"rect",pointStyleWidth:12,boxWidth:12,boxHeight:12}},tooltip:{...TT,callbacks:{label:c=>c.dataset.label==="Patrullajes"?` Patrullajes: ${c.parsed.y}`:` Incidentes: ${c.parsed.y}`}},datalabels:{display:false}},
     scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:42,minRotation:28}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
 /* ─── RENDER TOTAL ─────────────────────────────────────────── */
 function applyAll(){
   const f=getF();renderChips(f);const rows=applyF(f);
+  document.querySelectorAll(".cc").forEach((card,i)=>{card.classList.remove("chart-refresh");void card.offsetWidth;setTimeout(()=>card.classList.add("chart-refresh"),Math.min(i*18,180));});
   updateKPIs(rows);
   g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);g9(rows);g10(rows);g11(rows);g12(rows);gKmMes(rows);gKmGuarda(rows);gInst(rows);
   const el=document.getElementById("estado");
