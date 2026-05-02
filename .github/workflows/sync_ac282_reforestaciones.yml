@@ -1,0 +1,520 @@
+# .github/workflows/sync_ac282_reforestaciones.yml
+#
+# Sincroniza datos de AC282 Monitoreo a reforestaciones por compromiso (Survey123)
+# → docs/datos/base4_datos.csv
+#
+# Cadencia — dos veces al día hora Guatemala (UTC-6):
+#   • 12:45 mediodía   → 18:45 UTC
+#   • 00:45 medianoche → 06:45 UTC
+#
+# Disparo manual:
+#   GitHub → Actions → "Sincronizar AC282 Reforestaciones" → Run workflow
+
+name: Sincronizar AC282 Reforestaciones
+
+on:
+  schedule:
+    - cron: "45 18 * * *"   # 12:45 mediodía Guatemala
+    - cron: "45 6 * * *"    # 00:45 medianoche Guatemala
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-ac282-reforestaciones
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Descargar y actualizar CSV de AC282
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install requests pandas
+
+      - name: Sincronizar datos de ArcGIS Online
+        env:
+          AGOL_USERNAME: ${{ secrets.AGOL_USERNAME }}
+          AGOL_PASSWORD: ${{ secrets.AGOL_PASSWORD }}
+          AGOL_ORG_URL:  ${{ secrets.AGOL_ORG_URL }}
+          # Opcional: si el ID cambia, crear este secret en GitHub sin tocar el workflow.
+          AC282_ITEM_ID: ${{ secrets.AC282_ITEM_ID }}
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import re
+          import sys
+          import unicodedata
+          import requests
+          import pandas as pd
+
+          ORG_URL  = os.environ["AGOL_ORG_URL"].rstrip("/")
+          USERNAME = os.environ["AGOL_USERNAME"]
+          PASSWORD = os.environ["AGOL_PASSWORD"]
+
+          # El ID por defecto se tomó del nombre del Excel exportado de Survey123:
+          # S123_86dc581bf1874d73aa8c5a14428a5d4a_EXCEL.xlsx
+          # Si no corresponde al item de la encuesta/servicio, crear el secret AC282_ITEM_ID.
+          ITEM_ID    = os.environ.get("AC282_ITEM_ID", "").strip() or "86dc581bf1874d73aa8c5a14428a5d4a"
+          OUTPUT_CSV = "docs/datos/base4_datos.csv"
+          PAGE_SIZE  = 1000
+
+          COLS = [
+              "Nombre del guardarrecursos",
+              "Region",
+              "Area protegida",
+              "Especifique el area protegida",
+              "Municipio",
+              "Esta monitoreando un area fuera de su municipio",
+              "Especifique el municipio o lugar de apoyo",
+              "Nombre del area o lugar de la reforestacion establecida",
+              "Tipo de reforestacion",
+              "Area de reforestacion",
+              "Especies reforestadas",
+              "Especifique otra especie",
+              "Fecha",
+              "Hora",
+              "Observaciones",
+              "CreationDate",
+              "EditDate",
+              "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso",
+              "X",
+              "Y",
+          ]
+
+          # Mapea nombres internos de ArcGIS y alias de exportación hacia el CSV usado por la web.
+          RENAME = {
+              # Identidad / ubicación administrativa
+              "nombre_guardarecurso": "Nombre del guardarrecursos",
+              "nombre_guardarrecursos": "Nombre del guardarrecursos",
+              "Nombre del guardarrecursos": "Nombre del guardarrecursos",
+              "region": "Region",
+              "Region": "Region",
+              "area_protegida": "Area protegida",
+              "Área protegida": "Area protegida",
+              "Area protegida": "Area protegida",
+              "area_protegida_otro": "Especifique el area protegida",
+              "especifique_area_protegida": "Especifique el area protegida",
+              "Especifique el área protegida": "Especifique el area protegida",
+              "Especifique el area protegida": "Especifique el area protegida",
+              "municipio": "Municipio",
+              "Municipio": "Municipio",
+
+              # Apoyo / monitoreo fuera de municipio
+              "apoyo_fuera": "Esta monitoreando un area fuera de su municipio",
+              "monitoreo_fuera": "Esta monitoreando un area fuera de su municipio",
+              "monitoreo_fuera_municipio": "Esta monitoreando un area fuera de su municipio",
+              "monitorea_fuera_municipio": "Esta monitoreando un area fuera de su municipio",
+              "Esta monitoreando un area fuera de su municipio": "Esta monitoreando un area fuera de su municipio",
+              "¿Está monitoreando un área fuera de su municipio?": "Esta monitoreando un area fuera de su municipio",
+              "apoyo_fuera_detalle": "Especifique el municipio o lugar de apoyo",
+              "municipio_lugar_apoyo": "Especifique el municipio o lugar de apoyo",
+              "Especifique el municipio o lugar de apoyo": "Especifique el municipio o lugar de apoyo",
+
+              # Datos de reforestación
+              "nombre_area": "Nombre del area o lugar de la reforestacion establecida",
+              "nombre_area_reforestacion": "Nombre del area o lugar de la reforestacion establecida",
+              "lugar_reforestacion": "Nombre del area o lugar de la reforestacion establecida",
+              "Nombre del área y/o lugar de la reforestación establecida (Cantón, Barrio, Caserío, Aldea, Parcelamiento, etc.)": "Nombre del area o lugar de la reforestacion establecida",
+              "Nombre del area o lugar de la reforestacion establecida": "Nombre del area o lugar de la reforestacion establecida",
+              "tipo_reforestacion": "Tipo de reforestacion",
+              "Tipo de reforestación": "Tipo de reforestacion",
+              "Tipo de reforestacion": "Tipo de reforestacion",
+              "area_reforestacion": "Area de reforestacion",
+              "Área de reforestación (m²)": "Area de reforestacion",
+              "Area de reforestacion": "Area de reforestacion",
+              "especies_reforestadas": "Especies reforestadas",
+              "Especies reforestadas": "Especies reforestadas",
+              "especie_otro": "Especifique otra especie",
+              "Especifique otra especie": "Especifique otra especie",
+
+              # Fecha / hora / observaciones
+              "fecha": "Fecha",
+              "Fecha": "Fecha",
+              "hora": "Hora",
+              "Hora": "Hora",
+              "observaciones": "Observaciones",
+              "Observaciones": "Observaciones",
+              "CreationDate": "CreationDate",
+              "created_date": "CreationDate",
+              "EditDate": "EditDate",
+              "last_edited_date": "EditDate",
+
+              # Consumo cedido por compañero
+              "consumo_fuera_comp": "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso",
+              "atendiendo_consumo_fuera": "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso",
+              "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso": "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso",
+              "¿Está atendiendo un consumo fuera de su municipio de intervención cedido por otro guardarecurso?": "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso",
+
+              # Coordenadas
+              "x": "X",
+              "y": "Y",
+              "X": "X",
+              "Y": "Y",
+          }
+
+          FIX_AREA = {
+              "rumcla": "RUMCLA",
+              "fuera_rumcla": "Fuera de RUMCLA",
+              "fuera de rumcla": "Fuera de RUMCLA",
+          }
+
+          FIX_SINO = {
+              "si": "si",
+              "sí": "si",
+              "sÍ": "si",
+              "no": "no",
+              "nan": "",
+              "none": "",
+              "null": "",
+          }
+
+          def clean_text(value):
+              if pd.isna(value):
+                  return ""
+              text = str(value).strip()
+              if text.lower() in {"nan", "none", "null", "nat"}:
+                  return ""
+              return text
+
+          def strip_accents(text):
+              return "".join(
+                  ch for ch in unicodedata.normalize("NFKD", str(text))
+                  if not unicodedata.combining(ch)
+              )
+
+          def norm_key(text):
+              text = strip_accents(text).lower().strip()
+              text = re.sub(r"[^a-z0-9]+", "_", text)
+              return re.sub(r"_+", "_", text).strip("_")
+
+          def safe_strftime(dt_series, fmt):
+              # Linux permite %-m/%-d; esta función evita depender de plataformas no GNU.
+              out = []
+              for val in dt_series:
+                  if pd.isna(val):
+                      out.append("")
+                  else:
+                      if fmt == "form_date":
+                          out.append(f"{val.month}/{val.day}/{val.year} {val.hour:02d}:{val.minute:02d}")
+                      elif fmt == "system_date":
+                          out.append(val.strftime("%m/%d/%Y %H:%M:%S.%f"))
+                      else:
+                          out.append(val.strftime(fmt))
+              return pd.Series(out, index=dt_series.index)
+
+          def fmt_system_datetime(series):
+              if pd.api.types.is_numeric_dtype(series):
+                  dt = pd.to_datetime(series, unit="ms", errors="coerce")
+              else:
+                  dt = pd.to_datetime(series, errors="coerce")
+              return safe_strftime(dt, "system_date")
+
+          def fmt_form_date(series):
+              if pd.api.types.is_numeric_dtype(series):
+                  dt = pd.to_datetime(series, unit="ms", errors="coerce")
+              else:
+                  dt = pd.to_datetime(series, errors="coerce")
+              return safe_strftime(dt, "form_date")
+
+          def fmt_time_only(series):
+              if pd.api.types.is_numeric_dtype(series):
+                  dt = pd.to_datetime(series, unit="ms", errors="coerce")
+                  return dt.dt.strftime("%H:%M").fillna("")
+
+              s = series.apply(clean_text)
+              # Si ArcGIS devuelve un datetime ISO en el campo hora, extrae HH:MM.
+              parsed = pd.to_datetime(s, errors="coerce")
+              mask = parsed.notna()
+              s.loc[mask] = parsed.loc[mask].dt.strftime("%H:%M")
+              s = s.str.replace(r"^(\d{1,2}:\d{2}):\d{2}$", r"\1", regex=True)
+              return s
+
+          def auth_token():
+              r = requests.post(
+                  f"{ORG_URL}/sharing/rest/generateToken",
+                  data={
+                      "username": USERNAME,
+                      "password": PASSWORD,
+                      "referer": "https://www.arcgis.com",
+                      "expiration": 120,
+                      "f": "json",
+                  },
+                  timeout=30,
+              )
+              r.raise_for_status()
+              data = r.json()
+              if "error" in data:
+                  print(f"ERROR de autenticación: {data['error']}")
+                  sys.exit(1)
+              return data["token"]
+
+          def resolve_service_url(token):
+              r = requests.get(
+                  f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}",
+                  params={"f": "json", "token": token},
+                  timeout=30,
+              )
+              r.raise_for_status()
+              item_data = r.json()
+              print(f"  Item: {item_data.get('title')} | tipo: {item_data.get('type')}")
+              service_url = item_data.get("url")
+
+              if not service_url:
+                  print("  URL directa no encontrada. Buscando relación Survey2Service...")
+                  r2 = requests.get(
+                      f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}/relatedItems",
+                      params={
+                          "relationshipType": "Survey2Service",
+                          "direction": "forward",
+                          "f": "json",
+                          "token": token,
+                      },
+                      timeout=30,
+                  )
+                  r2.raise_for_status()
+                  related = r2.json().get("relatedItems", [])
+                  print(f"  Items relacionados: {len(related)}")
+                  for rel in related:
+                      if rel.get("url"):
+                          service_url = rel["url"]
+                          print(f"  Encontrado: {service_url}")
+                          break
+
+              if not service_url:
+                  print("  Buscando Feature Service por nombre...")
+                  r3 = requests.get(
+                      f"{ORG_URL}/sharing/rest/search",
+                      params={
+                          "q": f"owner:{USERNAME} type:'Feature Service' tags:survey",
+                          "num": 100,
+                          "f": "json",
+                          "token": token,
+                      },
+                      timeout=30,
+                  )
+                  r3.raise_for_status()
+                  for res in r3.json().get("results", []):
+                      title = (res.get("title") or "").lower()
+                      if any(k in title for k in ["reforest", "reforestacion", "reforestación", "ac282", "282", "compromiso"]):
+                          service_url = res.get("url", "")
+                          print(f"  Encontrado por búsqueda: {res.get('title')} → {service_url}")
+                          break
+
+              if not service_url:
+                  print("ERROR: No se pudo encontrar la URL del Feature Service.")
+                  print("Si el ITEM_ID por defecto no corresponde, crear el secret AC282_ITEM_ID con el item correcto.")
+                  sys.exit(1)
+
+              return service_url.rstrip("/")
+
+          def read_existing_csv(path):
+              for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
+                  try:
+                      df = pd.read_csv(path, sep=";", encoding=enc)
+                      print(f"✓ Histórico existente: {len(df)} registros (encoding: {enc})")
+                      return df
+                  except UnicodeDecodeError:
+                      continue
+              raise UnicodeDecodeError("csv", b"", 0, 1, "No se pudo leer el CSV histórico")
+
+          print("Autenticando en ArcGIS Online...")
+          token = auth_token()
+          print("✓ Autenticado")
+
+          service_url = resolve_service_url(token)
+          print(f"✓ Servicio: {service_url}")
+
+          r_fields = requests.get(f"{service_url}/0", params={"f": "json", "token": token}, timeout=30)
+          r_fields.raise_for_status()
+          fields = r_fields.json().get("fields", [])
+          field_names = [f.get("name") for f in fields]
+          field_aliases = {f.get("name"): f.get("alias") for f in fields if f.get("name") and f.get("alias")}
+          print(f"  Campos en ArcGIS ({len(field_names)}): {field_names}")
+
+          # Enriquece el mapeo con alias normalizados para tolerar cambios de acentos/preguntas.
+          rename_by_norm = {norm_key(k): v for k, v in RENAME.items()}
+          for name, alias in field_aliases.items():
+              if norm_key(alias) in rename_by_norm and name not in RENAME:
+                  RENAME[name] = rename_by_norm[norm_key(alias)]
+
+          r_count = requests.get(
+              f"{service_url}/0/query",
+              params={"where": "1=1", "returnCountOnly": "true", "f": "json", "token": token},
+              timeout=30,
+          )
+          r_count.raise_for_status()
+          total = r_count.json().get("count", 0)
+          print(f"✓ Registros en ArcGIS: {total}")
+
+          pages = []
+          offset = 0
+          while True:
+              r = requests.get(
+                  f"{service_url}/0/query",
+                  params={
+                      "where": "1=1",
+                      "outFields": "*",
+                      "resultOffset": offset,
+                      "resultRecordCount": PAGE_SIZE,
+                      "returnGeometry": "true",
+                      "f": "json",
+                      "token": token,
+                  },
+                  timeout=60,
+              )
+              r.raise_for_status()
+              rj = r.json()
+              if "error" in rj:
+                  print(f"ERROR en query ArcGIS: {rj['error']}")
+                  sys.exit(1)
+
+              features = rj.get("features", [])
+              if not features:
+                  break
+
+              rows_page = []
+              for feat in features:
+                  attrs = dict(feat.get("attributes", {}))
+                  geo = feat.get("geometry") or {}
+                  if "x" not in attrs and geo.get("x") is not None:
+                      attrs["x"] = geo["x"]
+                  if "y" not in attrs and geo.get("y") is not None:
+                      attrs["y"] = geo["y"]
+                  rows_page.append(attrs)
+
+              pages.append(pd.DataFrame(rows_page))
+              offset += len(features)
+              print(f"  Descargados: {offset}/{total}", end="\r")
+              if not rj.get("exceededTransferLimit", False):
+                  break
+          print()
+
+          df_new = pd.concat(pages, ignore_index=True) if pages else pd.DataFrame()
+          if df_new.empty:
+              print("Sin registros. Abortando sin cambios.")
+              sys.exit(0)
+
+          id_candidates = [c for c in ["globalid", "GlobalID", "GLOBALID", "objectid", "OBJECTID", "ObjectID"] if c in df_new.columns]
+          df_new["_source_id"] = df_new[id_candidates[0]].astype(str).str.strip() if id_candidates else ""
+
+          df_new = df_new.rename(columns=RENAME)
+
+          for c in COLS:
+              if c not in df_new.columns:
+                  df_new[c] = ""
+
+          # Limpieza de valores de texto.
+          for c in COLS:
+              if c not in ["Area de reforestacion", "X", "Y"]:
+                  df_new[c] = df_new[c].apply(clean_text)
+
+          if "Region" in df_new.columns:
+              df_new["Region"] = df_new["Region"].replace("", "Altiplano Central")
+
+          if "Area protegida" in df_new.columns:
+              df_new["Area protegida"] = (
+                  df_new["Area protegida"].astype(str).str.strip().str.lower().replace(FIX_AREA)
+              )
+
+          for col in [
+              "Esta monitoreando un area fuera de su municipio",
+              "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso",
+          ]:
+              if col in df_new.columns:
+                  df_new[col] = df_new[col].astype(str).str.strip().str.lower().replace(FIX_SINO)
+
+          if "Fecha" in df_new.columns:
+              df_new["Fecha"] = fmt_form_date(df_new["Fecha"])
+
+          for col in ["CreationDate", "EditDate"]:
+              if col in df_new.columns:
+                  df_new[col] = fmt_system_datetime(df_new[col])
+
+          if "Hora" in df_new.columns:
+              df_new["Hora"] = fmt_time_only(df_new["Hora"])
+
+          if "Especies reforestadas" in df_new.columns:
+              df_new["Especies reforestadas"] = (
+                  df_new["Especies reforestadas"]
+                  .astype(str)
+                  .str.strip()
+                  .str.replace(" ", ",", regex=False)
+                  .str.replace(r",+", ",", regex=True)
+                  .str.strip(",")
+                  .replace({"nan": "", "None": ""})
+              )
+
+          keep_cols = COLS + ["_source_id"]
+          df_new = df_new[keep_cols]
+
+          try:
+              df_old = read_existing_csv(OUTPUT_CSV)
+              if "_source_id" not in df_old.columns:
+                  df_old["_source_id"] = ""
+              combined = pd.concat([df_old, df_new], ignore_index=True)
+          except FileNotFoundError:
+              print("Sin histórico previo. Se crea desde cero.")
+              combined = df_new
+
+          for c in COLS:
+              if c not in combined.columns:
+                  combined[c] = ""
+
+          combined["_source_id"] = combined["_source_id"].fillna("").astype(str).str.strip()
+
+          # Primer pase: si hay GlobalID/ObjectID, conservar la última versión descargada.
+          with_source = combined["_source_id"] != ""
+          dedup_source = combined[with_source].drop_duplicates(subset="_source_id", keep="last")
+          dedup_nosource = combined[~with_source].copy()
+          combined = pd.concat([dedup_nosource, dedup_source], ignore_index=True)
+
+          # Segundo pase: evita duplicar registros históricos sin GlobalID contra registros nuevos de ArcGIS.
+          combined["_fallback_key"] = (
+              combined["Nombre del guardarrecursos"].astype(str).str.strip().str.lower() + "|" +
+              combined["Fecha"].astype(str).str.strip() + "|" +
+              combined["Hora"].astype(str).str.strip() + "|" +
+              combined["Nombre del area o lugar de la reforestacion establecida"].astype(str).str.strip().str.lower() + "|" +
+              combined["Tipo de reforestacion"].astype(str).str.strip().str.lower()
+          )
+          before = len(combined)
+          combined = combined.drop_duplicates(subset="_fallback_key", keep="last")
+          print(f"✓ Duplicados eliminados: {before - len(combined)}")
+
+          combined["_sort_fecha"] = pd.to_datetime(combined["Fecha"], errors="coerce")
+          combined["_sort_creation"] = pd.to_datetime(combined["CreationDate"], errors="coerce")
+          combined = (
+              combined.sort_values(["_sort_fecha", "_sort_creation"], na_position="last")
+              .drop(columns=["_sort_fecha", "_sort_creation", "_fallback_key", "_source_id"], errors="ignore")
+              .reset_index(drop=True)
+          )
+
+          # El CSV del sitio usa punto y coma. Se guarda en UTF-8 con BOM para Excel/GitHub Pages.
+          combined = combined[COLS]
+          combined.to_csv(OUTPUT_CSV, index=False, sep=";", encoding="utf-8-sig")
+          print(f"✓ CSV guardado: {OUTPUT_CSV} ({len(combined)} registros totales)")
+          PYEOF
+
+      - name: Publicar cambios al repositorio
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/datos/base4_datos.csv
+
+          if git diff --staged --quiet; then
+            echo "Sin registros nuevos. No se necesita commit."
+          else
+            FECHA=$(TZ="America/Guatemala" date '+%d/%m/%Y %H:%M GT')
+            git commit -m "🔄 AC282 Reforestaciones · $FECHA"
+            git push
+          fi
