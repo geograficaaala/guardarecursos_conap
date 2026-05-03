@@ -683,7 +683,20 @@ function ejecutarVerificacion(){
   document.getElementById("vc-resumen").style.display="grid";
 
   const tbody=document.getElementById("vc-tbody");tbody.innerHTML="";
-  const todosGuardas=guardaFiltro?[guardaFiltro]:[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
+
+  /*
+    Corrección de verificación:
+    La versión anterior armaba la tabla con TODOS los guardarecursos históricos de DATOS.
+    Por eso, al consultar un período puntual, aparecían guardas con 0 registros aunque
+    simplemente no tuvieran actividad en ese rango. Para "Todos", ahora se listan solo
+    los guardas que sí tienen registros dentro del período seleccionado. Si se selecciona
+    un guardarecurso específico, sí se mantiene la fila aunque sea 0 para confirmar la
+    verificación individual.
+  */
+  const todosGuardas = guardaFiltro
+    ? [guardaFiltro]
+    : [...new Set(enPeriodo.map(r=>r.__guarda).filter(Boolean))].sort();
+
   const filasSummary=[];
   todosGuardas.forEach(g=>{
     const sub=enPeriodo.filter(r=>r.__guarda===g).sort((a,b)=>a.__dt-b.__dt);
@@ -750,6 +763,18 @@ function ejecutarVerificacion(){
   document.getElementById("vc-expand-all").onclick=()=>{tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"));};
   document.getElementById("vc-collapse-all").onclick=()=>{tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.remove("open"));tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.remove("open"));};
   if(guardaFiltro)setTimeout(()=>document.getElementById("vc-expand-all").click(),80);
+
+  if(!filasSummary.length){
+    document.getElementById("vc-tabla-wrap").style.display="none";
+    const empty=document.getElementById("vc-empty");
+    empty.style.display="";
+    empty.innerHTML=`
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <p style="margin-top:12px">No hay registros de reforestación dentro del período seleccionado.</p>
+    `;
+    return;
+  }
+
   document.getElementById("vc-tabla-wrap").style.display="";
   document.getElementById("vc-empty").style.display="none";
   document.getElementById("vc-export-csv").onclick=()=>exportarVerificacionCSV(filasSummary,enPeriodo,desde,hasta,meta);
