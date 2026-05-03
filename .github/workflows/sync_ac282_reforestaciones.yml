@@ -213,18 +213,29 @@ jobs:
                           out.append(val.strftime(fmt))
               return pd.Series(out, index=dt_series.index)
 
+          def coerce_arcgis_datetime(series):
+              """Convierte fechas de ArcGIS aunque lleguen como int, float o string con milisegundos Unix."""
+              s = series.copy()
+
+              # 1) Intento como milisegundos Unix.
+              num = pd.to_numeric(s, errors="coerce")
+              dt_ms = pd.Series(pd.NaT, index=s.index, dtype="datetime64[ns]")
+              mask_ms = num.notna() & (num.abs() > 10**11)
+              if mask_ms.any():
+                  dt_ms.loc[mask_ms] = pd.to_datetime(num.loc[mask_ms], unit="ms", errors="coerce")
+
+              # 2) Intento como texto normal: ISO, mm/dd/yyyy, etc.
+              dt_txt = pd.to_datetime(s, errors="coerce")
+
+              # 3) Priorizar epoch ms cuando exista; completar con texto.
+              return dt_ms.combine_first(dt_txt)
+
           def fmt_system_datetime(series):
-              if pd.api.types.is_numeric_dtype(series):
-                  dt = pd.to_datetime(series, unit="ms", errors="coerce")
-              else:
-                  dt = pd.to_datetime(series, errors="coerce")
+              dt = coerce_arcgis_datetime(series)
               return safe_strftime(dt, "system_date")
 
           def fmt_form_date(series):
-              if pd.api.types.is_numeric_dtype(series):
-                  dt = pd.to_datetime(series, unit="ms", errors="coerce")
-              else:
-                  dt = pd.to_datetime(series, errors="coerce")
+              dt = coerce_arcgis_datetime(series)
               return safe_strftime(dt, "form_date")
 
           def fmt_time_only(series):
@@ -471,6 +482,20 @@ jobs:
               if c not in combined.columns:
                   combined[c] = ""
 
+          # Limpia filas dañadas por la versión anterior del workflow:
+          # tenían guardarecurso y datos descriptivos, pero Fecha/CreationDate/EditDate quedaron vacíos
+          # porque los milisegundos Unix de ArcGIS se habían convertido a texto antes de formatearse.
+          corrupt_mask = (
+              combined["Nombre del guardarrecursos"].astype(str).str.strip().ne("") &
+              combined["Fecha"].astype(str).str.strip().eq("") &
+              combined["CreationDate"].astype(str).str.strip().eq("") &
+              combined["EditDate"].astype(str).str.strip().eq("")
+          )
+          corrupt_count = int(corrupt_mask.sum())
+          if corrupt_count:
+              combined = combined.loc[~corrupt_mask].copy()
+              print(f"✓ Filas corruptas sin fecha eliminadas: {corrupt_count}")
+
           combined["_source_id"] = combined["_source_id"].fillna("").astype(str).str.strip()
 
           # Primer pase: si hay GlobalID/ObjectID, conservar la última versión descargada.
@@ -480,12 +505,15 @@ jobs:
           combined = pd.concat([dedup_nosource, dedup_source], ignore_index=True)
 
           # Segundo pase: evita duplicar registros históricos sin GlobalID contra registros nuevos de ArcGIS.
+          def norm_series_key(series):
+              return series.fillna("").astype(str).apply(lambda v: norm_key(v) if clean_text(v) else "")
+
           combined["_fallback_key"] = (
-              combined["Nombre del guardarrecursos"].astype(str).str.strip().str.lower() + "|" +
-              combined["Fecha"].astype(str).str.strip() + "|" +
-              combined["Hora"].astype(str).str.strip() + "|" +
-              combined["Nombre del area o lugar de la reforestacion establecida"].astype(str).str.strip().str.lower() + "|" +
-              combined["Tipo de reforestacion"].astype(str).str.strip().str.lower()
+              norm_series_key(combined["Nombre del guardarrecursos"]) + "|" +
+              combined["Fecha"].fillna("").astype(str).str.strip() + "|" +
+              combined["Hora"].fillna("").astype(str).str.strip() + "|" +
+              norm_series_key(combined["Nombre del area o lugar de la reforestacion establecida"]) + "|" +
+              norm_series_key(combined["Tipo de reforestacion"])
           )
           before = len(combined)
           combined = combined.drop_duplicates(subset="_fallback_key", keep="last")
