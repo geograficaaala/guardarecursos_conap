@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>AC282 · Registros y verificación · Reforestaciones por compromiso</title>
+  <title>AC192 · Registros y verificación · Patrullajes</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../assets/tabulator.min.css">
   <script src="../../assets/tabulator.min.js"></script>
@@ -209,10 +209,6 @@
     /* FOOTER */
     footer{background:var(--verde-oscuro);color:rgba(255,255,255,.42);text-align:center;padding:16px 24px;font-size:12px;font-weight:300;letter-spacing:.04em;flex-shrink:0}
     footer strong{color:rgba(255,255,255,.75);font-weight:500}
-  
-    .vc-area-total{display:inline-flex;align-items:center;justify-content:flex-end;border-radius:999px;background:rgba(1,102,96,0.08);border:1px solid rgba(1,102,96,0.18);padding:5px 12px;font-family:monospace;font-weight:700;color:var(--d5);white-space:nowrap}
-    .report-source{position:absolute;left:-9999px;top:0;width:210mm;background:#fff;color:#111}
-
   </style>
 </head>
 <body>
@@ -226,7 +222,7 @@
     <div class="header-right">
       <h1>Centro de consulta de datos</h1>
       <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
-      <div class="header-chip"><span class="chip-dot"></span>AC282 · Registros y verificación</div>
+      <div class="header-chip"><span class="chip-dot"></span>AC192 · Registros y verificación</div>
     </div>
   </div>
 </header>
@@ -245,7 +241,7 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Tablero dinámico
     </a>
-    <a href="datos.html" class="nav-tab active">
+    <a href="registros.html" class="nav-tab active">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
       Registros y verificación
     </a>
@@ -255,18 +251,27 @@
 <div class="page">
 
   <div class="inner-tabs">
-    <button class="inner-tab active" data-panel="panel-verif">Verificación de cumplimiento</button>
-    <button class="inner-tab" data-panel="panel-registros">Tabla de registros y exportación</button>
-    <button class="inner-tab" data-panel="panel-analisis">Análisis por guardarecursos</button>
+    <button class="inner-tab active" data-panel="panel-verif">
+      Verificación de cumplimiento
+    </button>
+    <button class="inner-tab" data-panel="panel-registros">
+      Tabla de registros y exportación
+    </button>
+    <button class="inner-tab" data-panel="panel-analisis">
+      Análisis por guardarecursos
+    </button>
   </div>
 
+  <!-- ══════════════════════════════════════════
+       PANEL 1 — VERIFICACIÓN DE CUMPLIMIENTO
+  ══════════════════════════════════════════ -->
   <div id="panel-verif" class="tab-panel active">
 
     <div class="verif-panel">
-      <div class="verif-title">Verificación de cumplimiento de monitoreo a reforestaciones</div>
+      <div class="verif-title">Verificación de cumplimiento de patrullajes</div>
       <div class="verif-hint">
-        El período de corte se mantiene del <strong>25 de cada mes al 25 del siguiente</strong>. Seleccione el período y el guardarecurso para revisar la cantidad de monitoreos de reforestación registrados.
-        Deje el campo "Meta" en 0 para ver solo el conteo sin comparar contra una meta específica.
+        El período de corte es del <strong>25 de cada mes al 25 del siguiente</strong>. Seleccione el período y el guardarecurso para confirmar si cumplió con la cantidad de patrullajes declarados. 
+        Deje el campo "Meta" en 0 para ver solo el conteo sin verificar contra una meta específica.
       </div>
 
       <div class="verif-controls">
@@ -283,8 +288,8 @@
           <select id="vc-guarda"><option value="">Todos los guardarecursos</option></select>
         </div>
         <div class="vc-group">
-          <label>Meta de monitoreos</label>
-          <input type="number" id="vc-meta" value="0" min="0" placeholder="Ej: 4"/>
+          <label>Meta de patrullajes</label>
+          <input type="number" id="vc-meta" value="0" min="0" placeholder="Ej: 8"/>
         </div>
         <button class="btn btn-primary" id="vc-aplicar" style="height:40px;align-self:flex-end">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -297,9 +302,10 @@
         <span id="vc-periodo-label"></span>
       </div>
 
+      <!-- KPIs del período -->
       <div class="verif-resumen" id="vc-resumen" style="display:none">
         <div class="vr-card" style="border-top:3px solid var(--d0)">
-          <div class="vr-label">Monitoreos en período</div>
+          <div class="vr-label">Patrullajes en período</div>
           <div class="vr-value vr-neutral" id="vc-total">–</div>
           <div class="vr-sub" id="vc-total-sub">registros</div>
         </div>
@@ -309,16 +315,17 @@
           <div class="vr-sub">en el período</div>
         </div>
         <div class="vr-card" style="border-top:3px solid var(--d2)">
-          <div class="vr-label">Área reportada</div>
+          <div class="vr-label">Kilómetros recorridos</div>
           <div class="vr-value vr-neutral" id="vc-km">–</div>
-          <div class="vr-sub">área acumulada</div>
+          <div class="vr-sub">km acumulados</div>
         </div>
       </div>
 
+      <!-- Tabla de cumplimiento por guardarecurso -->
       <div id="vc-tabla-wrap" style="display:none">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
           <span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase">
-            Detalle por guardarecursos — haga clic en una fila para ver los monitoreos individuales
+            Detalle por guardarecursos — haga clic en una fila para ver los patrullajes individuales
           </span>
           <div style="display:flex;gap:6px">
             <button class="btn" id="vc-expand-all" style="font-size:11.5px;padding:5px 12px">Expandir todos</button>
@@ -331,7 +338,7 @@
               <tr>
                 <th style="width:42px"></th>
                 <th>Detalle</th>
-                <th>Área reportada</th>
+                <th>Kilómetros recorridos</th>
               </tr>
             </thead>
             <tbody id="vc-tbody"></tbody>
@@ -357,7 +364,9 @@
 
     <div class="card informe-general-card">
       <div class="card-title">Informe general del periodo seleccionado</div>
-      <div class="card-hint">Este informe usa únicamente las fechas seleccionadas arriba. Siempre consolida todos los guardarecursos del periodo.</div>
+      <div class="card-hint">
+        Este informe usa únicamente las fechas seleccionadas arriba. No depende del guardarecurso elegido, de la meta ni de haber presionado Verificar. Siempre consolida todos los guardarecursos del periodo.
+      </div>
       <div class="actions-bar" style="justify-content:flex-end">
         <button class="btn btn-informe-periodo" id="btn-informe-general-periodo">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
@@ -365,9 +374,14 @@
         </button>
       </div>
     </div>
+
   </div>
 
+  <!-- ══════════════════════════════════════════
+       PANEL 2 — TABLA DE REGISTROS
+  ══════════════════════════════════════════ -->
   <div id="panel-registros" class="tab-panel">
+
     <p class="estado-txt" id="estado-registros">Cargando datos…</p>
 
     <div class="card">
@@ -387,7 +401,7 @@
 
     <div class="card">
       <div class="card-title">Informe de registro individual</div>
-      <div class="card-hint">Selecciona una fila en la tabla y genera el informe de ese monitoreo específico</div>
+      <div class="card-hint">Selecciona una fila en la tabla y genera el informe de ese patrullaje específico</div>
       <div class="actions-bar">
         <button class="btn btn-blue" id="generate-report-word">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -402,7 +416,7 @@
 
     <div class="card">
       <div class="card-title">Informe de corte 25 a 25</div>
-      <div class="card-hint">Genera un informe ejecutivo detallado del período operativo seleccionado, con análisis territorial, área reportada, especies y tabla consolidada por guardarecurso</div>
+      <div class="card-hint">Genera un informe ejecutivo detallado del período operativo seleccionado, con análisis territorial, incidentes, kilómetros y tabla consolidada por guardarecurso</div>
       <div class="informe-bar">
         <div>
           <label>Seleccione el período de corte</label>
@@ -422,10 +436,15 @@
     <div class="card" style="padding:0;overflow:hidden">
       <div id="tabla-registros"></div>
     </div>
+
   </div>
 
+  <!-- ══════════════════════════════════════════
+       PANEL 3 — ANÁLISIS POR GUARDARECURSO
+  ══════════════════════════════════════════ -->
   <div id="panel-analisis" class="tab-panel">
-    <p class="estado-txt" id="estado-analisis">Selecciona un guardarecursos para ver su perfil de monitoreo</p>
+
+    <p class="estado-txt" id="estado-analisis">Selecciona un guardarecursos para ver su perfil de actividad</p>
 
     <div class="guarda-selector">
       <div>
@@ -439,40 +458,40 @@
     </div>
 
     <div id="guarda-kpis" class="kpis-guarda" style="display:none">
-      <div class="kpi-g kpi-g-0"><div class="kpi-g-label">Monitoreos</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">total registrados</div></div>
+      <div class="kpi-g kpi-g-0"><div class="kpi-g-label">Patrullajes</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">total registrados</div></div>
       <div class="kpi-g kpi-g-1"><div class="kpi-g-label">Municipios</div><div class="kpi-g-value" id="g-munis">–</div><div class="kpi-g-sub">distintos cubiertos</div></div>
-      <div class="kpi-g kpi-g-2"><div class="kpi-g-label">Área total</div><div class="kpi-g-value" id="g-dur">–</div><div class="kpi-g-sub">área reportada</div></div>
-      <div class="kpi-g kpi-g-3"><div class="kpi-g-label">Especies</div><div class="kpi-g-value" id="g-ileg">–</div><div class="kpi-g-sub">distintas registradas</div></div>
-      <div class="kpi-g kpi-g-4"><div class="kpi-g-label">Tipos</div><div class="kpi-g-value" id="g-km">–</div><div class="kpi-g-sub">tipos de reforestación</div></div>
+      <div class="kpi-g kpi-g-2"><div class="kpi-g-label">Duración media</div><div class="kpi-g-value" id="g-dur">–</div><div class="kpi-g-sub">horas por patrullaje</div></div>
+      <div class="kpi-g kpi-g-3"><div class="kpi-g-label">Incidentes</div><div class="kpi-g-value" id="g-ileg">–</div><div class="kpi-g-sub">actividad ilegal</div></div>
+      <div class="kpi-g kpi-g-4"><div class="kpi-g-label">Km recorridos</div><div class="kpi-g-value" id="g-km">–</div><div class="kpi-g-sub">km totales</div></div>
     </div>
 
     <div id="guarda-charts" class="charts-2" style="display:none">
       <div class="card">
-        <div class="card-title">Monitoreos por período (corte 25)</div>
+        <div class="card-title">Patrullajes por período (corte 25)</div>
         <div class="card-hint">Agrupados por período operativo mensual</div>
         <div class="cw"><canvas id="g-c-mes"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">Municipios monitoreados</div>
-        <div class="card-hint">Distribución por municipio de reforestación</div>
+        <div class="card-title">Municipios visitados</div>
+        <div class="card-hint">Distribución por municipio de patrullaje</div>
         <div class="cw"><canvas id="g-c-muni"></canvas></div>
       </div>
     </div>
 
     <div id="guarda-tabla-wrap" class="card" style="display:none">
       <div class="card-title">Detalle por municipio</div>
-      <div class="card-hint">Monitoreos, área reportada, especies y áreas protegidas por municipio</div>
+      <div class="card-hint">Patrullajes, incidentes, km y duración media por municipio</div>
       <div style="overflow-x:auto">
         <table class="resumen-table" id="guarda-tabla">
           <thead>
             <tr>
               <th>Municipio</th>
-              <th>Monitoreos</th>
-              <th>Área reportada</th>
-              <th>Especies</th>
-              <th>Área protegida</th>
-              <th>Fuera municipio</th>
-              <th>Última fecha</th>
+              <th>Patrullajes</th>
+              <th>Km recorridos</th>
+              <th>Con incidente</th>
+              <th>% incidentes</th>
+              <th>Duración media</th>
+              <th>RUMCLA / Fuera</th>
             </tr>
           </thead>
           <tbody id="guarda-tbody"></tbody>
@@ -484,6 +503,7 @@
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <p style="margin-top:12px">Selecciona un guardarecursos para ver su análisis individual</p>
     </div>
+
   </div>
 </div>
 
@@ -492,86 +512,119 @@
 </footer>
 
 <script>
-const CSV_URL = "../../datos/base4_datos.csv";
-const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const MESES_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-const PAL = ["#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660","#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"];
-
-let DATOS = [];
-let tablaTabulator = null;
-let selectedRowData = null;
-let chartMes = null;
-let chartMuni = null;
-let mapaMeses = new Map();
-
+/* ═══════════════════════════════════════════════════
+   NORMALIZACIÓN DE GUARDARECURSOS (misma lógica del tablero)
+═══════════════════════════════════════════════════ */
+const EXCLUIDOS = new Set([
+  "daniel estuardo barillas coo","daniel estuardo barillas",
+  "domingo alfonso mendoza quiacain","domingo alfonso mendoza",
+  "job' kotz'ij eligia morales quino","job kotzij eligia morales quino",
+  "pedro chiviliu esquina",
+  "ruben enrique sumoza mendoza","ruben enrique sumoza",
+]);
 const MERGE = {
+  "5 juan marcos saquic":"Juan Marcos Saquic",
+  "9 heriberto chavez chavez":"Heriberto Chavez Chavez",
+  "antonio federico tzaj y tzaj":"Antonio Federico Tzaj Y Tzaj",
   "diego martin ramirez ixbalan":"Diego Martín Ramírez Ixbalan",
   "diego martín ramírez ixbalan":"Diego Martín Ramírez Ixbalan",
-  "francisco sicay icaj":"Francisco Sicay Icaj",
-  "ezequiel iboy bacajol":"Ezequiel Iboy Bacajol",
-  "juan marcos saquic":"Juan Marcos Saquic",
-  "jose bacajol simaji":"José Bacajol Simají",
-  "josé bacajol simají":"José Bacajol Simají",
-  "mario cesar tale coche":"Mario César Talé Coché",
-  "mario césar talé coché":"Mario César Talé Coché",
   "edgar bartolo batin navichoc":"Edgar Bartolo Batín Navichoc",
   "edgar bartolo batín navichoc":"Edgar Bartolo Batín Navichoc",
   "henry regino mendez chavajay":"Henry Regino Méndez Chavajay",
   "henry regino méndez chavajay":"Henry Regino Méndez Chavajay",
+  "jose bacajol simaji":"José Bacajol Simají",
+  "josé bacajol simají":"José Bacajol Simají",
+  "mario cesar tale coche":"Mario César Talé Coché",
+  "mario césar talé coché":"Mario César Talé Coché",
+  "rafael enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "rafael enrique chocoy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "sebastian tinuar":"Sebastián Tinuar Cipriano",
   "sebastian tinuar cipriano":"Sebastián Tinuar Cipriano",
-  "sebastián tinuar cipriano":"Sebastián Tinuar Cipriano"
+  "vicente francisco omar perez cox":"Vicente Francisco Omar Pérez Cox",
+  "vicente omar francisco pérez":"Vicente Francisco Omar Pérez Cox",
+  "vicente omar francisco perez":"Vicente Francisco Omar Pérez Cox",
+  "santos maurico vicente mendoza":"Santos Mauricio Vicente Mendoza",
 };
-
 function canonStr(s){return String(s||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ");}
-function normGuarda(n){if(!n)return null;const c=canonStr(n);return MERGE[c]||String(n).trim();}
-function escH(s){return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
-function slug(s){return String(s||"").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"_").replace(/[^\w\-]/g,"");}
-function fmtGT(n,min=0,max=1){if(n===null||n===undefined||!isFinite(Number(n)))return"–";return Number(n).toLocaleString("es-GT",{minimumFractionDigits:min,maximumFractionDigits:max});}
-function fmtArea(n){return isFinite(Number(n))?fmtGT(Number(n),0,2):"–";}
-function pct(p,t){return t?Math.round(p*1000/t)/10:0;}
-function cFrases(arr){arr=arr.filter(Boolean);if(!arr.length)return"–";if(arr.length===1)return arr[0];if(arr.length===2)return arr[0]+" y "+arr[1];return arr.slice(0,-1).join(", ")+" y "+arr[arr.length-1];}
-function topMap(regs,fn){const m=new Map();regs.forEach(r=>{const k=String(fn(r)||"").trim();if(k)m.set(k,(m.get(k)||0)+1);});return [...m.entries()].sort((a,b)=>b[1]-a[1]);}
-function sumMap(regs,fnKey,fnVal){const m=new Map();regs.forEach(r=>{const k=String(fnKey(r)||"").trim();if(!k)return;m.set(k,(m.get(k)||0)+(Number(fnVal(r))||0));});return [...m.entries()].sort((a,b)=>b[1]-a[1]);}
-function splitEspecies(v){return String(v||"").split(/[,;\/]+/).map(s=>s.trim()).filter(Boolean);}
+function normGuarda(n){if(!n)return null;const c=canonStr(n);if(EXCLUIDOS.has(c))return null;return MERGE[c]||n.trim();}
 
+/* ═══════════════════════════════════════════════════
+   GLOBALS
+═══════════════════════════════════════════════════ */
+let DATOS = [];         // datos normalizados
+let tablaTabulator;
+let mapaMeses = new Map();
+
+const PAL = ["#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660","#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"];
+const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MESES_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+/* ═══════════════════════════════════════════════════
+   UTILIDADES
+═══════════════════════════════════════════════════ */
+function escH(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function pct(p,t){return t?Math.round(p*1000/t)/10:0}
+function rnd(n,d){if(!isFinite(n))return 0;const f=Math.pow(10,d);return Math.round(n*f)/f}
+function cFrases(arr){if(!arr.length)return"";if(arr.length===1)return arr[0];if(arr.length===2)return arr[0]+" y "+arr[1];return arr.slice(0,-1).join(", ")+" y "+arr[arr.length-1]}
+function slug(s){return String(s||"").toLowerCase().trim().replace(/\s+/g,"_").replace(/[^\w\-]/g,"")}
+
+function canonUbic(v){const c=canonStr(v);if(c.includes("fuera"))return"fuera";if(c.includes("rumcla"))return"rumcla";return""}
+function canonIlegal(v){const c=canonStr(v);return(c==="si"||c==="sí")?"si":c==="no"?"no":""}
+
+function parseHora(s){
+  if(!s)return null;
+  const m=String(s).trim().replace(".","：").match(/(\d{1,2}):(\d{2})/);
+  if(!m)return null;
+  const h=+m[1],mi=+m[2];
+  return(h<0||h>23||mi<0||mi>59)?null:h*60+mi;
+}
+function durHoras(ini,fin){
+  const a=parseHora(ini),b=parseHora(fin);
+  if(a===null||b===null)return null;
+  let d=b-a;if(d<0)d+=1440;
+  return(d>960||d<6)?null:d/60;
+}
+function fmtHora(min){if(min===null||!isFinite(min))return"–";return String(Math.floor(min/60)).padStart(2,"0")+":"+String(min%60).padStart(2,"0")}
+
+// Parseo de fechas robusto
 function parseDate(s){
   if(!s)return null;
-  const raw=String(s).trim();
-  if(!raw)return null;
-  const main=raw.split(/[ T]/)[0];
-  const sep=main.includes("/")?"/":main.includes("-")?"-":null;
-  if(!sep)return null;
-  const p=main.split(sep).map(x=>x.trim());
-  if(p.length<3)return null;
-  let y,m,d;
-  if(p[0].length===4){y=+p[0];m=+p[1];d=+p[2];}
-  else{
-    const a=+p[0], b=+p[1]; y=+String(p[2]).slice(0,4); if(y<100)y=y<=50?2000+y:1900+y;
-    if(a>12){d=a;m=b;}
-    else if(b>12){m=a;d=b;}
-    else{m=a;d=b;} // El CSV AC282 viene desde ArcGIS/Excel como M/D/YYYY.
-  }
-  if(!y||!m||!d)return null;
-  const dt=new Date(y,m-1,d);
-  return isNaN(dt)?null:dt;
+  const str=String(s).trim().split(" ")[0];
+  const sep=str.includes("/")?"/":str.includes("-")?"-":null;if(!sep)return null;
+  const p=str.split(sep);if(p.length<3)return null;
+  const a=+p[0],b=+p[1],cv=p[2].match(/\d{1,4}/);if(!cv)return null;
+  let c=+cv[0];if(c<100)c=c<=50?2000+c:1900+c;
+  if(p[0].length===4)return new Date(a,b-1,+p[2]);
+  if(a>12)return new Date(c,b-1,a);
+  if(b>12)return new Date(c,a-1,b);
+  return new Date(c,b-1,a);
 }
-function fmtDateDisplay(dt){if(!dt||isNaN(dt))return"–";return String(dt.getDate()).padStart(2,"0")+"/"+String(dt.getMonth()+1).padStart(2,"0")+"/"+dt.getFullYear();}
-function isoDate(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
+function fmtDateDisplay(dt){
+  if(!dt||isNaN(dt))return"–";
+  return String(dt.getDate()).padStart(2,"0")+"/"+String(dt.getMonth()+1).padStart(2,"0")+"/"+dt.getFullYear();
+}
+function isoDate(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0")}
+
+// Determina el período operativo (corte 25): para una fecha dada, retorna "YYYY-MM" del período
+// Un patrullaje del 26/mar al 25/abr pertenece al período "abr"
 function periodoOperativo(dt){
   if(!dt||isNaN(dt))return null;
-  const d=dt.getDate(),m=dt.getMonth(),y=dt.getFullYear();
-  if(d>=26){const nm=m===11?0:m+1,ny=m===11?y+1:y;return ny+"-"+String(nm+1).padStart(2,"0");}
-  return y+"-"+String(m+1).padStart(2,"0");
+  const d=dt.getDate();
+  const m=dt.getMonth(); // 0-based
+  const y=dt.getFullYear();
+  if(d>=26){
+    // Pertenece al período del siguiente mes
+    const nm=m===11?0:m+1;
+    const ny=m===11?y+1:y;
+    return ny+"-"+String(nm+1).padStart(2,"0");
+  }else{
+    return y+"-"+String(m+1).padStart(2,"0");
+  }
 }
-function periodoRango(periodo){
-  const [y,m]=periodo.split("-").map(Number);
-  const fin=new Date(y,m-1,25,23,59,59);
-  const ini=new Date(y,m-2,25,0,0,0);
-  return {inicio:ini,fin};
-}
-function etiquetaPeriodo(periodo){const r=periodoRango(periodo);return `${fmtDateDisplay(r.inicio)} al ${fmtDateDisplay(r.fin)}`;}
-function parseNum(v){if(v===null||v===undefined)return null;const s=String(v).replace(/,/g,".").replace(/[^0-9.\-]/g,"");const n=parseFloat(s);return isFinite(n)?n:null;}
 
+/* ═══════════════════════════════════════════════════
+   GTM PROYECCIÓN
+═══════════════════════════════════════════════════ */
 function latLonAGTM(lat,lon){
   if(!isFinite(lat)||!isFinite(lon))return{GTM_X:null,GTM_Y:null};
   const a=6378137,f=1/298.257223563,e2=2*f-f*f,ep2=e2/(1-e2);
@@ -585,81 +638,62 @@ function latLonAGTM(lat,lon){
   return{GTM_X:Math.round(X*100)/100,GTM_Y:Math.round(Y*100)/100};
 }
 
-function procesarDatos(raw){
-  return raw.map((r,idx)=>{
-    const guarda=normGuarda(r["Nombre del guardarrecursos"]||r["Guardarrecursos"]||r["Guarda recursos responsable"]);
-    if(!guarda)return null;
-    const dt=parseDate(r["Fecha"]);
-    const lon=parseNum(r["X"]), lat=parseNum(r["Y"]);
-    const gtm=(lat!==null&&lon!==null)?latLonAGTM(lat,lon):{GTM_X:null,GTM_Y:null};
-    const area=parseNum(r["Area de reforestacion"]);
-    const especies=[...splitEspecies(r["Especies reforestadas"]),...splitEspecies(r["Especifique otra especie"])].filter(Boolean);
-    return {
-      ...r,
-      "Nombre del guardarrecursos": guarda,
-      "GTM_X (m)": gtm.GTM_X!==null?gtm.GTM_X:"",
-      "GTM_Y (m)": gtm.GTM_Y!==null?gtm.GTM_Y:"",
-      "__idx": idx+1,
-      "__dt": dt,
-      "__periodo": periodoOperativo(dt),
-      "__guarda": guarda,
-      "__municipio": String(r["Municipio"]||"").trim(),
-      "__area_prot": String(r["Area protegida"]||"").trim(),
-      "__lugar": String(r["Nombre del area o lugar de la reforestacion establecida"]||"").trim(),
-      "__tipo": String(r["Tipo de reforestacion"]||"").trim(),
-      "__area": area,
-      "__especies": especies,
-      "__lat": lat,
-      "__lon": lon,
-      "__fuera_muni": String(r["Esta monitoreando un area fuera de su municipio"]||"").trim().toLowerCase()
-    };
-  }).filter(Boolean).filter(r=>Object.values(r).some(v=>String(v||"").trim()!==""));
+/* ═══════════════════════════════════════════════════
+   CARGA Y NORMALIZACIÓN
+═══════════════════════════════════════════════════ */
+function procesarDatos(rawData){
+  return rawData
+    .map(r=>{
+      const guarda=normGuarda(r["Guarda recursos responsable"]);
+      if(!guarda)return null;
+      const dt=parseDate(r["Fecha de patrullaje"]);
+      const lat=parseFloat(String(r["Latitud"]||"").replace(",","."));
+      const lon=parseFloat(String(r["Longitud"]||"").replace(",","."));
+      const gtm=(isFinite(lat)&&isFinite(lon))?latLonAGTM(lat,lon):{GTM_X:"",GTM_Y:""};
+      const km=parseFloat(r["Kilometros recorridos"]||"");
+      return{
+        ...r,
+        "Guarda recursos responsable": guarda,
+        "__dt": dt,
+        "__dur": durHoras(r["Hora de Inicio del patrullaje"],r["Hora de finalizacion de patrullaje"]),
+        "__km": isNaN(km)?null:km,
+        "__cu": canonUbic(r["Ubicacion"]),
+        "__ci": canonIlegal(r["Actividad ilegal observada"]),
+        "__periodo": periodoOperativo(dt),
+        "GTM_X (m)": gtm.GTM_X!==null?gtm.GTM_X:"",
+        "GTM_Y (m)": gtm.GTM_Y!==null?gtm.GTM_Y:"",
+      };
+    })
+    .filter(Boolean);
 }
 
-function descargarBlob(nombre,contenido,tipo="text/plain;charset=utf-8"){
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([contenido],{type:tipo}));
-  a.download=nombre;
-  document.body.appendChild(a);a.click();document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
-}
-function toCSV(rows){
-  if(!rows.length)return"";
-  const keys=[...new Set(rows.flatMap(r=>Object.keys(r).filter(k=>!k.startsWith("__"))))];
-  const esc=v=>`"${String(v??"").replace(/"/g,'""')}"`;
-  return keys.map(esc).join(";")+"\n"+rows.map(r=>keys.map(k=>esc(r[k])).join(";")).join("\n");
-}
-function regVisible(r){const o={...r};Object.keys(o).forEach(k=>{if(k.startsWith("__"))delete o[k];});return o;}
-function regsPorRango(inicio,fin){return DATOS.filter(r=>r.__dt&&!isNaN(r.__dt)&&r.__dt>=inicio&&r.__dt<=fin);}
-function limpiarParaExcel(rows){return rows.map(regVisible);}
-
-function initTabs(){
-  document.querySelectorAll(".inner-tab").forEach(tab=>{
-    tab.addEventListener("click",()=>{
-      document.querySelectorAll(".inner-tab").forEach(t=>t.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
-      tab.classList.add("active");
-      document.getElementById(tab.dataset.panel).classList.add("active");
-      if(tab.dataset.panel==="panel-registros" && tablaTabulator) tablaTabulator.redraw(true);
-    });
+/* ═══════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════ */
+document.querySelectorAll(".inner-tab").forEach(tab=>{
+  tab.addEventListener("click",()=>{
+    document.querySelectorAll(".inner-tab").forEach(t=>t.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(tab.dataset.panel).classList.add("active");
   });
+});
+
+/* ═══════════════════════════════════════════════════
+   HERRAMIENTA DE VERIFICACIÓN
+═══════════════════════════════════════════════════ */
+function initVcSelects(){
+  const guardas=[...new Set(DATOS.map(r=>r["Guarda recursos responsable"]).filter(Boolean))].sort();
+  const sel=document.getElementById("vc-guarda");
+  sel.innerHTML='<option value="">Todos los guardarecursos</option>';
+  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o);});
 }
 
-function initSelects(){
-  const guardas=[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
-  const vc=document.getElementById("vc-guarda");
-  vc.innerHTML='<option value="">Todos los guardarecursos</option>';
-  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;vc.appendChild(o);});
-  const sg=document.getElementById("sel-guarda");
-  sg.innerHTML='<option value="">Selecciona un guardarecursos…</option>';
-  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sg.appendChild(o);});
-}
 function sugerirPeriodo(){
-  const fechas=DATOS.map(r=>r.__dt).filter(d=>d&&!isNaN(d)).sort((a,b)=>a-b);
-  const base=fechas.length?fechas[fechas.length-1]:new Date();
-  const hasta=new Date(base.getFullYear(),base.getMonth(),25);
-  const desde=new Date(base.getFullYear(),base.getMonth()-1,25);
-  if(base.getDate()>25){hasta.setMonth(hasta.getMonth()+1);desde.setMonth(desde.getMonth()+1);}
+  // Sugerir el período del corte más reciente: del 25 del mes pasado al 25 del mes actual
+  const hoy=new Date();
+  const hasta=new Date(hoy.getFullYear(),hoy.getMonth(),25);
+  const desde=new Date(hoy.getFullYear(),hoy.getMonth()-1,25);
   document.getElementById("vc-desde").value=isoDate(desde);
   document.getElementById("vc-hasta").value=isoDate(hasta);
 }
@@ -669,254 +703,810 @@ function ejecutarVerificacion(){
   const hastaStr=document.getElementById("vc-hasta").value;
   const guardaFiltro=document.getElementById("vc-guarda").value;
   const meta=parseInt(document.getElementById("vc-meta").value)||0;
+
   if(!desdeStr||!hastaStr){alert("Defina el período completo (desde y hasta).");return;}
+
   const desde=new Date(desdeStr+"T00:00:00");
   const hasta=new Date(hastaStr+"T23:59:59");
-  const enPeriodo=DATOS.filter(r=>r.__dt&&!isNaN(r.__dt)&&r.__dt>=desde&&r.__dt<=hasta&&(!guardaFiltro||r.__guarda===guardaFiltro));
+
+  const enPeriodo=DATOS.filter(r=>{
+    if(!r.__dt||isNaN(r.__dt))return false;
+    if(r.__dt<desde||r.__dt>hasta)return false;
+    if(guardaFiltro&&r["Guarda recursos responsable"]!==guardaFiltro)return false;
+    return true;
+  });
+
+  // Período label
   document.getElementById("vc-periodo-tag").style.display="";
-  document.getElementById("vc-periodo-label").textContent=`Período: ${fmtDateDisplay(desde)} al ${fmtDateDisplay(hasta)}${guardaFiltro?" · "+guardaFiltro:""}`;
-  const guardas=[...new Set(enPeriodo.map(r=>r.__guarda))];
-  const area=enPeriodo.reduce((a,r)=>a+(Number(r.__area)||0),0);
-  document.getElementById("vc-total").textContent=enPeriodo.length.toLocaleString("es-GT");
+  document.getElementById("vc-periodo-label").textContent=
+    `Período: ${fmtDateDisplay(desde)} al ${fmtDateDisplay(hasta)}${guardaFiltro?" · "+guardaFiltro:""}`;
+
+  // KPIs globales
+  const guardas=[...new Set(enPeriodo.map(r=>r["Guarda recursos responsable"]))];
+  const totalKm=enPeriodo.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+  document.getElementById("vc-total").textContent=enPeriodo.length.toLocaleString("es");
   document.getElementById("vc-guardas").textContent=guardas.length;
-  document.getElementById("vc-km").textContent=area?fmtArea(area):"–";
+  document.getElementById("vc-km").textContent=totalKm>0?totalKm.toLocaleString("en-US",{maximumFractionDigits:0})+" km":"–";
   document.getElementById("vc-resumen").style.display="grid";
 
-  const tbody=document.getElementById("vc-tbody");tbody.innerHTML="";
-  const todosGuardas=guardaFiltro?[guardaFiltro]:[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
+  // Construir filas con registros individuales
+  const tbody=document.getElementById("vc-tbody");
+  tbody.innerHTML="";
+
+  const todosGuardas=guardaFiltro?[guardaFiltro]:
+    [...new Set(DATOS.map(r=>r["Guarda recursos responsable"]).filter(Boolean))].sort();
+
   const filasSummary=[];
+  const todasFilasIndiv=[];
+
   todosGuardas.forEach(g=>{
-    const sub=enPeriodo.filter(r=>r.__guarda===g).sort((a,b)=>a.__dt-b.__dt);
-    const areaTotal=sub.reduce((a,r)=>a+(Number(r.__area)||0),0);
-    const municipios=new Set(sub.map(r=>r.__municipio).filter(Boolean));
-    const especies=new Set(sub.flatMap(r=>r.__especies).filter(Boolean).map(e=>canonStr(e)));
-    filasSummary.push({g,cnt:sub.length,area:areaTotal,munis:municipios.size,especies:especies.size,registros:sub});
+    const sub=enPeriodo
+      .filter(r=>r["Guarda recursos responsable"]===g)
+      .sort((a,b)=>a.__dt-b.__dt);  // ordenar por fecha asc
+
+    const cnt=sub.length;
+    const kmTotal=sub.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+    const munisSet=new Set(sub.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
+    const ileg=sub.filter(r=>r.__ci==="si").length;
+    const durs=sub.map(r=>r.__dur).filter(v=>v!==null);
+    const durMedia=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1)+"h":"–";
+    const rumcla=sub.filter(r=>r.__cu==="rumcla").length;
+
+    filasSummary.push({g,cnt,km:kmTotal,munis:munisSet.size,ileg,durMedia,rumcla,registros:sub});
+    sub.forEach((r,i)=>todasFilasIndiv.push({...r,__guarda_display:g,__num:i+1}));
   });
-  filasSummary.sort((a,b)=>b.cnt-a.cnt || b.area-a.area || a.g.localeCompare(b.g));
-  const totalCols=3;
-  filasSummary.forEach(({g,cnt,area,registros},idx)=>{
+
+  filasSummary.sort((a,b)=>b.cnt-a.cnt);
+
+  const totalCols=3; // toggle + guardarecurso + kilómetros acumulados
+
+  filasSummary.forEach(({g,cnt,km,munis,ileg,durMedia,rumcla,registros},idx)=>{
     const uid="grp-"+idx;
+
+    // ── Fila resumen (cabecera colapsable) ──────────────────
+    let cumpleCel="",avanceCel="";
+    if(meta>0){
+      const cumple=cnt>=meta;
+      const pctAv=Math.min(Math.round(cnt/meta*100),100);
+      const colP=pctAv>=100?"prog-fill-verde":pctAv>=60?"prog-fill-amarillo":"prog-fill-rojo";
+      const bCls=cumple?"badge-verde":cnt>0?"badge-amarillo":"badge-rojo";
+      cumpleCel=`<td><span class="badge ${bCls}">${cumple?"Cumplido":cnt>0?"Parcial":"Sin registro"} (${cnt}/${meta})</span></td>`;
+      avanceCel=`<td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar-fill ${colP}" style="width:${pctAv}%"></div></div><span class="prog-num">${pctAv}%</span></div></td>`;
+    }
+
     const trHead=document.createElement("tr");
     trHead.className="vc-row-guarda vc-row-guarda-simple";
     trHead.dataset.uid=uid;
-    const status=meta>0?`<span class="badge ${cnt>=meta?'badge-verde':cnt>0?'badge-amarillo':'badge-rojo'}" style="margin-left:8px">${cnt>=meta?'Cumplido':cnt>0?'Parcial':'Sin registro'} (${cnt}/${meta})</span>`:`<span class="badge badge-azul" style="margin-left:8px">${cnt} registro${cnt===1?'':'s'}</span>`;
     trHead.innerHTML=`
-      <td style="width:42px"><span class="vc-toggle"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg></span></td>
-      <td><strong>${escH(g)}</strong>${status}</td>
-      <td><span class="vc-area-total">${area?fmtArea(area):"–"}</span></td>`;
+      <td style="width:42px"><span class="vc-toggle">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>
+      </span></td>
+      <td><strong>${escH(g)}</strong></td>
+      <td><span class="vc-km-total">${km>0?km.toLocaleString("en-US",{minimumFractionDigits:1,maximumFractionDigits:1})+" km":"–"}</span></td>
+    `;
     tbody.appendChild(trHead);
 
-    const trSub=document.createElement("tr");
-    trSub.className="vc-subrows";trSub.dataset.uid=uid;
-    trSub.innerHTML=`<td colspan="${totalCols}" style="padding:0">
+    // ── Sub-cabecera de columnas individuales ──────────────
+    const trSubHead=document.createElement("tr");
+    trSubHead.className="vc-subrows";
+    trSubHead.dataset.uid=uid;
+    trSubHead.innerHTML=`<td colspan="${totalCols}" style="padding:0">
       <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead><tr style="background:#eef4f0">
-          <td style="width:28px;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">#</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Fecha</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Municipio</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Área protegida</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Lugar</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Tipo</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Área</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Especies</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Hora</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">X</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Y</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">GTM X (m)</td>
-          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">GTM Y (m)</td>
-        </tr></thead>
-        <tbody>${registros.map((r,i)=>`
-          <tr style="border-left:3px solid transparent">
-            <td style="padding:7px 8px;border-bottom:1px solid #e8f0eb;text-align:center"><span class="vc-num">${i+1}</span></td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;white-space:nowrap;font-weight:500">${escH(r["Fecha"]||"–")}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb">${escH(r.__municipio||"–")}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb">${escH(r.__area_prot||"–")}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;min-width:180px">${escH(r.__lugar||"–")}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb"><span class="badge badge-azul" style="font-size:10.5px">${escH(r.__tipo||"–")}</span></td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-family:monospace;font-weight:600;color:var(--d5)">${r.__area!==null?fmtArea(r.__area):"–"}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;min-width:160px">${escH(r.__especies.join(", ")||"–")}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-family:monospace">${escH(r["Hora"]||"–")}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${escH(r["X"]||"–")}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${escH(r["Y"]||"–")}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${r["GTM_X (m)"]!==""?fmtGT(r["GTM_X (m)"],2,2):"–"}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${r["GTM_Y (m)"]!==""?fmtGT(r["GTM_Y (m)"],2,2):"–"}</td>
-          </tr>`).join("")}</tbody>
-      </table></td>`;
-    tbody.appendChild(trSub);
+        <thead>
+          <tr style="background:#eef4f0">
+            <td style="width:28px;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">#</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Fecha</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Municipio</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Km</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Inicio</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Fin</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Duración</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Ubicación</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Actividad ilegal</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Latitud</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Longitud</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">GTM X (m)</td>
+            <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">GTM Y (m)</td>
+          </tr>
+        </thead>
+        <tbody>
+          ${registros.map((r,i)=>{
+            const dur=r.__dur!==null?r.__dur.toFixed(1)+"h":"–";
+            const km=r.__km!==null?Number(r.__km).toLocaleString("en-US",{minimumFractionDigits:1,maximumFractionDigits:1})+" km":"–";
+            const ilegalBadge=r.__ci==="si"
+              ?`<span class="badge badge-rojo" style="font-size:10.5px">Sí</span>`
+              :r.__ci==="no"?`<span class="badge badge-verde" style="font-size:10.5px">No</span>`
+              :`<span class="badge badge-gris" style="font-size:10.5px">–</span>`;
+            const lat=r["Latitud"]||"";
+            const lon=r["Longitud"]||"";
+            const gtmX=r["GTM_X (m)"]!==undefined&&r["GTM_X (m)"]!==""
+              ?Number(r["GTM_X (m)"]).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"–";
+            const gtmY=r["GTM_Y (m)"]!==undefined&&r["GTM_Y (m)"]!==""
+              ?Number(r["GTM_Y (m)"]).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"–";
+            const rowBg=r.__ci==="si"?"background:rgba(168,28,42,0.04)":"";
+            const borderL=r.__ci==="si"?"border-left:3px solid var(--d4)":"border-left:3px solid transparent";
+            return `<tr style="${rowBg};${borderL}">
+              <td style="padding:7px 8px;border-bottom:1px solid #e8f0eb;text-align:center">
+                <span class="vc-num">${i+1}</span>
+              </td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;white-space:nowrap;font-weight:500">${escH(r["Fecha de patrullaje"]||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb">${escH((r["Municipio"]||"").trim()||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-family:monospace;font-weight:600;color:var(--d5)">${km}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-family:monospace">${escH(r["Hora de Inicio del patrullaje"]||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-family:monospace">${escH(r["Hora de finalizacion de patrullaje"]||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-weight:500">${dur}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-size:11.5px">${escH(r["Ubicacion"]||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb">${ilegalBadge}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${lat||"–"}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${lon||"–"}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${gtmX}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${gtmY}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </td>`;
+    tbody.appendChild(trSubHead);
   });
-  tbody.querySelectorAll(".vc-row-guarda").forEach(row=>row.addEventListener("click",()=>{
-    const uid=row.dataset.uid;const open=row.classList.contains("open");row.classList.toggle("open",!open);tbody.querySelectorAll(`.vc-subrows[data-uid="${uid}"]`).forEach(s=>s.classList.toggle("open",!open));
-  }));
-  document.getElementById("vc-expand-all").onclick=()=>{tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"));};
-  document.getElementById("vc-collapse-all").onclick=()=>{tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.remove("open"));tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.remove("open"));};
-  if(guardaFiltro)setTimeout(()=>document.getElementById("vc-expand-all").click(),80);
+
+  // Toggle click
+  tbody.querySelectorAll(".vc-row-guarda").forEach(row=>{
+    row.addEventListener("click",()=>{
+      const uid=row.dataset.uid;
+      const isOpen=row.classList.contains("open");
+      row.classList.toggle("open",!isOpen);
+      tbody.querySelectorAll(`.vc-subrows[data-uid="${uid}"]`).forEach(s=>s.classList.toggle("open",!isOpen));
+    });
+  });
+
+  // Expandir/colapsar todos
+  document.getElementById("vc-expand-all").onclick=()=>{
+    tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));
+    tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"));
+  };
+  document.getElementById("vc-collapse-all").onclick=()=>{
+    tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.remove("open"));
+    tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.remove("open"));
+  };
+
+  // Si hay filtro por guarda único, expandir automáticamente
+  if(guardaFiltro){
+    setTimeout(()=>{
+      tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));
+      tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"));
+    },80);
+  }
+
   document.getElementById("vc-tabla-wrap").style.display="";
   document.getElementById("vc-empty").style.display="none";
+
+  // Exportar — ahora incluye filas individuales
   document.getElementById("vc-export-csv").onclick=()=>exportarVerificacionCSV(filasSummary,enPeriodo,desde,hasta,meta);
   document.getElementById("vc-export-xlsx").onclick=()=>exportarVerificacionXLSX(filasSummary,enPeriodo,desde,hasta,meta);
 }
 
 function exportarVerificacionCSV(filasSummary,enPeriodo,desde,hasta,meta){
+  const header=["Guardarecursos","#","Fecha","Municipio","Km recorridos","Hora inicio","Hora fin","Duración (h)","Ubicación","Actividad ilegal","Latitud","Longitud","GTM X (m)","GTM Y (m)",...(meta>0?["Meta","Cumple"]:["Total patrullajes"])];
   const rows=[];
-  filasSummary.forEach(s=>{
-    rows.push({Tipo:"RESUMEN",Periodo:`${fmtDateDisplay(desde)} al ${fmtDateDisplay(hasta)}`,Guardarecurso:s.g,Registros:s.cnt,Meta:meta||"",Cumplimiento:meta>0?(s.cnt>=meta?"Cumplido":s.cnt>0?"Parcial":"Sin registro"):"Sin meta",Area_reportada:s.area});
-    s.registros.forEach((r,i)=>rows.push({Tipo:"DETALLE",Periodo:`${fmtDateDisplay(desde)} al ${fmtDateDisplay(hasta)}`,Guardarecurso:s.g,Numero:i+1,Fecha:r["Fecha"],Municipio:r.__municipio,Area_protegida:r.__area_prot,Lugar:r.__lugar,Tipo_reforestacion:r.__tipo,Area_reportada:r.__area,Especies:r.__especies.join(", "),Hora:r["Hora"],X:r["X"],Y:r["Y"],GTM_X:r["GTM_X (m)"],GTM_Y:r["GTM_Y (m)"]}));
+  filasSummary.forEach(({g,cnt,registros})=>{
+    registros.forEach((r,i)=>{
+      rows.push([
+        g, i+1,
+        r["Fecha de patrullaje"]||"",
+        (r["Municipio"]||"").trim(),
+        r.__km!==null?r.__km.toFixed(1):"",
+        r["Hora de Inicio del patrullaje"]||"",
+        r["Hora de finalizacion de patrullaje"]||"",
+        r.__dur!==null?r.__dur.toFixed(2):"",
+        r["Ubicacion"]||"",
+        r.__ci==="si"?"Sí":r.__ci==="no"?"No":"",
+        r["Latitud"]||"",
+        r["Longitud"]||"",
+        r["GTM_X (m)"]||"",
+        r["GTM_Y (m)"]||"",
+        ...(meta>0?[meta,cnt>=meta?"Sí":"No"]:[cnt]),
+      ]);
+    });
   });
-  descargarBlob(`verificacion_reforestaciones_${isoDate(desde)}_${isoDate(hasta)}.csv`,toCSV(rows),"text/csv;charset=utf-8");
-}
-function exportarVerificacionXLSX(filasSummary,enPeriodo,desde,hasta,meta){
-  if(typeof XLSX==="undefined"){alert("No se pudo cargar XLSX.");return;}
-  const resumen=filasSummary.map(s=>({Periodo:`${fmtDateDisplay(desde)} al ${fmtDateDisplay(hasta)}`,Guardarecurso:s.g,Registros:s.cnt,Meta:meta||"",Cumplimiento:meta>0?(s.cnt>=meta?"Cumplido":s.cnt>0?"Parcial":"Sin registro"):"Sin meta",Area_reportada:s.area,Municipios:s.munis,Especies:s.especies}));
-  const detalle=enPeriodo.map(r=>({Fecha:r["Fecha"],Guardarecurso:r.__guarda,Municipio:r.__municipio,Area_protegida:r.__area_prot,Lugar:r.__lugar,Tipo_reforestacion:r.__tipo,Area_reportada:r.__area,Especies:r.__especies.join(", "),Hora:r["Hora"],X:r["X"],Y:r["Y"],GTM_X:r["GTM_X (m)"],GTM_Y:r["GTM_Y (m)"]}));
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(resumen),"Resumen");
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(detalle),"Detalle");
-  XLSX.writeFile(wb,`verificacion_reforestaciones_${isoDate(desde)}_${isoDate(hasta)}.xlsx`);
+  const csv=[header,...rows].map(r=>r.map(v=>'"'+String(v||"").replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+  a.download=`verificacion_patrullajes_${fmtDateDisplay(desde).replace(/\//g,"-")}_al_${fmtDateDisplay(hasta).replace(/\//g,"-")}.csv`;
+  a.click();
 }
 
-function initTabla(){
-  const cols=Object.keys(regVisible(DATOS[0]||{})).map(k=>({title:k,field:k,headerFilter:"input",minWidth:140,formatter:"plaintext"}));
+function exportarVerificacionXLSX(filasSummary,enPeriodo,desde,hasta,meta){
+  if(typeof XLSX==="undefined"){alert("No se pudo cargar XLSX.");return}
+  // Hoja 1: resumen por guardarecurso
+  const hSum=[["Guardarecursos","Patrullajes","Km totales","Municipios","Incidentes","Duración media","RUMCLA","Fuera RUMCLA",...(meta>0?["Meta","Cumple","% avance"]:[])]];
+  filasSummary.forEach(({g,cnt,km,munis,ileg,durMedia,rumcla})=>{
+    hSum.push([g,cnt,km>0?parseFloat(km.toFixed(1)):0,munis,ileg,durMedia,rumcla,cnt-rumcla,
+      ...(meta>0?[meta,cnt>=meta?"Sí":"No",Math.min(Math.round(cnt/meta*100),100)]:[])])
+  });
+  // Hoja 2: registros individuales
+  const hDet=[["Guardarecursos","#","Fecha","Municipio","Km recorridos","Hora inicio","Hora fin","Duración (h)","Ubicación","Actividad ilegal","Latitud","Longitud","GTM X (m)","GTM Y (m)"]];
+  filasSummary.forEach(({g,registros})=>{
+    registros.forEach((r,i)=>{
+      hDet.push([g,i+1,r["Fecha de patrullaje"]||"",(r["Municipio"]||"").trim(),
+        r.__km!==null?parseFloat(r.__km.toFixed(1)):null,
+        r["Hora de Inicio del patrullaje"]||"",r["Hora de finalizacion de patrullaje"]||"",
+        r.__dur!==null?parseFloat(r.__dur.toFixed(2)):null,
+        r["Ubicacion"]||"",r.__ci==="si"?"Sí":r.__ci==="no"?"No":"",
+        r["Latitud"]||"",r["Longitud"]||"",r["GTM_X (m)"]||"",r["GTM_Y (m)"]||""]);
+    });
+  });
+  const wsSum=XLSX.utils.aoa_to_sheet(hSum);
+  const wsDet=XLSX.utils.aoa_to_sheet(hDet);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,wsSum,"Resumen por guardarecursos");
+  XLSX.utils.book_append_sheet(wb,wsDet,"Patrullajes individuales");
+  XLSX.writeFile(wb,`verificacion_patrullajes_${fmtDateDisplay(desde).replace(/\//g,"-")}_al_${fmtDateDisplay(hasta).replace(/\//g,"-")}.xlsx`);
+}
+
+/* ═══════════════════════════════════════════════════
+   TABLA TABULATOR
+═══════════════════════════════════════════════════ */
+function inicializarTabla(){
+  // Columnas base en orden útil — km primero después de fecha, luego las demás
+  const cols=[
+    {title:"Guardarecursos",field:"Guarda recursos responsable",headerFilter:"input",width:200,frozen:true},
+    {title:"Fecha",field:"Fecha de patrullaje",headerFilter:"input",width:115,sorter:"string"},
+    {title:"Km recorridos",field:"Kilometros recorridos",headerFilter:"input",width:120,hozAlign:"right",
+      formatter:c=>{const v=parseFloat(c.getValue());return isNaN(v)?'<span style="color:#d1d5db">–</span>':`<span style="font-weight:600;color:var(--d5)">${v.toFixed(1)} km</span>`}},
+    {title:"Municipio",field:"Municipio",headerFilter:"input",width:160},
+    {title:"Hora inicio",field:"Hora de Inicio del patrullaje",width:100},
+    {title:"Hora fin",field:"Hora de finalizacion de patrullaje",width:100},
+    {title:"Ubicación",field:"Ubicacion",headerFilter:"input",width:130},
+    {title:"Área protegida",field:"Area protegida",headerFilter:"input",width:200},
+    {title:"Tipo de patrullaje",field:"Tipo de patrullaje",headerFilter:"input",width:200},
+    {title:"Instituciones",field:"Hay mas instituciones involucradas en el patrullaje",width:110,hozAlign:"center",
+      formatter:c=>{const v=canonStr(c.getValue()||"");return(v==="si"||v==="sí")?'<span class="badge badge-azul">Sí</span>':'<span class="badge badge-gris">No</span>'}},
+    {title:"Actividad ilegal",field:"Actividad ilegal observada",width:110,hozAlign:"center",
+      formatter:c=>{const v=canonIlegal(c.getValue()||"");return v==="si"?'<span class="badge badge-rojo">Sí</span>':v==="no"?'<span class="badge badge-verde">No</span>':'<span class="badge badge-gris">–</span>'}},
+    {title:"Región",field:"Region",headerFilter:"input",width:140},
+    {title:"Latitud",field:"Latitud",width:100,hozAlign:"right"},
+    {title:"Longitud",field:"Longitud",width:100,hozAlign:"right"},
+    {title:"GTM X (m)",field:"GTM_X (m)",width:130,hozAlign:"right",
+      formatter:c=>{const v=c.getValue();return v!==""?`<span style="font-family:monospace;font-size:11px">${Number(v).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:'<span style="color:#d1d5db">–</span>'}},
+    {title:"GTM Y (m)",field:"GTM_Y (m)",width:130,hozAlign:"right",
+      formatter:c=>{const v=c.getValue();return v!==""?`<span style="font-family:monospace;font-size:11px">${Number(v).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:'<span style="color:#d1d5db">–</span>'}},
+  ];
+
   tablaTabulator=new Tabulator("#tabla-registros",{
-    data:DATOS.map(regVisible),
-    columns:cols,
+    data:DATOS,
     layout:"fitDataStretch",
-    height:"650px",
     pagination:"local",
-    paginationSize:20,
-    paginationSizeSelector:[10,20,50,100,true],
+    paginationSize:25,
+    paginationSizeSelector:[15,25,50,100],
+    columns:cols,
     movableColumns:true,
     selectableRows:1,
-    placeholder:"Sin registros para mostrar"
+    rowFormatter:row=>{
+      const d=row.getData();
+      if(d.__ci==="si") row.getElement().style.borderLeft="3px solid #ef4444";
+    }
   });
-  tablaTabulator.on("rowSelectionChanged",function(data){selectedRowData=data&&data.length?data[0]:null;});
-  document.getElementById("estado-registros").innerHTML=`<strong>${DATOS.length.toLocaleString("es-GT")}</strong> registros cargados desde <strong>base4_datos.csv</strong>.`;
-  document.getElementById("download-csv").onclick=()=>tablaTabulator.download("csv","reforestaciones_filtradas.csv",{delimiter:";"});
-  document.getElementById("download-xlsx").onclick=()=>tablaTabulator.download("xlsx","reforestaciones_filtradas.xlsx",{sheetName:"Reforestaciones"});
-  document.getElementById("generate-report-word").onclick=()=>generarInformeRegistro("word");
-  document.getElementById("generate-report-pdf").onclick=()=>generarInformeRegistro("pdf");
+
+  document.getElementById("download-csv").addEventListener("click",()=>tablaTabulator.download("csv","patrullajes.csv"));
+  document.getElementById("download-xlsx").addEventListener("click",()=>tablaTabulator.download("xlsx","patrullajes.xlsx",{sheetName:"Datos"}));
+
+  document.getElementById("estado-registros").innerHTML=
+    `<strong>${DATOS.length.toLocaleString("es")}</strong> registros cargados · selecciona una fila para generar informe individual · las filas con borde rojo tienen actividad ilegal reportada`;
 }
 
-function initPeriodosInforme(){
-  mapaMeses.clear();
-  DATOS.forEach(r=>{if(r.__periodo){if(!mapaMeses.has(r.__periodo))mapaMeses.set(r.__periodo,[]);mapaMeses.get(r.__periodo).push(r);}});
+/* ═══════════════════════════════════════════════════
+   SELECTOR MESES INFORMES
+═══════════════════════════════════════════════════ */
+function inicializarSelectorMeses(){
+  mapaMeses=new Map();
+  DATOS.forEach(r=>{
+    if(!r.__dt||isNaN(r.__dt))return;
+    const y=r.__dt.getFullYear(),m=r.__dt.getMonth()+1;
+    const k=y+"-"+String(m).padStart(2,"0");
+    if(!mapaMeses.has(k))mapaMeses.set(k,{anio:y,mes:m});
+  });
   const sel=document.getElementById("monthly-month-select");
-  sel.innerHTML="";
-  [...mapaMeses.keys()].sort().forEach(p=>{const o=document.createElement("option");o.value=p;o.textContent=`${etiquetaPeriodo(p)} · ${mapaMeses.get(p).length} registros`;sel.appendChild(o);});
-  const disabled=!mapaMeses.size;
-  document.getElementById("generate-monthly-report-word").disabled=disabled;
-  document.getElementById("generate-monthly-report-pdf").disabled=disabled;
-  document.getElementById("generate-monthly-report-word").onclick=()=>generarInformeCorte("word");
-  document.getElementById("generate-monthly-report-pdf").onclick=()=>generarInformeCorte("pdf");
+  const claves=[...mapaMeses.keys()].sort();
+  if(!claves.length){sel.innerHTML="<option>Sin meses</option>";return}
+  sel.innerHTML='<option value="" disabled selected>Seleccione un mes…</option>';
+  claves.forEach(k=>{
+    const{anio,mes}=mapaMeses.get(k);
+    const nm=MESES_ES[mes-1];
+    const o=document.createElement("option");o.value=k;o.textContent=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+anio;sel.appendChild(o);
+  });
+  sel.addEventListener("change",()=>{
+    const h=!!sel.value;
+    document.getElementById("generate-monthly-report-word").disabled=!h;
+    document.getElementById("generate-monthly-report-pdf").disabled=!h;
+  });
 }
 
-function initAnalisis(){
-  document.getElementById("sel-guarda").addEventListener("change",renderAnalisisGuarda);
-  document.getElementById("btn-informe-guarda").onclick=()=>generarPerfilGuarda();
+/* ═══════════════════════════════════════════════════
+   ANÁLISIS POR GUARDARECURSO
+═══════════════════════════════════════════════════ */
+const GC={};
+function mkGChart(id,cfg){if(GC[id])GC[id].destroy();GC[id]=new Chart(document.getElementById(id),cfg)}
+Chart.defaults.font.family="'DM Sans',sans-serif";Chart.defaults.color="#6a8878";
+const TT={backgroundColor:"rgba(7,24,15,0.93)",titleFont:{size:13,weight:"600"},bodyFont:{size:12.5},padding:12,cornerRadius:10};
+
+function initGuardaSelector(){
+  const guardas=[...new Set(DATOS.map(r=>r["Guarda recursos responsable"]).filter(Boolean))].sort();
+  const sel=document.getElementById("sel-guarda");
+  sel.innerHTML="<option value=''>Selecciona un guardarecursos…</option>";
+  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o);});
+  sel.addEventListener("change",()=>{
+    const g=sel.value;
+    document.getElementById("btn-informe-guarda").disabled=!g;
+    g?renderGuarda(g):clearGuarda();
+  });
 }
-function renderAnalisisGuarda(){
-  const g=document.getElementById("sel-guarda").value;
-  const empty=document.getElementById("guarda-empty");
-  if(!g){["guarda-kpis","guarda-charts","guarda-tabla-wrap"].forEach(id=>document.getElementById(id).style.display="none");empty.style.display="";document.getElementById("btn-informe-guarda").disabled=true;return;}
-  const regs=DATOS.filter(r=>r.__guarda===g);
-  empty.style.display="none";document.getElementById("btn-informe-guarda").disabled=false;
-  document.getElementById("guarda-kpis").style.display="grid";
-  document.getElementById("guarda-charts").style.display="grid";
-  document.getElementById("guarda-tabla-wrap").style.display="";
-  const munis=new Set(regs.map(r=>r.__municipio).filter(Boolean));
-  const area=regs.reduce((a,r)=>a+(Number(r.__area)||0),0);
-  const especies=new Set(regs.flatMap(r=>r.__especies).map(e=>canonStr(e)).filter(Boolean));
-  const tipos=new Set(regs.map(r=>r.__tipo).filter(Boolean));
+
+function clearGuarda(){
+  document.getElementById("guarda-kpis").style.display="none";
+  document.getElementById("guarda-charts").style.display="none";
+  document.getElementById("guarda-tabla-wrap").style.display="none";
+  document.getElementById("guarda-empty").style.display="";
+  document.getElementById("estado-analisis").textContent="Selecciona un guardarecursos para ver su perfil de actividad";
+}
+
+function renderGuarda(nombre){
+  const regs=DATOS.filter(r=>r["Guarda recursos responsable"]===nombre);
+  if(!regs.length){clearGuarda();return}
+  document.getElementById("guarda-empty").style.display="none";
+  document.getElementById("estado-analisis").textContent=`Perfil de ${nombre} · ${regs.length} registros`;
+
+  const munis=new Set(regs.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
+  const durs=regs.map(r=>r.__dur).filter(v=>v!==null);
+  const ileg=regs.filter(r=>r.__ci==="si").length;
+  const km=regs.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+
   document.getElementById("g-total").textContent=regs.length;
   document.getElementById("g-munis").textContent=munis.size;
-  document.getElementById("g-dur").textContent=area?fmtArea(area):"–";
-  document.getElementById("g-ileg").textContent=especies.size;
-  document.getElementById("g-km").textContent=tipos.size;
-  document.getElementById("estado-analisis").innerHTML=`Perfil de actividad de <strong>${escH(g)}</strong> con <strong>${regs.length}</strong> registros.`;
-  renderCharts(regs);
-  renderTablaGuarda(regs);
-}
-function renderCharts(regs){
-  const porMes=topMap(regs,r=>r.__periodo).sort((a,b)=>a[0].localeCompare(b[0]));
-  const porMuni=topMap(regs,r=>r.__municipio).slice(0,10);
-  if(chartMes)chartMes.destroy(); if(chartMuni)chartMuni.destroy();
-  chartMes=new Chart(document.getElementById("g-c-mes"),{type:"bar",data:{labels:porMes.map(x=>x[0]?etiquetaPeriodo(x[0]):"Sin fecha"),datasets:[{label:"Monitoreos",data:porMes.map(x=>x[1]),backgroundColor:PAL[0]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{maxRotation:45,minRotation:0}},y:{beginAtZero:true,precision:0}}}});
-  chartMuni=new Chart(document.getElementById("g-c-muni"),{type:"doughnut",data:{labels:porMuni.map(x=>x[0]||"Sin municipio"),datasets:[{data:porMuni.map(x=>x[1]),backgroundColor:PAL}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom"}}}});
-}
-function renderTablaGuarda(regs){
-  const m=new Map();
-  regs.forEach(r=>{
-    const k=r.__municipio||"Sin municipio";
-    if(!m.has(k))m.set(k,{municipio:k,total:0,area:0,especies:new Set(),areas:new Set(),fuera:0,ultima:null});
-    const o=m.get(k);o.total++;o.area+=Number(r.__area)||0;r.__especies.forEach(e=>o.especies.add(e));if(r.__area_prot)o.areas.add(r.__area_prot);if(canonStr(r.__fuera_muni)==="si")o.fuera++;if(r.__dt&&(!o.ultima||r.__dt>o.ultima))o.ultima=r.__dt;
+  document.getElementById("g-dur").textContent=durs.length?(durs.reduce((a,b)=>a+b,0)/durs.length).toFixed(1)+"h":"–";
+  document.getElementById("g-ileg").textContent=ileg;
+  document.getElementById("g-km").textContent=km>0?km.toLocaleString("es",{maximumFractionDigits:0})+" km":"–";
+  document.getElementById("guarda-kpis").style.display="grid";
+
+  // Gráfica por período operativo (corte 25)
+  const mPer=new Map();
+  regs.forEach(r=>{if(r.__periodo)mPer.set(r.__periodo,(mPer.get(r.__periodo)||0)+1);});
+  const perKeys=[...mPer.keys()].sort();
+  const perShort=k=>{const[y,m]=k.split("-");return MESES_S[+m-1]+"'"+y.slice(2)};
+  mkGChart("g-c-mes",{type:"bar",data:{labels:perKeys.map(perShort),datasets:[{label:"Patrullajes",data:perKeys.map(k=>mPer.get(k)),backgroundColor:PAL[0]+"cc",borderColor:PAL[0],borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} patrullajes`}}},scales:{x:{grid:{display:false},ticks:{font:{size:11.5}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11.5}}}}}});
+
+  // Gráfica por municipio
+  const mMuni=new Map();
+  regs.forEach(r=>{const m=(r["Municipio"]||"").trim();if(m)mMuni.set(m,(mMuni.get(m)||0)+1);});
+  const muniTop=[...mMuni.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8);
+  mkGChart("g-c-muni",{type:"bar",data:{labels:muniTop.map(([m])=>m),datasets:[{label:"Patrullajes",data:muniTop.map(([,v])=>v),backgroundColor:PAL.slice(0,muniTop.length),borderWidth:0,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT}},scales:{x:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11.5}}},y:{grid:{display:false},ticks:{font:{size:11.5}}}}}});
+  document.getElementById("guarda-charts").style.display="grid";
+
+  // Tabla por municipio con km
+  const tbody=document.getElementById("guarda-tbody");tbody.innerHTML="";
+  [...mMuni.entries()].sort((a,b)=>b[1]-a[1]).forEach(([mu,cnt])=>{
+    const sub=regs.filter(r=>(r["Municipio"]||"").trim()===mu);
+    const si=sub.filter(r=>r.__ci==="si").length;
+    const kmMu=sub.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+    const dMu=sub.map(r=>r.__dur).filter(v=>v!==null);
+    const durM=dMu.length?(dMu.reduce((a,b)=>a+b,0)/dMu.length).toFixed(1)+"h":"–";
+    const rumcla=sub.filter(r=>r.__cu==="rumcla").length;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><strong>${escH(mu)}</strong></td><td>${cnt}</td>
+      <td style="font-family:monospace;font-size:12px">${kmMu>0?kmMu.toLocaleString("es",{maximumFractionDigits:1})+" km":"–"}</td>
+      <td>${si>0?`<span class="badge badge-rojo">${si}</span>`:`<span class="badge badge-verde">0</span>`}</td>
+      <td>${pct(si,cnt)}%</td><td>${durM}</td>
+      <td><span class="badge badge-azul">${rumcla}R/${cnt-rumcla}F</span></td>`;
+    tbody.appendChild(tr);
   });
-  const rows=[...m.values()].sort((a,b)=>b.total-a.total||b.area-a.area);
-  document.getElementById("guarda-tbody").innerHTML=rows.map(o=>`<tr><td>${escH(o.municipio)}</td><td>${o.total}</td><td>${fmtArea(o.area)}</td><td>${escH([...o.especies].slice(0,4).join(", ")||"–")}</td><td>${escH([...o.areas].join(", ")||"–")}</td><td>${o.fuera}</td><td>${fmtDateDisplay(o.ultima)}</td></tr>`).join("");
+  document.getElementById("guarda-tabla-wrap").style.display="";
 }
 
-const CSS_REPORTE = `<style>
-  body{font-family:Arial,sans-serif;color:#111;margin:28px;line-height:1.45} h1{font-size:22px;text-align:center;color:#0a3d2b;margin:0 0 8px} h2{font-size:16px;color:#0a3d2b;border-bottom:1px solid #d8e4dd;padding-bottom:4px;margin-top:20px}.center{text-align:center}.small{font-size:11px;color:#555}.section{margin-bottom:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.box{border:1px solid #d8e4dd;border-radius:8px;padding:8px;background:#f6faf7}.label{font-size:10px;text-transform:uppercase;color:#555;font-weight:bold}.value{font-size:14px}table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px}th{background:#eaf2ed;color:#0a3d2b;text-transform:uppercase;font-size:9.5px}td,th{border:1px solid #d8e4dd;padding:6px}.num{text-align:right}.firma{display:flex;justify-content:space-around;margin-top:36px;text-align:center;color:#333}
-</style>`;
-function resumenPeriodo(regs){
-  return {total:regs.length,guardas:new Set(regs.map(r=>r.__guarda)).size,municipios:new Set(regs.map(r=>r.__municipio).filter(Boolean)).size,area:regs.reduce((a,r)=>a+(Number(r.__area)||0),0),especies:new Set(regs.flatMap(r=>r.__especies).map(e=>canonStr(e)).filter(Boolean)).size,tipos:new Set(regs.map(r=>r.__tipo).filter(Boolean)).size};
+/* ═══════════════════════════════════════════════════
+   DOCUMENTOS
+═══════════════════════════════════════════════════ */
+const CSS_DOC=`<style>body,p,td,th{font-family:"Times New Roman",serif;font-size:10pt;line-height:1.4}h1{font-size:14pt;font-weight:bold;margin:0 0 8pt;text-align:center}h2{font-size:12pt;font-weight:bold;margin:12pt 0 6pt}p{margin:0 0 6pt;text-align:justify}section{page-break-inside:avoid;margin-bottom:8pt}</style>`;
+function docWord(nombre,html){
+  const src="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_DOC+"</head><body>"+html+"</body></html>";
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff",src],{type:"application/msword"}));a.download=nombre;document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
-function construirInformeCorteHTML(inicio,fin,regs){
-  const res=resumenPeriodo(regs);
-  const porMuni=topMap(regs,r=>r.__municipio).slice(0,8);
-  const porTipo=topMap(regs,r=>r.__tipo).slice(0,8);
-  const porEsp=topMap(regs,r=>r.__especies[0]||"").slice(0,8);
-  const guardas=consolidarGuardas(regs);
-  return `<div class="report-doc"><div class="portada"><h1>INFORME DE MONITOREO A REFORESTACIONES</h1><p class="center"><strong>Periodo operativo: ${fmtDateDisplay(inicio)} al ${fmtDateDisplay(fin)}</strong></p><p class="center small">Consejo Nacional de Áreas Protegidas – Dirección Regional Altiplano Central</p><p class="center small">Sistema de monitoreo de reforestaciones por compromiso AC282</p></div>
-  <div class="section"><h2>1. Resumen ejecutivo</h2><p>Durante el periodo analizado se registraron <strong>${fmtGT(res.total,0,0)}</strong> monitoreos de reforestación, realizados por <strong>${fmtGT(res.guardas,0,0)}</strong> guardarecursos activos. El área reportada acumulada fue de <strong>${fmtArea(res.area)}</strong>, con cobertura en <strong>${fmtGT(res.municipios,0,0)}</strong> municipios.</p></div>
-  <div class="section"><h2>2. Indicadores principales</h2><div class="grid"><div class="box"><div class="label">Registros</div><div class="value">${fmtGT(res.total,0,0)}</div></div><div class="box"><div class="label">Área reportada</div><div class="value">${fmtArea(res.area)}</div></div><div class="box"><div class="label">Especies distintas</div><div class="value">${fmtGT(res.especies,0,0)}</div></div><div class="box"><div class="label">Tipos de reforestación</div><div class="value">${fmtGT(res.tipos,0,0)}</div></div></div></div>
-  <div class="section"><h2>3. Distribución territorial</h2><p>Los municipios con mayor número de registros fueron: ${cFrases(porMuni.map(([k,v])=>`${escH(k)} (${v})`))}.</p><p>Los tipos de reforestación más frecuentes fueron: ${cFrases(porTipo.map(([k,v])=>`${escH(k)} (${v})`))}. Las especies principales registradas incluyen: ${cFrases(porEsp.map(([k,v])=>`${escH(k)} (${v})`))}.</p></div>
-  <div class="section"><h2>4. Consolidado por guardarecurso</h2><table><thead><tr><th>#</th><th>Guardarecurso</th><th>Registros</th><th>Área reportada</th><th>Municipios</th><th>Especies</th><th>Última fecha</th></tr></thead><tbody>${guardas.map((o,i)=>`<tr><td>${i+1}</td><td>${escH(o.g)}</td><td class="num">${o.total}</td><td class="num">${fmtArea(o.area)}</td><td class="num">${o.municipios}</td><td class="num">${o.especies}</td><td>${fmtDateDisplay(o.ultima)}</td></tr>`).join("")||`<tr><td colspan="7" class="center">Sin registros para el periodo seleccionado.</td></tr>`}</tbody></table></div>
-  <div class="section"><h2>5. Consideraciones metodológicas</h2><p>El informe fue generado automáticamente a partir del archivo base4_datos.csv. Los cálculos se realizan sobre los registros incluidos en el período seleccionado y los nombres de guardarecursos se presentan normalizados para facilitar la consolidación.</p><div class="firma"><p>______________________________<br/>Responsable de revisión</p><p>______________________________<br/>Coordinación / Supervisión</p></div></div></div>`;
+function docPDF(nombre,html){
+  if(typeof html2pdf==="undefined"){alert("No se pudo cargar html2pdf.");return}
+  const d=document.createElement("div");d.style.padding="10px";d.innerHTML=CSS_DOC+html;document.body.appendChild(d);
+  html2pdf().set({margin:10,filename:nombre,image:{type:"jpeg",quality:.98},html2canvas:{scale:2},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(d).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d));
+}
+
+function generarInformeRegistro(fmt){
+  if(!tablaTabulator)return;
+  const sel=tablaTabulator.getSelectedData();
+  if(!sel||!sel.length){alert("Selecciona una fila en la tabla.");return}
+  const r=sel[0];
+  const gu=r["Guarda recursos responsable"]||"",mu=r["Municipio"]||"",fe=r["Fecha de patrullaje"]||"";
+  const hI=r["Hora de Inicio del patrullaje"]||"",hF=r["Hora de finalizacion de patrullaje"]||"";
+  const ub=r["Ubicacion"]||"",ap=r["Area protegida"]||"",tp=r["Tipo de patrullaje"]||"";
+  const km=parseFloat(r["Kilometros recorridos"]||"");
+  const ai=r["Actividad ilegal observada"]||"",inst=r["Instituciones involucradas"]||"";
+  const hayInst=canonStr(r["Hay mas instituciones involucradas en el patrullaje"]||"");
+  const fc=r["Fecha de creacion de registro"]||"",lat=r["Latitud"]||"",lon=r["Longitud"]||"";
+  const gtmX=r["GTM_X (m)"]||"",gtmY=r["GTM_Y (m)"]||"";
+  const ci=canonIlegal(ai);
+  const tInst=(hayInst==="si"||hayInst==="sí")?"Participaron además: "+(inst||"(sin detalle)")+".":"No hubo participación de otras instituciones.";
+  const tIleg=ci==="si"?"Se registró actividad ilegal: "+ai+".":"No se registró actividad ilegal.";
+  let h=`<section><h1>Informe de patrullaje de control y vigilancia</h1><p style="text-align:center">Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><hr/></section>`;
+  h+=`<section><h2>1. Datos de identificación</h2><p><strong>Guarda recursos:</strong> ${escH(gu)}</p><p><strong>Fecha:</strong> ${escH(fe)}</p><p><strong>Municipio:</strong> ${escH(mu)}</p><p><strong>Área protegida:</strong> ${escH(ap)}</p><p><strong>Ubicación:</strong> ${escH(ub)}</p><p><strong>Tipo:</strong> ${escH(tp)}</p><p><strong>Horario:</strong> ${escH(hI)} a ${escH(hF)}</p>${!isNaN(km)?`<p><strong>Kilómetros recorridos:</strong> ${km.toFixed(1)} km</p>`:""}</section>`;
+  h+=`<section><h2>2. Descripción del patrullaje</h2><p>El guardarecursos ${escH(gu)} realizó un patrullaje de tipo ${escH(tp)} en el municipio de ${escH(mu)}, en el área ${escH(ap)} (${escH(ub)}). Horario: ${escH(hI)} a ${escH(hF)}.</p></section>`;
+  h+=`<section><h2>3. Participación institucional</h2><p>${escH(tInst)}</p></section>`;
+  h+=`<section><h2>4. Actividad ilegal observada</h2><p>${escH(tIleg)}</p></section>`;
+  h+=`<section><h2>5. Metadatos</h2><p><strong>Creado:</strong> ${escH(fc)}</p>${(lat||lon)?`<p><strong>WGS84:</strong> Lat ${escH(lat)} · Lon ${escH(lon)}</p>`:""}${(gtmX||gtmY)?`<p><strong>GTM:</strong> X=${escH(String(gtmX))} m · Y=${escH(String(gtmY))} m</p>`:""}</section>`;
+  h+=`<section><h2>6. Firmas</h2><p>______________________________<br/>Guardarecursos / Responsable</p><p>______________________________<br/>Supervisión</p></section>`;
+  const base="informe_patrullaje_"+slug(gu)+"_"+slug(fe);
+  fmt==="pdf"?docPDF(base+".pdf",h):docWord(base+".doc",h);
+}
+
+function generarInformeMensual(fmt){
+  if(!DATOS.length){alert("No hay datos cargados.");return}
+  const sel=document.getElementById("monthly-month-select");
+  if(!sel.value){alert("Seleccione un mes.");return}
+  const{anio,mes}=mapaMeses.get(sel.value)||{};
+  if(!anio)return;
+  const nm=MESES_ES[mes-1];const etiq=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+anio;
+  const regs=DATOS.filter(r=>r.__dt&&!isNaN(r.__dt)&&r.__dt.getFullYear()===anio&&r.__dt.getMonth()+1===mes);
+  if(!regs.length){alert("No hay registros para "+etiq);return}
+  const total=regs.length;
+  const munis=new Set(),guar=new Set();
+  let aInt=0,aExt=0,iSi=0,iNo=0,instSi=0,instNo=0;
+  const durs=[],cMuni={},cGuar={};
+  regs.forEach(r=>{
+    const mu=(r["Municipio"]||"").trim();if(mu){munis.add(mu);cMuni[mu]=(cMuni[mu]||0)+1}
+    const gu=(r["Guarda recursos responsable"]||"").trim();if(gu){guar.add(gu);cGuar[gu]=(cGuar[gu]||0)+1}
+    if(r.__cu==="rumcla")aInt++;else if(r.__cu==="fuera")aExt++;
+    if(r.__ci==="si")iSi++;else if(r.__ci==="no")iNo++;
+    const mI=canonStr(r["Hay mas instituciones involucradas en el patrullaje"]||"");
+    if(mI==="si"||mI==="sí")instSi++;else if(mI==="no")instNo++;
+    if(r.__dur!==null)durs.push(r.__dur);
+  });
+  const muOrd=Object.entries(cMuni).sort((a,b)=>b[1]-a[1]);
+  const guOrd=Object.entries(cGuar).sort((a,b)=>b[1]-a[1]);
+  const prom=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:null;
+  const totH=durs.reduce((a,b)=>a+b,0);
+  const km=regs.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+  let h=`<section><h1>Informe mensual de patrullajes</h1><p style="text-align:center">Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><p style="text-align:center"><strong>${escH(etiq)}</strong></p><hr/></section>`;
+  h+=`<section><h2>1. Resumen general</h2><p>Se registraron <strong>${total}</strong> patrullajes, cubriendo <strong>${munis.size}</strong> municipio(s) con <strong>${guar.size}</strong> guardarecurso(s). ${km>0?"Kilómetros totales recorridos: <strong>"+km.toFixed(0)+"</strong>.":""}</p>`;
+  h+=`<p><strong>${aInt}</strong> patrullajes (${pct(aInt,total)}%) dentro de RUMCLA · <strong>${aExt}</strong> (${pct(aExt,total)}%) fuera.</p></section>`;
+  h+=`<section><h2>2. Municipios con mayor actividad</h2><p>${cFrases(muOrd.slice(0,6).map(([m,c])=>"<strong>"+escH(m)+"</strong> ("+c+")"))}</p></section>`;
+  h+=`<section><h2>3. Guardarecursos más activos</h2><p>${cFrases(guOrd.slice(0,5).map(([g,c])=>"<strong>"+escH(g)+"</strong> ("+c+" patrullajes)"))}</p></section>`;
+  if(durs.length)h+=`<section><h2>4. Duración operativa</h2><p>Duración promedio: <strong>${rnd(prom,2)}h</strong>. Total acumulado: <strong>${rnd(totH,1)}h</strong> efectivas.</p></section>`;
+  h+=`<section><h2>5. Incidentes ambientales</h2><p><strong>${iSi}</strong> patrullajes (${pct(iSi,total)}%) reportaron actividad ilegal · <strong>${iNo}</strong> (${pct(iNo,total)}%) sin incidentes.</p></section>`;
+  h+=`<section><h2>6. Participación interinstitucional</h2><p><strong>${instSi}</strong> patrullajes (${pct(instSi,total)}%) con otras instituciones.</p></section>`;
+  h+=`<section><h2>7. Nota metodológica</h2><p>Informe generado automáticamente desde el sistema AC192 de CONAP-DRAC Altiplano Central.</p></section>`;
+  const base="informe_mensual_"+anio+"_"+String(mes).padStart(2,"0");
+  fmt==="pdf"?docPDF(base+".pdf",h):docWord(base+".doc",h);
+}
+
+function generarInformeGuarda(){
+  const nombre=document.getElementById("sel-guarda").value;if(!nombre)return;
+  const regs=DATOS.filter(r=>r["Guarda recursos responsable"]===nombre);
+  if(!regs.length){alert("Sin registros para "+nombre);return}
+  const durs=regs.map(r=>r.__dur).filter(v=>v!==null);
+  const prom=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:null;
+  const munis=new Set(regs.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
+  const ileg=regs.filter(r=>r.__ci==="si").length;
+  const km=regs.map(r=>r.__km).filter(v=>v!==null).reduce((a,b)=>a+b,0);
+  const mMuni=new Map();regs.forEach(r=>{const m=(r["Municipio"]||"").trim();if(m)mMuni.set(m,(mMuni.get(m)||0)+1);});
+  const topMu=[...mMuni.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
+  let h=`<section><h1>Perfil de actividad</h1><p style="text-align:center">Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><p style="text-align:center"><strong>${escH(nombre)}</strong></p><hr/></section>`;
+  h+=`<section><h2>Resumen</h2><p><strong>Patrullajes totales:</strong> ${regs.length}</p><p><strong>Municipios cubiertos:</strong> ${munis.size}</p>${prom!==null?`<p><strong>Duración promedio:</strong> ${rnd(prom,2)}h</p>`:""}${km>0?`<p><strong>Kilómetros recorridos:</strong> ${km.toFixed(0)} km</p>`:""}<p><strong>Incidentes reportados:</strong> ${ileg} (${pct(ileg,regs.length)}%)</p></section>`;
+  h+=`<section><h2>Municipios con mayor actividad</h2><p>${cFrases(topMu.map(([m,c])=>"<strong>"+escH(m)+"</strong> ("+c+" patrullajes)"))}</p></section>`;
+  h+=`<section><h2>Nota metodológica</h2><p>Informe generado desde el sistema AC192 de CONAP-DRAC Altiplano Central.</p></section>`;
+  docWord("perfil_"+slug(nombre)+".doc",h);
+}
+
+
+/* ═══════════════════════════════════════════════════
+   INFORME EJECUTIVO DE CORTE 25 A 25
+   Sobrescribe el informe mensual anterior para usar períodos de corte.
+═══════════════════════════════════════════════════ */
+function fmtGT(n,max=0,min=0){
+  if(n===null||n===undefined||!isFinite(n))return "–";
+  return Number(n).toLocaleString("en-US",{minimumFractionDigits:min,maximumFractionDigits:max});
+}
+function cleanLabel(v){
+  const s=String(v||"").trim().replace(/[_-]+/g," ").replace(/\s+/g," ");
+  return s? s.charAt(0).toUpperCase()+s.slice(1):"Sin dato";
+}
+function topMap(regs,fn){
+  const m=new Map();
+  regs.forEach(r=>{const k=cleanLabel(fn(r));if(k&&k!=="Sin dato")m.set(k,(m.get(k)||0)+1);});
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
+}
+function topMapSum(regs,kFn,vFn){
+  const m=new Map();
+  regs.forEach(r=>{const k=cleanLabel(kFn(r));const v=vFn(r);if(k&&k!=="Sin dato"&&v!==null&&isFinite(v))m.set(k,(m.get(k)||0)+v);});
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
+}
+function textListTop(arr,n=5,suffix="registros"){
+  const dec=suffix==="km"?1:0;
+  const out=arr.slice(0,n).map(([k,v])=>`<strong>${escH(k)}</strong> (${fmtGT(v,dec,dec)} ${suffix})`);
+  return out.length?cFrases(out):"No se identificaron registros suficientes para establecer un ranking.";
+}
+function regsPorRango(inicio,fin){
+  return DATOS.filter(r=>r.__dt&&!isNaN(r.__dt)&&r.__dt>=inicio&&r.__dt<=fin);
 }
 function consolidarGuardas(regs){
   const m=new Map();
-  regs.forEach(r=>{const g=r.__guarda;if(!m.has(g))m.set(g,{g,total:0,area:0,municipios:new Set(),especies:new Set(),ultima:null,registros:[]});const o=m.get(g);o.total++;o.area+=Number(r.__area)||0;if(r.__municipio)o.municipios.add(r.__municipio);r.__especies.forEach(e=>o.especies.add(canonStr(e)));if(r.__dt&&(!o.ultima||r.__dt>o.ultima))o.ultima=r.__dt;o.registros.push(r);});
-  return [...m.values()].map(o=>({...o,municipios:o.municipios.size,especies:o.especies.size})).sort((a,b)=>b.total-a.total||b.area-a.area);
-}
-function docWord(nombre,html){descargarBlob(nombre,"<html><head><meta charset='utf-8'>"+CSS_REPORTE+"</head><body>"+html+"</body></html>","application/msword;charset=utf-8");}
-function docPDF(nombre,html){
-  if(typeof html2pdf==="undefined"){alert("No se pudo cargar html2pdf.");return;}
-  const d=document.createElement("div");d.className="report-source";d.innerHTML=CSS_REPORTE+html;document.body.appendChild(d);
-  html2pdf().set({margin:0,filename:nombre,image:{type:"jpeg",quality:.98},html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",scrollY:0},pagebreak:{mode:["css","legacy"],avoid:["tr","thead","h1","h2"]},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(d).save().then(()=>d.remove()).catch(()=>d.remove());
-}
-function generarInformeCorte(fmt){const p=document.getElementById("monthly-month-select").value;if(!p)return;const r=periodoRango(p);const regs=regsPorRango(r.inicio,r.fin);if(!regs.length){alert("No hay registros para el período seleccionado.");return;}const html=construirInformeCorteHTML(r.inicio,r.fin,regs);const base=`informe_reforestaciones_${isoDate(r.inicio)}_${isoDate(r.fin)}`;fmt==="pdf"?docPDF(base+".pdf",html):docWord(base+".doc",html);}
-function generarInformePeriodoSeleccionado(){const desdeStr=document.getElementById("vc-desde").value,hastaStr=document.getElementById("vc-hasta").value;if(!desdeStr||!hastaStr){alert("Defina el período completo en la pestaña de verificación.");return;}const inicio=new Date(desdeStr+"T00:00:00"),fin=new Date(hastaStr+"T23:59:59");const regs=regsPorRango(inicio,fin);if(!regs.length){alert("No hay registros para el período seleccionado.");return;}docPDF(`informe_general_reforestaciones_${isoDate(inicio)}_${isoDate(fin)}.pdf`,construirInformeCorteHTML(inicio,fin,regs));}
-function generarInformeRegistro(fmt){
-  if(!selectedRowData){alert("Seleccione una fila en la tabla primero.");return;}
-  const r=DATOS.find(x=>String(x.__idx)===String(selectedRowData.__idx))||procesarDatos([selectedRowData])[0]||selectedRowData;
-  const html=`<div class="report-doc"><h1>INFORME DE REGISTRO INDIVIDUAL</h1><p class="center small">Monitoreo a reforestaciones por compromiso AC282</p><div class="section"><h2>Datos principales</h2><table><tbody>${Object.entries(regVisible(r)).map(([k,v])=>`<tr><th style="width:35%">${escH(k)}</th><td>${escH(v)}</td></tr>`).join("")}</tbody></table></div></div>`;
-  const base=`registro_reforestacion_${slug(r.__guarda||"guardarecurso")}_${slug(r["Fecha"]||"fecha")}`;
-  fmt==="pdf"?docPDF(base+".pdf",html):docWord(base+".doc",html);
-}
-function generarPerfilGuarda(){
-  const g=document.getElementById("sel-guarda").value;if(!g)return;
-  const regs=DATOS.filter(r=>r.__guarda===g);const res=resumenPeriodo(regs);const municipios=topMap(regs,r=>r.__municipio);const tipos=topMap(regs,r=>r.__tipo);
-  const html=`<div class="report-doc"><h1>PERFIL DE GUARDARECURSO</h1><p class="center"><strong>${escH(g)}</strong></p><p class="center small">Monitoreo a reforestaciones por compromiso AC282</p><div class="section"><h2>Resumen</h2><p>El guardarecurso registra <strong>${res.total}</strong> monitoreos de reforestación, con área reportada acumulada de <strong>${fmtArea(res.area)}</strong>, cobertura en <strong>${res.municipios}</strong> municipios y <strong>${res.especies}</strong> especies distintas.</p></div><div class="section"><h2>Municipios principales</h2><p>${cFrases(municipios.slice(0,8).map(([k,v])=>`${escH(k)} (${v})`))}</p></div><div class="section"><h2>Tipos de reforestación</h2><p>${cFrases(tipos.slice(0,8).map(([k,v])=>`${escH(k)} (${v})`))}</p></div><div class="section"><h2>Registros</h2><table><thead><tr><th>Fecha</th><th>Municipio</th><th>Lugar</th><th>Área</th><th>Especies</th></tr></thead><tbody>${regs.map(r=>`<tr><td>${escH(r["Fecha"]||"")}</td><td>${escH(r.__municipio)}</td><td>${escH(r.__lugar)}</td><td class="num">${fmtArea(r.__area)}</td><td>${escH(r.__especies.join(", "))}</td></tr>`).join("")}</tbody></table></div></div>`;
-  docWord(`perfil_guardarecurso_reforestaciones_${slug(g)}.doc`,html);
+  regs.forEach(r=>{
+    const g=(r["Guarda recursos responsable"]||"Sin nombre").trim();
+    if(!m.has(g))m.set(g,{g,total:0,km:0,inc:0,munis:new Set(),durs:[],rumcla:0,fuera:0});
+    const o=m.get(g);
+    o.total++;
+    if(r.__km!==null&&isFinite(r.__km))o.km+=r.__km;
+    if(r.__ci==="si")o.inc++;
+    const mu=(r["Municipio"]||"").trim();if(mu)o.munis.add(mu);
+    if(r.__dur!==null&&isFinite(r.__dur))o.durs.push(r.__dur);
+    if(r.__cu==="rumcla")o.rumcla++;else if(r.__cu==="fuera")o.fuera++;
+  });
+  return [...m.values()].map(o=>({
+    ...o,
+    dur:o.durs.length?o.durs.reduce((a,b)=>a+b,0)/o.durs.length:null,
+    municipios:o.munis.size,
+  })).sort((a,b)=>b.total-a.total||b.km-a.km);
 }
 
-async function cargar(){
-  try{
-    const txt=await fetch(CSV_URL+"?v="+Date.now()).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text();});
-    const parsed=Papa.parse(txt,{header:true,delimiter:";",skipEmptyLines:true});
-    DATOS=procesarDatos(parsed.data);
-    if(!DATOS.length)throw new Error("No se encontraron registros válidos en el CSV.");
-    initTabs();initSelects();sugerirPeriodo();initTabla();initPeriodosInforme();initAnalisis();
-    document.getElementById("vc-aplicar").onclick=ejecutarVerificacion;
-    document.getElementById("btn-informe-general-periodo").onclick=generarInformePeriodoSeleccionado;
-  }catch(err){
-    console.error(err);
-    document.getElementById("estado-registros").textContent="Error al cargar datos: "+err.message;
-    document.getElementById("estado-registros").classList.add("error");
-    document.getElementById("vc-empty").innerHTML=`<p style="color:#9b1c1c;font-weight:600">Error al cargar datos: ${escH(err.message)}</p>`;
+function inicializarSelectorMeses(){
+  mapaMeses=new Map();
+  const fechas=DATOS.map(r=>r.__dt).filter(d=>d&&!isNaN(d)).sort((a,b)=>a-b);
+  const sel=document.getElementById("monthly-month-select");
+  if(!fechas.length){sel.innerHTML="<option>Sin períodos</option>";return}
+  const min=fechas[0],max=fechas[fechas.length-1];
+  let cursor=new Date(min.getFullYear(),min.getMonth()-1,25);
+  const limite=new Date(max.getFullYear(),max.getMonth()+2,25);
+  while(cursor<=limite){
+    const inicio=new Date(cursor.getFullYear(),cursor.getMonth(),25,0,0,0);
+    const fin=new Date(cursor.getFullYear(),cursor.getMonth()+1,25,23,59,59);
+    const key=isoDate(inicio)+"_"+isoDate(fin);
+    const count=regsPorRango(inicio,fin).length;
+    if(count>0)mapaMeses.set(key,{inicio,fin,count,label:`${fmtDateDisplay(inicio)} al ${fmtDateDisplay(fin)}`});
+    cursor=new Date(cursor.getFullYear(),cursor.getMonth()+1,25);
   }
+  const claves=[...mapaMeses.keys()].sort();
+  if(!claves.length){sel.innerHTML="<option>Sin períodos</option>";return}
+  sel.innerHTML='<option value="" disabled selected>Seleccione un período de corte…</option>';
+  claves.forEach(k=>{
+    const p=mapaMeses.get(k);
+    const o=document.createElement("option");
+    o.value=k;
+    o.textContent=`Corte ${p.label} · ${p.count.toLocaleString("en-US")} registros`;
+    sel.appendChild(o);
+  });
+  sel.addEventListener("change",()=>{
+    const h=!!sel.value;
+    document.getElementById("generate-monthly-report-word").disabled=!h;
+    document.getElementById("generate-monthly-report-pdf").disabled=!h;
+  });
 }
 
-document.addEventListener("DOMContentLoaded",cargar);
+const CSS_REPORTE_CORTE=`<style>
+  @page{size:A4;margin:16mm 15mm 15mm 15mm}
+  .report-doc{font-family:"Times New Roman",serif;color:#000;background:#fff;width:100%;box-sizing:border-box}
+  .report-doc,.report-doc p,.report-doc li{font-size:12pt;line-height:1.0;text-align:justify;color:#000}
+  .report-doc h1{font-family:"Times New Roman",serif;font-size:16pt;font-weight:bold;text-align:center;margin:0 0 8pt;color:#000;line-height:1.0}
+  .report-doc h2{font-family:"Times New Roman",serif;font-size:13pt;font-weight:bold;margin:9pt 0 5pt;color:#000;line-height:1.0}
+  .report-doc h3{font-family:"Times New Roman",serif;font-size:12pt;font-weight:bold;margin:7pt 0 4pt;color:#000;line-height:1.0}
+  .report-doc p{margin:0 0 6pt}
+  .report-doc .center{text-align:center}.report-doc .small{font-size:10.5pt}.report-doc .mini{font-size:9pt}
+  .report-doc .portada{margin-bottom:10pt;padding-bottom:8pt;border-bottom:1px solid #999}
+  .report-doc .section{break-inside:auto;page-break-inside:auto}
+  .report-doc .firma{margin-top:16pt;text-align:center;display:grid;grid-template-columns:1fr 1fr;gap:22pt}
+  .report-doc .tabla-final{break-before:page;page-break-before:always}
+  .report-doc table{width:100%;border-collapse:collapse;margin-top:6pt;font-family:"Times New Roman",serif;color:#000;table-layout:fixed;page-break-inside:auto;break-inside:auto}
+  .report-doc thead{display:table-header-group}.report-doc tfoot{display:table-footer-group}
+  .report-doc tr{page-break-inside:avoid;break-inside:avoid}
+  .report-doc th{background:#e9f0ec;border:1px solid #777;padding:3pt 3pt;font-weight:bold;text-align:center;font-size:8.4pt;line-height:1.0;vertical-align:middle}
+  .report-doc td{border:1px solid #999;padding:3pt 3pt;font-size:8.4pt;line-height:1.0;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere}
+  .report-doc td.num{text-align:right;white-space:nowrap}.report-doc td.center{text-align:center}
+  .report-doc .w-num{width:5%}.report-doc .w-name{width:31%}.report-doc .w-sm{width:8%}.report-doc .w-med{width:11%}
+</style>`;
+
+function construirInformeCorteHTML(inicio,fin,regs){
+  const total=regs.length;
+  const guardas=new Set(regs.map(r=>r["Guarda recursos responsable"]).filter(Boolean));
+  const municipios=new Set(regs.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
+  const areas=new Set(regs.map(r=>cleanLabel(r["Area protegida"])).filter(v=>v!=="Sin dato"));
+  const km=regs.map(r=>r.__km).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
+  const durs=regs.map(r=>r.__dur).filter(v=>v!==null&&isFinite(v));
+  const durProm=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:null;
+  const totalHoras=durs.reduce((a,b)=>a+b,0);
+  const incidentes=regs.filter(r=>r.__ci==="si").length;
+  const sinInc=regs.filter(r=>r.__ci==="no").length;
+  const rumcla=regs.filter(r=>r.__cu==="rumcla").length;
+  const fuera=regs.filter(r=>r.__cu==="fuera").length;
+  const instSi=regs.filter(r=>{const c=canonStr(r["Hay mas instituciones involucradas en el patrullaje"]||"");return c==="si"||c==="sí";}).length;
+  const instNo=regs.filter(r=>{const c=canonStr(r["Hay mas instituciones involucradas en el patrullaje"]||"");return c==="no";}).length;
+  const topMunicipios=topMap(regs,r=>r["Municipio"]);
+  const topMunicipiosKm=topMapSum(regs,r=>r["Municipio"],r=>r.__km);
+  const topIncMunicipios=topMap(regs.filter(r=>r.__ci==="si"),r=>r["Municipio"]);
+  const topAreas=topMap(regs,r=>r["Area protegida"]);
+  const topTipos=topMap(regs,r=>r["Tipo de patrullaje"]);
+  const guardasConsol=consolidarGuardas(regs);
+  const topGuardas=guardasConsol.slice(0,5);
+  const etiqueta=`${fmtDateDisplay(inicio)} al ${fmtDateDisplay(fin)}`;
+  const tablaGuardas=guardasConsol.map((o,i)=>`<tr><td class="center">${i+1}</td><td>${escH(o.g)}</td><td class="num">${fmtGT(o.total,0)}</td><td class="num">${fmtGT(o.km,1,1)}</td><td class="num">${fmtGT(o.inc,0)}</td><td class="num">${fmtGT(o.municipios,0)}</td><td class="num">${o.dur!==null?fmtGT(o.dur,1,1)+" h":"–"}</td><td class="num">${fmtGT(o.rumcla,0)}</td><td class="num">${fmtGT(o.fuera,0)}</td></tr>`).join("");
+
+  return `<div class="report-doc">
+    <div class="portada">
+      <h1>INFORME MENSUAL DE PATRULLAJES</h1>
+      <p class="center"><strong>Periodo operativo de corte 25 a 25: ${escH(etiqueta)}</strong></p>
+      <p class="center small">Consejo Nacional de Áreas Protegidas – Dirección Regional Altiplano Central</p>
+      <p class="center small">Sistema de monitoreo de patrullajes AC192</p>
+    </div>
+
+    <div class="section">
+      <h2>1. Introducción</h2>
+      <p>El presente informe resume de manera técnica, operativa y territorial los patrullajes registrados en el módulo de patrullajes durante el periodo operativo comprendido del <strong>${fmtDateDisplay(inicio)}</strong> al <strong>${fmtDateDisplay(fin)}</strong>. El corte mensual se interpreta de 25 a 25 de cada mes, por lo que el análisis consolida únicamente los registros cuya fecha de patrullaje se encuentra dentro del intervalo seleccionado.</p>
+      <p>El objetivo del documento es facilitar la revisión mensual del trabajo de campo, identificar los municipios con mayor presencia operativa, cuantificar los kilómetros recorridos, resumir los incidentes reportados y presentar una tabla consolidada por guardarecurso. La información se genera automáticamente a partir del archivo de datos del módulo, por lo que el contenido numérico cambia según el periodo de corte elegido por el usuario.</p>
+    </div>
+
+    <div class="section">
+      <h2>2. Resumen ejecutivo del periodo</h2>
+      <p>Durante el periodo analizado se registraron <strong>${fmtGT(total,0)}</strong> patrullajes válidos, realizados por <strong>${fmtGT(guardas.size,0)}</strong> guardarecursos activos. En conjunto, los patrullajes reportaron <strong>${fmtGT(km,1,1)}</strong> kilómetros recorridos, con una duración media estimada de <strong>${durProm!==null?fmtGT(durProm,1,1):"–"}</strong> horas por patrullaje y un total acumulado aproximado de <strong>${fmtGT(totalHoras,1,1)}</strong> horas efectivas de actividad.</p>
+      <p>Del total de registros, <strong>${fmtGT(incidentes,0)}</strong> patrullajes reportaron actividad ilegal observada, equivalente al <strong>${fmtGT(pct(incidentes,total),1,1)}%</strong> del periodo. Además, se registraron <strong>${fmtGT(rumcla,0)}</strong> patrullajes dentro de RUMCLA y <strong>${fmtGT(fuera,0)}</strong> patrullajes fuera de dicha ubicación.</p>
+    </div>
+
+    <div class="section">
+      <h2>3. Principales indicadores</h2>
+      <p>La operación mensual cubrió <strong>${fmtGT(municipios.size,0)}</strong> municipios y <strong>${fmtGT(areas.size,0)}</strong> áreas o zonas protegidas registradas en el formulario. El promedio de kilómetros por patrullaje fue de <strong>${total?fmtGT(km/total,1,1):"–"}</strong> km, mientras que la relación de incidentes por cada 100 patrullajes fue de <strong>${total?fmtGT((incidentes/total)*100,1,1):"–"}</strong>.</p>
+      <p>Estos indicadores permiten interpretar el esfuerzo operativo del periodo desde tres dimensiones: volumen de patrullajes, cobertura territorial y reporte de hallazgos. La lectura conjunta evita reducir el análisis únicamente al número de boletas registradas y permite observar también intensidad espacial, duración operativa y presencia en áreas priorizadas.</p>
+    </div>
+
+    <div class="section">
+      <h2>4. Análisis territorial de patrullajes</h2>
+      <p>La mayor concentración territorial de patrullajes se observó en ${textListTop(topMunicipios,5,"patrullajes")}. Esta distribución permite identificar los municipios con mayor presencia operativa y orientar la revisión de cobertura según prioridades de conservación, presión territorial y necesidades de seguimiento.</p>
+      <p>En términos de kilómetros reportados, los municipios con mayor acumulación fueron ${textListTop(topMunicipiosKm,5,"km")}. La comparación entre volumen de patrullajes y kilómetros recorridos ayuda a diferenciar territorios con recorridos frecuentes pero cortos de territorios con menor frecuencia y mayor extensión operativa.</p>
+      <h3>4.1 Cobertura por área protegida</h3>
+      <p>Las áreas o zonas registradas con mayor cantidad de patrullajes fueron ${textListTop(topAreas,5,"registros")}. Este resultado permite observar la concentración de trabajo por zona de conservación y facilita la revisión de la presencia institucional en las áreas de mayor atención durante el periodo.</p>
+      <h3>4.2 Cobertura RUMCLA y fuera de RUMCLA</h3>
+      <p>Del total de patrullajes, <strong>${fmtGT(rumcla,0)}</strong> se reportaron dentro de RUMCLA y <strong>${fmtGT(fuera,0)}</strong> fuera de RUMCLA. Esta distribución es relevante porque permite evaluar si el esfuerzo operativo se concentró dentro del área protegida principal o si existió una proporción importante de recorridos en zonas externas, comunidades, rutas de acceso o áreas de influencia.</p>
+    </div>
+
+    <div class="section">
+      <h2>5. Incidentes y actividad ilegal observada</h2>
+      <p>Durante el periodo de corte se reportaron <strong>${fmtGT(incidentes,0)}</strong> patrullajes con actividad ilegal observada y <strong>${fmtGT(sinInc,0)}</strong> patrullajes sin incidente reportado. El porcentaje de patrullajes con incidente fue de <strong>${fmtGT(pct(incidentes,total),1,1)}%</strong>, lo cual permite dimensionar la frecuencia relativa de hallazgos durante las actividades de vigilancia y control.</p>
+      <p>Los municipios con mayor cantidad de incidentes fueron ${textListTop(topIncMunicipios,5,"incidentes")}. Este apartado debe revisarse junto con los recorridos de campo y las observaciones específicas de cada boleta, ya que el número de incidentes no sustituye la lectura cualitativa de los hallazgos reportados.</p>
+    </div>
+
+    <div class="section">
+      <h2>6. Modalidad de patrullaje y coordinación institucional</h2>
+      <p>El tipo de patrullaje más frecuente fue ${textListTop(topTipos,4,"registros")}. Esta distribución permite observar si el periodo estuvo orientado principalmente a patrullajes de control, monitoreo, verificación, acompañamiento u otras modalidades registradas.</p>
+      <p>Respecto a la participación de otras instituciones, se registraron <strong>${fmtGT(instSi,0)}</strong> patrullajes interinstitucionales y <strong>${fmtGT(instNo,0)}</strong> patrullajes sin participación externa reportada. La coordinación interinstitucional es relevante para interpretar acciones de control, operativos conjuntos y seguimiento a incidentes.</p>
+    </div>
+
+    <div class="section">
+      <h2>7. Lectura operativa del periodo</h2>
+      <p>El comportamiento general del periodo muestra la relación entre presencia territorial, esfuerzo acumulado en kilómetros, cantidad de guardarecursos activos e incidentes reportados. Cuando el volumen de patrullajes aumenta en municipios con incidentes, se recomienda revisar si la cobertura responde a acciones preventivas, seguimiento de puntos críticos o necesidades recurrentes de control y vigilancia.</p>
+      <p>Cuando el volumen de kilómetros es alto pero la cantidad de patrullajes es menor, puede interpretarse como una mayor extensión de los recorridos o una cobertura territorial más amplia por patrullaje. Por el contrario, muchos patrullajes con pocos kilómetros pueden indicar recorridos de control más focalizados, presencia repetida en puntos específicos o actividades de seguimiento en áreas cercanas.</p>
+    </div>
+
+    <div class="section">
+      <h2>8. Desempeño consolidado por guardarecurso</h2>
+      <p>El análisis por guardarecurso resume la participación individual durante el periodo seleccionado. Para evitar duplicidad visual y facilitar la lectura ejecutiva, el informe no lista cada registro individual como fila separada. En su lugar, consolida por guardarecurso la cantidad total de patrullajes, los kilómetros recorridos, el número de incidentes reportados, los municipios cubiertos, la duración media y la distribución de patrullajes dentro y fuera de RUMCLA.</p>
+      <p>Los guardarecursos con mayor cantidad de patrullajes fueron ${textListTop(topGuardas.map(o=>[o.g,o.total]),5,"patrullajes")}. La revisión de estos valores debe considerar que una mayor cantidad de registros puede relacionarse con asignaciones territoriales, disponibilidad de rutas, carga operativa del mes o necesidades específicas de seguimiento.</p>
+      <p>En kilómetros recorridos, el mayor esfuerzo acumulado se observó en ${textListTop(guardasConsol.map(o=>[o.g,o.km]).sort((a,b)=>b[1]-a[1]),5,"km")}. Este indicador permite complementar el número de patrullajes con una lectura de intensidad espacial del trabajo realizado.</p>
+    </div>
+
+    <div class="section">
+      <h2>9. Consideraciones metodológicas</h2>
+      <p>El informe fue generado automáticamente a partir de los registros disponibles en el archivo de patrullajes. Los cálculos de patrullajes, incidentes y kilómetros se realizan sobre los registros incluidos en el periodo de corte seleccionado. La duración media se calcula únicamente cuando los campos de hora de inicio y hora de finalización permiten estimar una duración válida.</p>
+      <p>Los nombres de guardarecursos se presentan de forma consolidada según la normalización aplicada en el sistema. La tabla final agrupa los registros por persona y no por boleta individual, por lo que cada fila representa un resumen operativo del guardarecurso durante el periodo.</p>
+      <div class="firma"><p>______________________________<br/>Responsable de revisión</p><p>______________________________<br/>Coordinación / Supervisión</p></div>
+    </div>
+
+    <div class="section tabla-final">
+      <h2>10. Tabla consolidada final por guardarecurso</h2>
+      <p>La siguiente tabla presenta el consolidado del periodo seleccionado. Cada fila corresponde a un guardarecurso y resume los patrullajes reportados, kilómetros acumulados, incidentes, municipios cubiertos, duración media y ubicación general de los patrullajes.</p>
+      <table>
+        <thead><tr><th class="w-num">#</th><th class="w-name">Guardarecurso</th><th class="w-sm">Patrullajes</th><th class="w-med">Km recorridos</th><th class="w-sm">Incidentes</th><th class="w-sm">Municipios</th><th class="w-med">Duración media</th><th class="w-sm">RUMCLA</th><th class="w-sm">Fuera</th></tr></thead>
+        <tbody>${tablaGuardas||`<tr><td colspan="9" class="center">Sin registros para el periodo seleccionado.</td></tr>`}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function docWordReporteCorte(nombre,html){
+  const src="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_REPORTE_CORTE+"</head><body>"+html+"</body></html>";
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff",src],{type:"application/msword"}));a.download=nombre;document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function docPDFReporteCorte(nombre,html){
+  if(typeof html2pdf==="undefined"){alert("No se pudo cargar html2pdf.");return}
+  const d=document.createElement("div");
+  d.innerHTML=CSS_REPORTE_CORTE+html;
+  d.style.background="#fff";
+  d.style.width="210mm";
+  d.style.minHeight="297mm";
+  document.body.appendChild(d);
+  html2pdf().set({
+    margin:0,
+    filename:nombre,
+    image:{type:"jpeg",quality:.98},
+    html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",scrollY:0},
+    pagebreak:{mode:["css","legacy"],avoid:["tr","thead","h1","h2","h3"]},
+    jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
+  }).from(d).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d));
+}
+function descargarInformeCorte(fmt,inicio,fin,regs){
+  if(!regs.length){alert("No hay registros para el periodo seleccionado.");return}
+  const html=construirInformeCorteHTML(inicio,fin,regs);
+  const base="informe_corte_"+isoDate(inicio)+"_"+isoDate(fin);
+  fmt==="pdf"?docPDFReporteCorte(base+".pdf",html):docWordReporteCorte(base+".doc",html);
+}
+function generarInformeCorteDesdeVerificacion(fmt){
+  const desdeStr=document.getElementById("vc-desde").value;
+  const hastaStr=document.getElementById("vc-hasta").value;
+  if(!desdeStr||!hastaStr){alert("Defina el período completo en la pestaña de verificación.");return}
+  const inicio=new Date(desdeStr+"T00:00:00");
+  const fin=new Date(hastaStr+"T23:59:59");
+  descargarInformeCorte(fmt,inicio,fin,regsPorRango(inicio,fin));
+}
+function nombrePeriodoInforme(inicio,fin){
+  const f=d=>String(d.getDate()).padStart(2,"0")+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+d.getFullYear();
+  return `Informe general periodo ${f(inicio)} al ${f(fin)}.pdf`;
+}
+function generarInformePeriodoSeleccionadoPDF(){
+  const desdeStr=document.getElementById("vc-desde").value;
+  const hastaStr=document.getElementById("vc-hasta").value;
+  if(!desdeStr||!hastaStr){alert("Defina el período completo en la pestaña de verificación.");return}
+  const inicio=new Date(desdeStr+"T00:00:00");
+  const fin=new Date(hastaStr+"T23:59:59");
+  const regs=regsPorRango(inicio,fin);
+  if(!regs.length){alert("No hay registros para el periodo seleccionado.");return}
+  const html=construirInformeCorteHTML(inicio,fin,regs);
+  docPDFReporteCorte(nombrePeriodoInforme(inicio,fin),html);
+}
+function generarInformeMensual(fmt){
+  if(!DATOS.length){alert("No hay datos cargados.");return}
+  const sel=document.getElementById("monthly-month-select");
+  if(!sel.value){alert("Seleccione un período de corte.");return}
+  const p=mapaMeses.get(sel.value);
+  if(!p){alert("No se encontró el período seleccionado.");return}
+  descargarInformeCorte(fmt,p.inicio,p.fin,regsPorRango(p.inicio,p.fin));
+}
+
+/* ═══════════════════════════════════════════════════
+   INICIO
+═══════════════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded",function(){
+  if(typeof Tabulator==="undefined"){alert("No se pudo cargar Tabulator.");return}
+
+  document.getElementById("btn-informe-guarda").addEventListener("click",generarInformeGuarda);
+  document.getElementById("generate-report-word").addEventListener("click",()=>generarInformeRegistro("word"));
+  document.getElementById("generate-report-pdf").addEventListener("click",()=>generarInformeRegistro("pdf"));
+  document.getElementById("generate-monthly-report-word").addEventListener("click",()=>generarInformeMensual("word"));
+  document.getElementById("generate-monthly-report-pdf").addEventListener("click",()=>generarInformeMensual("pdf"));
+  document.getElementById("vc-aplicar").addEventListener("click",ejecutarVerificacion);
+  document.getElementById("vc-informe-word")?.addEventListener("click",()=>generarInformeCorteDesdeVerificacion("word"));
+  document.getElementById("vc-informe-pdf")?.addEventListener("click",()=>generarInformeCorteDesdeVerificacion("pdf"));
+  document.getElementById("vc-informe-periodo-pdf")?.addEventListener("click",generarInformePeriodoSeleccionadoPDF);
+  document.getElementById("btn-informe-general-periodo")?.addEventListener("click",generarInformePeriodoSeleccionadoPDF);
+
+  sugerirPeriodo();
+
+  fetch("../../datos/datos_patrullaje.csv",{cache:"no-store"})
+    .then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.text()})
+    .then(csv=>{
+      const parsed=Papa.parse(csv,{header:true,skipEmptyLines:true,delimiter:";"});
+      if(!parsed.data||!parsed.data.length){document.getElementById("estado-registros").textContent="CSV vacío o sin encabezados.";return}
+      DATOS=procesarDatos(parsed.data);
+      inicializarTabla();
+      initVcSelects();
+      inicializarSelectorMeses();
+      initGuardaSelector();
+    })
+    .catch(e=>{
+      const el=document.getElementById("estado-registros");
+      el.textContent="Error al cargar datos: "+e.message;
+      el.className="estado-txt error";
+    });
+});
 </script>
 </body>
 </html>
