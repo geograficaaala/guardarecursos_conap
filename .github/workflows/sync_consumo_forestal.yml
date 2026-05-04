@@ -1,15 +1,13 @@
 # .github/workflows/sync_consumo_forestal.yml
 #
-# Sincroniza datos de AC297 Consumo Forestal Familiar (Survey123)
-# → docs/datos/base3_datos.csv
+# AC297 · Consumo Forestal Familiar
+# Sincroniza ArcGIS Online con docs/datos/base3_datos.csv sin perder históricos.
 #
-# Cadencia — dos veces al día hora Guatemala (UTC-6),
-# 30 min después de patrullajes para no solapar runners:
-#   • 12:30 mediodía   → 18:30 UTC
-#   • 00:30 medianoche → 06:30 UTC
-#
-# Disparo manual:
-#   GitHub → Actions → "Sincronizar AC297 Consumo Forestal" → Run workflow
+# Reglas clave:
+# - El CSV de la repo se conserva como histórico completo.
+# - ArcGIS se usa para agregar registros nuevos y reparar fechas dañadas.
+# - No se eliminan registros históricos aunque ya no existan en ArcGIS.
+# - Las filas con Fecha dañada se reparan con ArcGIS o, como respaldo, con CreationDate.
 
 name: Sincronizar AC297 Consumo Forestal
 
@@ -19,15 +17,13 @@ on:
     - cron: "30 6 * * *"    # 00:30 medianoche Guatemala
   workflow_dispatch:
 
-# Evita que runs simultáneos (manual + automático) se pisen entre sí.
-# Si ya hay un run activo, el nuevo espera en cola.
 concurrency:
   group: sync-consumo-forestal
   cancel-in-progress: false
 
 jobs:
   sync:
-    name: Descargar y actualizar CSV de consumo forestal
+    name: Sincronizar CSV histórico de AC297
     runs-on: ubuntu-latest
 
     steps:
@@ -42,26 +38,32 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests pandas
 
-      - name: Sincronizar datos de ArcGIS Online
+      - name: Reconstruir CSV histórico + ArcGIS
         env:
           AGOL_USERNAME: ${{ secrets.AGOL_USERNAME }}
           AGOL_PASSWORD: ${{ secrets.AGOL_PASSWORD }}
           AGOL_ORG_URL:  ${{ secrets.AGOL_ORG_URL }}
+          AC297_ITEM_ID: ${{ secrets.AC297_ITEM_ID }}
         run: |
           python3 << 'PYEOF'
-          import os, sys, requests, pandas as pd
+          import os
+          import re
+          import sys
+          import math
+          import unicodedata
+          from datetime import datetime, timedelta
+          from collections import Counter, defaultdict
 
-          ORG_URL  = os.environ["AGOL_ORG_URL"].rstrip("/")
+          import pandas as pd
+          import requests
+
+          ORG_URL = os.environ["AGOL_ORG_URL"].rstrip("/")
           USERNAME = os.environ["AGOL_USERNAME"]
           PASSWORD = os.environ["AGOL_PASSWORD"]
-
-          # Item ID del Survey123 de Consumo Forestal Familiar
-          # https://aala.maps.arcgis.com/home/item.html?id=d657a19e2ec04a2e8040fb6a143d84f7
-          ITEM_ID    = "d657a19e2ec04a2e8040fb6a143d84f7"
+          ITEM_ID = os.environ.get("AC297_ITEM_ID") or "d657a19e2ec04a2e8040fb6a143d84f7"
           OUTPUT_CSV = "docs/datos/base3_datos.csv"
-          PAGE_SIZE  = 1000
+          PAGE_SIZE = 1000
 
-          # Columnas finales del CSV (orden canónico de base3_datos.csv)
           COLS = [
               "Nombre del guardarecursos",
               "Region",
@@ -96,240 +98,491 @@ jobs:
               "Y",
           ]
 
-          # Mapeo exacto: nombre interno ArcGIS → nombre columna CSV
-          # Derivado del XLSForm AC297_Consumo_forestal_familiar.xlsx (hoja survey, columna name)
           RENAME = {
-              "nombre_guardarecurso":  "Nombre del guardarecursos",
-              "region":                "Region",
-              "area_protegida":        "Area protegida",
-              "municipio":             "Municipio",
-              "nombre_usuario":        "Nombre del usuario",
-              "referencia_ubicacion":  "Referencia de ubicacion",
-              "cantidad_arboles":      "Cantidad total de arboles a talar",
-              "especies_talar":        "Especies a talar",
-              "especie_otro":          "Especifique otra especie",
-              "fecha":                 "Fecha",
-              "hora":                  "Hora",
-              "observaciones":         "Observaciones",
-              "CreationDate":          "CreationDate",
-              "EditDate":              "EditDate",
-              "consumo_fuera_comp":    "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?",
-              "guardarecurso":         "Nombre del guardarecurso",
-              "municipio_comp":        "Municipio del guardarecurso",
-              "cant_pino":             "Cantidad de Pino (Pinus pseudostrobus)",
-              "cant_cipres":           "Cantidad de Cipres (Cupressus lusitanica)",
-              "cant_aliso":            "Cantidad de Aliso (Alnus jorullensis)",
-              "cant_encino":           "Cantidad de Encino (Quercus sp)",
-              "cant_palo_blanco":      "Cantidad de Palo Blanco (Vernonia patens)",
-              "cant_cajete":           "Cantidad de Cajete (Heliocarpus donnellsmithii)",
-              "cant_madron":           "Cantidad de Madron (Arbutus xalapensis)",
-              "cant_mano_mono":        "Cantidad de Mano de mono (Oreopanax xalapensis)",
-              "cant_matilisguate":     "Cantidad de Matilisguate (Tabebuia rosea)",
-              "cant_aguacate":         "Cantidad de Aguacate (Persea americana)",
-              "cant_casuarina":        "Cantidad de Casuarina (Casuarina equisetifolia)",
-              "cant_otro":             "Cantidad de Otro",
-              # Coordenadas: ArcGIS saca x/y del geopoint como campos separados
-              "x":                     "X",
-              "y":                     "Y",
+              "nombre_guardarecurso": "Nombre del guardarecursos",
+              "region": "Region",
+              "area_protegida": "Area protegida",
+              "municipio": "Municipio",
+              "municipio_calc": "Municipio",
+              "nombre_usuario": "Nombre del usuario",
+              "referencia_ubicacion": "Referencia de ubicacion",
+              "cantidad_arboles": "Cantidad total de arboles a talar",
+              "especies_talar": "Especies a talar",
+              "especie_otro": "Especifique otra especie",
+              "fecha": "Fecha",
+              "hora": "Hora",
+              "observaciones": "Observaciones",
+              "CreationDate": "CreationDate",
+              "EditDate": "EditDate",
+              "consumo_fuera_comp": "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?",
+              "guardarecurso": "Nombre del guardarecurso",
+              "municipio_comp": "Municipio del guardarecurso",
+              "cant_pino": "Cantidad de Pino (Pinus pseudostrobus)",
+              "cant_cipres": "Cantidad de Cipres (Cupressus lusitanica)",
+              "cant_aliso": "Cantidad de Aliso (Alnus jorullensis)",
+              "cant_encino": "Cantidad de Encino (Quercus sp)",
+              "cant_palo_blanco": "Cantidad de Palo Blanco (Vernonia patens)",
+              "cant_cajete": "Cantidad de Cajete (Heliocarpus donnellsmithii)",
+              "cant_madron": "Cantidad de Madron (Arbutus xalapensis)",
+              "cant_mano_mono": "Cantidad de Mano de mono (Oreopanax xalapensis)",
+              "cant_matilisguate": "Cantidad de Matilisguate (Tabebuia rosea)",
+              "cant_aguacate": "Cantidad de Aguacate (Persea americana)",
+              "cant_casuarina": "Cantidad de Casuarina (Casuarina equisetifolia)",
+              "cant_otro": "Cantidad de Otro",
+              "x": "X",
+              "y": "Y",
           }
 
-          # Corrección: códigos internos de area_protegida → etiquetas legibles
           FIX_AREA = {
-              "rumcla":       "RUMCLA",
+              "rumcla": "RUMCLA",
               "fuera_rumcla": "Fuera de RUMCLA",
+              "fuera rumcla": "Fuera de RUMCLA",
           }
+
+          def strip_accents(s):
+              return "".join(ch for ch in unicodedata.normalize("NFD", str(s)) if unicodedata.category(ch) != "Mn")
+
+          def norm(s):
+              return re.sub(r"\s+", " ", strip_accents(str(s or "").strip().lower()))
+
+          def norm_text(s):
+              return norm(s).replace(",", " ")
+
+          def norm_number(s):
+              s = str(s or "").strip()
+              if not s or s.lower() in {"nan", "none", "null"}:
+                  return ""
+              try:
+                  f = float(s.replace(",", "."))
+                  if abs(f - round(f)) < 1e-9:
+                      return str(int(round(f)))
+                  return ("%.8f" % f).rstrip("0").rstrip(".")
+              except Exception:
+                  return norm(s)
+
+          def excel_serial_to_datetime(value):
+              try:
+                  f = float(value)
+              except Exception:
+                  return None
+              if not math.isfinite(f):
+                  return None
+              return datetime(1899, 12, 30) + timedelta(days=f)
+
+          def parse_date_any(value, prefer_mdy=True):
+              s = str(value or "").strip()
+              if not s or s.lower() in {"nan", "nat", "none", "null"} or s == "2026-":
+                  return None
+
+              # ArcGIS suele entregar fechas como milisegundos Unix.
+              if re.fullmatch(r"\d{12,14}", s):
+                  try:
+                      return datetime.fromtimestamp(float(s) / 1000)
+                  except Exception:
+                      pass
+
+              # Excel/SAG export puede entregar seriales de Excel, por ejemplo 46072.75.
+              if re.fullmatch(r"\d+(\.\d+)?", s):
+                  try:
+                      f = float(s)
+                      if 20000 < f < 60000:
+                          return excel_serial_to_datetime(f)
+                  except Exception:
+                      pass
+
+              pats_iso = [
+                  "%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S",
+                  "%Y-%m-%d %H:%M", "%Y-%m-%d",
+              ]
+              pats_mdy = [
+                  "%m/%d/%Y %H:%M:%S.%f", "%m/%d/%Y %H:%M:%S",
+                  "%m/%d/%Y %H:%M", "%m/%d/%Y",
+              ]
+              pats_dmy = [
+                  "%d/%m/%Y %H:%M:%S.%f", "%d/%m/%Y %H:%M:%S",
+                  "%d/%m/%Y %H:%M", "%d/%m/%Y",
+              ]
+              patterns = pats_iso + (pats_mdy + pats_dmy if prefer_mdy else pats_dmy + pats_mdy)
+              for pat in patterns:
+                  try:
+                      return datetime.strptime(s, pat)
+                  except Exception:
+                      continue
+              return None
+
+          def fmt_form_date(dt):
+              if not dt:
+                  return ""
+              return f"{dt.month}/{dt.day}/{dt.year} {dt.hour}:{dt.minute:02d}"
+
+          def fmt_sys_date(dt):
+              if not dt:
+                  return ""
+              return f"{dt.month}/{dt.day}/{dt.year} {dt.hour:02d}:{dt.minute:02d}:{dt.second:02d}.{dt.microsecond:06d}"
+
+          def date_norm(row):
+              dt = parse_date_any(row.get("Fecha"), prefer_mdy=True)
+              return dt.strftime("%Y-%m-%d") if dt else ""
+
+          def creation_min(row):
+              dt = parse_date_any(row.get("CreationDate"), prefer_mdy=True)
+              return dt.strftime("%Y-%m-%d %H:%M") if dt else ""
+
+          def key_base(row):
+              fields = [
+                  "Nombre del guardarecursos",
+                  "Municipio",
+                  "Nombre del usuario",
+                  "Referencia de ubicacion",
+                  "Cantidad total de arboles a talar",
+                  "Especies a talar",
+                  "Hora",
+              ]
+              parts = []
+              for field in fields:
+                  if field.startswith("Cantidad"):
+                      parts.append(norm_number(row.get(field, "")))
+                  else:
+                      parts.append(norm_text(row.get(field, "")))
+              return "|".join(parts)
+
+          def key_creation_for_repair(row):
+              return key_base(row) + "|" + creation_min(row)
+
+          def key_coords_for_repair(row):
+              return key_base(row) + "|" + norm_number(row.get("X", "")) + "|" + norm_number(row.get("Y", ""))
+
+          def key_creation_date(row):
+              return key_base(row) + "|" + date_norm(row) + "|" + creation_min(row)
+
+          def key_coords_date(row):
+              return key_base(row) + "|" + date_norm(row) + "|" + norm_number(row.get("X", "")) + "|" + norm_number(row.get("Y", ""))
+
+          def key_base_date(row):
+              return key_base(row) + "|" + date_norm(row)
+
+          def row_from_series(series):
+              return {c: ("" if pd.isna(series.get(c, "")) else str(series.get(c, ""))) for c in COLS}
+
+          def normalize_dataframe(df):
+              for col in COLS:
+                  if col not in df.columns:
+                      df[col] = ""
+              df = df[COLS].copy()
+
+              # Normalizar fechas válidas a formato m/d/YYYY H:MM. En AC297 el CSV/ArcGIS usa mes/día/año.
+              for idx, value in df["Fecha"].items():
+                  dt = parse_date_any(value, prefer_mdy=True)
+                  df.at[idx, "Fecha"] = fmt_form_date(dt) if dt else str(value or "").strip()
+
+              for col in ["CreationDate", "EditDate"]:
+                  for idx, value in df[col].items():
+                      dt = parse_date_any(value, prefer_mdy=True)
+                      df.at[idx, col] = fmt_sys_date(dt) if dt else str(value or "").strip()
+
+              # Limpieza mínima de texto, sin borrar información histórica.
+              df = df.fillna("")
+              return df
 
           # ── Autenticación ──────────────────────────────────────────────
           print("Autenticando en ArcGIS Online...")
-          r = requests.post(f"{ORG_URL}/sharing/rest/generateToken", data={
-              "username": USERNAME, "password": PASSWORD,
-              "referer": "https://www.arcgis.com", "expiration": 120, "f": "json",
-          }, timeout=30)
-          r.raise_for_status()
-          data = r.json()
-          if "error" in data:
-              print(f"ERROR de autenticación: {data['error']}")
+          token_response = requests.post(
+              f"{ORG_URL}/sharing/rest/generateToken",
+              data={
+                  "username": USERNAME,
+                  "password": PASSWORD,
+                  "referer": "https://www.arcgis.com",
+                  "expiration": 120,
+                  "f": "json",
+              },
+              timeout=30,
+          )
+          token_response.raise_for_status()
+          token_json = token_response.json()
+          if "error" in token_json:
+              print(f"ERROR de autenticación: {token_json['error']}")
               sys.exit(1)
-          token = data["token"]
+          token = token_json["token"]
           print("✓ Autenticado")
 
-          # ── URL del Feature Service ────────────────────────────────────
-          r = requests.get(f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}",
-              params={"f": "json", "token": token}, timeout=30)
-          item_data = r.json()
-          print(f"  Item: '{item_data.get('title')}' | tipo: {item_data.get('type')}")
+          # ── Resolver Feature Service ───────────────────────────────────
+          item_response = requests.get(
+              f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}",
+              params={"f": "json", "token": token},
+              timeout=30,
+          )
+          item_response.raise_for_status()
+          item_data = item_response.json()
+          print(f"  Item: {item_data.get('title')} | tipo: {item_data.get('type')}")
 
           service_url = item_data.get("url")
-
           if not service_url:
-              print("  URL directa no encontrada — buscando Feature Service (Survey2Service)...")
-              r2 = requests.get(f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}/relatedItems",
-                  params={"relationshipType": "Survey2Service", "direction": "forward",
-                          "f": "json", "token": token}, timeout=30)
-              related = r2.json().get("relatedItems", [])
-              print(f"  Items relacionados: {len(related)}")
-              for rel in related:
-                  if rel.get("url"):
-                      service_url = rel["url"]
+              print("  URL directa no encontrada. Buscando relación Survey2Service...")
+              related_response = requests.get(
+                  f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}/relatedItems",
+                  params={
+                      "relationshipType": "Survey2Service",
+                      "direction": "forward",
+                      "f": "json",
+                      "token": token,
+                  },
+                  timeout=30,
+              )
+              related_items = related_response.json().get("relatedItems", [])
+              print(f"  Items relacionados: {len(related_items)}")
+              for item in related_items:
+                  if item.get("url"):
+                      service_url = item["url"]
                       print(f"  Encontrado: {service_url}")
                       break
 
           if not service_url:
-              print("  Buscando Feature Service por nombre en contenido del usuario...")
-              r3 = requests.get(f"{ORG_URL}/sharing/rest/search",
-                  params={"q": f"owner:{USERNAME} type:'Feature Service' tags:survey",
-                          "num": 20, "f": "json", "token": token}, timeout=30)
-              for res in r3.json().get("results", []):
-                  title = res.get("title", "").lower()
-                  if any(k in title for k in ["consumo", "forestal", "ac297", "297"]):
-                      service_url = res.get("url", "")
-                      print(f"  Encontrado por búsqueda: {service_url}")
-                      break
-
-          if not service_url:
-              print("ERROR: No se pudo encontrar la URL del Feature Service.")
-              print("Respuesta del item:", item_data)
+              print("ERROR: No se pudo encontrar el Feature Service de AC297.")
+              print(item_data)
               sys.exit(1)
 
           service_url = service_url.rstrip("/")
           print(f"✓ Servicio: {service_url}")
 
-          # ── Diagnóstico: listar campos disponibles ─────────────────────
-          r_fields = requests.get(f"{service_url}/0",
-              params={"f": "json", "token": token}, timeout=30)
-          campos_agol = [f["name"] for f in r_fields.json().get("fields", [])]
-          print(f"  Campos disponibles en ArcGIS ({len(campos_agol)}): {campos_agol}")
-          sin_mapeo = [c for c in campos_agol if c not in RENAME and c.lower() not in RENAME]
-          if sin_mapeo:
-              print(f"  ⚠ Campos sin mapeo (se descartan): {sin_mapeo}")
+          service_info = requests.get(service_url, params={"f": "json", "token": token}, timeout=30).json()
+          layers = service_info.get("layers") or []
+          layer_id = 0
+          if layers:
+              # Preferir capa con nombre del formulario de consumo forestal.
+              for layer in layers:
+                  lname = norm(layer.get("name", ""))
+                  if any(k in lname for k in ["consumo", "forestal", "familiar", "ac297"]):
+                      layer_id = layer.get("id", 0)
+                      break
+              print(f"  Capa seleccionada: {layer_id} · {layers[0].get('name') if layers else ''}")
+          layer_url = f"{service_url}/{layer_id}"
+          print(f"✓ Layer URL: {layer_url}")
 
-          # ── Total de registros ─────────────────────────────────────────
-          r = requests.get(f"{service_url}/0/query",
+          layer_info = requests.get(layer_url, params={"f": "json", "token": token}, timeout=30).json()
+          fields = [field.get("name") for field in layer_info.get("fields", [])]
+          print(f"  Campos en ArcGIS ({len(fields)}): {fields}")
+
+          # ── Descargar registros ───────────────────────────────────────
+          count_response = requests.get(
+              f"{layer_url}/query",
               params={"where": "1=1", "returnCountOnly": "true", "f": "json", "token": token},
-              timeout=30)
-          total = r.json().get("count", 0)
-          print(f"✓ Registros en ArcGIS: {total}")
+              timeout=30,
+          )
+          total_agol = count_response.json().get("count", 0)
+          print(f"✓ Registros en ArcGIS: {total_agol}")
 
-          # ── Descarga paginada ──────────────────────────────────────────
-          pages, offset = [], 0
+          pages = []
+          offset = 0
           while True:
-              r = requests.get(f"{service_url}/0/query", params={
-                  "where": "1=1", "outFields": "*",
-                  "resultOffset": offset, "resultRecordCount": PAGE_SIZE,
-                  "returnGeometry": "true",
-                  "f": "json", "token": token,
-              }, timeout=60)
-              rj = r.json()
-              features = rj.get("features", [])
+              response = requests.get(
+                  f"{layer_url}/query",
+                  params={
+                      "where": "1=1",
+                      "outFields": "*",
+                      "returnGeometry": "true",
+                      "resultOffset": offset,
+                      "resultRecordCount": PAGE_SIZE,
+                      "f": "json",
+                      "token": token,
+                  },
+                  timeout=60,
+              )
+              data = response.json()
+              if "error" in data:
+                  print(f"ERROR al consultar ArcGIS: {data['error']}")
+                  sys.exit(1)
+              features = data.get("features", [])
               if not features:
                   break
-              rows_page = []
-              for feat in features:
-                  attrs = dict(feat.get("attributes", {}))
-                  geo   = feat.get("geometry") or {}
-                  # Geopoint → x/y en geometry si no están en attributes
-                  if "x" not in attrs and geo.get("x") is not None:
-                      attrs["x"] = geo["x"]
-                  if "y" not in attrs and geo.get("y") is not None:
-                      attrs["y"] = geo["y"]
-                  rows_page.append(attrs)
-              pages.append(pd.DataFrame(rows_page))
+              rows = []
+              for feature in features:
+                  attrs = dict(feature.get("attributes") or {})
+                  geometry = feature.get("geometry") or {}
+                  if "x" not in attrs and geometry.get("x") is not None:
+                      attrs["x"] = geometry.get("x")
+                  if "y" not in attrs and geometry.get("y") is not None:
+                      attrs["y"] = geometry.get("y")
+                  rows.append(attrs)
+              pages.append(pd.DataFrame(rows))
               offset += len(features)
-              print(f"  Descargados: {offset}/{total}", end="\r")
-              if not rj.get("exceededTransferLimit", False):
+              print(f"  Descargados: {offset}/{total_agol}", end="\r")
+              if not data.get("exceededTransferLimit", False):
                   break
           print()
 
-          df_new = pd.concat(pages, ignore_index=True) if pages else pd.DataFrame()
-          if df_new.empty:
-              print("Sin registros. Abortando.")
+          df_agol_raw = pd.concat(pages, ignore_index=True) if pages else pd.DataFrame()
+          if df_agol_raw.empty:
+              print("⚠ ArcGIS no devolvió registros. Se conserva el histórico existente sin cambios.")
               sys.exit(0)
 
-          # ── Renombrar columnas ─────────────────────────────────────────
-          df_new = df_new.rename(columns=RENAME)
-
-          # ── Correcciones de valores ────────────────────────────────────
-          # Area protegida: código interno → etiqueta legible
-          if "Area protegida" in df_new.columns:
-              df_new["Area protegida"] = (
-                  df_new["Area protegida"].astype(str).str.strip().replace(FIX_AREA)
-              )
-
-          # Región siempre fija (campo calculate en el formulario)
+          # ── Mapear ArcGIS a esquema CSV ───────────────────────────────
+          df_new = df_agol_raw.rename(columns=RENAME)
+          for col in COLS:
+              if col not in df_new.columns:
+                  df_new[col] = ""
+          df_new = df_new[COLS].copy()
           df_new["Region"] = "Altiplano Central"
 
-          # Fechas del sistema ArcGIS (milisegundos Unix)
+          if "Area protegida" in df_new.columns:
+              df_new["Area protegida"] = df_new["Area protegida"].map(
+                  lambda value: FIX_AREA.get(norm(value), "" if pd.isna(value) else str(value).strip())
+              )
+
+          # Convertir fechas de ArcGIS antes de pasar todo a texto.
+          for idx, value in df_new["Fecha"].items():
+              dt = parse_date_any(value, prefer_mdy=True)
+              df_new.at[idx, "Fecha"] = fmt_form_date(dt)
+
           for col in ["CreationDate", "EditDate"]:
-              if col in df_new.columns:
-                  if pd.api.types.is_numeric_dtype(df_new[col]):
-                      df_new[col] = pd.to_datetime(df_new[col], unit="ms", errors="coerce")
-                  else:
-                      df_new[col] = pd.to_datetime(df_new[col], errors="coerce")
-                  df_new[col] = df_new[col].dt.strftime("%m/%d/%Y %H:%M:%S.%f")
+              for idx, value in df_new[col].items():
+                  dt = parse_date_any(value, prefer_mdy=True)
+                  df_new.at[idx, col] = fmt_sys_date(dt)
 
-          # Fecha del formulario (campo date Survey123)
-          if "Fecha" in df_new.columns:
-              if pd.api.types.is_numeric_dtype(df_new["Fecha"]):
-                  df_new["Fecha"] = pd.to_datetime(df_new["Fecha"], unit="ms", errors="coerce")
-              else:
-                  df_new["Fecha"] = pd.to_datetime(df_new["Fecha"], errors="coerce")
-              df_new["Fecha"] = df_new["Fecha"].dt.strftime("%-m/%-d/%Y %H:%M")
-
-          # Especies a talar: select_multiple → ArcGIS usa espacio como separador,
-          # el CSV histórico usa coma
           if "Especies a talar" in df_new.columns:
-              df_new["Especies a talar"] = (
-                  df_new["Especies a talar"].astype(str).str.strip()
-                  .str.replace(" ", ",", regex=False)
-                  .replace("nan", "")
-              )
+              def clean_species(value):
+                  if pd.isna(value):
+                      return ""
+                  s = str(value).strip()
+                  if s.lower() in {"nan", "none"}:
+                      return ""
+                  if "," not in s and " " in s:
+                      s = ",".join([p for p in s.split() if p])
+                  return s
+              df_new["Especies a talar"] = df_new["Especies a talar"].map(clean_species)
 
-          # Si/No del campo consumo_fuera_comp
           col_fuera = "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"
-          if col_fuera in df_new.columns:
-              df_new[col_fuera] = (
-                  df_new[col_fuera].astype(str).str.strip()
-                  .replace({"si": "si", "sí": "si", "no": "no", "None": "", "nan": ""})
-              )
+          df_new[col_fuera] = df_new[col_fuera].map(
+              lambda value: "" if pd.isna(value) or str(value).lower() in {"nan", "none"} else str(value).strip()
+          )
 
-          # Asegurar que existan todas las columnas esperadas
-          for c in COLS:
-              if c not in df_new.columns:
-                  df_new[c] = None
-          df_new = df_new[COLS]
+          df_new = normalize_dataframe(df_new)
+          agol_fecha_valida = sum(1 for _, row in df_new.iterrows() if parse_date_any(row.get("Fecha"), prefer_mdy=True))
+          print(f"✓ ArcGIS con Fecha válida: {agol_fecha_valida} registros")
 
-          # ── Merge con histórico ────────────────────────────────────────
+          # ── Cargar histórico ──────────────────────────────────────────
           try:
-              # Intenta utf-8-sig primero; si el CSV histórico tiene tildes en
-              # latin-1/windows-1252 (byte 0xe9, etc.) cae al segundo intento.
+              df_old = None
+              used_encoding = None
               for enc in ("utf-8-sig", "latin-1"):
                   try:
-                      df_old = pd.read_csv(OUTPUT_CSV, sep=";", encoding=enc)
-                      print(f"✓ Histórico existente: {len(df_old)} registros (encoding: {enc})")
+                      df_old = pd.read_csv(OUTPUT_CSV, sep=";", encoding=enc, dtype=str, keep_default_na=False)
+                      used_encoding = enc
                       break
                   except UnicodeDecodeError:
                       continue
-              combined = pd.concat([df_old, df_new], ignore_index=True)
+              if df_old is None:
+                  raise FileNotFoundError(OUTPUT_CSV)
+              print(f"✓ Histórico existente: {len(df_old)} registros (encoding: {used_encoding})")
+              df_old = normalize_dataframe(df_old)
           except FileNotFoundError:
-              print("Sin histórico previo — se crea desde cero.")
-              combined = df_new
+              print("Sin histórico previo. Se crea desde ArcGIS.")
+              df_old = pd.DataFrame(columns=COLS)
 
-          # Deduplicar: guardarecurso + fecha + nombre usuario
-          combined["_key"] = (
-              combined["Nombre del guardarecursos"].astype(str).str.strip().str.lower() + "|" +
-              combined["Fecha"].astype(str).str.strip() + "|" +
-              combined["Nombre del usuario"].astype(str).str.strip().str.lower()
-          )
-          antes = len(combined)
-          combined = combined.drop_duplicates(subset="_key", keep="last").drop(columns="_key")
-          print(f"✓ Duplicados eliminados: {antes - len(combined)}")
+          # ── Reparar fechas dañadas en histórico ───────────────────────
+          new_rows = [row_from_series(row) for _, row in df_new.iterrows()]
+          repair_indices = []
+          for key_func in (key_creation_for_repair, key_coords_for_repair, key_base):
+              index = defaultdict(list)
+              for row in new_rows:
+                  index[key_func(row)].append(row)
+              repair_indices.append((key_func, index))
 
-          # Ordenar por fecha de creación
-          combined["_sort"] = pd.to_datetime(combined["CreationDate"], errors="coerce")
-          combined = combined.sort_values("_sort").drop(columns="_sort").reset_index(drop=True)
+          old_rows = [row_from_series(row) for _, row in df_old.iterrows()]
+          valid_kept = 0
+          repaired_from_agol = 0
+          repaired_from_creation = 0
+          still_invalid = 0
+          match_methods = Counter()
 
-          combined.to_csv(OUTPUT_CSV, index=False, sep=";", encoding="utf-8-sig")
-          print(f"✓ CSV guardado: {OUTPUT_CSV} ({len(combined)} registros totales)")
+          repaired_old_rows = []
+          for row in old_rows:
+              dt = parse_date_any(row.get("Fecha"), prefer_mdy=True)
+              if dt:
+                  row["Fecha"] = fmt_form_date(dt)
+                  valid_kept += 1
+              else:
+                  match = None
+                  method = None
+                  for key_func, index in repair_indices:
+                      candidates = index.get(key_func(row), [])
+                      if len(candidates) == 1:
+                          match = candidates[0]
+                          method = key_func.__name__
+                          break
+                  if match and parse_date_any(match.get("Fecha"), prefer_mdy=True):
+                      row["Fecha"] = match["Fecha"]
+                      repaired_from_agol += 1
+                      match_methods[method] += 1
+                      for col in ["CreationDate", "EditDate"]:
+                          if not parse_date_any(row.get(col), prefer_mdy=True) and match.get(col):
+                              row[col] = match[col]
+                  else:
+                      creation_dt = parse_date_any(row.get("CreationDate"), prefer_mdy=True)
+                      if creation_dt:
+                          row["Fecha"] = f"{creation_dt.month}/{creation_dt.day}/{creation_dt.year} 18:00"
+                          repaired_from_creation += 1
+                      else:
+                          still_invalid += 1
+              repaired_old_rows.append(row)
+
+          print(f"✓ Histórico con Fecha válida conservado: {valid_kept}")
+          print(f"✓ Histórico con Fecha reparada desde ArcGIS: {repaired_from_agol}")
+          print(f"✓ Histórico con Fecha reparada desde CreationDate: {repaired_from_creation}")
+          if still_invalid:
+              print(f"⚠ Histórico con Fecha todavía inválida: {still_invalid}")
+          print(f"  Métodos de reparación: {dict(match_methods)}")
+
+          # ── Agregar solo registros de ArcGIS que no existan en histórico ─
+          seen_creation = {key_creation_date(row) for row in repaired_old_rows}
+          seen_coords = {key_coords_date(row) for row in repaired_old_rows}
+          seen_base = {key_base_date(row) for row in repaired_old_rows}
+
+          added_rows = []
+          for row in new_rows:
+              if (
+                  key_creation_date(row) in seen_creation
+                  or key_coords_date(row) in seen_coords
+                  or key_base_date(row) in seen_base
+              ):
+                  continue
+              repaired_old_rows.append(row)
+              added_rows.append(row)
+              seen_creation.add(key_creation_date(row))
+              seen_coords.add(key_coords_date(row))
+              seen_base.add(key_base_date(row))
+
+          print(f"✓ Registros nuevos agregados desde ArcGIS: {len(added_rows)}")
+
+          # ── Ordenar y guardar ─────────────────────────────────────────
+          def sort_tuple(row):
+              fecha = parse_date_any(row.get("Fecha"), prefer_mdy=True) or datetime.max
+              creation = parse_date_any(row.get("CreationDate"), prefer_mdy=True) or datetime.max
+              return (fecha, creation, norm(row.get("Nombre del guardarecursos")), norm(row.get("Nombre del usuario")))
+
+          final_rows = sorted(repaired_old_rows, key=sort_tuple)
+          invalid_final = sum(1 for row in final_rows if not parse_date_any(row.get("Fecha"), prefer_mdy=True))
+          if invalid_final:
+              print(f"⚠ CSV final tendrá {invalid_final} registros sin Fecha válida. Se conservan para no perder entradas.")
+
+          df_final = pd.DataFrame(final_rows, columns=COLS)
+          os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
+          df_final.to_csv(OUTPUT_CSV, index=False, sep=";", encoding="utf-8-sig")
+
+          fechas = [parse_date_any(row.get("Fecha"), prefer_mdy=True) for row in final_rows]
+          fechas = [dt for dt in fechas if dt]
+          print(f"✓ CSV final: {len(final_rows)} registros")
+          if fechas:
+              print(f"✓ Rango Fecha: {min(fechas)} → {max(fechas)}")
+
+          print("✓ Registros por guardarecurso:")
+          counts = Counter((row.get("Nombre del guardarecursos") or "Sin nombre").strip() or "Sin nombre" for row in final_rows)
+          for name, count in counts.most_common():
+              print(f"  {name}: {count}")
+
+          print("✓ Últimos 10 registros por Fecha:")
+          for row in sorted(final_rows, key=sort_tuple)[-10:]:
+              print(f"  {row.get('Fecha')} · {row.get('Nombre del guardarecursos')} · {row.get('Municipio')} · {row.get('Nombre del usuario')}")
+
           PYEOF
 
       - name: Publicar cambios al repositorio
@@ -339,9 +592,9 @@ jobs:
           git add docs/datos/base3_datos.csv
 
           if git diff --staged --quiet; then
-            echo "Sin registros nuevos. No se necesita commit."
+            echo "Sin cambios en base3_datos.csv. No se necesita commit."
           else
             FECHA=$(TZ="America/Guatemala" date '+%d/%m/%Y %H:%M GT')
-            git commit -m "🔄 AC297 Consumo Forestal · $FECHA"
+            git commit -m "🔄 AC297 Consumo Forestal · CSV histórico limpio · $FECHA"
             git push
           fi
