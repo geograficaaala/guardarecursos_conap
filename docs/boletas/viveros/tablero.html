@@ -1204,5 +1204,128 @@ function applyAll(){
   }
 })();
 </script>
+
+<script>
+(function(){
+  /* paleta verde elegante */
+  var G = ['#0d4a32','#1a7050','#28936c','#3aad84','#4ec49a','#2a6e58','#3a8a72','#5aaa90','#1e5e48','#4a8068','#7aaa96','#156040'];
+  if(window.PAL && Array.isArray(PAL))   PAL.splice.apply(PAL,   [0, PAL.length].concat(G));
+  if(window.PAL_A && Array.isArray(PAL_A)) PAL_A.splice.apply(PAL_A, [0, PAL_A.length].concat(G.map(function(c){ return c+'bb'; })));
+
+  /* Chart.js defaults */
+  if(window.Chart){
+    Chart.defaults.font.family = "'DM Sans', sans-serif";
+    var LL = Chart.defaults.plugins.legend.labels;
+    LL.usePointStyle = false; LL.boxWidth = 12; LL.boxHeight = 12;
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(6,22,14,.94)';
+    Chart.defaults.plugins.tooltip.cornerRadius = 10;
+    Chart.defaults.plugins.tooltip.padding = 12;
+    Chart.defaults.plugins.tooltip.titleFont = {size:13, weight:'600', family:"'DM Sans',sans-serif"};
+    Chart.defaults.plugins.tooltip.bodyFont  = {size:12.5, family:"'DM Sans',sans-serif"};
+  }
+
+  /* Anular chartGradient si existe (reforestaciones) */
+  if(typeof chartGradient === 'function'){
+    chartGradient = function(ctx, color){ return color + '66'; };
+  }
+
+  /* Override mkChart: sin bordes, sin degradados */
+  if(typeof mkChart === 'function'){
+    var _mk = mkChart;
+    mkChart = function(id, cfg){
+      var isGrad = function(v){ return v && typeof v === 'object' && typeof v.addColorStop === 'function'; };
+      ((cfg && cfg.data && cfg.data.datasets) || []).forEach(function(ds, i){
+        /* reemplazar degradados (objeto o función) con color sólido suave */
+        if(isGrad(ds.backgroundColor) || typeof ds.backgroundColor === 'function')
+          ds.backgroundColor = G[i % G.length] + '55';
+        if(isGrad(ds.borderColor) || typeof ds.borderColor === 'function')
+          ds.borderColor = G[i % G.length];
+        var t = cfg.type || '';
+        /* sin bordes en barras y donuts */
+        if(['bar','doughnut','pie'].indexOf(t) > -1 || ds.type === 'bar') ds.borderWidth = 0;
+        if(['doughnut','pie'].indexOf(t) > -1) ds.borderColor = 'transparent';
+        /* arrays de colores (barras multicolor) — sin borde */
+        if(Array.isArray(ds.backgroundColor)) ds.borderWidth = 0;
+      });
+      _mk(id, cfg);
+    };
+  }
+
+  /* CSS del sistema local */
+  var st = document.createElement('style');
+  st.textContent = '.cdf{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;background:#f6faf7;border:1px solid #d8e4dd;border-radius:9px;margin-bottom:12px}.cdf-lbl{font-size:9.5px;font-weight:700;color:#6a8878;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}.cdf input[type=date]{border:1.5px solid #d8e4dd;border-radius:7px;padding:4px 8px;font-size:12px;font-family:inherit;background:#fff;color:#0c1e13;outline:none}.cdf input[type=date]:focus{border-color:#1a5c3a;box-shadow:0 0 0 2px rgba(26,92,58,.1)}.cdf-x{padding:3px 9px;border-radius:6px;border:1.5px solid #d8e4dd;background:#fff;color:#6a8878;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}.cdf-x:hover{border-color:#94a3b8;color:#0c1e13}.cw{position:relative}.cc-tip{position:absolute;top:8px;right:8px;max-width:210px;background:rgba(6,22,14,.92);color:#b8f0d4;font-size:11px;line-height:1.5;padding:9px 12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .22s;z-index:20;border:1px solid rgba(255,255,255,.08)}.cw:hover .cc-tip{opacity:1}';
+  document.head.appendChild(st);
+
+  /* Mapeo chartId → función de redibujado */
+  var FN = {'c-tiempo':function(r){if(typeof g1!=='undefined')g1(r);},'c-dur':function(r){if(typeof g3!=='undefined')g3(r);},'c-act':function(r){if(typeof g4!=='undefined')g4(r);},'c-combo':function(r){if(typeof g5!=='undefined')g5(r);},'c-actguarda':function(r){if(typeof g6!=='undefined')g6(r);},'c-muni':function(r){if(typeof g7!=='undefined')g7(r);},'c-area':function(r){if(typeof g8!=='undefined')g8(r);},'c-guarda':function(r){if(typeof g9!=='undefined')g9(r);}};
+
+  /* Filtrado por fechas locales (sobre filtro global activo) */
+  function locRows(desde, hasta){
+    var base = (typeof applyF === 'function' && typeof getF === 'function')
+               ? applyF(getF())
+               : (window.ROWS || []);
+    if(!desde && !hasta) return base;
+    return base.filter(function(r){
+      if(!r.__dt) return true;
+      if(desde && r.__dt < new Date(desde + 'T00:00:00Z')) return false;
+      if(hasta && r.__dt > new Date(hasta + 'T23:59:59Z')) return false;
+      return true;
+    });
+  }
+
+  function redrawOne(cid, card){
+    var dEl = card.querySelector('.cdf-d');
+    var hEl = card.querySelector('.cdf-h');
+    var rows = locRows(dEl ? dEl.value : '', hEl ? hEl.value : '');
+    if(FN[cid]) FN[cid](rows);
+  }
+
+  /* Agregar tooltip contextual + selector de fecha a cada tarjeta */
+  function setup(){
+    document.querySelectorAll('.cc').forEach(function(card){
+      var cv   = card.querySelector('canvas');
+      var sep  = card.querySelector('.cc-sep');
+      var hint = card.querySelector('.cc-hint');
+      var cw   = card.querySelector('.cw');
+
+      /* tooltip: muestra la descripción al pasar el mouse sobre el gráfico */
+      if(cw && hint && hint.textContent.trim()){
+        var tip = document.createElement('div');
+        tip.className = 'cc-tip';
+        tip.textContent = hint.textContent.trim();
+        cw.appendChild(tip);
+      }
+
+      /* selector de fechas local */
+      if(!cv || !cv.id) return;
+      var cid = cv.id;
+      if(!FN[cid]) return;
+      if(card.querySelector('.cdf')) return; /* evitar duplicados */
+      if(!sep) return;
+
+      var div = document.createElement('div');
+      div.className = 'cdf';
+      div.innerHTML =
+        '<span class="cdf-lbl">Período</span>' +
+        '<input type="date" class="cdf-d" title="Desde">' +
+        '<span style="color:#9ab0a6;font-size:13px">—</span>' +
+        '<input type="date" class="cdf-h" title="Hasta">' +
+        '<button class="cdf-x" type="button" title="Limpiar período">×</button>';
+      sep.after(div);
+
+      div.querySelector('.cdf-d').addEventListener('change', function(){ redrawOne(cid, card); });
+      div.querySelector('.cdf-h').addEventListener('change', function(){ redrawOne(cid, card); });
+      div.querySelector('.cdf-x').addEventListener('click', function(){
+        div.querySelector('.cdf-d').value = '';
+        div.querySelector('.cdf-h').value = '';
+        redrawOne(cid, card);
+      });
+    });
+  }
+
+  setup();
+})();
+</script>
+
 </body>
 </html>
