@@ -1,30 +1,31 @@
 # .github/workflows/sync_patrullajes.yml
 #
-# Sincroniza datos de AC192 (Survey123) → docs/datos/datos_patrullaje.csv
+# AC192 Patrullajes · sincronización segura
 #
-# Se ejecuta dos veces al día en hora Guatemala (UTC-6):
-#   • ~12:05 mediodía   → 18:05 UTC
-#   • ~00:05 medianoche → 06:05 UTC
+# Regla operativa acordada:
+#   - Conservar del CSV histórico todo lo anterior al 28/01/2026.
+#   - Reemplazar desde el 28/01/2026 en adelante con la base cruda actual de ArcGIS.
+#   - Normalizar nombres/códigos de guardarecursos.
+#   - Mantener la columna "Kilometros recorridos" cuando ya exista en el CSV histórico.
 #
-# También puede dispararse manualmente desde:
-#   GitHub → Actions → "Sincronizar AC192 Patrullajes" → Run workflow
+# Esto evita que el workflow vuelva a mezclar duplicados históricos o a dejar fuera
+# registros recientes como los de Carlos Eliberto Chiroy.
 
 name: Sincronizar AC192 Patrullajes
 
 on:
   schedule:
-    - cron: "5 18 * * *"   # ~12:05 mediodía Guatemala (18:05 UTC)
-    - cron: "5 6 * * *"    # ~00:05 medianoche Guatemala (06:05 UTC)
+    - cron: "5 18 * * *"   # ~12:05 Guatemala
+    - cron: "5 6 * * *"    # ~00:05 Guatemala
   workflow_dispatch:
 
-# Evita que runs simultáneos se pisen entre sí
 concurrency:
   group: sync-patrullajes
   cancel-in-progress: false
 
 jobs:
   sync:
-    name: Descargar y actualizar CSV de patrullajes
+    name: Reconstruir CSV seguro de patrullajes
     runs-on: ubuntu-latest
 
     steps:
@@ -44,26 +45,31 @@ jobs:
           AGOL_USERNAME: ${{ secrets.AGOL_USERNAME }}
           AGOL_PASSWORD: ${{ secrets.AGOL_PASSWORD }}
           AGOL_ORG_URL:  ${{ secrets.AGOL_ORG_URL }}
+          AC192_ITEM_ID: ${{ secrets.AC192_ITEM_ID }}
         run: |
           python3 << 'PYEOF'
-          import os, sys, requests, pandas as pd
+          import os
+          import re
+          import sys
+          import math
+          import unicodedata
+          from pathlib import Path
+          from datetime import datetime
+
+          import pandas as pd
+          import requests
 
           ORG_URL  = os.environ["AGOL_ORG_URL"].rstrip("/")
           USERNAME = os.environ["AGOL_USERNAME"]
           PASSWORD = os.environ["AGOL_PASSWORD"]
 
-          ITEM_ID    = "45a58997e27b4e4799792025bfab58bb"
-          OUTPUT_CSV = "docs/datos/datos_patrullaje.csv"
+          ITEM_ID    = (os.environ.get("AC192_ITEM_ID") or "45a58997e27b4e4799792025bfab58bb").strip()
+          OUTPUT_CSV = Path("docs/datos/datos_patrullaje.csv")
           PAGE_SIZE  = 1000
 
-          # Guardas que ingresan código en lugar de nombre
-          FIX_GUARDAS = {
-              "1":  "Antonio Federico Tzaj Y Tzaj",
-              "5":  "Juan Marcos Saquic",
-              "9":  "Heriberto Chavez Chavez",
-              "14": "Manuel Guarcas Calel",
-              "25": "Emilio Alfonso Chox Can",
-          }
+          # Corte acordado: el histórico se conserva antes de esta fecha.
+          # Desde esta fecha en adelante se usa ArcGIS como fuente oficial.
+          CUTOFF = pd.Timestamp("2026-01-28")
 
           COLS = [
               "Guarda recursos responsable", "Municipio", "Fecha de patrullaje",
@@ -73,13 +79,390 @@ jobs:
               "Instituciones involucradas", "Otra (especifique)",
               "Actividad ilegal observada", "Fecha de creacion de registro",
               "Fecha de modificacion de registro", "Longitud", "Latitud",
+              "Kilometros recorridos",
           ]
+
+          # Códigos/nombres corregidos para AC192.
+          GUARDA_FIX = {
+              "1": "Cornelio Marco Antonio Perechú Tzep",
+              "5": "Juan Marcos Saquic",
+              "5 juan marcos saquic": "Juan Marcos Saquic",
+              "9": "Heriberto Chávez Chávez",
+              "9 heriberto chavez chavez": "Heriberto Chávez Chávez",
+              "14": "Manuel Guarcas Calel",
+              "25": "Emilio Alfonso Chox Can",
+
+              "antonio federico tzaj y tzaj": "Antonio Federico Tzaj Y Tzaj",
+              "auri sucely salazar vielman": "Auri Sucely Salazar Vielman",
+              "bernabe lopez sajvin": "Bernabé López Sajvín",
+              "bernabé lópez sajvín": "Bernabé López Sajvín",
+              "carlos eliberto chiroy": "Carlos Eliberto Chiroy",
+              "cornelio marco antonio perechu tzep": "Cornelio Marco Antonio Perechú Tzep",
+              "cornelio marco antonio perechú tzep": "Cornelio Marco Antonio Perechú Tzep",
+              "derik estuardo calel cruz": "Derik Estuardo Calel Cruz",
+              "diego chacom soben": "Diego Chacom Soben",
+              "diego martin ramirez ixbalan": "Diego Martín Ramírez Ixbalan",
+              "diego martín ramírez ixbalan": "Diego Martín Ramírez Ixbalan",
+              "domingo culum poron": "Domingo Culum Poron",
+              "edgar bartolo batin navichoc": "Edgar Bartolo Batín Navichoc",
+              "edgar bartolo batín navichoc": "Edgar Bartolo Batín Navichoc",
+              "emilio alfonso chox can": "Emilio Alfonso Chox Can",
+              "ezequiel iboy bacajol": "Ezequiel Iboy Bacajol",
+              "francisco sicay icaj": "Francisco Sicay Icaj",
+              "henry regino mendez chavajay": "Henry Regino Méndez Chavajay",
+              "henry regino méndez chavajay": "Henry Regino Méndez Chavajay",
+              "heriberto chavez chavez": "Heriberto Chávez Chávez",
+              "heriberto chávez chávez": "Heriberto Chávez Chávez",
+              "jorge solis xingo": "Jorge Solis Xingo",
+              "jose antonio chuc tay": "Jose Antonio Chuc Tay",
+              "jose bacajol simaji": "José Bacajol Simají",
+              "josé bacajol simají": "José Bacajol Simají",
+              "jose octavio xitamul recinos": "José Octavio Xitamul Recinos",
+              "josé octavio xitamul recinos": "José Octavio Xitamul Recinos",
+              "jose ramiro vasquez perez": "Jose Ramiro Vásquez Pérez",
+              "josé ramiro vásquez pérez": "Jose Ramiro Vásquez Pérez",
+              "juan marcos saquic": "Juan Marcos Saquic",
+              "manuel guarcas calel": "Manuel Guarcas Calel",
+              "mario cesar tale coche": "Mario César Talé Coché",
+              "mario césar talé coché": "Mario César Talé Coché",
+              "rafael enrique chiciy chocoy": "Rafael Enrique Chiciy Chocoy",
+              "ruben enrique sumoza mendoza": "Ruben Enrique Sumoza Mendoza",
+              "santos maurico vicente mendoza": "Santos Maurico Vicente Mendoza",
+              "santos mauricio vicente mendoza": "Santos Mauricio Vicente Mendoza",
+              "sebastian tinuar cipriano": "Sebastián Tinuar Cipriano",
+              "sebastián tinuar cipriano": "Sebastián Tinuar Cipriano",
+              "vicente francisco omar perez cox": "Vicente Francisco Omar Pérez Cox",
+              "vicente francisco omar pérez cox": "Vicente Francisco Omar Pérez Cox",
+          }
+
+          REGION_FIX = {
+              "altiplano centra": "Altiplano Central",
+              "altiplano central drac": "Altiplano Central",
+              "altiplano central0": "Altiplano Central",
+              "altiplano centralm": "Altiplano Central",
+          }
+
+          def canon(s):
+              s = "" if s is None else str(s)
+              s = s.strip()
+              s = unicodedata.normalize("NFD", s)
+              s = "".join(ch for ch in s if unicodedata.category(ch) != "Mn")
+              s = re.sub(r"\s+", " ", s).lower()
+              return s
+
+          def clean_scalar(v):
+              if v is None:
+                  return ""
+              try:
+                  if pd.isna(v):
+                      return ""
+              except Exception:
+                  pass
+              if isinstance(v, float) and math.isnan(v):
+                  return ""
+              s = str(v).strip()
+              if s.lower() in {"nan", "nat", "none", "null"}:
+                  return ""
+              return s
+
+          def norm_guarda(v):
+              raw = clean_scalar(v)
+              c = canon(raw)
+              return GUARDA_FIX.get(c, raw)
+
+          def norm_region(v):
+              raw = clean_scalar(v)
+              return REGION_FIX.get(canon(raw), raw)
+
+          def normalize_yes_no(v):
+              c = canon(v)
+              if c in {"si", "sí", "yes", "true", "1"}:
+                  return "SI"
+              if c in {"no", "false", "0"}:
+                  return "NO"
+              return clean_scalar(v)
+
+          def parse_date_any(v, dayfirst=True):
+              if v is None:
+                  return pd.NaT
+              try:
+                  if pd.isna(v):
+                      return pd.NaT
+              except Exception:
+                  pass
+
+              if isinstance(v, pd.Timestamp):
+                  return v
+              if isinstance(v, datetime):
+                  return pd.Timestamp(v)
+
+              # ArcGIS suele entregar milisegundos Unix.
+              if isinstance(v, (int, float)) and not pd.isna(v):
+                  if abs(v) > 10_000_000_000:
+                      return pd.to_datetime(v, unit="ms", errors="coerce")
+                  # Excel serial date, por si aparece en histórico/exportaciones.
+                  if 20_000 <= float(v) <= 80_000:
+                      return pd.to_datetime(v, unit="D", origin="1899-12-30", errors="coerce")
+
+              s = clean_scalar(v)
+              if not s:
+                  return pd.NaT
+              if re.fullmatch(r"\d+(\.\d+)?", s):
+                  num = float(s)
+                  if abs(num) > 10_000_000_000:
+                      return pd.to_datetime(num, unit="ms", errors="coerce")
+                  if 20_000 <= num <= 80_000:
+                      return pd.to_datetime(num, unit="D", origin="1899-12-30", errors="coerce")
+
+              # ISO primero si empieza con año.
+              if re.match(r"^\d{4}[-/]", s):
+                  return pd.to_datetime(s, errors="coerce")
+              return pd.to_datetime(s, dayfirst=dayfirst, errors="coerce")
+
+          def fmt_date(v):
+              dt = parse_date_any(v)
+              if pd.isna(dt):
+                  return ""
+              return dt.strftime("%d/%m/%Y")
+
+          def fmt_time(v):
+              s = clean_scalar(v)
+              if not s:
+                  return ""
+              # Excel/pandas puede traer hora como datetime.
+              if isinstance(v, (pd.Timestamp, datetime)):
+                  return pd.Timestamp(v).strftime("%H:%M")
+              m = re.search(r"(\d{1,2}):(\d{2})", s)
+              if m:
+                  return f"{int(m.group(1)):02d}:{m.group(2)}"
+              return s
+
+          def read_csv_safely(path):
+              for enc in ["utf-8-sig", "utf-8", "latin-1"]:
+                  try:
+                      return pd.read_csv(path, sep=";", encoding=enc, dtype=str), enc
+                  except UnicodeDecodeError:
+                      continue
+              return pd.read_csv(path, sep=";", encoding="latin-1", dtype=str), "latin-1"
+
+          def first_existing(row, names):
+              for n in names:
+                  if n in row.index:
+                      val = row[n]
+                      if isinstance(val, pd.Series):
+                          # Por si existen columnas duplicadas.
+                          for item in val.tolist():
+                              if clean_scalar(item):
+                                  return item
+                      elif clean_scalar(val):
+                          return val
+              return ""
+
+          def combine_duplicate_columns(df):
+              # Si después de renombrar quedan columnas duplicadas, se conserva el primer valor no vacío por fila.
+              if not df.columns.duplicated().any():
+                  return df
+              out = pd.DataFrame(index=df.index)
+              for col in dict.fromkeys(df.columns):
+                  sub = df.loc[:, df.columns == col]
+                  if sub.shape[1] == 1:
+                      out[col] = sub.iloc[:, 0]
+                  else:
+                      out[col] = sub.bfill(axis=1).iloc[:, 0]
+              return out
+
+          def rename_arcgis_columns(df):
+              # Soporta nombres internos del servicio y aliases del Excel de Survey123.
+              mapping = {
+                  "equipo": "Guarda recursos responsable",
+                  "Guarda recursos responsable": "Guarda recursos responsable",
+
+                  "municipio": "Municipio",
+                  "Municipio": "Municipio",
+                  "municipio_calc": "Municipio",
+
+                  "fecha_patrullaje": "Fecha de patrullaje",
+                  "Fecha de patrullaje": "Fecha de patrullaje",
+
+                  "hora_inicio": "Hora de Inicio del patrullaje",
+                  "Hora de Inicio del patrullaje": "Hora de Inicio del patrullaje",
+
+                  "hora_fin": "Hora de finalizacion de patrullaje",
+                  "Hora de finalización de patrullaje": "Hora de finalizacion de patrullaje",
+                  "Hora de finalizacion de patrullaje": "Hora de finalizacion de patrullaje",
+
+                  "region": "Region",
+                  "Región": "Region",
+                  "Region": "Region",
+
+                  "en_rumcla": "Ubicacion",
+                  "Ubicación": "Ubicacion",
+                  "Ubicacion": "Ubicacion",
+
+                  "area_protegida": "Area protegida",
+                  "Área protegida": "Area protegida",
+                  "Area protegida": "Area protegida",
+
+                  "tipo_patrullaje": "Tipo de patrullaje",
+                  "Tipo de patrullaje": "Tipo de patrullaje",
+
+                  "otras_inst": "Hay mas instituciones involucradas en el patrullaje",
+                  "¿Existe otra institución involucrada en el patrullaje?": "Hay mas instituciones involucradas en el patrullaje",
+                  "Hay mas instituciones involucradas en el patrullaje": "Hay mas instituciones involucradas en el patrullaje",
+
+                  "inst_involucradas": "Instituciones involucradas",
+                  "¿Cuál o cuáles son?": "Instituciones involucradas",
+                  "Instituciones involucradas": "Instituciones involucradas",
+
+                  "inst_otra": "Otra (especifique)",
+                  "Otra (especifique)": "Otra (especifique)",
+
+                  "obs_ilegal": "Actividad ilegal observada",
+                  "¿Observó Actividad ilegal?": "Actividad ilegal observada",
+                  "Actividad ilegal observada": "Actividad ilegal observada",
+
+                  "CreationDate": "Fecha de creacion de registro",
+                  "Fecha de creacion de registro": "Fecha de creacion de registro",
+
+                  "EditDate": "Fecha de modificacion de registro",
+                  "Fecha de modificacion de registro": "Fecha de modificacion de registro",
+
+                  "x": "Longitud",
+                  "Longitud": "Longitud",
+                  "longitude": "Longitud",
+
+                  "y": "Latitud",
+                  "Latitud": "Latitud",
+                  "latitude": "Latitud",
+
+                  "Kilometros recorridos": "Kilometros recorridos",
+                  "Kilómetros recorridos": "Kilometros recorridos",
+                  "kilometros_recorridos": "Kilometros recorridos",
+                  "km_recorridos": "Kilometros recorridos",
+              }
+              renamed = df.rename(columns={c: mapping.get(c, c) for c in df.columns})
+              return combine_duplicate_columns(renamed)
+
+          def normalize_output_df(df):
+              df = df.copy()
+              df = combine_duplicate_columns(df)
+              for c in COLS:
+                  if c not in df.columns:
+                      df[c] = ""
+              df = df[COLS]
+
+              df["Guarda recursos responsable"] = df["Guarda recursos responsable"].map(norm_guarda)
+              df["Region"] = df["Region"].map(norm_region)
+              df["Hay mas instituciones involucradas en el patrullaje"] = df["Hay mas instituciones involucradas en el patrullaje"].map(normalize_yes_no)
+              df["Actividad ilegal observada"] = df["Actividad ilegal observada"].map(normalize_yes_no)
+              df["Fecha de patrullaje"] = df["Fecha de patrullaje"].map(fmt_date)
+              df["Fecha de creacion de registro"] = df["Fecha de creacion de registro"].map(fmt_date)
+              df["Fecha de modificacion de registro"] = df["Fecha de modificacion de registro"].map(fmt_date)
+              df["Hora de Inicio del patrullaje"] = df["Hora de Inicio del patrullaje"].map(fmt_time)
+              df["Hora de finalizacion de patrullaje"] = df["Hora de finalizacion de patrullaje"].map(fmt_time)
+
+              for c in COLS:
+                  if c not in ["Fecha de patrullaje", "Fecha de creacion de registro", "Fecha de modificacion de registro"]:
+                      df[c] = df[c].map(clean_scalar)
+              return df
+
+          def date_series(df):
+              return df["Fecha de patrullaje"].map(parse_date_any)
+
+          def km_value(v):
+              s = clean_scalar(v).replace(",", ".")
+              if not s:
+                  return ""
+              try:
+                  x = float(s)
+                  if math.isnan(x):
+                      return ""
+                  return str(round(x, 3)).rstrip("0").rstrip(".")
+              except Exception:
+                  return clean_scalar(v)
+
+          def key_from_row(row, mode="full"):
+              g = canon(first_existing(row, ["Guarda recursos responsable"]))
+              f = parse_date_any(first_existing(row, ["Fecha de patrullaje"]))
+              fstr = "" if pd.isna(f) else f.strftime("%Y-%m-%d")
+              hi = clean_scalar(first_existing(row, ["Hora de Inicio del patrullaje"]))
+              hf = clean_scalar(first_existing(row, ["Hora de finalizacion de patrullaje"]))
+              muni = canon(first_existing(row, ["Municipio"]))
+              lon = clean_scalar(first_existing(row, ["Longitud"]))
+              lat = clean_scalar(first_existing(row, ["Latitud"]))
+              def rnd_coord(s):
+                  try:
+                      return f"{float(str(s).replace(',', '.')):.5f}"
+                  except Exception:
+                      return ""
+              lonr, latr = rnd_coord(lon), rnd_coord(lat)
+              if mode == "global":
+                  return clean_scalar(first_existing(row, ["GlobalID", "globalid"]))
+              if mode == "coords":
+                  return "|".join([g, fstr, lonr, latr])
+              if mode == "simple":
+                  return "|".join([g, fstr, hi, muni])
+              return "|".join([g, fstr, hi, hf, muni, lonr, latr])
+
+          def build_km_lookup(df):
+              lookups = {"full": {}, "coords": {}, "simple": {}}
+              if df.empty or "Kilometros recorridos" not in df.columns:
+                  return lookups
+              for mode in lookups.keys():
+                  temp = {}
+                  for _, row in df.iterrows():
+                      km = km_value(row.get("Kilometros recorridos", ""))
+                      if not km:
+                          continue
+                      k = key_from_row(row, mode)
+                      if not k or k in {"||||||", "|||"}:
+                          continue
+                      temp.setdefault(k, set()).add(km)
+                  # Solo usar claves únicas para evitar asignar km incorrectos a duplicados.
+                  lookups[mode] = {k: next(iter(vals)) for k, vals in temp.items() if len(vals) == 1}
+              return lookups
+
+          def restore_km_from_reference(df_new, df_reference):
+              lookups = build_km_lookup(df_reference)
+              restored = 0
+              vals = []
+              for _, row in df_new.iterrows():
+                  current = km_value(row.get("Kilometros recorridos", ""))
+                  if current:
+                      vals.append(current)
+                      continue
+                  km = ""
+                  for mode in ["full", "coords", "simple"]:
+                      k = key_from_row(row, mode)
+                      km = lookups[mode].get(k, "")
+                      if km:
+                          break
+                  if km:
+                      restored += 1
+                  vals.append(km)
+              df_new = df_new.copy()
+              df_new["Kilometros recorridos"] = vals
+              print(f"✓ Kilómetros restaurados desde CSV existente: {restored}")
+              return df_new
+
+          def dedup_output(df):
+              df = df.copy()
+              # Dedupe estable y conservador. Si existe GlobalID en fuentes futuras, no está en salida,
+              # por eso usamos una llave compuesta de campos visibles.
+              df["__key"] = df.apply(lambda r: key_from_row(r, "full"), axis=1)
+              before = len(df)
+              df = df.drop_duplicates(subset="__key", keep="last").drop(columns="__key")
+              print(f"✓ Duplicados eliminados por llave compuesta: {before - len(df)}")
+              return df
 
           # ── Autenticación ──────────────────────────────────────────────
           print("Autenticando en ArcGIS Online...")
           r = requests.post(f"{ORG_URL}/sharing/rest/generateToken", data={
-              "username": USERNAME, "password": PASSWORD,
-              "referer": "https://www.arcgis.com", "expiration": 120, "f": "json",
+              "username": USERNAME,
+              "password": PASSWORD,
+              "referer": "https://www.arcgis.com",
+              "expiration": 120,
+              "f": "json",
           }, timeout=30)
           r.raise_for_status()
           data = r.json()
@@ -89,152 +472,154 @@ jobs:
           token = data["token"]
           print("✓ Autenticado")
 
-          # ── URL del servicio ───────────────────────────────────────────
+          # ── Resolver URL de servicio ───────────────────────────────────
           r = requests.get(f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}",
               params={"f": "json", "token": token}, timeout=30)
+          r.raise_for_status()
           item_data = r.json()
-          print(f"  Item type: {item_data.get('type')} | typeKeywords: {item_data.get('typeKeywords','')[:80]}")
+          print(f"  Item: {item_data.get('title')} | tipo: {item_data.get('type')}")
 
-          # Intentar obtener URL directa del item
-          service_url = item_data.get("url")
-
-          # Si no tiene URL directa (Survey123 a veces no la tiene),
-          # buscarla en los items relacionados (el Feature Service vinculado)
+          service_url = clean_scalar(item_data.get("url"))
           if not service_url:
-              print("  URL directa no encontrada, buscando Feature Service relacionado...")
+              print("  URL directa no encontrada. Buscando relación Survey2Service...")
               r2 = requests.get(f"{ORG_URL}/sharing/rest/content/items/{ITEM_ID}/relatedItems",
                   params={"relationshipType": "Survey2Service", "direction": "forward",
                           "f": "json", "token": token}, timeout=30)
+              r2.raise_for_status()
               related = r2.json().get("relatedItems", [])
-              print(f"  Items relacionados (Survey2Service): {len(related)}")
+              print(f"  Items relacionados: {len(related)}")
               for rel in related:
                   if rel.get("url"):
                       service_url = rel["url"]
                       print(f"  Encontrado: {service_url}")
                       break
 
-          # Si aún no hay URL, construirla a partir del typeKeyword o itemId conocido
-          if not service_url:
-              print("  Intentando buscar Feature Service por nombre en contenido del usuario...")
-              r3 = requests.get(f"{ORG_URL}/sharing/rest/search",
-                  params={"q": f"owner:{USERNAME} type:'Feature Service' tags:survey",
-                          "num": 20, "f": "json", "token": token}, timeout=30)
-              results = r3.json().get("results", [])
-              for res in results:
-                  if ITEM_ID[:8] in res.get("id","") or "patrullaje" in res.get("title","").lower() or "192" in res.get("title",""):
-                      service_url = res.get("url","")
-                      print(f"  Encontrado por búsqueda: {service_url}")
-                      break
-
           if not service_url:
               print("ERROR: No se pudo encontrar la URL del Feature Service.")
-              print("Respuesta del item:", item_data)
               sys.exit(1)
 
           service_url = service_url.rstrip("/")
           print(f"✓ Servicio: {service_url}")
 
-          # ── Total de registros ─────────────────────────────────────────
-          r = requests.get(f"{service_url}/0/query",
+          # Seleccionar capa: preferimos la primera capa si no hay otra.
+          service_meta = requests.get(service_url, params={"f": "json", "token": token}, timeout=30).json()
+          layers = service_meta.get("layers", [])
+          if not layers:
+              print("ERROR: El Feature Service no reporta capas.")
+              sys.exit(1)
+          layer_id = layers[0].get("id", 0)
+          layer_name = layers[0].get("name", "")
+          layer_url = f"{service_url}/{layer_id}"
+          print(f"  Capa seleccionada: {layer_id} · {layer_name}")
+          print(f"✓ Layer URL: {layer_url}")
+
+          meta = requests.get(layer_url, params={"f": "json", "token": token}, timeout=30).json()
+          field_names = [f.get("name") for f in meta.get("fields", [])]
+          print(f"  Campos en ArcGIS ({len(field_names)}): {field_names}")
+
+          # ── Total y descarga paginada ──────────────────────────────────
+          r = requests.get(f"{layer_url}/query",
               params={"where": "1=1", "returnCountOnly": "true", "f": "json", "token": token},
               timeout=30)
+          r.raise_for_status()
           total = r.json().get("count", 0)
           print(f"✓ Registros en ArcGIS: {total}")
 
-          # ── Descarga paginada ──────────────────────────────────────────
           pages, offset = [], 0
           while True:
-              r = requests.get(f"{service_url}/0/query", params={
-                  "where": "1=1", "outFields": "*",
-                  "resultOffset": offset, "resultRecordCount": PAGE_SIZE,
-                  "f": "json", "token": token,
+              r = requests.get(f"{layer_url}/query", params={
+                  "where": "1=1",
+                  "outFields": "*",
+                  "returnGeometry": "true",
+                  "resultOffset": offset,
+                  "resultRecordCount": PAGE_SIZE,
+                  "f": "json",
+                  "token": token,
               }, timeout=60)
-              features = r.json().get("features", [])
+              r.raise_for_status()
+              payload = r.json()
+              if "error" in payload:
+                  print("ERROR consultando ArcGIS:", payload["error"])
+                  sys.exit(1)
+              features = payload.get("features", [])
               if not features:
                   break
-              pages.append(pd.DataFrame([f["attributes"] for f in features]))
+              rows = []
+              for feat in features:
+                  row = dict(feat.get("attributes", {}))
+                  geom = feat.get("geometry") or {}
+                  if "x" not in row and geom.get("x") is not None:
+                      row["x"] = geom.get("x")
+                  if "y" not in row and geom.get("y") is not None:
+                      row["y"] = geom.get("y")
+                  rows.append(row)
+              pages.append(pd.DataFrame(rows))
               offset += len(features)
-              print(f"  Descargados: {offset}/{total}", end="\r")
-              if not r.json().get("exceededTransferLimit", False):
+              print(f"  Descargados: {offset}/{total}")
+              if not payload.get("exceededTransferLimit", False):
                   break
-          print()
 
-          df_new = pd.concat(pages, ignore_index=True) if pages else pd.DataFrame()
-          if df_new.empty:
-              print("Sin registros. Abortando.")
+          df_arc_raw = pd.concat(pages, ignore_index=True) if pages else pd.DataFrame()
+          if df_arc_raw.empty:
+              print("Sin registros en ArcGIS. Abortando para no tocar el CSV.")
               sys.exit(0)
 
-          # ── Renombrar columnas (nombres internos → nombres del CSV) ───
-          df_new = df_new.rename(columns={
-              "equipo":            "Guarda recursos responsable",
-              "municipio":         "Municipio",
-              "fecha_patrullaje":  "Fecha de patrullaje",
-              "hora_inicio":       "Hora de Inicio del patrullaje",
-              "hora_fin":          "Hora de finalizacion de patrullaje",
-              "region":            "Region",
-              "en_rumcla":         "Ubicacion",
-              "area_protegida":    "Area protegida",
-              "tipo_patrullaje":   "Tipo de patrullaje",
-              "otras_inst":        "Hay mas instituciones involucradas en el patrullaje",
-              "inst_involucradas": "Instituciones involucradas",
-              "inst_otra":         "Otra (especifique)",
-              "obs_ilegal":        "Actividad ilegal observada",
-              "CreationDate":      "Fecha de creacion de registro",
-              "EditDate":          "Fecha de modificacion de registro",
-              "x":                 "Longitud",
-              "y":                 "Latitud",
-          })
+          # ── Leer histórico existente ───────────────────────────────────
+          if OUTPUT_CSV.exists():
+              df_old_raw, enc = read_csv_safely(OUTPUT_CSV)
+              print(f"✓ CSV histórico existente: {len(df_old_raw)} registros (encoding: {enc})")
+          else:
+              df_old_raw = pd.DataFrame(columns=COLS)
+              print("Sin CSV histórico previo; se creará desde ArcGIS.")
 
-          # ── Correcciones ───────────────────────────────────────────────
-          df_new["Guarda recursos responsable"] = (
-              df_new["Guarda recursos responsable"].astype(str).str.strip().replace(FIX_GUARDAS)
-          )
-          df_new["Region"] = df_new["Region"].astype(str).str.strip().replace({
-              "Altiplano Centra":       "Altiplano Central",
-              "Altiplano Central DRAC": "Altiplano Central",
-              "Altiplano Central0":     "Altiplano Central",
-              "Altiplano Centralm":     "Altiplano Central",
-          })
+          df_old = normalize_output_df(df_old_raw)
+          df_arc = normalize_output_df(rename_arcgis_columns(df_arc_raw))
 
-          # Fechas (ArcGIS entrega milisegundos Unix)
-          for col in ["Fecha de patrullaje", "Fecha de creacion de registro", "Fecha de modificacion de registro"]:
-              if col in df_new.columns:
-                  if pd.api.types.is_numeric_dtype(df_new[col]):
-                      df_new[col] = pd.to_datetime(df_new[col], unit="ms", errors="coerce")
-                  else:
-                      df_new[col] = pd.to_datetime(df_new[col], errors="coerce")
-                  df_new[col] = df_new[col].dt.strftime("%d/%m/%Y")
+          old_dates = date_series(df_old)
+          arc_dates = date_series(df_arc)
+          df_hist = df_old[old_dates < CUTOFF].copy()
+          df_arc_cut = df_arc[arc_dates >= CUTOFF].copy()
 
-          for c in COLS:
-              if c not in df_new.columns:
-                  df_new[c] = None
-          df_new = df_new[COLS]
+          print(f"✓ Histórico conservado antes del {CUTOFF.strftime('%d/%m/%Y')}: {len(df_hist)} registros")
+          print(f"✓ Registros ArcGIS desde el {CUTOFF.strftime('%d/%m/%Y')}: {len(df_arc_cut)} registros")
 
-          # ── Merge con histórico ────────────────────────────────────────
-          try:
-              df_old = pd.read_csv(OUTPUT_CSV, sep=";", encoding="utf-8-sig")
-              print(f"✓ Histórico existente: {len(df_old)} registros")
-              combined = pd.concat([df_old, df_new], ignore_index=True)
-          except FileNotFoundError:
-              print("Sin histórico previo, se crea desde cero.")
-              combined = df_new
+          # Restaurar kilómetros de registros que ya existían en el CSV actual.
+          # Así el workflow no borra la columna si ArcGIS no la trae.
+          df_arc_cut = restore_km_from_reference(df_arc_cut, df_old)
 
-          # Deduplicar por guarda + fecha + hora inicio
-          combined["_key"] = (
-              combined["Guarda recursos responsable"].astype(str).str.strip().str.lower() + "|" +
-              pd.to_datetime(combined["Fecha de patrullaje"], dayfirst=True, errors="coerce").dt.strftime("%Y-%m-%d") + "|" +
-              combined["Hora de Inicio del patrullaje"].astype(str).str.strip()
-          )
-          antes = len(combined)
-          combined = combined.drop_duplicates(subset="_key", keep="last").drop(columns="_key")
-          print(f"✓ Duplicados eliminados: {antes - len(combined)}")
+          combined = pd.concat([df_hist, df_arc_cut], ignore_index=True)
+          combined = normalize_output_df(combined)
+          combined = dedup_output(combined)
 
-          # Ordenar por fecha
-          combined["_sort"] = pd.to_datetime(combined["Fecha de patrullaje"], dayfirst=True, errors="coerce")
-          combined = combined.sort_values("_sort").drop(columns="_sort").reset_index(drop=True)
+          # Ordenar por fecha y guardarecurso
+          combined["__sort"] = date_series(combined)
+          combined["__guard"] = combined["Guarda recursos responsable"].map(canon)
+          combined = combined.sort_values(["__sort", "__guard"], na_position="last").drop(columns=["__sort", "__guard"]).reset_index(drop=True)
 
+          # Métricas de validación
+          valid_dates = date_series(combined).dropna()
+          print(f"✓ CSV final: {len(combined)} registros")
+          if not valid_dates.empty:
+              print(f"✓ Rango Fecha de patrullaje: {valid_dates.min().strftime('%d/%m/%Y')} → {valid_dates.max().strftime('%d/%m/%Y')}")
+          else:
+              print("⚠ No hay fechas válidas en el CSV final.")
+
+          # Verificación específica del período donde se detectó el problema.
+          p1 = pd.Timestamp("2026-03-25")
+          p2 = pd.Timestamp("2026-04-25")
+          ds = date_series(combined)
+          period = combined[(ds >= p1) & (ds <= p2)].copy()
+          for target in ["Carlos Eliberto Chiroy", "Heriberto Chávez Chávez"]:
+              n = (period["Guarda recursos responsable"].map(canon) == canon(target)).sum()
+              print(f"✓ Validación 25/03/2026–25/04/2026 · {target}: {n} registros")
+
+          print("✓ Registros por guardarecurso desde el corte:")
+          if not df_arc_cut.empty:
+              print(df_arc_cut["Guarda recursos responsable"].value_counts(dropna=False).to_string())
+
+          OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
           combined.to_csv(OUTPUT_CSV, index=False, sep=";", encoding="utf-8-sig")
-          print(f"✓ CSV guardado: {OUTPUT_CSV} ({len(combined)} registros totales)")
+          print(f"✓ Archivo guardado: {OUTPUT_CSV}")
           PYEOF
 
       - name: Publicar cambios al repositorio
@@ -242,11 +627,9 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/datos/datos_patrullaje.csv
-
-          if git diff --staged --quiet; then
-            echo "Sin registros nuevos. No se necesita commit."
+          if git diff --cached --quiet; then
+            echo "Sin cambios en datos_patrullaje.csv"
           else
-            FECHA=$(TZ="America/Guatemala" date '+%d/%m/%Y %H:%M GT')
-            git commit -m "🔄 AC192 Patrullajes · $FECHA"
+            git commit -m "🔄 AC192 Patrullajes · sincronización segura · $(TZ='America/Guatemala' date '+%d/%m/%Y %H:%M GT')"
             git push
           fi
