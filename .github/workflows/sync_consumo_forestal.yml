@@ -63,8 +63,46 @@ jobs:
           def force_object_df(df):
               df = df.copy()
               for _col in df.columns:
-                  df[_col] = df[_col].astype("object")
+                  # Si hay columnas duplicadas, df[_col] puede devolver DataFrame.
+                  # En ese caso se deja para collapse_duplicate_columns().
+                  try:
+                      df[_col] = df[_col].astype("object")
+                  except Exception:
+                      pass
               return df
+
+          def safe_scalar(value):
+              """Devuelve un valor simple. Evita errores si Pandas entrega una Series
+              por columnas duplicadas después de renombrar campos de ArcGIS."""
+              if isinstance(value, pd.Series):
+                  for item in value.tolist():
+                      if not pd.isna(item) and str(item).strip() and str(item).strip().lower() not in {"nan", "none", "null"}:
+                          return item
+                  return ""
+              return value
+
+          def collapse_duplicate_columns(df):
+              """Combina columnas duplicadas manteniendo el primer valor no vacío por fila.
+              Esto es necesario porque ArcGIS puede traer municipio_calc y municipio,
+              y ambos se renombran a Municipio."""
+              if df.empty or not df.columns.duplicated().any():
+                  return df
+
+              out = pd.DataFrame(index=df.index)
+              for col in dict.fromkeys(df.columns):
+                  same = df.loc[:, df.columns == col]
+                  if same.shape[1] == 1:
+                      out[col] = same.iloc[:, 0]
+                      continue
+
+                  def pick(row):
+                      for item in row:
+                          if not pd.isna(item) and str(item).strip() and str(item).strip().lower() not in {"nan", "none", "null"}:
+                              return item
+                      return ""
+
+                  out[col] = same.apply(pick, axis=1)
+              return out
 
           ORG_URL = os.environ["AGOL_ORG_URL"].rstrip("/")
           USERNAME = os.environ["AGOL_USERNAME"]
@@ -271,7 +309,11 @@ jobs:
               return key_base(row) + "|" + date_norm(row)
 
           def row_from_series(series):
-              return {c: ("" if pd.isna(series.get(c, "")) else str(series.get(c, ""))) for c in COLS}
+              row = {}
+              for c in COLS:
+                  value = safe_scalar(series.get(c, ""))
+                  row[c] = "" if pd.isna(value) else str(value)
+              return row
 
           def normalize_dataframe(df):
               df = force_object_df(df)
@@ -427,6 +469,9 @@ jobs:
 
           # ── Mapear ArcGIS a esquema CSV ───────────────────────────────
           df_new = df_agol_raw.rename(columns=RENAME)
+          # Evitar columnas duplicadas después del renombrado, especialmente Municipio
+          # cuando existen municipio_calc y municipio en ArcGIS.
+          df_new = collapse_duplicate_columns(df_new)
           for col in COLS:
               if col not in df_new.columns:
                   df_new[col] = ""
