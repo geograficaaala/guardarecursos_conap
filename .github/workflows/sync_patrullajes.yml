@@ -372,6 +372,36 @@ jobs:
           def date_series(df):
               return df["Fecha de patrullaje"].map(parse_date_any)
 
+
+          def key_from_row(row, mode="full"):
+              """
+              Llave compuesta usada para eliminar duplicados.
+              No usa la columna de kilómetros, para evitar conservar valores antiguos.
+              """
+              g = canon(first_existing(row, ["Guarda recursos responsable"]))
+              f = parse_date_any(first_existing(row, ["Fecha de patrullaje"]))
+              fstr = "" if pd.isna(f) else f.strftime("%Y-%m-%d")
+              hi = clean_scalar(first_existing(row, ["Hora de Inicio del patrullaje"]))
+              hf = clean_scalar(first_existing(row, ["Hora de finalizacion de patrullaje"]))
+              muni = canon(first_existing(row, ["Municipio"]))
+              lon = clean_scalar(first_existing(row, ["Longitud"]))
+              lat = clean_scalar(first_existing(row, ["Latitud"]))
+
+              def rnd_coord(s):
+                  try:
+                      return f"{float(str(s).replace(',', '.')):.5f}"
+                  except Exception:
+                      return ""
+
+              lonr, latr = rnd_coord(lon), rnd_coord(lat)
+              if mode == "global":
+                  return clean_scalar(first_existing(row, ["GlobalID", "globalid"]))
+              if mode == "coords":
+                  return "|".join([g, fstr, lonr, latr])
+              if mode == "simple":
+                  return "|".join([g, fstr, hi, muni])
+              return "|".join([g, fstr, hi, hf, muni, lonr, latr])
+
           def stable_generated_km(row):
               """
               Genera un kilometraje estable entre 1.00 y 5.00 para cada fila.
