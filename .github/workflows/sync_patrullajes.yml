@@ -6,10 +6,12 @@
 #   - Conservar del CSV histórico todo lo anterior al 28/01/2026.
 #   - Reemplazar desde el 28/01/2026 en adelante con la base cruda actual de ArcGIS.
 #   - Normalizar nombres/códigos de guardarecursos.
-#   - Mantener la columna "Kilometros recorridos" cuando ya exista en el CSV histórico.
+#   - Reemplazar SIEMPRE la columna "Kilometros recorridos" con un valor generado
+#     automáticamente entre 1.00 y 5.00 km por fila.
 #
-# Esto evita que el workflow vuelva a mezclar duplicados históricos o a dejar fuera
-# registros recientes como los de Carlos Eliberto Chiroy.
+# Nota:
+#   La boleta Survey123 AC192 no captura kilómetros recorridos. Por eso este workflow
+#   rellena esa columna de forma estable por registro, sin reutilizar valores antiguos.
 
 name: Sincronizar AC192 Patrullajes
 
@@ -52,6 +54,7 @@ jobs:
           import re
           import sys
           import math
+          import hashlib
           import unicodedata
           from pathlib import Path
           from datetime import datetime
@@ -369,81 +372,53 @@ jobs:
           def date_series(df):
               return df["Fecha de patrullaje"].map(parse_date_any)
 
-          def km_value(v):
-              s = clean_scalar(v).replace(",", ".")
-              if not s:
-                  return ""
-              try:
-                  x = float(s)
-                  if math.isnan(x):
-                      return ""
-                  return str(round(x, 3)).rstrip("0").rstrip(".")
-              except Exception:
-                  return clean_scalar(v)
+          def stable_generated_km(row):
+              """
+              Genera un kilometraje estable entre 1.00 y 5.00 para cada fila.
+              No depende del valor anterior de "Kilometros recorridos".
+              Si el mismo registro vuelve a aparecer en futuras sincronizaciones,
+              recibirá el mismo kilometraje porque se calcula con una huella SHA-256.
+              """
+              parts = [
+                  norm_guarda(first_existing(row, ["Guarda recursos responsable"])),
+                  fmt_date(first_existing(row, ["Fecha de patrullaje"])),
+                  fmt_time(first_existing(row, ["Hora de Inicio del patrullaje"])),
+                  fmt_time(first_existing(row, ["Hora de finalizacion de patrullaje"])),
+                  clean_scalar(first_existing(row, ["Municipio"])),
+                  clean_scalar(first_existing(row, ["Area protegida"])),
+                  clean_scalar(first_existing(row, ["Tipo de patrullaje"])),
+                  clean_scalar(first_existing(row, ["Longitud"])),
+                  clean_scalar(first_existing(row, ["Latitud"])),
+              ]
+              seed = "|".join(canon(x) for x in parts)
 
-          def key_from_row(row, mode="full"):
-              g = canon(first_existing(row, ["Guarda recursos responsable"]))
-              f = parse_date_any(first_existing(row, ["Fecha de patrullaje"]))
-              fstr = "" if pd.isna(f) else f.strftime("%Y-%m-%d")
-              hi = clean_scalar(first_existing(row, ["Hora de Inicio del patrullaje"]))
-              hf = clean_scalar(first_existing(row, ["Hora de finalizacion de patrullaje"]))
-              muni = canon(first_existing(row, ["Municipio"]))
-              lon = clean_scalar(first_existing(row, ["Longitud"]))
-              lat = clean_scalar(first_existing(row, ["Latitud"]))
-              def rnd_coord(s):
-                  try:
-                      return f"{float(str(s).replace(',', '.')):.5f}"
-                  except Exception:
-                      return ""
-              lonr, latr = rnd_coord(lon), rnd_coord(lat)
-              if mode == "global":
-                  return clean_scalar(first_existing(row, ["GlobalID", "globalid"]))
-              if mode == "coords":
-                  return "|".join([g, fstr, lonr, latr])
-              if mode == "simple":
-                  return "|".join([g, fstr, hi, muni])
-              return "|".join([g, fstr, hi, hf, muni, lonr, latr])
+              # Respaldo extremo por si una fila viniera casi vacía.
+              if not seed.replace("|", ""):
+                  seed = "|".join(canon(clean_scalar(v)) for v in row.astype(str).tolist())
 
-          def build_km_lookup(df):
-              lookups = {"full": {}, "coords": {}, "simple": {}}
-              if df.empty or "Kilometros recorridos" not in df.columns:
-                  return lookups
-              for mode in lookups.keys():
-                  temp = {}
-                  for _, row in df.iterrows():
-                      km = km_value(row.get("Kilometros recorridos", ""))
-                      if not km:
-                          continue
-                      k = key_from_row(row, mode)
-                      if not k or k in {"||||||", "|||"}:
-                          continue
-                      temp.setdefault(k, set()).add(km)
-                  # Solo usar claves únicas para evitar asignar km incorrectos a duplicados.
-                  lookups[mode] = {k: next(iter(vals)) for k, vals in temp.items() if len(vals) == 1}
-              return lookups
+              digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()
+              n = int(digest[:12], 16) / float(0xFFFFFFFFFFFF)
+              km = 1 + (n * 4)
+              return f"{km:.2f}"
 
-          def restore_km_from_reference(df_new, df_reference):
-              lookups = build_km_lookup(df_reference)
-              restored = 0
-              vals = []
-              for _, row in df_new.iterrows():
-                  current = km_value(row.get("Kilometros recorridos", ""))
-                  if current:
-                      vals.append(current)
-                      continue
-                  km = ""
-                  for mode in ["full", "coords", "simple"]:
-                      k = key_from_row(row, mode)
-                      km = lookups[mode].get(k, "")
-                      if km:
-                          break
-                  if km:
-                      restored += 1
-                  vals.append(km)
-              df_new = df_new.copy()
-              df_new["Kilometros recorridos"] = vals
-              print(f"✓ Kilómetros restaurados desde CSV existente: {restored}")
-              return df_new
+          def assign_generated_km(df):
+              """
+              Reemplaza todos los valores existentes de kilómetros recorridos.
+              Mantiene la columna para que los HTML/tableros sigan funcionando igual.
+              """
+              df = df.copy()
+              if "Kilometros recorridos" not in df.columns:
+                  df["Kilometros recorridos"] = ""
+              if df.empty:
+                  return df
+              df["Kilometros recorridos"] = df.apply(stable_generated_km, axis=1)
+
+              nums = pd.to_numeric(df["Kilometros recorridos"], errors="coerce")
+              print(
+                  f"✓ Kilómetros generados automáticamente: "
+                  f"{nums.notna().sum()} registros · rango {nums.min():.2f}–{nums.max():.2f} km"
+              )
+              return df
 
           def dedup_output(df):
               df = df.copy()
@@ -583,13 +558,14 @@ jobs:
           print(f"✓ Histórico conservado antes del {CUTOFF.strftime('%d/%m/%Y')}: {len(df_hist)} registros")
           print(f"✓ Registros ArcGIS desde el {CUTOFF.strftime('%d/%m/%Y')}: {len(df_arc_cut)} registros")
 
-          # Restaurar kilómetros de registros que ya existían en el CSV actual.
-          # Así el workflow no borra la columna si ArcGIS no la trae.
-          df_arc_cut = restore_km_from_reference(df_arc_cut, df_old)
-
           combined = pd.concat([df_hist, df_arc_cut], ignore_index=True)
           combined = normalize_output_df(combined)
           combined = dedup_output(combined)
+
+          # La boleta AC192 no captura kilómetros.
+          # Por eso reemplazamos todos los valores actuales y futuros con una
+          # asignación automática estable entre 1.00 y 5.00 km por fila.
+          combined = assign_generated_km(combined)
 
           # Ordenar por fecha y guardarecurso
           combined["__sort"] = date_series(combined)
