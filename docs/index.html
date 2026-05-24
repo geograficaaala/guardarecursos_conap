@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sistema de Monitoreo · CONAP Altiplano Central</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sistema de Monitoreo · CONAP Altiplano Central</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&amp;family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&amp;display=swap" rel="stylesheet"/>
+<style>
     :root {
       --verde-oscuro: #0a3d2b;
       --verde-medio:  #1a5c3a;
@@ -453,16 +453,7 @@
       color: var(--ink);
       max-width: 360px;
     }
-    .module-icon {
-      width: 62px; height: 62px;
-      display: grid; place-items: center;
-      border-radius: 20px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      flex-shrink: 0;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.65);
-    }
-    .module-desc {
+.module-desc {
       position: relative; z-index: 1;
       font-size: 14.5px;
       color: var(--muted);
@@ -484,47 +475,7 @@
       padding: 6px 10px;
       white-space: nowrap;
     }
-    .module-actions {
-      position: relative; z-index: 1;
-      display: grid;
-      grid-template-columns: 1.2fr 1fr 1fr;
-      gap: 10px;
-      margin-top: auto;
-      padding-top: 18px;
-      border-top: 1px solid var(--borde);
-    }
-    .module-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      min-height: 42px;
-      border-radius: 13px;
-      text-decoration: none;
-      font-size: 12.5px;
-      font-weight: 800;
-      letter-spacing: -.01em;
-      transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
-      white-space: nowrap;
-    }
-    .module-btn svg { flex-shrink: 0; }
-    .module-btn.primary {
-      color: #fff;
-      background: var(--accent);
-      box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 24%, transparent);
-    }
-    .module-btn.secondary {
-      color: var(--ink-2);
-      background: var(--surface-2);
-      border: 1px solid var(--borde);
-    }
-    .module-btn:hover {
-      transform: translateY(-2px);
-    }
-    .module-btn.primary:hover {
-      box-shadow: 0 14px 30px color-mix(in srgb, var(--accent) 34%, transparent);
-    }
-    .menu-card:not([data-state="active"]) .module-desc,
+.menu-card:not([data-state="active"]) .module-desc,
     .menu-card:not([data-state="active"]) .module-tags,
     .menu-card:not([data-state="active"]) .module-actions {
       opacity: 0;
@@ -567,9 +518,7 @@
       box-shadow: 0 16px 38px rgba(10,61,43,.18);
     }
     .cover-nav:focus-visible,
-    .module-btn:focus-visible,
     .dot-btn:focus-visible,
-    .quick-module:focus-visible,
     .menu-card:focus-visible {
       outline: 3px solid rgba(201,168,76,.45);
       outline-offset: 3px;
@@ -594,58 +543,7 @@
       width: 34px;
       background: var(--verde-oscuro);
     }
-    .quick-access {
-      position: relative; z-index: 3;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-top: 22px;
-    }
-    .quick-module {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      color: var(--ink-2);
-      background: rgba(255,255,255,.72);
-      border: 1px solid var(--borde);
-      border-radius: 16px;
-      padding: 12px 13px;
-      transition: transform .18s ease, background .18s ease, border-color .18s ease;
-      min-width: 0;
-    }
-    .quick-module:hover {
-      transform: translateY(-2px);
-      background: #fff;
-      border-color: rgba(10,61,43,.18);
-    }
-    .quick-dot {
-      width: 10px; height: 10px;
-      border-radius: 999px;
-      background: var(--accent);
-      flex-shrink: 0;
-    }
-    .quick-text { min-width: 0; }
-    .quick-code {
-      display: block;
-      font-size: 9.5px;
-      font-weight: 800;
-      letter-spacing: .11em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 2px;
-    }
-    .quick-name {
-      display: block;
-      font-size: 12.5px;
-      font-weight: 800;
-      color: var(--ink);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .m-pat { --accent: #1e3a8a; --accent-soft: rgba(37,99,235,.12); }
+.m-pat { --accent: #1e3a8a; --accent-soft: rgba(37,99,235,.12); }
     .m-viv { --accent: #14532d; --accent-soft: rgba(34,197,94,.13); }
     .m-con { --accent: #9a3412; --accent-soft: rgba(249,115,22,.14); }
     .m-ref { --accent: #4c1d95; --accent-soft: rgba(124,58,237,.13); }
@@ -724,8 +622,7 @@
       .menu-card[data-state="next"] { transform: translateX(calc(-50% + 300px)) scale(.82); }
       .menu-card[data-state="far-prev"] { transform: translateX(calc(-50% - 520px)) scale(.66); }
       .menu-card[data-state="far-next"] { transform: translateX(calc(-50% + 520px)) scale(.66); }
-      .quick-access { grid-template-columns: repeat(2, 1fr); }
-      .footer-inner { grid-template-columns: 1fr; gap: 22px; }
+.footer-inner { grid-template-columns: 1fr; gap: 22px; }
       .footer-col-right { text-align: left; }
     }
     @media (max-width: 600px) {
@@ -741,351 +638,396 @@
       .menu-card[data-state="far-next"] { opacity: 0; pointer-events: none; }
       .module-card-body { padding: 24px 22px 22px; gap: 16px; }
       .module-head { gap: 12px; }
-      .module-icon { width: 54px; height: 54px; border-radius: 18px; }
-      .module-title { font-size: 28px; }
-      .module-actions { grid-template-columns: 1fr; }
-      .cover-nav { width: 42px; height: 42px; top: auto; bottom: 16px; transform: none; }
+.module-title { font-size: 28px; }
+.cover-nav { width: 42px; height: 42px; top: auto; bottom: 16px; transform: none; }
       .cover-nav:hover { transform: scale(1.04); }
       .cover-prev { left: calc(50% - 58px); }
       .cover-next { right: calc(50% - 58px); }
       .cover-dots { margin-top: 12px; }
-      .quick-access { grid-template-columns: 1fr; }
-      .ctx-inner  { grid-template-columns: 1fr 1fr; padding: 0 20px; }
+.ctx-inner  { grid-template-columns: 1fr 1fr; padding: 0 20px; }
       header { padding: 12px 20px 0; }
     }
+
+
+    /* ── AJUSTES V2: menú más limpio, rápido y sin accesos duplicados ── */
+    .hero-inner {
+      grid-template-columns: minmax(0, 820px);
+      gap: 0;
+    }
+
+    .coverflow {
+      padding: 0 58px;
+    }
+
+    .menu-card {
+      transition:
+        transform .34s cubic-bezier(.22,.68,0,1),
+        opacity .24s ease,
+        box-shadow .24s ease;
+      filter: none;
+    }
+
+    .menu-card[data-state="active"] { filter: none; }
+    .menu-card:hover:not([data-state="active"]) { filter: none; }
+
+    .module-head {
+      display: block;
+    }
+
+    .module-title {
+      max-width: 430px;
+    }
+
+    .cover-controls {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .cover-prev { left: 0; }
+    .cover-next { right: 0; }
+    .cover-dots { margin-top: 14px; }
+
+    @media (max-width: 1060px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 0; }
+      .coverflow { padding: 0 50px; }
+    }
+
+    @media (max-width: 600px) {
+      .menu-shell {
+        padding: 22px 14px 24px;
+        border-radius: 22px;
+      }
+
+      .menu-shell::before { opacity: .32; }
+      .coverflow { padding: 0; }
+      .cover-stage { height: 456px; overflow: hidden; }
+
+      .menu-card {
+        width: min(360px, 90vw);
+        min-height: 410px;
+        top: 14px;
+        transition: transform .20s ease, opacity .16s ease, box-shadow .16s ease;
+        box-shadow: 0 14px 34px rgba(10,61,43,.13);
+      }
+
+      .menu-card[data-state="prev"],
+      .menu-card[data-state="next"],
+      .menu-card[data-state="far-prev"],
+      .menu-card[data-state="far-next"] {
+        transform: translateX(-50%) scale(.94);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .module-card-body {
+        padding: 23px 22px 22px;
+        gap: 15px;
+      }
+
+      .module-head { display: block; }
+      .module-title { font-size: 27px; max-width: 100%; }
+      .module-desc { font-size: 13.8px; line-height: 1.62; }
+      .module-tags { gap: 7px; }
+.cover-controls {
+        position: relative;
+        inset: auto;
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 8px;
+        pointer-events: none;
+      }
+
+      .cover-nav {
+        position: relative;
+        top: auto;
+        left: auto;
+        right: auto;
+        width: 42px;
+        height: 42px;
+        transform: none;
+      }
+
+      .cover-nav:hover { transform: scale(1.04); }
+      .cover-dots { margin-top: 10px; }
+    }
+
+    /* ── AJUSTES V3: tarjetas como único acceso al módulo ── */
+    .cover-stage { height: 360px; }
+    .menu-card {
+      min-height: 300px;
+      cursor: pointer;
+    }
+    .menu-card[data-state="active"] {
+      cursor: pointer;
+    }
+    .menu-card[data-state="active"]:hover {
+      transform: translateX(-50%) scale(1.012);
+      box-shadow: 0 26px 74px rgba(10,61,43,.20);
+    }
+    .menu-card[data-state="active"]::after {
+      content: 'Clic para abrir';
+      position: absolute;
+      right: 22px;
+      bottom: 20px;
+      z-index: 2;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+      border-radius: 999px;
+      padding: 8px 12px;
+    }
+    .module-card-body {
+      padding-bottom: 62px;
+    }
+
+    @media (max-width: 1060px) {
+      .cover-stage { height: 350px; }
+      .menu-card { min-height: 292px; }
+    }
+
+    @media (max-width: 600px) {
+      .cover-stage { height: 384px; }
+      .menu-card {
+        min-height: 330px;
+        width: min(348px, 90vw);
+      }
+      .module-card-body { padding-bottom: 60px; }
+      .menu-card[data-state="active"]::after {
+        left: 22px;
+        right: auto;
+        bottom: 18px;
+      }
+    }
+
   </style>
 </head>
 <body>
-
 <!-- ── HEADER ── -->
 <header>
-  <div class="header-inner">
-    <div class="logo-group">
-      <a href="https://conap.gob.gt/" target="_blank" rel="noopener noreferrer">
-        <img src="assets/conap_logo.jpg" alt="CONAP">
-      </a>
-      <a href="https://amigosdeatitlan.org/" target="_blank" rel="noopener noreferrer">
-        <img src="assets/aala_logo.png" alt="AALA">
-      </a>
-    </div>
-    <div class="header-right">
-      <h1>Centro de consulta de datos</h1>
-      <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
-      <div class="header-chip">
-        <span class="chip-dot"></span>
+<div class="header-inner">
+<div class="logo-group">
+<a href="https://conap.gob.gt/" rel="noopener noreferrer" target="_blank">
+<img alt="CONAP" src="assets/conap_logo.jpg"/>
+</a>
+<a href="https://amigosdeatitlan.org/" rel="noopener noreferrer" target="_blank">
+<img alt="AALA" src="assets/aala_logo.png"/>
+</a>
+</div>
+<div class="header-right">
+<h1>Centro de consulta de datos</h1>
+<p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
+<div class="header-chip">
+<span class="chip-dot"></span>
         Sistema activo · 2026
       </div>
-    </div>
-  </div>
-  <div class="header-wm" aria-hidden="true">CONAP</div>
-  <div class="header-stripe"></div>
+</div>
+</div>
+<div aria-hidden="true" class="header-wm">CONAP</div>
+<div class="header-stripe"></div>
 </header>
-
 <!-- ── HERO ── -->
 <section class="hero">
-  <div class="hero-texture" aria-hidden="true"></div>
-  <div class="hero-glow" aria-hidden="true"></div>
-  <div class="hero-inner">
-
-    <div class="hero-left">
-      <div class="hero-eyebrow">
-        <span class="dot"></span>
+<div aria-hidden="true" class="hero-texture"></div>
+<div aria-hidden="true" class="hero-glow"></div>
+<div class="hero-inner">
+<div class="hero-left">
+<div class="hero-eyebrow">
+<span class="dot"></span>
         CONAP · Altiplano Central · Guatemala · 2026
       </div>
-      <h1 class="hero-title">
-        Datos de campo<br>
-        <em>para la conservación</em><br>
+<h1 class="hero-title">
+        Datos de campo<br/>
+<em>para la conservación</em><br/>
         de áreas protegidas
       </h1>
-      <p class="hero-desc">
+<p class="hero-desc">
         Plataforma de consulta de registros de actividades de guardarecursos en las áreas protegidas de la Dirección Regional Altiplano Central. Acceda a mapas, tableros de análisis y datos completos por boleta de campo.
       </p>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <div class="hs-val">4</div>
-          <div class="hs-lbl">Boletas activas</div>
-        </div>
-        <div class="hero-stat">
-          <div class="hs-val">3</div>
-          <div class="hs-lbl">Vistas por módulo</div>
-        </div>
-        <div class="hero-stat">
-          <div class="hs-val">Diario</div>
-          <div class="hs-lbl">Actualización</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="hero-panel" aria-label="Acceso rápido a módulos">
-      <div class="hero-panel-hd">Acceso directo a módulos</div>
-      <a href="boletas/patrullajes/dashboard.html" class="hm-row">
-        <div class="hm-dot hm-pat" aria-hidden="true"></div>
-        <div class="hm-info">
-          <div class="hm-code">AC 192</div>
-          <div class="hm-name">Patrullajes</div>
-        </div>
-        <svg class="hm-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </a>
-      <a href="boletas/viveros/dashboard.html" class="hm-row">
-        <div class="hm-dot hm-viv" aria-hidden="true"></div>
-        <div class="hm-info">
-          <div class="hm-code">AC 210</div>
-          <div class="hm-name">Asistencia a viveros</div>
-        </div>
-        <svg class="hm-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </a>
-      <a href="boletas/consumo_forestal/dashboard.html" class="hm-row">
-        <div class="hm-dot hm-con" aria-hidden="true"></div>
-        <div class="hm-info">
-          <div class="hm-code">AC 297</div>
-          <div class="hm-name">Consumo Forestal</div>
-        </div>
-        <svg class="hm-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </a>
-      <a href="boletas/reforestaciones/dashboard.html" class="hm-row">
-        <div class="hm-dot hm-ref" aria-hidden="true"></div>
-        <div class="hm-info">
-          <div class="hm-code">AC 282</div>
-          <div class="hm-name">Reforestaciones</div>
-        </div>
-        <svg class="hm-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </a>
-    </div>
-
-  </div>
+<div class="hero-stats">
+<div class="hero-stat">
+<div class="hs-val">4</div>
+<div class="hs-lbl">Boletas activas</div>
+</div>
+<div class="hero-stat">
+<div class="hs-val">3</div>
+<div class="hs-lbl">Vistas por módulo</div>
+</div>
+<div class="hero-stat">
+<div class="hs-val">Diario</div>
+<div class="hs-lbl">Actualización</div>
+</div>
+</div>
+</div>
+</div>
 </section>
-
 <!-- ── CONTEXTO STRIP ── -->
 <div class="ctx-strip">
-  <div class="ctx-inner">
-    <div class="ctx-item">
-      <div class="ctx-val">4</div>
-      <div class="ctx-lbl">Boletas de campo monitoreadas</div>
-    </div>
-    <div class="ctx-item">
-      <div class="ctx-val">3</div>
-      <div class="ctx-lbl">Vistas de análisis por módulo</div>
-    </div>
-    <div class="ctx-item">
-      <div class="ctx-val">Diario</div>
-      <div class="ctx-lbl">Frecuencia de actualización</div>
-    </div>
-    <div class="ctx-item">
-      <div class="ctx-val">2026</div>
-      <div class="ctx-lbl">Sistema en línea</div>
-    </div>
-  </div>
+<div class="ctx-inner">
+<div class="ctx-item">
+<div class="ctx-val">4</div>
+<div class="ctx-lbl">Boletas de campo monitoreadas</div>
 </div>
-
+<div class="ctx-item">
+<div class="ctx-val">3</div>
+<div class="ctx-lbl">Vistas de análisis por módulo</div>
+</div>
+<div class="ctx-item">
+<div class="ctx-val">Diario</div>
+<div class="ctx-lbl">Frecuencia de actualización</div>
+</div>
+<div class="ctx-item">
+<div class="ctx-val">2026</div>
+<div class="ctx-lbl">Sistema en línea</div>
+</div>
+</div>
+</div>
 <!-- ── MÓDULOS ── -->
 <section class="modulos" id="modulos">
-  <div class="sec-head">
-    <div class="sec-eyebrow">Boletas de campo</div>
-    <h2 class="sec-title">Seleccione un módulo de consulta</h2>
-    <p class="sec-desc">Desplácese entre las boletas disponibles y elija la vista que desea abrir: mapa geográfico, tablero dinámico o registros completos.</p>
-  </div>
+<div class="sec-head">
+<div class="sec-eyebrow">Boletas de campo</div>
+<h2 class="sec-title">Seleccione un módulo de consulta</h2>
+<p class="sec-desc">Desplácese entre las boletas disponibles y seleccione la tarjeta central para abrir el módulo correspondiente.</p>
+</div>
+<div aria-label="Carrusel de módulos de consulta" class="menu-shell">
+<div class="menu-topbar">
+<div class="menu-label"><span aria-hidden="true"></span> Menú de módulos</div>
+<p class="menu-hint">Use las flechas, los puntos, el teclado o deslice en pantalla táctil. La tarjeta central abre el módulo.</p>
+</div>
+<div class="coverflow">
+<div aria-label="Selector de boletas de campo" aria-roledescription="carrusel" class="cover-stage" id="moduleCarousel" tabindex="0">
+<!-- AC192 Patrullajes -->
+<article aria-label="AC 192 Patrullajes. Seleccione la tarjeta activa para abrir el módulo." class="menu-card m-pat" data-href="boletas/patrullajes/dashboard.html" data-index="0" tabindex="0">
+<div class="module-card-body">
+<div class="module-head">
+<div>
+<span class="module-code">AC 192 · Patrullajes</span>
+<h3 class="module-title">Control y vigilancia de áreas protegidas</h3>
+</div>
+</div>
+<p class="module-desc">Registro de patrullajes realizados por guardarecursos: duración de jornada, kilómetros recorridos, tipo de patrullaje e incidencias observadas.</p>
+<div aria-label="Temas del módulo" class="module-tags">
+<span class="module-tag">Control</span>
+<span class="module-tag">Vigilancia</span>
+<span class="module-tag">Incidencias</span>
+<span class="module-tag">Kilómetros</span>
+</div>
 
-  <div class="menu-shell" aria-label="Carrusel de módulos de consulta">
-    <div class="menu-topbar">
-      <div class="menu-label"><span aria-hidden="true"></span> Menú de módulos</div>
-      <p class="menu-hint">Use las flechas, los puntos, el teclado o deslice en pantalla táctil.</p>
-    </div>
+</div>
+</article>
+<!-- AC210 Viveros -->
+<article aria-label="AC 210 Asistencia a viveros. Seleccione la tarjeta activa para abrir el módulo." class="menu-card m-viv" data-href="boletas/viveros/dashboard.html" data-index="1" tabindex="0">
+<div class="module-card-body">
+<div class="module-head">
+<div>
+<span class="module-code">AC 210 · Viveros</span>
+<h3 class="module-title">Asistencia técnica a viveros forestales</h3>
+</div>
+</div>
+<p class="module-desc">Seguimiento de asistencias técnicas brindadas a viveros comunitarios e institucionales, con actividades por visita, jornada y cobertura territorial.</p>
+<div aria-label="Temas del módulo" class="module-tags">
+<span class="module-tag">Viveros</span>
+<span class="module-tag">Asistencia</span>
+<span class="module-tag">Jornadas</span>
+<span class="module-tag">Cobertura</span>
+</div>
 
-    <div class="coverflow">
-      <div class="cover-stage" id="moduleCarousel" tabindex="0" aria-roledescription="carrusel" aria-label="Selector de boletas de campo">
+</div>
+</article>
+<!-- AC297 Consumo Forestal -->
+<article aria-label="AC 297 Consumo forestal familiar. Seleccione la tarjeta activa para abrir el módulo." class="menu-card m-con" data-href="boletas/consumo_forestal/dashboard.html" data-index="2" tabindex="0">
+<div class="module-card-body">
+<div class="module-head">
+<div>
+<span class="module-code">AC 297 · Consumo familiar</span>
+<h3 class="module-title">Consumo forestal familiar autorizado</h3>
+</div>
+</div>
+<p class="module-desc">Control del consumo forestal familiar autorizado en comunidades del área de influencia: especies, cantidades aprobadas y compromisos de reforestación.</p>
+<div aria-label="Temas del módulo" class="module-tags">
+<span class="module-tag">Especies</span>
+<span class="module-tag">Volúmenes</span>
+<span class="module-tag">Autorizaciones</span>
+<span class="module-tag">Compromisos</span>
+</div>
 
-        <!-- AC192 Patrullajes -->
-        <article class="menu-card m-pat" data-index="0" tabindex="0" aria-label="AC 192 Patrullajes">
-          <div class="module-card-body">
-            <div class="module-head">
-              <div>
-                <span class="module-code">AC 192 · Patrullajes</span>
-                <h3 class="module-title">Control y vigilancia de áreas protegidas</h3>
-              </div>
-              <div class="module-icon" aria-hidden="true">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-12 2 7 5 2-13 3Z"/><path d="M7 22l2-4"/><path d="M2 12l5 2"/></svg>
-              </div>
-            </div>
-            <p class="module-desc">Registro de patrullajes realizados por guardarecursos: duración de jornada, kilómetros recorridos, tipo de patrullaje e incidencias observadas.</p>
-            <div class="module-tags" aria-label="Temas del módulo">
-              <span class="module-tag">Control</span>
-              <span class="module-tag">Vigilancia</span>
-              <span class="module-tag">Incidencias</span>
-              <span class="module-tag">Kilómetros</span>
-            </div>
-            <div class="module-actions">
-              <a href="boletas/patrullajes/dashboard.html" class="module-btn primary">
-                Abrir módulo
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </a>
-              <a href="boletas/patrullajes/tablero.html" class="module-btn secondary">Tablero</a>
-              <a href="boletas/patrullajes/registros.html" class="module-btn secondary">Registros</a>
-            </div>
-          </div>
-        </article>
+</div>
+</article>
+<!-- AC282 Reforestaciones -->
+<article aria-label="AC 282 Reforestaciones. Seleccione la tarjeta activa para abrir el módulo." class="menu-card m-ref" data-href="boletas/reforestaciones/dashboard.html" data-index="3" tabindex="0">
+<div class="module-card-body">
+<div class="module-head">
+<div>
+<span class="module-code">AC 282 · Reforestaciones</span>
+<h3 class="module-title">Monitoreo a reforestaciones por compromiso</h3>
+</div>
+</div>
+<p class="module-desc">Asistencia técnica y monitoreo de reforestaciones establecidas por compromiso de consumo forestal familiar: área, especies y responsable del monitoreo.</p>
+<div aria-label="Temas del módulo" class="module-tags">
+<span class="module-tag">Área</span>
+<span class="module-tag">Especies</span>
+<span class="module-tag">Monitoreo</span>
+<span class="module-tag">Compromisos</span>
+</div>
 
-        <!-- AC210 Viveros -->
-        <article class="menu-card m-viv" data-index="1" tabindex="0" aria-label="AC 210 Asistencia a viveros">
-          <div class="module-card-body">
-            <div class="module-head">
-              <div>
-                <span class="module-code">AC 210 · Viveros</span>
-                <h3 class="module-title">Asistencia técnica a viveros forestales</h3>
-              </div>
-              <div class="module-icon" aria-hidden="true">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12"/><path d="M12 12c-4.5 0-8-2.5-8-6.5C8.5 5 12 7.5 12 12Z"/><path d="M12 12c4.5 0 8-2.5 8-6.5C15.5 5 12 7.5 12 12Z"/><path d="M5 22h14"/></svg>
-              </div>
-            </div>
-            <p class="module-desc">Seguimiento de asistencias técnicas brindadas a viveros comunitarios e institucionales, con actividades por visita, jornada y cobertura territorial.</p>
-            <div class="module-tags" aria-label="Temas del módulo">
-              <span class="module-tag">Viveros</span>
-              <span class="module-tag">Asistencia</span>
-              <span class="module-tag">Jornadas</span>
-              <span class="module-tag">Cobertura</span>
-            </div>
-            <div class="module-actions">
-              <a href="boletas/viveros/dashboard.html" class="module-btn primary">
-                Abrir módulo
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </a>
-              <a href="boletas/viveros/tablero.html" class="module-btn secondary">Tablero</a>
-              <a href="boletas/viveros/datos.html" class="module-btn secondary">Datos</a>
-            </div>
-          </div>
-        </article>
-
-        <!-- AC297 Consumo Forestal -->
-        <article class="menu-card m-con" data-index="2" tabindex="0" aria-label="AC 297 Consumo forestal familiar">
-          <div class="module-card-body">
-            <div class="module-head">
-              <div>
-                <span class="module-code">AC 297 · Consumo familiar</span>
-                <h3 class="module-title">Consumo forestal familiar autorizado</h3>
-              </div>
-              <div class="module-icon" aria-hidden="true">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V8"/><path d="M5 12c0-4 3-8 7-10 4 2 7 6 7 10a7 7 0 0 1-14 0Z"/><path d="M8.5 13.5 12 10l3.5 3.5"/></svg>
-              </div>
-            </div>
-            <p class="module-desc">Control del consumo forestal familiar autorizado en comunidades del área de influencia: especies, cantidades aprobadas y compromisos de reforestación.</p>
-            <div class="module-tags" aria-label="Temas del módulo">
-              <span class="module-tag">Especies</span>
-              <span class="module-tag">Volúmenes</span>
-              <span class="module-tag">Autorizaciones</span>
-              <span class="module-tag">Compromisos</span>
-            </div>
-            <div class="module-actions">
-              <a href="boletas/consumo_forestal/dashboard.html" class="module-btn primary">
-                Abrir módulo
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </a>
-              <a href="boletas/consumo_forestal/tablero.html" class="module-btn secondary">Tablero</a>
-              <a href="boletas/consumo_forestal/registros.html" class="module-btn secondary">Registros</a>
-            </div>
-          </div>
-        </article>
-
-        <!-- AC282 Reforestaciones -->
-        <article class="menu-card m-ref" data-index="3" tabindex="0" aria-label="AC 282 Reforestaciones">
-          <div class="module-card-body">
-            <div class="module-head">
-              <div>
-                <span class="module-code">AC 282 · Reforestaciones</span>
-                <h3 class="module-title">Monitoreo a reforestaciones por compromiso</h3>
-              </div>
-              <div class="module-icon" aria-hidden="true">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 22h10"/><path d="M12 22V11"/><path d="M17 8a5 5 0 0 0-10 0c0 3.5 5 7 5 7s5-3.5 5-7Z"/><path d="M10 8h4"/></svg>
-              </div>
-            </div>
-            <p class="module-desc">Asistencia técnica y monitoreo de reforestaciones establecidas por compromiso de consumo forestal familiar: área, especies y responsable del monitoreo.</p>
-            <div class="module-tags" aria-label="Temas del módulo">
-              <span class="module-tag">Área</span>
-              <span class="module-tag">Especies</span>
-              <span class="module-tag">Monitoreo</span>
-              <span class="module-tag">Compromisos</span>
-            </div>
-            <div class="module-actions">
-              <a href="boletas/reforestaciones/dashboard.html" class="module-btn primary">
-                Abrir módulo
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-              </a>
-              <a href="boletas/reforestaciones/tablero.html" class="module-btn secondary">Tablero</a>
-              <a href="boletas/reforestaciones/datos.html" class="module-btn secondary">Verificador</a>
-            </div>
-          </div>
-        </article>
-
-        <div class="cover-controls" aria-hidden="false">
-          <button class="cover-nav cover-prev" type="button" aria-label="Módulo anterior">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <button class="cover-nav cover-next" type="button" aria-label="Módulo siguiente">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="cover-dots" role="tablist" aria-label="Seleccionar módulo">
-        <button class="dot-btn" type="button" data-go="0" aria-label="Ir a Patrullajes"></button>
-        <button class="dot-btn" type="button" data-go="1" aria-label="Ir a Viveros"></button>
-        <button class="dot-btn" type="button" data-go="2" aria-label="Ir a Consumo forestal"></button>
-        <button class="dot-btn" type="button" data-go="3" aria-label="Ir a Reforestaciones"></button>
-      </div>
-    </div>
-
-    <div class="quick-access" aria-label="Accesos rápidos">
-      <a href="boletas/patrullajes/dashboard.html" class="quick-module m-pat">
-        <span class="quick-dot" aria-hidden="true"></span>
-        <span class="quick-text"><span class="quick-code">AC 192</span><span class="quick-name">Patrullajes</span></span>
-      </a>
-      <a href="boletas/viveros/dashboard.html" class="quick-module m-viv">
-        <span class="quick-dot" aria-hidden="true"></span>
-        <span class="quick-text"><span class="quick-code">AC 210</span><span class="quick-name">Viveros</span></span>
-      </a>
-      <a href="boletas/consumo_forestal/dashboard.html" class="quick-module m-con">
-        <span class="quick-dot" aria-hidden="true"></span>
-        <span class="quick-text"><span class="quick-code">AC 297</span><span class="quick-name">Consumo forestal</span></span>
-      </a>
-      <a href="boletas/reforestaciones/dashboard.html" class="quick-module m-ref">
-        <span class="quick-dot" aria-hidden="true"></span>
-        <span class="quick-text"><span class="quick-code">AC 282</span><span class="quick-name">Reforestaciones</span></span>
-      </a>
-    </div>
-  </div>
+</div>
+</article>
+</div>
+<div aria-hidden="false" class="cover-controls">
+<button aria-label="Módulo anterior" class="cover-nav cover-prev" type="button">
+<svg fill="none" height="19" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" width="19"><path d="M15 18l-6-6 6-6"></path></svg>
+</button>
+<button aria-label="Módulo siguiente" class="cover-nav cover-next" type="button">
+<svg fill="none" height="19" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" width="19"><path d="M9 18l6-6-6-6"></path></svg>
+</button>
+</div>
+<div aria-label="Seleccionar módulo" class="cover-dots" role="tablist">
+<button aria-label="Ir a Patrullajes" class="dot-btn" data-go="0" type="button"></button>
+<button aria-label="Ir a Viveros" class="dot-btn" data-go="1" type="button"></button>
+<button aria-label="Ir a Consumo forestal" class="dot-btn" data-go="2" type="button"></button>
+<button aria-label="Ir a Reforestaciones" class="dot-btn" data-go="3" type="button"></button>
+</div>
+</div>
+</div>
 </section>
-
 <!-- ── FOOTER ── -->
 <footer>
-  <div class="footer-wm" aria-hidden="true">CONAP</div>
-  <div class="footer-inner">
-    <div class="footer-col">
-      <strong>CONAP</strong>
-      <span>Consejo Nacional de Áreas Protegidas</span>
-      <span>Dirección Regional Altiplano Central</span>
-    </div>
-    <div class="footer-center">
-      <div class="footer-badge">Sistema de Monitoreo · 2026</div>
-      <div class="footer-badge-desc">Centro de consulta de datos de actividades de campo</div>
-    </div>
-    <div class="footer-col footer-col-right">
-      <span>Desarrollado por</span>
-      <strong>Laboratorio SIG · AALA</strong>
-      <span>Asociación Amigos del Lago de Atitlán</span>
-    </div>
-    <div class="footer-divider"></div>
-    <div class="footer-copy">© 2026 · Todos los datos son de uso oficial · Sistema de Monitoreo CONAP</div>
-  </div>
+<div aria-hidden="true" class="footer-wm">CONAP</div>
+<div class="footer-inner">
+<div class="footer-col">
+<strong>CONAP</strong>
+<span>Consejo Nacional de Áreas Protegidas</span>
+<span>Dirección Regional Altiplano Central</span>
+</div>
+<div class="footer-center">
+<div class="footer-badge">Sistema de Monitoreo · 2026</div>
+<div class="footer-badge-desc">Centro de consulta de datos de actividades de campo</div>
+</div>
+<div class="footer-col footer-col-right">
+<span>Desarrollado por</span>
+<strong>Laboratorio SIG · AALA</strong>
+<span>Asociación Amigos del Lago de Atitlán</span>
+</div>
+<div class="footer-divider"></div>
+<div class="footer-copy">© 2026 · Todos los datos son de uso oficial · Sistema de Monitoreo CONAP</div>
+</div>
 </footer>
-
-
 <script>
   (function () {
     const stage = document.getElementById('moduleCarousel');
     if (!stage) return;
 
+    const carousel = stage.closest('.coverflow') || document;
     const cards = Array.from(stage.querySelectorAll('.menu-card'));
     const dots = Array.from(document.querySelectorAll('.dot-btn'));
-    const prevBtn = stage.querySelector('.cover-prev');
-    const nextBtn = stage.querySelector('.cover-next');
+    const prevBtn = carousel.querySelector('.cover-prev');
+    const nextBtn = carousel.querySelector('.cover-next');
     const total = cards.length;
     let activeIndex = 0;
     let touchStartX = 0;
@@ -1125,19 +1067,29 @@
     function goNext() { setActive(activeIndex + 1); }
     function goPrev() { setActive(activeIndex - 1); }
 
-    prevBtn.addEventListener('click', goPrev);
-    nextBtn.addEventListener('click', goNext);
+    function openActiveCard() {
+      const activeCard = cards[activeIndex];
+      const href = activeCard ? activeCard.dataset.href : '';
+      if (href) window.location.href = href;
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', goPrev);
+    if (nextBtn) nextBtn.addEventListener('click', goNext);
 
     cards.forEach((card, index) => {
-      card.addEventListener('click', (event) => {
-        if (event.target.closest('a')) return;
-        if (index !== activeIndex) setActive(index);
+      card.addEventListener('click', () => {
+        if (index !== activeIndex) {
+          setActive(index);
+          return;
+        }
+        openActiveCard();
       });
 
       card.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           if (index !== activeIndex) setActive(index);
+          else openActiveCard();
         }
       });
     });
@@ -1185,6 +1137,5 @@
     setActive(0);
   })();
 </script>
-
 </body>
 </html>
