@@ -277,7 +277,7 @@
     .verif-controls{grid-template-columns:160px 160px 1fr 1fr auto}
     @media(max-width:900px){.verif-controls{grid-template-columns:1fr 1fr}}
     @media(max-width:600px){.verif-controls{grid-template-columns:1fr}}
-    .verif-resumen{grid-template-columns:repeat(5,1fr)}
+    .verif-resumen{grid-template-columns:repeat(3,1fr)}
     @media(max-width:900px){.verif-resumen{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:600px){.verif-resumen{grid-template-columns:repeat(2,1fr)}}
     .kpis-guarda{grid-template-columns:repeat(4,1fr)}
@@ -360,8 +360,6 @@
         <div class="vr-card" style="border-top:3px solid var(--d0)"><div class="vr-label">Asistencias en período</div><div class="vr-value" id="vc-total">–</div><div class="vr-sub">registros</div></div>
         <div class="vr-card" style="border-top:3px solid var(--d1)"><div class="vr-label">Guardarecursos activos</div><div class="vr-value" id="vc-guardas">–</div><div class="vr-sub">en el período</div></div>
         <div class="vr-card" style="border-top:3px solid var(--d2)"><div class="vr-label">Municipios cubiertos</div><div class="vr-value" id="vc-munis">–</div><div class="vr-sub">distintos</div></div>
-        <div class="vr-card" style="border-top:3px solid var(--d4)"><div class="vr-label">Meta definida</div><div class="vr-value" id="vc-meta-display">–</div><div class="vr-sub">asistencias esperadas</div></div>
-        <div class="vr-card" style="border-top:3px solid var(--d5)"><div class="vr-label">Cumplimiento general</div><div class="vr-value" id="vc-pct">–</div><div class="vr-sub">del equipo</div></div>
       </div>
 
       <div id="vc-tabla-wrap" style="display:none">
@@ -664,13 +662,6 @@ function ejecutarVerificacion(){
   document.getElementById("vc-total").textContent=enPeriodo.length.toLocaleString("es");
   document.getElementById("vc-guardas").textContent=guardas.length;
   document.getElementById("vc-munis").textContent=new Set(enPeriodo.map(r=>r.__cm).filter(Boolean)).size;
-  document.getElementById("vc-meta-display").textContent=meta>0?meta+" por guarda":"Sin meta";
-  let cumplePct="–";
-  if(meta>0&&guardas.length){
-    const cumplen=guardas.filter(g=>enPeriodo.filter(r=>r.__guarda===g).length>=meta).length;
-    cumplePct=Math.round(cumplen/guardas.length*100)+"%";
-  }
-  document.getElementById("vc-pct").textContent=cumplePct;
   document.getElementById("vc-resumen").style.display="grid";
   document.getElementById("th-cumplimiento").style.display=meta>0?"":"none";
   document.getElementById("th-avance").style.display=meta>0?"":"none";
@@ -1175,7 +1166,7 @@ const CSS_DOC=`<style>
     .verif-controls{grid-template-columns:160px 160px 1fr 1fr auto}
     @media(max-width:900px){.verif-controls{grid-template-columns:1fr 1fr}}
     @media(max-width:600px){.verif-controls{grid-template-columns:1fr}}
-    .verif-resumen{grid-template-columns:repeat(5,1fr)}
+    .verif-resumen{grid-template-columns:repeat(3,1fr)}
     @media(max-width:900px){.verif-resumen{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:600px){.verif-resumen{grid-template-columns:repeat(2,1fr)}}
     .kpis-guarda{grid-template-columns:repeat(4,1fr)}
