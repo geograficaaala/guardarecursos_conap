@@ -1508,304 +1508,597 @@ function generarInformeGuarda(){
 
 /* ═══════════════════════════════════════════════════
    INFORME GENERAL DESDE PLANTILLA WORD
-   El informe narrativo ya no se arma dentro del HTML. Se carga el
-   machote ubicado en la misma carpeta del módulo y se reemplazan
-   únicamente marcadores y tabla consolidada.
+   Usa el machote:
+   docs/boletas/patrullajes/ESQUELETO INFORME GENERAL DE PATRULLAJES.docx
+
+   Requisito local:
+   docs/assets/pizzip.min.js
+
+   Esta sección ya no arma el informe narrativo dentro del HTML.
+   Solo calcula valores, abre la plantilla DOCX, reemplaza marcadores
+   y coloca la tabla consolidada en {{TABLA_GUARDARECURSOS}}.
 ═══════════════════════════════════════════════════ */
 const INFORME_TEMPLATE_URL = "ESQUELETO INFORME GENERAL DE PATRULLAJES.docx";
 
-function fmtGT(n,max=0,min=0){
-  if(n===null||n===undefined||!isFinite(n))return "–";
-  return Number(n).toLocaleString("en-US",{minimumFractionDigits:min,maximumFractionDigits:max});
+function fmtGT(n, max = 0, min = 0) {
+  if (n === null || n === undefined || !isFinite(n)) return "–";
+  return Number(n).toLocaleString("en-US", {
+    minimumFractionDigits: min,
+    maximumFractionDigits: max
+  });
 }
-function cleanLabel(v){
-  const s=String(v||"").trim().replace(/[_-]+/g," ").replace(/\s+/g," ");
-  return s? s.charAt(0).toUpperCase()+s.slice(1):"Sin dato";
+
+function cleanLabel(v) {
+  const s = String(v || "").trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Sin dato";
 }
-function areaInforme(r){
+
+function areaInforme(r) {
   return r.__area_norm || r["Área protegida normalizada"] || r["Area protegida"] || "";
 }
-function topMap(regs,fn){
-  const m=new Map();
-  regs.forEach(r=>{const k=cleanLabel(fn(r));if(k&&k!=="Sin dato")m.set(k,(m.get(k)||0)+1);});
-  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
-}
-function topMapSum(regs,kFn,vFn){
-  const m=new Map();
-  regs.forEach(r=>{const k=cleanLabel(kFn(r));const v=vFn(r);if(k&&k!=="Sin dato"&&v!==null&&isFinite(v))m.set(k,(m.get(k)||0)+v);});
-  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
-}
-function textListTopPlain(arr,n=5,suffix="registros"){
-  const dec=suffix==="km"?1:0;
-  const out=arr.slice(0,n).map(([k,v])=>`${k} (${fmtGT(v,dec,dec)} ${suffix})`);
-  return out.length?cFrases(out):"No se identificaron registros suficientes para establecer un ranking.";
-}
-function regsPorRango(inicio,fin){
-  return DATOS.filter(r=>r.__dt&&!isNaN(r.__dt)&&r.__dt>=inicio&&r.__dt<=fin);
-}
-function consolidarGuardas(regs){
-  const m=new Map();
-  regs.forEach(r=>{
-    const g=(r["Guarda recursos responsable"]||"Sin nombre").trim();
-    if(!m.has(g))m.set(g,{g,total:0,km:0,inc:0,munis:new Set(),durs:[],rumcla:0,fuera:0});
-    const o=m.get(g);
-    o.total++;
-    if(r.__km!==null&&isFinite(r.__km))o.km+=r.__km;
-    if(r.__ci==="si")o.inc++;
-    const mu=(r["Municipio"]||"").trim();if(mu)o.munis.add(mu);
-    if(r.__dur!==null&&isFinite(r.__dur))o.durs.push(r.__dur);
-    if(r.__cu==="rumcla")o.rumcla++;else if(r.__cu==="fuera")o.fuera++;
+
+function topMap(regs, fn) {
+  const m = new Map();
+  regs.forEach(r => {
+    const k = cleanLabel(fn(r));
+    if (k && k !== "Sin dato") m.set(k, (m.get(k) || 0) + 1);
   });
-  return [...m.values()].map(o=>({
-    ...o,
-    dur:o.durs.length?o.durs.reduce((a,b)=>a+b,0)/o.durs.length:null,
-    municipios:o.munis.size,
-  })).sort((a,b)=>b.total-a.total||b.km-a.km||a.g.localeCompare(b.g,"es"));
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
 }
 
-function inicializarSelectorMeses(){
-  mapaMeses=new Map();
-  const fechas=DATOS.map(r=>r.__dt).filter(d=>d&&!isNaN(d)).sort((a,b)=>a-b);
-  const sel=document.getElementById("monthly-month-select");
-  if(!sel)return;
-  if(!fechas.length){sel.innerHTML="<option>Sin períodos</option>";return}
-  const min=fechas[0],max=fechas[fechas.length-1];
-  let cursor=new Date(min.getFullYear(),min.getMonth()-1,25);
-  const limite=new Date(max.getFullYear(),max.getMonth()+2,25);
-  while(cursor<=limite){
-    const inicio=new Date(cursor.getFullYear(),cursor.getMonth(),25,0,0,0);
-    const fin=new Date(cursor.getFullYear(),cursor.getMonth()+1,25,23,59,59);
-    const key=isoDate(inicio)+"_"+isoDate(fin);
-    const count=regsPorRango(inicio,fin).length;
-    if(count>0)mapaMeses.set(key,{inicio,fin,count,label:`${fmtDateDisplay(inicio)} al ${fmtDateDisplay(fin)}`});
-    cursor=new Date(cursor.getFullYear(),cursor.getMonth()+1,25);
+function topMapSum(regs, kFn, vFn) {
+  const m = new Map();
+  regs.forEach(r => {
+    const k = cleanLabel(kFn(r));
+    const v = vFn(r);
+    if (k && k !== "Sin dato" && v !== null && isFinite(v)) {
+      m.set(k, (m.get(k) || 0) + v);
+    }
+  });
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+function textListTopPlain(arr, n = 5, suffix = "registros") {
+  const dec = suffix === "km" ? 1 : 0;
+  const out = arr.slice(0, n).map(([k, v]) => `${k} (${fmtGT(v, dec, dec)} ${suffix})`);
+  return out.length ? cFrases(out) : "No se identificaron registros suficientes para establecer un ranking.";
+}
+
+function regsPorRango(inicio, fin) {
+  return DATOS.filter(r =>
+    r.__dt &&
+    !isNaN(r.__dt) &&
+    r.__dt >= inicio &&
+    r.__dt <= fin
+  );
+}
+
+function consolidarGuardas(regs) {
+  const m = new Map();
+
+  regs.forEach(r => {
+    const g = (r["Guarda recursos responsable"] || "Sin nombre").trim();
+
+    if (!m.has(g)) {
+      m.set(g, {
+        g,
+        total: 0,
+        km: 0,
+        inc: 0,
+        munis: new Set(),
+        durs: [],
+        rumcla: 0,
+        fuera: 0
+      });
+    }
+
+    const o = m.get(g);
+    o.total++;
+
+    if (r.__km !== null && isFinite(r.__km)) o.km += r.__km;
+    if (r.__ci === "si") o.inc++;
+
+    const mu = (r["Municipio"] || "").trim();
+    if (mu) o.munis.add(mu);
+
+    if (r.__dur !== null && isFinite(r.__dur)) o.durs.push(r.__dur);
+
+    if (r.__cu === "rumcla") o.rumcla++;
+    else if (r.__cu === "fuera") o.fuera++;
+  });
+
+  return [...m.values()]
+    .map(o => ({
+      ...o,
+      dur: o.durs.length ? o.durs.reduce((a, b) => a + b, 0) / o.durs.length : null,
+      municipios: o.munis.size
+    }))
+    .sort((a, b) => b.total - a.total || b.km - a.km || a.g.localeCompare(b.g, "es"));
+}
+
+function inicializarSelectorMeses() {
+  mapaMeses = new Map();
+
+  const fechas = DATOS
+    .map(r => r.__dt)
+    .filter(d => d && !isNaN(d))
+    .sort((a, b) => a - b);
+
+  const sel = document.getElementById("monthly-month-select");
+  if (!sel) return;
+
+  if (!fechas.length) {
+    sel.innerHTML = "<option>Sin períodos</option>";
+    return;
   }
-  const claves=[...mapaMeses.keys()].sort();
-  if(!claves.length){sel.innerHTML="<option>Sin períodos</option>";return}
-  sel.innerHTML='<option value="" disabled selected>Seleccione un período de corte…</option>';
-  claves.forEach(k=>{
-    const p=mapaMeses.get(k);
-    const o=document.createElement("option");
-    o.value=k;
-    o.textContent=`Corte ${p.label} · ${p.count.toLocaleString("en-US")} registros`;
+
+  const min = fechas[0];
+  const max = fechas[fechas.length - 1];
+
+  let cursor = new Date(min.getFullYear(), min.getMonth() - 1, 25);
+  const limite = new Date(max.getFullYear(), max.getMonth() + 2, 25);
+
+  while (cursor <= limite) {
+    const inicio = new Date(cursor.getFullYear(), cursor.getMonth(), 25, 0, 0, 0);
+    const fin = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 25, 23, 59, 59);
+    const key = isoDate(inicio) + "_" + isoDate(fin);
+    const count = regsPorRango(inicio, fin).length;
+
+    if (count > 0) {
+      mapaMeses.set(key, {
+        inicio,
+        fin,
+        count,
+        label: `${fmtDateDisplay(inicio)} al ${fmtDateDisplay(fin)}`
+      });
+    }
+
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 25);
+  }
+
+  const claves = [...mapaMeses.keys()].sort();
+
+  if (!claves.length) {
+    sel.innerHTML = "<option>Sin períodos</option>";
+    return;
+  }
+
+  sel.innerHTML = '<option value="" disabled selected>Seleccione un período de corte…</option>';
+
+  claves.forEach(k => {
+    const p = mapaMeses.get(k);
+    const o = document.createElement("option");
+    o.value = k;
+    o.textContent = `Corte ${p.label} · ${p.count.toLocaleString("en-US")} registros`;
     sel.appendChild(o);
   });
-  sel.addEventListener("change",()=>{
-    const h=!!sel.value;
-    const btn=document.getElementById("generate-monthly-report-word");
-    if(btn)btn.disabled=!h;
+
+  sel.addEventListener("change", () => {
+    const h = !!sel.value;
+    const btn = document.getElementById("generate-monthly-report-word");
+    if (btn) btn.disabled = !h;
   });
 }
 
-function datosInformePlantilla(inicio,fin,regs){
-  const total=regs.length;
-  const guardas=new Set(regs.map(r=>r["Guarda recursos responsable"]).filter(Boolean));
-  const municipios=new Set(regs.map(r=>(r["Municipio"]||"").trim()).filter(Boolean));
-  const areas=new Set(regs.map(areaInforme).map(cleanLabel).filter(v=>v!=="Sin dato"));
-  const km=regs.map(r=>r.__km).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
-  const durs=regs.map(r=>r.__dur).filter(v=>v!==null&&isFinite(v));
-  const durProm=durs.length?durs.reduce((a,b)=>a+b,0)/durs.length:null;
-  const totalHoras=durs.reduce((a,b)=>a+b,0);
-  const incidentes=regs.filter(r=>r.__ci==="si").length;
-  const sinInc=regs.filter(r=>r.__ci==="no").length;
-  const rumcla=regs.filter(r=>r.__cu==="rumcla").length;
-  const fuera=regs.filter(r=>r.__cu==="fuera").length;
-  const instSi=regs.filter(r=>{const c=canonStr(r["Hay mas instituciones involucradas en el patrullaje"]||"");return c==="si"||c==="sí";}).length;
-  const instNo=regs.filter(r=>{const c=canonStr(r["Hay mas instituciones involucradas en el patrullaje"]||"");return c==="no";}).length;
-  const topMunicipios=topMap(regs,r=>r["Municipio"]);
-  const topMunicipiosKm=topMapSum(regs,r=>r["Municipio"],r=>r.__km);
-  const topIncMunicipios=topMap(regs.filter(r=>r.__ci==="si"),r=>r["Municipio"]);
-  const topAreas=topMap(regs,areaInforme);
-  const topTipos=topMap(regs,r=>r["Tipo de patrullaje"]);
-  const guardasConsol=consolidarGuardas(regs);
-  const topGuardas=guardasConsol.slice(0,5);
-  const topGuardasKm=guardasConsol.map(o=>[o.g,o.km]).sort((a,b)=>b[1]-a[1]);
-  const fGeneracion=new Date();
-  const fGen=String(fGeneracion.getDate()).padStart(2,"0")+"/"+String(fGeneracion.getMonth()+1).padStart(2,"0")+"/"+fGeneracion.getFullYear();
+function datosInformePlantilla(inicio, fin, regs) {
+  const total = regs.length;
+
+  const guardas = new Set(regs.map(r => r["Guarda recursos responsable"]).filter(Boolean));
+  const municipios = new Set(regs.map(r => (r["Municipio"] || "").trim()).filter(Boolean));
+  const areas = new Set(regs.map(areaInforme).map(cleanLabel).filter(v => v !== "Sin dato"));
+
+  const km = regs
+    .map(r => r.__km)
+    .filter(v => v !== null && isFinite(v))
+    .reduce((a, b) => a + b, 0);
+
+  const durs = regs
+    .map(r => r.__dur)
+    .filter(v => v !== null && isFinite(v));
+
+  const durProm = durs.length ? durs.reduce((a, b) => a + b, 0) / durs.length : null;
+  const totalHoras = durs.reduce((a, b) => a + b, 0);
+
+  const incidentes = regs.filter(r => r.__ci === "si").length;
+  const sinInc = regs.filter(r => r.__ci === "no").length;
+
+  const rumcla = regs.filter(r => r.__cu === "rumcla").length;
+  const fuera = regs.filter(r => r.__cu === "fuera").length;
+
+  const instSi = regs.filter(r => {
+    const c = canonStr(r["Hay mas instituciones involucradas en el patrullaje"] || "");
+    return c === "si" || c === "sí";
+  }).length;
+
+  const instNo = regs.filter(r => {
+    const c = canonStr(r["Hay mas instituciones involucradas en el patrullaje"] || "");
+    return c === "no";
+  }).length;
+
+  const topMunicipios = topMap(regs, r => r["Municipio"]);
+  const topMunicipiosKm = topMapSum(regs, r => r["Municipio"], r => r.__km);
+  const topIncMunicipios = topMap(regs.filter(r => r.__ci === "si"), r => r["Municipio"]);
+  const topAreas = topMap(regs, areaInforme);
+  const topTipos = topMap(regs, r => r["Tipo de patrullaje"]);
+
+  const guardasConsol = consolidarGuardas(regs);
+  const topGuardas = guardasConsol.slice(0, 5);
+  const topGuardasKm = guardasConsol
+    .map(o => [o.g, o.km])
+    .sort((a, b) => b[1] - a[1]);
+
+  const fGeneracion = new Date();
+  const fGen =
+    String(fGeneracion.getDate()).padStart(2, "0") + "/" +
+    String(fGeneracion.getMonth() + 1).padStart(2, "0") + "/" +
+    fGeneracion.getFullYear();
+
   return {
-    FECHA_INICIO:fmtDateDisplay(inicio),
-    FECHA_FIN:fmtDateDisplay(fin),
-    FECHA_GENERACION:fGen,
-    TOTAL_PATRULLAJES:fmtGT(total,0),
-    TOTAL_GUARDARECURSOS:fmtGT(guardas.size,0),
-    TOTAL_KM:fmtGT(km,1,1),
-    DURACION_MEDIA:durProm!==null?fmtGT(durProm,1,1):"–",
-    TOTAL_HORAS:fmtGT(totalHoras,1,1),
-    TOTAL_INCIDENTES:fmtGT(incidentes,0),
-    TOTAL_SIN_INCIDENTE:fmtGT(sinInc,0),
-    PORCENTAJE_INCIDENTES:fmtGT(pct(incidentes,total),1,1),
-    TOTAL_RUMCLA:fmtGT(rumcla,0),
-    TOTAL_FUERA_RUMCLA:fmtGT(fuera,0),
-    TOTAL_MUNICIPIOS:fmtGT(municipios.size,0),
-    TOTAL_AREAS_PROTEGIDAS:fmtGT(areas.size,0),
-    PROMEDIO_KM_PATRULLAJE:total?fmtGT(km/total,1,1):"–",
-    INCIDENTES_POR_100:total?fmtGT((incidentes/total)*100,1,1):"–",
-    TOP_MUNICIPIOS_PATRULLAJES:textListTopPlain(topMunicipios,5,"patrullajes"),
-    TOP_MUNICIPIOS_KM:textListTopPlain(topMunicipiosKm,5,"km"),
-    TOP_AREAS_PROTEGIDAS:textListTopPlain(topAreas,5,"registros"),
-    TOP_MUNICIPIOS_INCIDENTES:textListTopPlain(topIncMunicipios,5,"incidentes"),
-    TOP_TIPOS_PATRULLAJE:textListTopPlain(topTipos,4,"registros"),
-    TOTAL_INTERINSTITUCIONALES:fmtGT(instSi,0),
-    TOTAL_NO_INTERINSTITUCIONALES:fmtGT(instNo,0),
-    TOP_GUARDARECURSOS_PATRULLAJES:textListTopPlain(topGuardas.map(o=>[o.g,o.total]),5,"patrullajes"),
-    TOP_GUARDARECURSOS_KM:textListTopPlain(topGuardasKm,5,"km"),
-    __guardasConsol:guardasConsol
+    FECHA_INICIO: fmtDateDisplay(inicio),
+    FECHA_FIN: fmtDateDisplay(fin),
+    FECHA_GENERACION: fGen,
+
+    TOTAL_PATRULLAJES: fmtGT(total, 0),
+    TOTAL_GUARDARECURSOS: fmtGT(guardas.size, 0),
+    TOTAL_KM: fmtGT(km, 1, 1),
+    DURACION_MEDIA: durProm !== null ? fmtGT(durProm, 1, 1) : "–",
+    TOTAL_HORAS: fmtGT(totalHoras, 1, 1),
+
+    TOTAL_INCIDENTES: fmtGT(incidentes, 0),
+    TOTAL_SIN_INCIDENTE: fmtGT(sinInc, 0),
+    PORCENTAJE_INCIDENTES: fmtGT(pct(incidentes, total), 1, 1),
+
+    TOTAL_RUMCLA: fmtGT(rumcla, 0),
+    TOTAL_FUERA_RUMCLA: fmtGT(fuera, 0),
+
+    TOTAL_MUNICIPIOS: fmtGT(municipios.size, 0),
+    TOTAL_AREAS_PROTEGIDAS: fmtGT(areas.size, 0),
+
+    PROMEDIO_KM_PATRULLAJE: total ? fmtGT(km / total, 1, 1) : "–",
+    INCIDENTES_POR_100: total ? fmtGT((incidentes / total) * 100, 1, 1) : "–",
+
+    TOP_MUNICIPIOS_PATRULLAJES: textListTopPlain(topMunicipios, 5, "patrullajes"),
+    TOP_MUNICIPIOS_KM: textListTopPlain(topMunicipiosKm, 5, "km"),
+    TOP_AREAS_PROTEGIDAS: textListTopPlain(topAreas, 5, "registros"),
+    TOP_MUNICIPIOS_INCIDENTES: textListTopPlain(topIncMunicipios, 5, "incidentes"),
+    TOP_TIPOS_PATRULLAJE: textListTopPlain(topTipos, 4, "registros"),
+
+    TOTAL_INTERINSTITUCIONALES: fmtGT(instSi, 0),
+    TOTAL_NO_INTERINSTITUCIONALES: fmtGT(instNo, 0),
+
+    TOP_GUARDARECURSOS_PATRULLAJES: textListTopPlain(
+      topGuardas.map(o => [o.g, o.total]),
+      5,
+      "patrullajes"
+    ),
+    TOP_GUARDARECURSOS_KM: textListTopPlain(topGuardasKm, 5, "km"),
+
+    __guardasConsol: guardasConsol
   };
 }
 
-function xmlEsc(v){
-  return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-function regEsc(s){return String(s).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
-function tokenRegex(token){
-  const gap='(?:</w:t>(?:\\s|<[^>]+>)*<w:t[^>]*>)?';
-  return new RegExp(token.split("").map(regEsc).join(gap),"g");
-}
-function replaceDocxToken(xml,token,value){
-  return xml.replace(tokenRegex(token),xmlEsc(value));
-}
-function wText(text,bold=false,size="14"){
-  return `<w:p><w:pPr><w:jc w:val="${bold?"center":"left"}"/></w:pPr><w:r><w:rPr>${bold?"<w:b/>":""}<w:sz w:val="${size}"/><w:szCs w:val="${size}"/></w:rPr><w:t xml:space="preserve">${xmlEsc(text)}</w:t></w:r></w:p>`;
-}
-function wCell(text,width,opts={}){
-  const align=opts.align||"left";
-  const bold=opts.bold||false;
-  const shade=opts.shade?`<w:shd w:fill="${opts.shade}"/>`:"";
-  const size=opts.size||"14";
-  return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${shade}<w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="${align}"/></w:pPr><w:r><w:rPr>${bold?"<w:b/>":""}<w:sz w:val="${size}"/><w:szCs w:val="${size}"/></w:rPr><w:t xml:space="preserve">${xmlEsc(text)}</w:t></w:r></w:p></w:tc>`;
-}
-function crearTablaGuardarecursosWordXml(guardasConsol){
-  const widths=[520,4300,1040,1040,1040,1040];
-  const headers=["#","Guardarecurso","Patrullajes","Km","Incidentes","Municipios"];
-  const grid=widths.map(w=>`<w:gridCol w:w="${w}"/>`).join("");
-  const headerRow=`<w:tr>${headers.map((h,i)=>wCell(h,widths[i],{bold:true,align:i<2?"center":"center",shade:"E8EFE9",size:"13"})).join("")}</w:tr>`;
-  const rows=(guardasConsol.length?guardasConsol:[]).map((o,i)=>`<w:tr>
-    ${wCell(String(i+1),widths[0],{align:"center",size:"13"})}
-    ${wCell(o.g,widths[1],{align:"left",size:"13"})}
-    ${wCell(fmtGT(o.total,0),widths[2],{align:"right",size:"13"})}
-    ${wCell(fmtGT(o.km,1,1),widths[3],{align:"right",size:"13"})}
-    ${wCell(fmtGT(o.inc,0),widths[4],{align:"right",size:"13"})}
-    ${wCell(fmtGT(o.municipios,0),widths[5],{align:"right",size:"13"})}
-  </w:tr>`).join("");
-  const empty=`<w:tr><w:tc><w:tcPr><w:gridSpan w:val="6"/><w:tcW w:w="8980" w:type="dxa"/></w:tcPr>${wText("Sin registros para el periodo seleccionado.",false,"14")}</w:tc></w:tr>`;
-  return `<w:tbl>
-    <w:tblPr>
-      <w:tblW w:w="0" w:type="auto"/>
-      <w:tblLayout w:type="fixed"/>
-      <w:tblBorders><w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/></w:tblBorders>
-      <w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="50" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="50" w:type="dxa"/></w:tblCellMar>
-    </w:tblPr>
-    <w:tblGrid>${grid}</w:tblGrid>
-    ${headerRow}
-    ${rows||empty}
-  </w:tbl>`;
+function xmlEsc(v) {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
+function regEsc(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
-async function loadExternalScriptOnce(src){
-  return new Promise((resolve)=>{
-    if(document.querySelector(`script[data-loader-src="${src}"]`)){resolve(true);return;}
-    const sc=document.createElement("script");
-    sc.src=src;
-    sc.async=true;
-    sc.dataset.loaderSrc=src;
-    sc.onload=()=>resolve(true);
-    sc.onerror=()=>resolve(false);
+function tokenRegex(token) {
+  const gap = '(?:</w:t>(?:\\s|<[^>]+>)*<w:t[^>]*>)?';
+  return new RegExp(token.split("").map(regEsc).join(gap), "g");
+}
+
+function replaceDocxToken(xml, token, value) {
+  return xml.replace(tokenRegex(token), xmlEsc(value));
+}
+
+function wCell(text, width, opts = {}) {
+  const align = opts.align || "left";
+  const bold = opts.bold || false;
+  const shade = opts.shade ? `<w:shd w:fill="${opts.shade}"/>` : "";
+  const size = opts.size || "14";
+
+  return `
+    <w:tc>
+      <w:tcPr>
+        <w:tcW w:w="${width}" w:type="dxa"/>
+        ${shade}
+        <w:vAlign w:val="center"/>
+      </w:tcPr>
+      <w:p>
+        <w:pPr>
+          <w:jc w:val="${align}"/>
+        </w:pPr>
+        <w:r>
+          <w:rPr>
+            ${bold ? "<w:b/>" : ""}
+            <w:sz w:val="${size}"/>
+            <w:szCs w:val="${size}"/>
+          </w:rPr>
+          <w:t xml:space="preserve">${xmlEsc(text)}</w:t>
+        </w:r>
+      </w:p>
+    </w:tc>
+  `;
+}
+
+function crearTablaGuardarecursosWordXml(guardasConsol) {
+  const widths = [520, 4300, 1040, 1040, 1040, 1040];
+  const headers = ["#", "Guardarecurso", "Patrullajes", "Km", "Incidentes", "Municipios"];
+
+  const grid = widths.map(w => `<w:gridCol w:w="${w}"/>`).join("");
+
+  const headerRow = `
+    <w:tr>
+      ${headers.map((h, i) => wCell(h, widths[i], {
+        bold: true,
+        align: "center",
+        shade: "E8EFE9",
+        size: "13"
+      })).join("")}
+    </w:tr>
+  `;
+
+  const rows = (guardasConsol.length ? guardasConsol : []).map((o, i) => `
+    <w:tr>
+      ${wCell(String(i + 1), widths[0], { align: "center", size: "13" })}
+      ${wCell(o.g, widths[1], { align: "left", size: "13" })}
+      ${wCell(fmtGT(o.total, 0), widths[2], { align: "right", size: "13" })}
+      ${wCell(fmtGT(o.km, 1, 1), widths[3], { align: "right", size: "13" })}
+      ${wCell(fmtGT(o.inc, 0), widths[4], { align: "right", size: "13" })}
+      ${wCell(fmtGT(o.municipios, 0), widths[5], { align: "right", size: "13" })}
+    </w:tr>
+  `).join("");
+
+  const empty = `
+    <w:tr>
+      <w:tc>
+        <w:tcPr>
+          <w:gridSpan w:val="6"/>
+          <w:tcW w:w="8980" w:type="dxa"/>
+        </w:tcPr>
+        <w:p>
+          <w:r>
+            <w:t>Sin registros para el periodo seleccionado.</w:t>
+          </w:r>
+        </w:p>
+      </w:tc>
+    </w:tr>
+  `;
+
+  return `
+    <w:tbl>
+      <w:tblPr>
+        <w:tblW w:w="0" w:type="auto"/>
+        <w:tblLayout w:type="fixed"/>
+        <w:tblBorders>
+          <w:top w:val="single" w:sz="4"/>
+          <w:left w:val="single" w:sz="4"/>
+          <w:bottom w:val="single" w:sz="4"/>
+          <w:right w:val="single" w:sz="4"/>
+          <w:insideH w:val="single" w:sz="4"/>
+          <w:insideV w:val="single" w:sz="4"/>
+        </w:tblBorders>
+        <w:tblCellMar>
+          <w:top w:w="40" w:type="dxa"/>
+          <w:left w:w="50" w:type="dxa"/>
+          <w:bottom w:w="40" w:type="dxa"/>
+          <w:right w:w="50" w:type="dxa"/>
+        </w:tblCellMar>
+      </w:tblPr>
+      <w:tblGrid>${grid}</w:tblGrid>
+      ${headerRow}
+      ${rows || empty}
+    </w:tbl>
+  `;
+}
+
+async function ensurePizZipLoaded() {
+  if (typeof PizZip !== "undefined") return true;
+
+  if (window.PizZipReady && typeof window.PizZipReady.then === "function") {
+    try {
+      await window.PizZipReady;
+      if (typeof PizZip !== "undefined") return true;
+    } catch (e) {}
+  }
+
+  await new Promise(resolve => {
+    const existe = document.querySelector('script[data-local-pizzip="1"]');
+    if (existe) {
+      setTimeout(resolve, 300);
+      return;
+    }
+
+    const sc = document.createElement("script");
+    sc.src = "../../assets/pizzip.min.js";
+    sc.async = false;
+    sc.dataset.localPizzip = "1";
+
+    sc.onload = async () => {
+      if (window.PizZipReady && typeof window.PizZipReady.then === "function") {
+        try {
+          await window.PizZipReady;
+        } catch (e) {}
+      }
+      resolve();
+    };
+
+    sc.onerror = () => resolve();
+
     document.head.appendChild(sc);
   });
-}
-async function ensurePizZipLoaded(){
-  if(typeof PizZip!=="undefined")return true;
-  const sources=[
-    "../../assets/pizzip.min.js",
-    "../../assets/PizZip.min.js",
-    "https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/pizzip.min.js",
-    "https://unpkg.com/pizzip@3.1.7/dist/pizzip.min.js",
-    "https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.7/pizzip.min.js",
-    "https://cdn.jsdelivr.net/npm/pizzip@3.1.5/dist/pizzip.min.js",
-    "https://unpkg.com/pizzip@3.1.5/dist/pizzip.min.js"
-  ];
-  for(const src of sources){
-    await loadExternalScriptOnce(src);
-    if(typeof PizZip!=="undefined")return true;
-  }
-  return false;
+
+  return typeof PizZip !== "undefined";
 }
 
-async function cargarPlantillaInforme(){
-  const candidates=[INFORME_TEMPLATE_URL, encodeURI(INFORME_TEMPLATE_URL), "./"+encodeURI(INFORME_TEMPLATE_URL)];
-  for(const url of candidates){
-    try{
-      const r=await fetch(url,{cache:"no-store"});
-      if(r.ok)return await r.arrayBuffer();
-    }catch(e){}
+async function cargarPlantillaInforme() {
+  const candidates = [
+    INFORME_TEMPLATE_URL,
+    encodeURI(INFORME_TEMPLATE_URL),
+    "./" + encodeURI(INFORME_TEMPLATE_URL)
+  ];
+
+  for (const url of candidates) {
+    try {
+      const r = await fetch(url, { cache: "no-store" });
+      if (r.ok) return await r.arrayBuffer();
+    } catch (e) {}
   }
-  throw new Error("No se pudo cargar la plantilla Word del informe. Verifique que el archivo exista en docs/boletas/patrullajes/.");
+
+  throw new Error(
+    "No se pudo cargar la plantilla Word del informe. Verifique que el archivo exista en docs/boletas/patrullajes/."
+  );
 }
-async function generarInformeDesdePlantillaWord(nombre,inicio,fin,regs){
-  if(!regs.length){alert("No hay registros para el periodo seleccionado.");return}
-  if(!(await ensurePizZipLoaded())){
-    alert("No se pudo cargar PizZip para editar la plantilla Word. La página intentó cargarlo desde assets y desde varios CDN. Si la red institucional bloquea CDN, coloque pizzip.min.js en docs/assets/.");
+
+async function generarInformeDesdePlantillaWord(nombre, inicio, fin, regs) {
+  if (!regs.length) {
+    alert("No hay registros para el periodo seleccionado.");
     return;
   }
-  const data=datosInformePlantilla(inicio,fin,regs);
-  const buf=await cargarPlantillaInforme();
-  const zip=new PizZip(buf);
-  const file=zip.file("word/document.xml");
-  if(!file)throw new Error("La plantilla no contiene word/document.xml válido.");
-  let xml=file.asText();
 
-  xml=replaceDocxToken(xml,"{{TABLA_GUARDARECURSOS}}","__TABLA_GUARDARECURSOS__");
-  Object.entries(data).forEach(([k,v])=>{
-    if(k.startsWith("__"))return;
-    xml=replaceDocxToken(xml,`{{${k}}}`,v);
+  const okPizZip = await ensurePizZipLoaded();
+
+  if (!okPizZip) {
+    alert("No se pudo cargar PizZip desde docs/assets/pizzip.min.js.");
+    return;
+  }
+
+  let buf;
+
+  try {
+    buf = await cargarPlantillaInforme();
+  } catch (err) {
+    alert(err.message || "No se pudo cargar la plantilla Word.");
+    return;
+  }
+
+  const data = datosInformePlantilla(inicio, fin, regs);
+  const zip = new PizZip(buf);
+
+  const file = zip.file("word/document.xml");
+
+  if (!file) {
+    alert("La plantilla no contiene word/document.xml válido.");
+    return;
+  }
+
+  let xml = file.asText();
+
+  xml = replaceDocxToken(xml, "{{TABLA_GUARDARECURSOS}}", "__TABLA_GUARDARECURSOS__");
+
+  Object.entries(data).forEach(([k, v]) => {
+    if (k.startsWith("__")) return;
+    xml = replaceDocxToken(xml, `{{${k}}}`, v);
   });
-  const tableXml=crearTablaGuardarecursosWordXml(data.__guardasConsol);
-  const before=xml;
-  xml=xml.replace(/<w:p\b[\s\S]*?__TABLA_GUARDARECURSOS__[\s\S]*?<\/w:p>/,tableXml);
-  if(xml===before)xml=xml.replace(/__TABLA_GUARDARECURSOS__/g,"");
-  zip.file("word/document.xml",xml);
 
-  const blob=zip.generate({type:"blob",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download=nombre.replace(/\.doc$/i,".docx").replace(/\.pdf$/i,".docx");
+  const tableXml = crearTablaGuardarecursosWordXml(data.__guardasConsol);
+
+  const markerParagraphRe =
+    /<w:p\b(?:(?!<\/w:p>)[\s\S])*?__TABLA_GUARDARECURSOS__(?:(?!<\/w:p>)[\s\S])*?<\/w:p>/;
+
+  if (markerParagraphRe.test(xml)) {
+    xml = xml.replace(markerParagraphRe, tableXml);
+  } else {
+    xml = xml.replace("__TABLA_GUARDARECURSOS__", "");
+    xml = xml.replace("</w:body>", tableXml + "</w:body>");
+  }
+
+  zip.file("word/document.xml", xml);
+
+  const blob = zip.generate({
+    type: "blob",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  });
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = nombre
+    .replace(/\.doc$/i, ".docx")
+    .replace(/\.pdf$/i, ".docx");
+
   document.body.appendChild(a);
   a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1200);
+
+  setTimeout(() => URL.revokeObjectURL(a.href), 1200);
   document.body.removeChild(a);
 }
 
-function nombrePeriodoInforme(inicio,fin,ext="docx"){
-  const f=d=>String(d.getDate()).padStart(2,"0")+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+d.getFullYear();
+function nombrePeriodoInforme(inicio, fin, ext = "docx") {
+  const f = d =>
+    String(d.getDate()).padStart(2, "0") + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" +
+    d.getFullYear();
+
   return `Informe general periodo ${f(inicio)} al ${f(fin)}.${ext}`;
 }
-function descargarInformeCorte(fmt,inicio,fin,regs){
-  generarInformeDesdePlantillaWord(nombrePeriodoInforme(inicio,fin,"docx"),inicio,fin,regs);
+
+function descargarInformeCorte(fmt, inicio, fin, regs) {
+  generarInformeDesdePlantillaWord(
+    nombrePeriodoInforme(inicio, fin, "docx"),
+    inicio,
+    fin,
+    regs
+  );
 }
-function generarInformeCorteDesdeVerificacion(fmt){
-  const desdeStr=document.getElementById("vc-desde").value;
-  const hastaStr=document.getElementById("vc-hasta").value;
-  if(!desdeStr||!hastaStr){alert("Defina el período completo en la pestaña de verificación.");return}
-  const inicio=new Date(desdeStr+"T00:00:00");
-  const fin=new Date(hastaStr+"T23:59:59");
-  descargarInformeCorte("word",inicio,fin,regsPorRango(inicio,fin));
+
+function generarInformeCorteDesdeVerificacion(fmt) {
+  const desdeStr = document.getElementById("vc-desde").value;
+  const hastaStr = document.getElementById("vc-hasta").value;
+
+  if (!desdeStr || !hastaStr) {
+    alert("Defina el período completo en la pestaña de verificación.");
+    return;
+  }
+
+  const inicio = new Date(desdeStr + "T00:00:00");
+  const fin = new Date(hastaStr + "T23:59:59");
+
+  descargarInformeCorte("word", inicio, fin, regsPorRango(inicio, fin));
 }
-function generarInformePeriodoSeleccionadoWord(){
-  const desdeStr=document.getElementById("vc-desde").value;
-  const hastaStr=document.getElementById("vc-hasta").value;
-  if(!desdeStr||!hastaStr){alert("Defina el período completo en la pestaña de verificación.");return}
-  const inicio=new Date(desdeStr+"T00:00:00");
-  const fin=new Date(hastaStr+"T23:59:59");
-  descargarInformeCorte("word",inicio,fin,regsPorRango(inicio,fin));
+
+function generarInformePeriodoSeleccionadoWord() {
+  const desdeStr = document.getElementById("vc-desde").value;
+  const hastaStr = document.getElementById("vc-hasta").value;
+
+  if (!desdeStr || !hastaStr) {
+    alert("Defina el período completo en la pestaña de verificación.");
+    return;
+  }
+
+  const inicio = new Date(desdeStr + "T00:00:00");
+  const fin = new Date(hastaStr + "T23:59:59");
+
+  descargarInformeCorte("word", inicio, fin, regsPorRango(inicio, fin));
 }
-function generarInformeMensual(fmt){
-  if(!DATOS.length){alert("No hay datos cargados.");return}
-  const sel=document.getElementById("monthly-month-select");
-  if(!sel.value){alert("Seleccione un período de corte.");return}
-  const p=mapaMeses.get(sel.value);
-  if(!p){alert("No se encontró el período seleccionado.");return}
-  descargarInformeCorte("word",p.inicio,p.fin,regsPorRango(p.inicio,p.fin));
+
+function generarInformeMensual(fmt) {
+  if (!DATOS.length) {
+    alert("No hay datos cargados.");
+    return;
+  }
+
+  const sel = document.getElementById("monthly-month-select");
+
+  if (!sel.value) {
+    alert("Seleccione un período de corte.");
+    return;
+  }
+
+  const p = mapaMeses.get(sel.value);
+
+  if (!p) {
+    alert("No se encontró el período seleccionado.");
+    return;
+  }
+
+  descargarInformeCorte("word", p.inicio, p.fin, regsPorRango(p.inicio, p.fin));
 }
 
 /* ═══════════════════════════════════════════════════
