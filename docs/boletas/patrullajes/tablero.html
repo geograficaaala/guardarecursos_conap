@@ -3,32 +3,61 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+
+  <script>
+    (function(){
+      var lastDevice = "";
+      function detectDevice(){
+        var w = window.innerWidth || document.documentElement.clientWidth || 1024;
+        var touch = (navigator.maxTouchPoints || 0) > 0;
+        var coarse = false;
+        try { coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches; } catch(e) {}
+        var device = w <= 760 ? "mobile" : ((w <= 1180 || ((touch || coarse) && w <= 1366)) ? "tablet" : "desktop");
+        var root = document.documentElement;
+        root.setAttribute("data-device", device);
+        root.classList.remove("device-mobile", "device-tablet", "device-desktop");
+        root.classList.add("device-" + device);
+        if (device !== lastDevice) {
+          lastDevice = device;
+          try { window.dispatchEvent(new CustomEvent("conap-device-change", { detail: { device: device, width: w } })); } catch(e) {}
+        }
+      }
+      var timer = null;
+      function scheduleDetect(){
+        clearTimeout(timer);
+        timer = setTimeout(detectDevice, 120);
+      }
+      detectDevice();
+      window.addEventListener("resize", scheduleDetect, { passive: true });
+      window.addEventListener("orientationchange", scheduleDetect, { passive: true });
+    })();
+  </script>
   <title>AC192. Tablero dinámico. Patrullajes</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
     :root {
-      --verde-oscuro: #0a3d2b;
-      --verde-medio:  #1a5c3a;
-      --bg:           #f0f4f1;
+      --verde-oscuro: #064e3b;
+      --verde-medio:  #16a34a;
+      --bg:           #f3f8f4;
       --surface:      #ffffff;
-      --surface-2:    #f6faf7;
-      --ink:          #0c1e13;
-      --ink-2:        #2a4535;
-      --muted:        #6a8878;
-      --borde:        #d8e4dd;
-      --sombra:       rgba(10,61,43,0.06);
-      --acento:       #1a5c3a;
-      --acento-bg:    rgba(26,92,58,0.06);
-      --acento-borde: rgba(26,92,58,0.20);
-      --dorado:       #c9a84c;
-      --dorado-claro: #e8c97a;
-      --mod-dark:#1e3a8a; --mod-mid:#2563eb; --mod-light:#3b82f6;
+      --surface-2:    #f7fcf8;
+      --ink:          #102218;
+      --ink-2:        #254736;
+      --muted:        #5f7b6e;
+      --borde:        #d7eadf;
+      --sombra:       rgba(6,78,59,0.07);
+      --acento:       #16a34a;
+      --acento-bg:    rgba(34,197,94,0.10);
+      --acento-borde: rgba(34,197,94,0.28);
+      --dorado:       #d8b94f;
+      --dorado-claro: #f4d35e;
+      --mod-dark:#047857; --mod-mid:#22c55e; --mod-light:#86efac;
 
-      --d0:#1f6cb0; --d1:#1a7a38; --d2:#b05608; --d3:#6b2680;
-      --d4:#a81c2a; --d5:#016660; --d6:#7a4508; --d7:#3d8fbf;
-      --d8:#b51a72; --d9:#448a1e; --d10:#c85840; --d11:#4e359a;
+      --d0:#4ade80; --d1:#fb7185; --d2:#60a5fa; --d3:#fbbf24;
+      --d4:#f87171; --d5:#2dd4bf; --d6:#c084fc; --d7:#34d399;
+      --d8:#f9a8d4; --d9:#a3e635; --d10:#fb923c; --d11:#93c5fd;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
@@ -482,6 +511,115 @@
     }
     @media (max-width: 1180px) { .insights-grid { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 660px)  { .insights-grid { grid-template-columns: repeat(2, 1fr); } }
+
+
+    /* ── OPTIMIZACIÓN RESPONSIVE POR DISPOSITIVO ── */
+    html.device-mobile body { font-size: 13px; }
+    html.device-mobile header { padding: 10px 12px 0; position: sticky; }
+    html.device-mobile .header-inner { gap: 10px; align-items: center; padding-bottom: 10px; }
+    html.device-mobile .logo-group { padding: 4px 8px; gap: 5px; }
+    html.device-mobile .logo-group img { height: 30px; max-width: 88px; padding: 2px 6px; }
+    html.device-mobile .header-right { text-align: left; min-width: 0; }
+    html.device-mobile .header-right h1 { font-size: 13.5px; line-height: 1.25; }
+    html.device-mobile .header-right p { font-size: 10.5px; line-height: 1.35; }
+    html.device-mobile .header-chip { font-size: 9px; padding: 3px 9px; margin-top: 5px; }
+    html.device-mobile .header-wm { display: none; }
+
+    html.device-mobile .module-nav { padding: 0 12px; }
+    html.device-mobile .nav-back,
+    html.device-mobile .nav-tab { height: 44px; padding: 0 12px; font-size: 12px; gap: 6px; }
+    html.device-mobile .nav-back { margin-right: 4px; padding-left: 0; }
+
+    html.device-mobile .page { padding: 16px 12px 46px; }
+    html.device-mobile .filtros-panel { padding: 14px; border-radius: 13px; margin-bottom: 16px; }
+    html.device-mobile .filtros-titulo { font-size: 9.5px; line-height: 1.35; }
+    html.device-mobile .filtros-grid { grid-template-columns: 1fr; gap: 10px; }
+    html.device-mobile .fg select,
+    html.device-mobile .fg input[type="date"],
+    html.device-mobile .fg input[type="search"] { min-height: 42px; font-size: 13px; }
+    html.device-mobile .btn-filtro { width: 100%; height: 42px; min-height: 42px; }
+    html.device-mobile .chips-wrap { margin-top: 11px; }
+    html.device-mobile .chip-activo { font-size: 11px; padding: 4px 10px; }
+
+    html.device-mobile .estado-bar { margin-bottom: 16px; }
+    html.device-mobile .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
+    html.device-mobile .kpi { padding: 14px 12px 12px; border-radius: 12px; }
+    html.device-mobile .kpi-label { font-size: 8.8px; line-height: 1.25; margin-bottom: 8px; }
+    html.device-mobile .kpi-value { font-size: 25px; }
+    html.device-mobile .kpi-sub { font-size: 10.5px; }
+
+    html.device-mobile .sec-divider { margin: 24px 0 14px; gap: 8px; font-size: 9.3px; line-height: 1.35; letter-spacing: .10em; }
+    html.device-mobile .charts-grid { grid-template-columns: 1fr; gap: 14px; }
+    html.device-mobile .cc { padding: 16px 14px 15px; border-radius: 14px; overflow: hidden; }
+    html.device-mobile .cc.card-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    html.device-mobile .cc-head { flex-direction: column; align-items: stretch; gap: 8px; }
+    html.device-mobile .cc-title { font-size: 15px; line-height: 1.25; }
+    html.device-mobile .cc-hint { font-size: 11.5px; line-height: 1.45; }
+    html.device-mobile .cc-sep { margin: 9px 0 12px; }
+    html.device-mobile .btn-png { min-height: 36px; justify-content: center; align-self: flex-start; }
+    html.device-mobile .cc-filters,
+    html.device-mobile .cdf { align-items: stretch; gap: 7px; }
+    html.device-mobile .cc-filters input[type="date"],
+    html.device-mobile .cc-filters select,
+    html.device-mobile .cdf input[type="date"] { width: 100%; min-height: 38px; }
+    html.device-mobile .cc-btn,
+    html.device-mobile .cdf-x { min-height: 38px; }
+
+    html.device-mobile .cw { height: 260px; }
+    html.device-mobile .cw.h200,
+    html.device-mobile .cw.h240,
+    html.device-mobile .cw.h260,
+    html.device-mobile .cw.h280,
+    html.device-mobile .cw.h300 { height: 270px; }
+    html.device-mobile .cw.h340,
+    html.device-mobile .cw.h360,
+    html.device-mobile .cw.h400 { height: 330px; }
+    html.device-mobile .cw.h420,
+    html.device-mobile .cw.h460,
+    html.device-mobile .cw.h480,
+    html.device-mobile .cw.h520 { height: 390px; }
+    html.device-mobile .cw.responsive-wide { width: 720px; max-width: none; }
+    html.device-mobile .cw.responsive-wide.h420,
+    html.device-mobile .cw.responsive-wide.h460,
+    html.device-mobile .cw.responsive-wide.h480,
+    html.device-mobile .cw.responsive-wide.h520 { width: 860px; }
+    html.device-mobile .matrix-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    html.device-mobile #matrix-gm-svg { min-width: 920px; }
+    html.device-mobile #heatmap-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    html.device-mobile #heatmap-svg { min-width: 720px; }
+
+    html.device-mobile .insights-grid { grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px; }
+    html.device-mobile .insight-card { min-height: auto; padding: 14px 13px 12px; }
+    html.device-mobile .insight-value { font-size: 19px; }
+    html.device-mobile .footer-inner { grid-template-columns: 1fr; padding: 22px 16px 0; gap: 16px; }
+    html.device-mobile .footer-col-right { text-align: left; }
+    html.device-mobile .footer-wm { display: none; }
+
+    @media (max-width: 380px) {
+      html.device-mobile .kpis { grid-template-columns: 1fr; }
+      html.device-mobile .logo-group img { height: 27px; max-width: 78px; }
+      html.device-mobile .header-right h1 { font-size: 12.5px; }
+      html.device-mobile .nav-back,
+      html.device-mobile .nav-tab { padding: 0 10px; }
+    }
+
+    html.device-tablet .page { padding: 22px 20px 60px; }
+    html.device-tablet .filtros-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    html.device-tablet .btn-filtro { width: 100%; }
+    html.device-tablet .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    html.device-tablet .charts-grid { gap: 16px; }
+    html.device-tablet .cc { padding: 20px 20px 18px; }
+    html.device-tablet .insights-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    html.device-tablet .cc.card-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    html.device-tablet .cw.responsive-wide { min-width: 760px; }
+
+    html.device-desktop .cc.card-scroll-x { overflow-x: visible; }
+
+    @media (hover: none) and (pointer: coarse) {
+      .kpi:hover, .cc:hover, .btn-png:hover, .btn-aplicar:hover { transform: none; }
+      .btn-filtro, .btn-png, .cc-btn, .cdf-x, .nav-tab, .nav-back { touch-action: manipulation; }
+      .cc-tip { display: none; }
+    }
 
 
   </style>
@@ -1019,7 +1157,7 @@
       <span>Dirección Regional Altiplano Central</span>
     </div>
     <div class="footer-center">
-      <div class="footer-badge" style="background:rgba(37,99,235,.18);border:1px solid rgba(37,99,235,.38);color:#93c5fd;">
+      <div class="footer-badge" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.38);color:#bbf7d0;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
@@ -1040,8 +1178,8 @@
 <script>
 /* ─── PALETA UNIFICADA ─────────────────────────────────────── */
 const PAL = [
-  "#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660",
-  "#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"
+  "#4ade80","#fb7185","#60a5fa","#fbbf24","#f87171","#2dd4bf",
+  "#c084fc","#34d399","#f9a8d4","#a3e635","#fb923c","#93c5fd"
 ];
 const PAL_A = PAL.map(c => c + "bb"); // versión semitransparente
 
@@ -1098,7 +1236,7 @@ function normGuarda(n){if(!n)return null;const c=canonStr(n);if(EXCLUIDOS.has(c)
 /* ─── CHART.JS GLOBALES ────────────────────────────────────── */
 Chart.defaults.font.family="'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
 Chart.defaults.font.size=13;
-Chart.defaults.color="#6a8878";
+Chart.defaults.color="#5f7b6e";
 if(typeof ChartDataLabels!=="undefined"){Chart.register(ChartDataLabels);Chart.defaults.set("plugins.datalabels",{display:false});}
 
 // Tooltip unificado — fondo muy oscuro, bordes sutiles
@@ -1112,9 +1250,9 @@ const TT={
 };
 
 // Escalas compartidas — grid muy sutil
-const GRID_COLOR="rgba(0,0,0,0.045)";
+const GRID_COLOR="rgba(6,78,59,0.055)";
 const TICK_FONT={font:{size:12.5}};
-const AXIS_TITLE_FONT={font:{size:12,weight:"600"},color:"#6a8878"};
+const AXIS_TITLE_FONT={font:{size:12,weight:"600"},color:"#5f7b6e"};
 
 const CHARTS={};
 function mkChart(id,cfg){
@@ -1338,10 +1476,10 @@ function topN(m,n){return[...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n);}
 function g1(rows){
   const mm=countBy(rows,r=>r.__mes);const keys=[...mm.keys()].sort();const vals=keys.map(k=>mm.get(k)||0);const mean=avg_(vals);
   const ctx=document.getElementById("c-tendencia").getContext("2d");
-  const gr=ctx.createLinearGradient(0,0,0,300);gr.addColorStop(0,"rgba(31,108,176,0.22)");gr.addColorStop(1,"rgba(31,108,176,0.01)");
+  const gr=ctx.createLinearGradient(0,0,0,300);gr.addColorStop(0,"rgba(74,222,128,0.28)");gr.addColorStop(1,"rgba(74,222,128,0.03)");
   mkChart("c-tendencia",{type:"line",data:{labels:keys.map(mShort),datasets:[
     {label:"Patrullajes",data:vals,fill:true,tension:0.38,borderColor:PAL[0],backgroundColor:gr,borderWidth:2.5,pointBackgroundColor:PAL[0],pointRadius:4.5,pointHoverRadius:7,pointBorderColor:"#fff",pointBorderWidth:2},
-    {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(168,28,42,0.50)",borderWidth:1.5,borderDash:[6,5],pointRadius:0,fill:false,tension:0}
+    {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(248,113,113,0.72)",borderWidth:1.5,borderDash:[6,5],pointRadius:0,fill:false,tension:0}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
     plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:false,boxWidth:14,boxHeight:14}}},
     scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
@@ -1364,7 +1502,7 @@ function g2(rows){
   }
   DIAS.forEach((d,i)=>html+=`<text x="${PL-8}" y="${PT+i*CH+CH/2+4.5}" text-anchor="end" font-size="12" fill="#6a8878" font-family="DM Sans,sans-serif" font-weight="500">${d}</text>`);
   for(let h=0;h<24;h+=2)html+=`<text x="${PL+h*CW+CW/2}" y="${PT-12}" text-anchor="middle" font-size="10.5" fill="#6a8878" font-family="DM Sans,sans-serif">${String(h).padStart(2,"0")}h</text>`;
-  html+=`<defs><linearGradient id="lgh" x1="0" x2="1"><stop offset="0%" stop-color="#edf2ee"/><stop offset="100%" stop-color="${PAL[0]}"/></linearGradient></defs>`;
+  html+=`<defs><linearGradient id="lgh" x1="0" x2="1"><stop offset="0%" stop-color="#eefaf2"/><stop offset="100%" stop-color="${PAL[0]}"/></linearGradient></defs>`;
   html+=`<rect x="${PL}" y="${H-22}" width="120" height="8" rx="3" fill="url(#lgh)"/>`;
   html+=`<text x="${PL}" y="${H-6}" font-size="10" fill="#9ab0a6" font-family="DM Sans,sans-serif">0</text>`;
   html+=`<text x="${PL+120}" y="${H-6}" text-anchor="end" font-size="10" fill="#9ab0a6" font-family="DM Sans,sans-serif">${maxV}</text>`;
@@ -1377,7 +1515,7 @@ function g3(rows){
   const durs=rows.map(r=>r.__dur).filter(v=>v!==null);
   const bins=new Array(16).fill(0);durs.forEach(d=>{const i=Math.floor(d/0.5);if(i>=0&&i<16)bins[i]++;});
   const ctx=document.getElementById("c-duracion").getContext("2d");
-  const gr=ctx.createLinearGradient(0,0,0,260);gr.addColorStop(0,"rgba(26,122,56,0.88)");gr.addColorStop(1,"rgba(26,122,56,0.18)");
+  const gr=ctx.createLinearGradient(0,0,0,260);gr.addColorStop(0,"rgba(26,122,56,0.88)");gr.addColorStop(1,"rgba(74,222,128,0.22)");
   mkChart("c-duracion",{type:"bar",data:{labels:Array.from({length:16},(_,i)=>i%2===0?(i*0.5)+"h":""),datasets:[{label:"Patrullajes",data:bins,backgroundColor:gr,borderColor:PAL[1],borderWidth:1,borderRadius:4,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].dataIndex*0.5}h – ${(c[0].dataIndex+1)*0.5}h`,label:c=>` ${c.parsed.y} patrullajes`}}},
@@ -1387,7 +1525,7 @@ function g3(rows){
 /* ─── G4 Scatter ───────────────────────────────────────────── */
 function g4(rows){
   const pts=rows.filter(r=>r.__hora!==null&&r.__dur!==null).map(r=>({x:r.__hora,y:r.__dur,m:LABELS.muni.get(r.__cm)||""}));
-  mkChart("c-scatter",{type:"scatter",data:{datasets:[{label:"Patrullaje",data:pts,backgroundColor:"rgba(107,38,128,0.28)",borderColor:"rgba(107,38,128,0.65)",borderWidth:1,pointRadius:4,pointHoverRadius:6}]},
+  mkChart("c-scatter",{type:"scatter",data:{datasets:[{label:"Patrullaje",data:pts,backgroundColor:"rgba(192,132,252,0.34)",borderColor:"rgba(192,132,252,0.78)",borderWidth:1,pointRadius:4,pointHoverRadius:6}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>[` Inicio: ${Math.floor(c.parsed.x)}h${Math.round((c.parsed.x%1)*60).toString().padStart(2,"0")}`,` Duración: ${c.parsed.y.toFixed(1)}h`,` ${c.raw.m}`]}}},
       scales:{x:{min:5,max:19,grid:{color:GRID_COLOR},...TICK_FONT,ticks:{...TICK_FONT.font,callback:v=>`${v}h`},title:{display:true,text:"Hora de inicio",...AXIS_TITLE_FONT}},y:{min:0,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Duración (h)",...AXIS_TITLE_FONT}}}}});
@@ -1422,7 +1560,7 @@ function g6(rows){
     const lbl=cleanLabel(LABELS.guarda.get(sel)||sel).split(" ").slice(0,3).join(" ");
     mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:[
       {label:lbl,data:toA(sM),backgroundColor:PAL[0]+"2a",borderColor:PAL[0],borderWidth:2.5,pointBackgroundColor:PAL[0],pointRadius:4,pointBorderColor:"#fff",pointBorderWidth:1.5},
-      {label:"Media general",data:toA(gAvg),backgroundColor:"rgba(168,28,42,0.10)",borderColor:"rgba(168,28,42,0.60)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(168,28,42,0.6)",pointRadius:3}
+      {label:"Media general",data:toA(gAvg),backgroundColor:"rgba(248,113,113,0.13)",borderColor:"rgba(248,113,113,0.76)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(248,113,113,0.82)",pointRadius:3}
     ]},options:radarOpts});
   }else{
     const gAvg={p:avg_(allM.map(x=>x.p)),m:avg_(allM.map(x=>x.m)),d:avg_(allM.map(x=>x.d)),mes:avg_(allM.map(x=>x.mes)),i:avg_(allM.map(x=>x.i))};
@@ -1442,7 +1580,7 @@ function g7(rows){
       plugins:{legend:{position:"bottom",labels:{font:{size:13},padding:14,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
   mkChart("c-rumcla",dOpts(["Dentro RUMCLA","Fuera RUMCLA",...(sd>0?["Sin dato"]:[])],[ru,fu,...(sd>0?[sd]:[])],[PAL[0]+"cc",PAL[2]+"cc","#e5e7eb"],[PAL[0],PAL[2],"#d1d5db"]));
   const si=rows.filter(r=>r.__ci==="si").length,no=rows.filter(r=>r.__ci==="no").length;
-  mkChart("c-ilegal",dOpts(["Sin incidente","Con incidente"],[no,si],["#d8f0e2","#fde8e8"],[PAL[1],PAL[4]]));
+  mkChart("c-ilegal",dOpts(["Sin incidente","Con incidente"],[no,si],["#dcfce7","#ffe4e6"],[PAL[1],PAL[4]]));
 }
 
 /* ─── G8 Ilegal por municipio ──────────────────────────────── */
@@ -1546,7 +1684,7 @@ function g12(rows){
     {label:"Patrullajes",data:totales,backgroundColor:sorted.map((_,i)=>PAL[i%PAL.length]+"bb"),borderColor:sorted.map((_,i)=>PAL[i%PAL.length]),borderWidth:1.5,borderRadius:5,borderSkipped:false,order:2,
       datalabels:{display:true,anchor:"end",align:"top",offset:3,color:"#0c1e13",font:{size:10.5,weight:"700",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?fmtNum(v):""}},
     {label:"Incidentes",data:ilegales,type:"line",borderColor:PAL[4],backgroundColor:PAL[4],borderWidth:2.5,pointRadius:7,pointHoverRadius:9,pointBackgroundColor:PAL[4],pointBorderColor:"#fff",pointBorderWidth:2,tension:0,fill:false,order:1,
-      datalabels:{display:true,anchor:"end",align:"top",offset:7,color:"#fff",backgroundColor:"#7f1d28",borderRadius:5,padding:{top:2,bottom:2,left:5,right:5},font:{size:10.8,weight:"900",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?fmtNum(v):""}}
+      datalabels:{display:true,anchor:"end",align:"top",offset:7,color:"#fff",backgroundColor:"#ef4444",borderRadius:5,padding:{top:2,bottom:2,left:5,right:5},font:{size:10.8,weight:"900",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?fmtNum(v):""}}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},layout:{padding:{top:28}},
     plugins:{legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT,callbacks:{label:c=>c.dataset.label==="Patrullajes"?` Patrullajes: ${c.parsed.y}`:` Incidentes: ${c.parsed.y}`}},datalabels:{display:false}},
     scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:42,minRotation:28}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
@@ -1602,7 +1740,7 @@ function gRumclaMes(rows){
   mkChart("c-rumclaMes",{type:"bar",data:{labels:months.map(mShort),datasets:[
     {label:"Dentro RUMCLA",data:dentro,backgroundColor:PAL[0]+"cc",borderWidth:0,borderRadius:4,borderSkipped:false},
     {label:"Fuera RUMCLA",data:fuera,backgroundColor:PAL[2]+"cc",borderWidth:0,borderRadius:4,borderSkipped:false},
-    {label:"Sin dato",data:nd,backgroundColor:"#d9e2dd",borderWidth:0,borderRadius:4,borderSkipped:false}
+    {label:"Sin dato",data:nd,backgroundColor:"#e6f4ec",borderWidth:0,borderRadius:4,borderSkipped:false}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
     plugins:{legend:{position:"top",labels:{font:{size:13},padding:14,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT}},
     scales:{x:{stacked:true,grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{stacked:true,beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
@@ -1661,7 +1799,7 @@ function gMatrizGM(rows){
   const W=Math.max(760,left+munis.length*cellW+right),H=top+guardas.length*cellH+bottom;
   const svg=document.getElementById("matrix-gm-svg");if(!svg)return;
   svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
-  function fill(v){if(!v)return"#edf2ee";const t=Math.pow(v/maxV,.55);return`rgb(${Math.round(232-t*202)},${Math.round(242-t*118)},${Math.round(238-t*182)})`;}
+  function fill(v){if(!v)return"#eefaf2";const t=Math.pow(v/maxV,.55);return`rgb(${Math.round(220-t*146)},${Math.round(252-t*30)},${Math.round(231-t*103)})`;}
   let html=`<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/>`;
   munis.forEach((m,i)=>{const x=left+i*cellW+cellW/2;const lab=cleanLabel(LABELS.muni.get(m)||m);html+=`<text x="${x-4}" y="${top-10}" transform="rotate(-50 ${x-4} ${top-10})" text-anchor="start" font-size="10.5" fill="#6a8878" font-family="DM Sans,sans-serif" font-weight="700">${lab.length>22?lab.slice(0,21)+'…':lab}</text>`;});
   guardas.forEach((g,ri)=>{const y=top+ri*cellH;const gl=labelShort(LABELS.guarda.get(g)||g,4);html+=`<text x="${left-10}" y="${y+cellH/2+4}" text-anchor="end" font-size="11" fill="#2a4535" font-family="DM Sans,sans-serif" font-weight="700">${gl}</text>`;munis.forEach((m,ci)=>{const v=mat[ri][ci],x=left+ci*cellW;const tc=v/maxV>.45?"#fff":"#162a1c";html+=`<rect x="${x}" y="${y}" width="${cellW-3}" height="${cellH-3}" rx="5" fill="${fill(v)}" stroke="#d8e4dd" stroke-width=".5"/>`;if(v>0)html+=`<text x="${x+cellW/2-2}" y="${y+cellH/2+4}" text-anchor="middle" font-size="10" fill="${tc}" font-family="DM Sans,sans-serif" font-weight="800">${v}</text>`;});});
@@ -1710,8 +1848,8 @@ function applyAll(){
 
 <script>
 (function(){
-  /* paleta verde elegante */
-  var G = ['#0d4a32','#1a7050','#28936c','#3aad84','#4ec49a','#2a6e58','#3a8a72','#5aaa90','#1e5e48','#4a8068','#7aaa96','#156040'];
+  /* paleta pastel viva institucional */
+  var G = ['#4ade80','#fb7185','#60a5fa','#fbbf24','#f87171','#2dd4bf','#c084fc','#34d399','#f9a8d4','#a3e635','#fb923c','#93c5fd'];
   if(window.PAL && Array.isArray(PAL))   PAL.splice.apply(PAL,   [0, PAL.length].concat(G));
   if(window.PAL_A && Array.isArray(PAL_A)) PAL_A.splice.apply(PAL_A, [0, PAL_A.length].concat(G.map(function(c){ return c+'bb'; })));
 
@@ -1720,7 +1858,7 @@ function applyAll(){
     Chart.defaults.font.family = "'DM Sans', sans-serif";
     var LL = Chart.defaults.plugins.legend.labels;
     LL.usePointStyle = false; LL.boxWidth = 12; LL.boxHeight = 12;
-    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(6,22,14,.94)';
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(6,55,38,.94)';
     Chart.defaults.plugins.tooltip.cornerRadius = 10;
     Chart.defaults.plugins.tooltip.padding = 12;
     Chart.defaults.plugins.tooltip.titleFont = {size:13, weight:'600', family:"'DM Sans',sans-serif"};
@@ -1756,7 +1894,7 @@ function applyAll(){
 
   /* CSS del sistema local */
   var st = document.createElement('style');
-  st.textContent = '.cdf{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;background:#f6faf7;border:1px solid #d8e4dd;border-radius:9px;margin-bottom:12px}.cdf-lbl{font-size:9.5px;font-weight:700;color:#6a8878;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}.cdf input[type=date]{border:1.5px solid #d8e4dd;border-radius:7px;padding:4px 8px;font-size:12px;font-family:inherit;background:#fff;color:#0c1e13;outline:none}.cdf input[type=date]:focus{border-color:#1a5c3a;box-shadow:0 0 0 2px rgba(26,92,58,.1)}.cdf-x{padding:3px 9px;border-radius:6px;border:1.5px solid #d8e4dd;background:#fff;color:#6a8878;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}.cdf-x:hover{border-color:#94a3b8;color:#0c1e13}.cw{position:relative}.cc-tip{position:absolute;top:8px;right:8px;max-width:210px;background:rgba(6,22,14,.92);color:#b8f0d4;font-size:11px;line-height:1.5;padding:9px 12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .22s;z-index:20;border:1px solid rgba(255,255,255,.08)}.cw:hover .cc-tip{opacity:1}';
+  st.textContent = '.cdf{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;background:#f7fcf8;border:1px solid #d7eadf;border-radius:9px;margin-bottom:12px}.cdf-lbl{font-size:9.5px;font-weight:700;color:#5f7b6e;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}.cdf input[type=date]{border:1.5px solid #d7eadf;border-radius:7px;padding:4px 8px;font-size:12px;font-family:inherit;background:#fff;color:#102218;outline:none}.cdf input[type=date]:focus{border-color:#16a34a;box-shadow:0 0 0 2px rgba(34,197,94,.13)}.cdf-x{padding:3px 9px;border-radius:6px;border:1.5px solid #d7eadf;background:#fff;color:#5f7b6e;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}.cdf-x:hover{border-color:#94a3b8;color:#102218}.cw{position:relative}.cc-tip{position:absolute;top:8px;right:8px;max-width:210px;background:rgba(6,55,38,.93);color:#dcfce7;font-size:11px;line-height:1.5;padding:9px 12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .22s;z-index:20;border:1px solid rgba(255,255,255,.08)}.cw:hover .cc-tip{opacity:1}';
   document.head.appendChild(st);
 
   /* Mapeo chartId → función de redibujado */
@@ -1827,6 +1965,39 @@ function applyAll(){
   }
 
   setup();
+})();
+</script>
+
+
+<script>
+(function(){
+  function markResponsiveCharts(){
+    var wideIds = [
+      'c-tendencia','c-muniMes','c-ilegalMuni','c-areaProt','c-rankGuarda',
+      'c-kmGuarda','c-incidentesMes','c-rumclaMes','c-tasaMuni','c-kmPromGuarda','c-scoreGuarda'
+    ];
+    wideIds.forEach(function(id){
+      var el = document.getElementById(id);
+      if(!el) return;
+      var wrap = el.closest ? el.closest('.cw') : null;
+      var card = el.closest ? el.closest('.cc') : null;
+      if(wrap) wrap.classList.add('responsive-wide');
+      if(card) card.classList.add('card-scroll-x');
+    });
+    var matrix = document.getElementById('matrix-gm-svg');
+    if(matrix){
+      var card = matrix.closest ? matrix.closest('.cc') : null;
+      if(card) card.classList.add('card-scroll-x');
+    }
+    var heat = document.getElementById('heatmap-svg');
+    if(heat){
+      var hcard = heat.closest ? heat.closest('.cc') : null;
+      if(hcard) hcard.classList.add('card-scroll-x');
+    }
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', markResponsiveCharts);
+  else markResponsiveCharts();
+  window.addEventListener('conap-device-change', function(){ setTimeout(markResponsiveCharts, 80); });
 })();
 </script>
 
