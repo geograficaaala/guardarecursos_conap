@@ -13,20 +13,28 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --verde-oscuro: #0a3d2b;
-      --verde-medio:  #1a5c3a;
-      --bg:           #f0f4f1;
+      --verde-oscuro: #064e3b;
+      --verde-medio:  #16a34a;
+      --bg:           #f3f8f4;
       --surface:      #ffffff;
-      --surface-2:    #f6faf7;
-      --ink:          #0c1e13;
-      --ink-2:        #2a4535;
-      --muted:        #6a8878;
-      --borde:        #d8e4dd;
-      --sombra:       rgba(10,61,43,0.06);
-      --acento:       #1a5c3a;
-      /* Paleta de datos */
-      --d0:#1f6cb0; --d1:#1a7a38; --d2:#b05608; --d3:#6b2680;
-      --d4:#a81c2a; --d5:#016660; --d6:#7a4508; --d7:#3d8fbf;
+      --surface-2:    #f7fcf8;
+      --ink:          #102218;
+      --ink-2:        #254736;
+      --muted:        #5f7b6e;
+      --borde:        #d7eadf;
+      --sombra:       rgba(6,78,59,0.07);
+      --acento:       #16a34a;
+      --acento-bg:    rgba(34,197,94,0.10);
+      --acento-borde: rgba(34,197,94,0.28);
+      --dorado:       #d8b94f;
+      --dorado-claro: #f4d35e;
+      --mod-dark:     #047857;
+      --mod-mid:      #22c55e;
+      --mod-light:    #86efac;
+      /* Paleta de datos — pastel viva */
+      --d0:#4ade80; --d1:#fb7185; --d2:#60a5fa; --d3:#fbbf24;
+      --d4:#f87171; --d5:#2dd4bf; --d6:#c084fc; --d7:#34d399;
+      --d8:#f9a8d4; --d9:#a3e635; --d10:#fb923c; --d11:#93c5fd;
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{scroll-behavior:smooth}
@@ -181,6 +189,59 @@
 
     .sin-datos{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
 
+
+    /* MEJORAS RESPONSIVE Y TABLA DE DATOS */
+    .header-stripe{height:4px;background:linear-gradient(90deg,var(--mod-dark),var(--mod-mid),var(--mod-light));margin:0 -28px -16px;transform-origin:left}
+    .tabla-control-card{padding:18px 20px}
+    .tabla-toolbar{display:grid;grid-template-columns:1.4fr 180px 150px 150px;gap:12px;align-items:end;margin-bottom:14px}
+    .tabla-toolbar-2{display:grid;grid-template-columns:repeat(7,1fr) auto;gap:10px;align-items:end}
+    .tb-group{display:flex;flex-direction:column;gap:5px;min-width:0}
+    .tb-group label{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;white-space:nowrap}
+    .tb-group input,.tb-group select{width:100%;border:1.5px solid var(--borde);border-radius:10px;padding:8px 11px;font-size:13px;font-family:inherit;background:var(--surface-2);color:var(--ink);outline:none;transition:border-color .18s,box-shadow .18s,background .18s}
+    .tb-group input:focus,.tb-group select:focus{border-color:var(--acento);box-shadow:0 0 0 3px rgba(34,197,94,.12);background:var(--surface)}
+    .btn-soft{background:var(--surface-2);border-color:var(--borde);color:var(--ink-2)}
+    .btn-soft:hover{background:#ecfdf5;border-color:#86efac;color:#065f46}
+    .tabla-resumen{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:14px}
+    .tr-card{background:linear-gradient(180deg,#fff 0%,#fbfffc 100%);border:1px solid var(--borde);border-radius:13px;padding:12px 13px;box-shadow:0 1px 8px rgba(6,78,59,.045)}
+    .tr-label{font-size:9.5px;font-weight:800;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:7px;line-height:1.25}
+    .tr-value{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:var(--ink);line-height:1}
+    .tr-sub{font-size:11px;color:var(--muted);margin-top:4px}
+    .table-note{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.45}
+    .tabulator .tabulator-header .tabulator-col{background:#edf9f0!important;border-right:1px solid var(--borde)!important}
+    .tabulator .tabulator-header .tabulator-col-title{color:var(--ink-2);font-weight:800}
+    .tabulator .tabulator-header-filter input{border:1px solid #cde7d6;border-radius:7px;padding:4px 7px;font-size:11.5px;background:#fff;color:var(--ink)}
+    .tabulator-row{border-bottom:1px solid #edf4ef!important}
+    .tabulator-row.tabulator-row-even{background:#fbfffc!important}
+    .tabulator-row:hover{background:#edfff4!important}
+    .tabulator-row.tabulator-selected{background:#d1fae5!important}
+    .tb-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+    .tb-chip-ok{background:#dcfce7;color:#166534;border:1px solid #86efac}
+    .tb-chip-warn{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}
+    .tb-chip-bad{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+    .tb-chip-info{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
+    .tb-chip-neutral{background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb}
+    .tb-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono',monospace;font-size:11.5px}
+    .tb-strong{font-weight:800;color:var(--ink)}
+    .tb-muted{color:#9ca3af}
+    .footer-wm{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:'Playfair Display',serif;font-size:88px;font-weight:900;color:#fff;opacity:.04;pointer-events:none;white-space:nowrap}
+
+    @media(max-width:1200px){
+      .tabla-toolbar{grid-template-columns:1fr 1fr 1fr 1fr}
+      .tabla-toolbar-2{grid-template-columns:repeat(4,1fr)}
+      .tabla-resumen{grid-template-columns:repeat(4,1fr)}
+    }
+    @media(max-width:860px){
+      header{position:relative;padding:12px 16px 16px}.header-inner{align-items:flex-start}.header-right{text-align:left;flex-basis:100%}.header-right h1{font-size:15px}.header-right p{font-size:11.5px}.logo-group img{height:32px}
+      .module-nav{padding:0 14px}.nav-tab{padding:0 13px}.page{padding:18px 14px 54px}.inner-tabs{overflow-x:auto}.inner-tab{min-width:180px;flex:0 0 auto}
+      .card,.verif-panel{padding:18px 16px}.tabla-toolbar{grid-template-columns:1fr 1fr}.tabla-toolbar-2{grid-template-columns:1fr 1fr}.tabla-resumen{grid-template-columns:repeat(2,1fr)}
+      .tabulator{font-size:12.5px}.tabulator .tabulator-header{font-size:10px}
+    }
+    @media(max-width:560px){
+      body{font-size:13px}.logo-group{padding:4px 9px}.logo-group img{height:28px;max-width:92px}.header-chip{font-size:9px}
+      .tabla-toolbar,.tabla-toolbar-2{grid-template-columns:1fr}.tabla-resumen{grid-template-columns:1fr 1fr}.tr-value{font-size:21px}
+      .actions-bar{display:grid;grid-template-columns:1fr}.btn{justify-content:center;width:100%}.guarda-selector select{min-width:100%;width:100%}.kpis-guarda,.verif-resumen{grid-template-columns:1fr 1fr}
+    }
+
     /* Selector mes informe */
     .informe-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:16px 18px;background:var(--surface-2);border:1px solid var(--borde);border-radius:12px;margin-bottom:16px}
     .informe-bar label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:5px}
@@ -207,8 +268,8 @@
     .vc-km-total{display:inline-flex;align-items:center;justify-content:flex-end;border-radius:999px;background:rgba(1,102,96,0.08);border:1px solid rgba(1,102,96,0.18);padding:5px 12px;font-family:monospace;font-weight:700;color:var(--d5);white-space:nowrap}
 
     /* FOOTER */
-    footer{background:var(--verde-oscuro);color:rgba(255,255,255,.42);text-align:center;padding:16px 24px;font-size:12px;font-weight:300;letter-spacing:.04em;flex-shrink:0}
-    footer strong{color:rgba(255,255,255,.75);font-weight:500}
+    footer{background:linear-gradient(105deg,var(--verde-oscuro),#0f6b45);color:rgba(255,255,255,.52);text-align:center;padding:22px 24px;font-size:12px;font-weight:400;letter-spacing:.04em;flex-shrink:0;position:relative;overflow:hidden}
+    footer strong{color:rgba(255,255,255,.86);font-weight:700}
   </style>
 </head>
 <body>
@@ -225,6 +286,7 @@
       <div class="header-chip"><span class="chip-dot"></span>AC192 · Registros y verificación</div>
     </div>
   </div>
+  <div class="header-stripe" aria-hidden="true"></div>
 </header>
 
 <nav class="module-nav">
@@ -433,6 +495,58 @@
       </div>
     </div>
 
+    <div class="card tabla-control-card">
+      <div class="card-title">Consulta y control de registros</div>
+      <div class="card-hint">Los filtros de esta sección modifican únicamente la tabla visible y sus exportaciones. La selección de una fila para informe individual se mantiene activa.</div>
+
+      <div class="tabla-toolbar">
+        <div class="tb-group">
+          <label>Búsqueda general</label>
+          <input type="search" id="tb-search" placeholder="Buscar por guardarecurso, municipio, área, institución o texto registrado"/>
+        </div>
+        <div class="tb-group">
+          <label>Vista de tabla</label>
+          <select id="tb-vista">
+            <option value="operativa">Vista operativa</option>
+            <option value="territorial">Vista territorial</option>
+            <option value="institucional">Vista institucional</option>
+            <option value="calidad">Vista de calidad de datos</option>
+            <option value="completa">Vista completa</option>
+          </select>
+        </div>
+        <div class="tb-group">
+          <label>Desde</label>
+          <input type="date" id="tb-desde"/>
+        </div>
+        <div class="tb-group">
+          <label>Hasta</label>
+          <input type="date" id="tb-hasta"/>
+        </div>
+      </div>
+
+      <div class="tabla-toolbar-2">
+        <div class="tb-group"><label>Guardarecurso</label><select id="tb-guarda"><option value="">Todos</option></select></div>
+        <div class="tb-group"><label>Municipio</label><select id="tb-municipio"><option value="">Todos</option></select></div>
+        <div class="tb-group"><label>Área protegida</label><select id="tb-area"><option value="">Todas</option></select></div>
+        <div class="tb-group"><label>Tipo de patrullaje</label><select id="tb-tipo"><option value="">Todos</option></select></div>
+        <div class="tb-group"><label>Ubicación</label><select id="tb-ubic"><option value="">Todas</option><option value="rumcla">Dentro de RUMCLA</option><option value="fuera">Fuera de RUMCLA</option></select></div>
+        <div class="tb-group"><label>Actividad ilegal</label><select id="tb-ilegal"><option value="">Todos</option><option value="si">Con actividad ilegal</option><option value="no">Sin actividad ilegal</option></select></div>
+        <div class="tb-group"><label>Coordenadas</label><select id="tb-coord"><option value="">Todas</option><option value="Válidas">Válidas</option><option value="Revisar">Revisar</option><option value="Vacías">Vacías</option></select></div>
+        <button class="btn btn-soft" id="tb-limpiar" style="height:38px;align-self:end">Limpiar filtros</button>
+      </div>
+
+      <div class="tabla-resumen" id="tb-resumen">
+        <div class="tr-card"><div class="tr-label">Registros visibles</div><div class="tr-value" id="tb-r-total">–</div><div class="tr-sub">patrullajes</div></div>
+        <div class="tr-card"><div class="tr-label">Guardarecursos</div><div class="tr-value" id="tb-r-guardas">–</div><div class="tr-sub">activos</div></div>
+        <div class="tr-card"><div class="tr-label">Municipios</div><div class="tr-value" id="tb-r-munis">–</div><div class="tr-sub">cubiertos</div></div>
+        <div class="tr-card"><div class="tr-label">Kilómetros</div><div class="tr-value" id="tb-r-km">–</div><div class="tr-sub">acumulados</div></div>
+        <div class="tr-card"><div class="tr-label">Incidentes</div><div class="tr-value" id="tb-r-inc">–</div><div class="tr-sub">actividad ilegal</div></div>
+        <div class="tr-card"><div class="tr-label">Con coordenadas</div><div class="tr-value" id="tb-r-coord">–</div><div class="tr-sub">válidas</div></div>
+        <div class="tr-card"><div class="tr-label">Registros a revisar</div><div class="tr-value" id="tb-r-rev">–</div><div class="tr-sub">calidad de datos</div></div>
+      </div>
+      <div class="table-note">La tabla usa datos normalizados para consulta. El CSV original no se modifica desde esta pantalla.</div>
+    </div>
+
     <div class="card" style="padding:0;overflow:hidden">
       <div id="tabla-registros"></div>
     </div>
@@ -508,6 +622,7 @@
 </div>
 
 <footer>
+  <div class="footer-wm" aria-hidden="true">CONAP</div>
   <strong>CONAP · Dirección Regional Altiplano Central</strong> · Laboratorio SIG AALA · © 2026
 </footer>
 
@@ -548,6 +663,84 @@ const MERGE = {
 function canonStr(s){return String(s||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ");}
 function normGuarda(n){if(!n)return null;const c=canonStr(n);if(EXCLUIDOS.has(c))return null;return MERGE[c]||n.trim();}
 
+function cleanLabel(value){
+  let s=String(value??"").trim();
+  if(!s)return "Sin dato";
+  s=s.replace(/[_]+/g," ").replace(/\s+/g," ").trim();
+  const isAllCaps=s===s.toUpperCase();
+  const isAllLower=s===s.toLowerCase();
+  if(isAllCaps||isAllLower){s=s.toLowerCase().replace(/(^|\s)([a-záéíóúüñ])/g,(m,sp,ch)=>sp+ch.toUpperCase());}
+  return s.replace(/\bRumcla\b/g,"RUMCLA").replace(/\bConap\b/g,"CONAP").replace(/\bAala\b/g,"AALA").replace(/\bGtm\b/g,"GTM").replace(/\bKm\b/g,"km").replace(/\bSi\b/g,"Sí");
+}
+function normalizarAreaProtegida(v){
+  const raw=String(v||"").trim();
+  if(!raw)return "Sin dato";
+  let c=canonStr(raw)
+    .replace(/\bprotejid[ao]s?\b/g,"protegida")
+    .replace(/\bprotenidas\b/g,"protegidas")
+    .replace(/\bminicipal\b/g,"municipal")
+    .replace(/\bminicipio\b/g,"municipio")
+    .replace(/\btecpqn\b/g,"tecpan")
+    .replace(/\baatillero\b/g,"astillero")
+    .replace(/\bastllero\b/g,"astillero")
+    .replace(/\bchimatenango\b/g,"chimaltenango")
+    .replace(/\bparrmos\b/g,"parramos")
+    .replace(/\bacatenamgo\b/g,"acatenango")
+    .replace(/\bmejapa\b/g,"nejapa")
+    .replace(/\bconpana\b/g,"campana")
+    .replace(/\bserro\b/g,"cerro")
+    .replace(/\bfimca\b/g,"finca")
+    .replace(/\bcueno\b/g,"cuenca")
+    .replace(/\bd8e\b/g,"de")
+    .replace(/\bd\s+atitlan\b/g,"de atitlan")
+    .replace(/\b7e\b/g,"lago")
+    .replace(/\s+/g," ").trim();
+  if(c==="si")return "Sin dato";
+  if(c.includes("cuenca") && c.includes("lago") && c.includes("atitlan"))return "Reserva de usos múltiples de la Cuenca del Lago de Atitlán";
+  if(c.includes("reserva de usos multiples") && !c.includes("lago"))return "Reserva de usos múltiples de la Cuenca del Lago de Atitlán";
+  if(c.includes("iximche"))return "Parque Arqueológico Iximché";
+  if(c.includes("tecpan") && c.includes("astillero"))return "Parque Regional Municipal Astillero de Tecpán";
+  if(c.includes("volcan acatenango"))return "Volcán Acatenango";
+  if(c.includes("parramos") && (c.includes("astillero pequeno") || c.includes("astillero pequeño")))return "Astillero Pequeño, Parramos, Chimaltenango";
+  if(c.includes("parramos") && c.includes("pajales"))return "Astillero Pajales, Parramos, Chimaltenango";
+  if(c.includes("parramos") && c.includes("chicorona"))return "Astillero Chicorona, Parramos, Chimaltenango";
+  if(c.includes("parramos") && c.includes("grande"))return "Astillero Grande, Parramos, Chimaltenango";
+  if(c.includes("parramos") && (c.includes("area protegida") || c.includes("areas protegidas")))return "Áreas protegidas de Parramos, Chimaltenango";
+  if(c.includes("chirijuyu"))return "Reserva Natural Privada Finca Chirijuyú";
+  if(c.includes("soco") && c.includes("nejapa"))return "Montaña El Soco, San Antonio Nejapa, Acatenango";
+  if(c.includes("san antonio nejapa") && c.includes("astillero"))return "Astillero San Antonio Nejapa, Acatenango";
+  if(c.includes("campana") && (c.includes("pacoc") || c.includes("chalabal") || c.includes("nacimientos")))return "Cerro La Campana, Acatenango";
+  if(c.includes("cipreson"))return "Cerro El Cipresón, Aldea Los Planes, Acatenango";
+  if(c.includes("sanay") || c.includes("pajales acatenango"))return "Cerro El Sanay, Aldea Pajales, Acatenango";
+  if(c.includes("chalabal") || c.includes("socorro"))return "Finca Chalabal, Aldea El Socorro, Acatenango";
+  if(c.includes("balastrera"))return "La Balastrera, Acatenango";
+  if(c.includes("balam") || c.includes("balan"))return "Balam Juyú, Patzicía, Chimaltenango";
+  if(c.includes("linderos") && (c.includes("itzapa") || c.includes("duenas") || c.includes("dueñas")))return "Linderos de Parramos";
+  if(c.includes("astilleros municipales"))return "Astilleros municipales";
+  if(c.includes("nuevas reservas"))return "Nuevas reservas en proceso de inscripción";
+  return cleanLabel(raw);
+}
+function diaSemana(dt){if(!dt||isNaN(dt))return "Sin fecha";return ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"][dt.getDay()];}
+function periodoLabel(k){if(!k)return "Sin período";const [y,m]=k.split("-");return `${MESES_ES[Number(m)-1].charAt(0).toUpperCase()+MESES_ES[Number(m)-1].slice(1)} ${y}`;}
+function estadoCoordenadas(lat,lon){
+  if(!isFinite(lat)||!isFinite(lon))return "Vacías";
+  if(lat===0&&lon===0)return "Revisar";
+  if(lat>=13.5&&lat<=18.2&&lon>=-92.5&&lon<=-88.0)return "Válidas";
+  return "Revisar";
+}
+function calidadRegistro(r,dt,dur,coordEstado,areaNorm){
+  let fallas=0;
+  if(!dt||isNaN(dt))fallas++;
+  if(dur===null)fallas++;
+  if(coordEstado!=="Válidas")fallas++;
+  if(!String(r["Municipio"]||"").trim())fallas++;
+  if(!areaNorm||areaNorm==="Sin dato")fallas++;
+  if(!String(r["Tipo de patrullaje"]||"").trim())fallas++;
+  if(fallas===0)return "Completo";
+  if(fallas<=2)return "Revisar";
+  return "Incompleto";
+}
+
 /* ═══════════════════════════════════════════════════
    GLOBALS
 ═══════════════════════════════════════════════════ */
@@ -555,7 +748,7 @@ let DATOS = [];         // datos normalizados
 let tablaTabulator;
 let mapaMeses = new Map();
 
-const PAL = ["#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660","#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"];
+const PAL = ["#4ade80","#fb7185","#60a5fa","#fbbf24","#f87171","#2dd4bf","#c084fc","#34d399","#f9a8d4","#a3e635","#fb923c","#93c5fd"];
 const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MESES_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
@@ -651,15 +844,29 @@ function procesarDatos(rawData){
       const lon=parseFloat(String(r["Longitud"]||"").replace(",","."));
       const gtm=(isFinite(lat)&&isFinite(lon))?latLonAGTM(lat,lon):{GTM_X:"",GTM_Y:""};
       const km=parseFloat(r["Kilometros recorridos"]||"");
+      const dur=durHoras(r["Hora de Inicio del patrullaje"],r["Hora de finalizacion de patrullaje"]);
+      const periodo=periodoOperativo(dt);
+      const areaNorm=normalizarAreaProtegida(r["Area protegida"]);
+      const coordEstado=estadoCoordenadas(lat,lon);
+      const calidad=calidadRegistro(r,dt,dur,coordEstado,areaNorm);
       return{
         ...r,
         "Guarda recursos responsable": guarda,
+        "Área protegida normalizada": areaNorm,
+        "Duración calculada": dur!==null?Number(dur.toFixed(2)):"",
+        "Período operativo": periodoLabel(periodo),
+        "Día de semana": diaSemana(dt),
+        "Estado coordenadas": coordEstado,
+        "Calidad del registro": calidad,
         "__dt": dt,
-        "__dur": durHoras(r["Hora de Inicio del patrullaje"],r["Hora de finalizacion de patrullaje"]),
+        "__dur": dur,
         "__km": isNaN(km)?null:km,
         "__cu": canonUbic(r["Ubicacion"]),
         "__ci": canonIlegal(r["Actividad ilegal observada"]),
-        "__periodo": periodoOperativo(dt),
+        "__periodo": periodo,
+        "__area_norm": areaNorm,
+        "__coord_estado": coordEstado,
+        "__calidad": calidad,
         "GTM_X (m)": gtm.GTM_X!==null?gtm.GTM_X:"",
         "GTM_Y (m)": gtm.GTM_Y!==null?gtm.GTM_Y:"",
       };
@@ -947,51 +1154,156 @@ function exportarVerificacionXLSX(filasSummary,enPeriodo,desde,hasta,meta){
    TABLA TABULATOR
 ═══════════════════════════════════════════════════ */
 function inicializarTabla(){
-  // Columnas base en orden útil — km primero después de fecha, luego las demás
-  const cols=[
-    {title:"Guardarecursos",field:"Guarda recursos responsable",headerFilter:"input",width:200,frozen:true},
-    {title:"Fecha",field:"Fecha de patrullaje",headerFilter:"input",width:115,sorter:"string"},
-    {title:"Km recorridos",field:"Kilometros recorridos",headerFilter:"input",width:120,hozAlign:"right",
-      formatter:c=>{const v=parseFloat(c.getValue());return isNaN(v)?'<span style="color:#d1d5db">–</span>':`<span style="font-weight:600;color:var(--d5)">${v.toFixed(1)} km</span>`}},
-    {title:"Municipio",field:"Municipio",headerFilter:"input",width:160},
-    {title:"Hora inicio",field:"Hora de Inicio del patrullaje",width:100},
-    {title:"Hora fin",field:"Hora de finalizacion de patrullaje",width:100},
-    {title:"Ubicación",field:"Ubicacion",headerFilter:"input",width:130},
-    {title:"Área protegida",field:"Area protegida",headerFilter:"input",width:200},
-    {title:"Tipo de patrullaje",field:"Tipo de patrullaje",headerFilter:"input",width:200},
-    {title:"Instituciones",field:"Hay mas instituciones involucradas en el patrullaje",width:110,hozAlign:"center",
-      formatter:c=>{const v=canonStr(c.getValue()||"");return(v==="si"||v==="sí")?'<span class="badge badge-azul">Sí</span>':'<span class="badge badge-gris">No</span>'}},
-    {title:"Actividad ilegal",field:"Actividad ilegal observada",width:110,hozAlign:"center",
-      formatter:c=>{const v=canonIlegal(c.getValue()||"");return v==="si"?'<span class="badge badge-rojo">Sí</span>':v==="no"?'<span class="badge badge-verde">No</span>':'<span class="badge badge-gris">–</span>'}},
-    {title:"Región",field:"Region",headerFilter:"input",width:140},
-    {title:"Latitud",field:"Latitud",width:100,hozAlign:"right"},
-    {title:"Longitud",field:"Longitud",width:100,hozAlign:"right"},
-    {title:"GTM X (m)",field:"GTM_X (m)",width:130,hozAlign:"right",
-      formatter:c=>{const v=c.getValue();return v!==""?`<span style="font-family:monospace;font-size:11px">${Number(v).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:'<span style="color:#d1d5db">–</span>'}},
-    {title:"GTM Y (m)",field:"GTM_Y (m)",width:130,hozAlign:"right",
-      formatter:c=>{const v=c.getValue();return v!==""?`<span style="font-family:monospace;font-size:11px">${Number(v).toLocaleString("es",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:'<span style="color:#d1d5db">–</span>'}},
-  ];
+  const badge=(txt,cls)=>`<span class="tb-chip ${cls}">${txt}</span>`;
+  const empty='<span class="tb-muted">–</span>';
+  const fmtText=c=>escH(cleanLabel(c.getValue()||""));
+  const fmtKm=c=>{const v=parseFloat(c.getValue());return isNaN(v)?empty:`<span class="tb-strong" style="color:var(--d5)">${v.toFixed(1)} km</span>`};
+  const fmtDur=c=>{const v=Number(c.getValue());return isFinite(v)&&v>0?`<span class="tb-strong">${v.toFixed(1)} h</span>`:empty};
+  const fmtIlegal=c=>{const v=canonIlegal(c.getValue()||"");return v==="si"?badge("Sí","tb-chip-bad"):v==="no"?badge("No","tb-chip-ok"):badge("Sin dato","tb-chip-neutral")};
+  const fmtInst=c=>{const v=canonStr(c.getValue()||"");return(v==="si"||v==="sí")?badge("Sí","tb-chip-info"):badge("No","tb-chip-neutral")};
+  const fmtUbic=c=>{const v=canonUbic(c.getValue()||"");return v==="rumcla"?badge("Dentro de RUMCLA","tb-chip-ok"):v==="fuera"?badge("Fuera de RUMCLA","tb-chip-warn"):badge("Sin dato","tb-chip-neutral")};
+  const fmtCoord=c=>{const v=c.getValue();return v==="Válidas"?badge("Válidas","tb-chip-ok"):v==="Revisar"?badge("Revisar","tb-chip-warn"):badge("Vacías","tb-chip-neutral")};
+  const fmtCalidad=c=>{const v=c.getValue();return v==="Completo"?badge("Completo","tb-chip-ok"):v==="Revisar"?badge("Revisar","tb-chip-warn"):badge("Incompleto","tb-chip-bad")};
+  const fmtGtm=c=>{const v=c.getValue();return v!==""?`<span class="tb-mono">${Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`:empty};
+
+  const C={
+    guarda:{title:"Guardarecurso",field:"Guarda recursos responsable",headerFilter:"input",width:220,frozen:true,formatter:fmtText,responsive:0},
+    fecha:{title:"Fecha",field:"Fecha de patrullaje",headerFilter:"input",width:118,sorter:"string",responsive:0},
+    periodo:{title:"Período operativo",field:"Período operativo",headerFilter:"input",width:150,responsive:4},
+    dia:{title:"Día de semana",field:"Día de semana",headerFilter:"input",width:135,responsive:5},
+    km:{title:"Kilómetros recorridos",field:"Kilometros recorridos",headerFilter:"input",width:145,hozAlign:"right",formatter:fmtKm,responsive:1},
+    dur:{title:"Duración calculada",field:"Duración calculada",width:135,hozAlign:"right",formatter:fmtDur,responsive:4},
+    muni:{title:"Municipio",field:"Municipio",headerFilter:"input",width:165,formatter:fmtText,responsive:1},
+    horaIni:{title:"Hora de inicio",field:"Hora de Inicio del patrullaje",width:120,responsive:5},
+    horaFin:{title:"Hora de finalización",field:"Hora de finalizacion de patrullaje",width:145,responsive:5},
+    ubic:{title:"Ubicación",field:"Ubicacion",headerFilter:"input",width:155,formatter:fmtUbic,responsive:3},
+    area:{title:"Área protegida",field:"Area protegida",headerFilter:"input",width:220,formatter:fmtText,responsive:6},
+    areaNorm:{title:"Área protegida normalizada",field:"Área protegida normalizada",headerFilter:"input",width:260,formatter:fmtText,responsive:2},
+    tipo:{title:"Tipo de patrullaje",field:"Tipo de patrullaje",headerFilter:"input",width:210,formatter:fmtText,responsive:4},
+    inst:{title:"Instituciones involucradas",field:"Hay mas instituciones involucradas en el patrullaje",width:170,hozAlign:"center",formatter:fmtInst,responsive:6},
+    instDet:{title:"Detalle de instituciones",field:"Instituciones involucradas",headerFilter:"input",width:230,formatter:fmtText,responsive:7},
+    ilegal:{title:"Actividad ilegal observada",field:"Actividad ilegal observada",width:170,hozAlign:"center",formatter:fmtIlegal,responsive:2},
+    region:{title:"Región",field:"Region",headerFilter:"input",width:140,formatter:fmtText,responsive:7},
+    lat:{title:"Latitud",field:"Latitud",width:110,hozAlign:"right",formatter:c=>c.getValue()?`<span class="tb-mono">${escH(c.getValue())}</span>`:empty,responsive:6},
+    lon:{title:"Longitud",field:"Longitud",width:110,hozAlign:"right",formatter:c=>c.getValue()?`<span class="tb-mono">${escH(c.getValue())}</span>`:empty,responsive:6},
+    gtmX:{title:"GTM X (m)",field:"GTM_X (m)",width:130,hozAlign:"right",formatter:fmtGtm,responsive:7},
+    gtmY:{title:"GTM Y (m)",field:"GTM_Y (m)",width:130,hozAlign:"right",formatter:fmtGtm,responsive:7},
+    coord:{title:"Estado de coordenadas",field:"Estado coordenadas",width:165,hozAlign:"center",formatter:fmtCoord,responsive:3},
+    calidad:{title:"Calidad del registro",field:"Calidad del registro",width:160,hozAlign:"center",formatter:fmtCalidad,responsive:2},
+  };
+
+  const vistas={
+    operativa:[C.guarda,C.fecha,C.muni,C.areaNorm,C.tipo,C.km,C.dur,C.ubic,C.ilegal],
+    territorial:[C.fecha,C.guarda,C.muni,C.areaNorm,C.ubic,C.region,C.lat,C.lon,C.gtmX,C.gtmY,C.coord],
+    institucional:[C.fecha,C.guarda,C.muni,C.tipo,C.inst,C.instDet,C.ilegal,C.areaNorm],
+    calidad:[C.calidad,C.fecha,C.guarda,C.muni,C.areaNorm,C.dur,C.coord,C.ilegal,C.horaIni,C.horaFin,C.lat,C.lon],
+    completa:[C.guarda,C.fecha,C.periodo,C.dia,C.km,C.dur,C.muni,C.horaIni,C.horaFin,C.ubic,C.area,C.areaNorm,C.tipo,C.inst,C.instDet,C.ilegal,C.region,C.lat,C.lon,C.gtmX,C.gtmY,C.coord,C.calidad]
+  };
 
   tablaTabulator=new Tabulator("#tabla-registros",{
     data:DATOS,
     layout:"fitDataStretch",
+    responsiveLayout:"collapse",
     pagination:"local",
     paginationSize:25,
-    paginationSizeSelector:[15,25,50,100],
-    columns:cols,
+    paginationSizeSelector:[15,25,50,100,250],
+    columns:vistas.operativa,
     movableColumns:true,
     selectableRows:1,
+    placeholder:"No hay registros que coincidan con los filtros aplicados.",
     rowFormatter:row=>{
       const d=row.getData();
-      if(d.__ci==="si") row.getElement().style.borderLeft="3px solid #ef4444";
+      const el=row.getElement();
+      el.style.borderLeft=d.__ci==="si"?"4px solid var(--d4)":d.__calidad!=="Completo"?"4px solid var(--d3)":"4px solid transparent";
     }
   });
 
   document.getElementById("download-csv").addEventListener("click",()=>tablaTabulator.download("csv","patrullajes.csv"));
   document.getElementById("download-xlsx").addEventListener("click",()=>tablaTabulator.download("xlsx","patrullajes.xlsx",{sheetName:"Datos"}));
 
+  inicializarControlesTabla(vistas);
+  actualizarResumenTabla(DATOS);
+
   document.getElementById("estado-registros").innerHTML=
-    `<strong>${DATOS.length.toLocaleString("es")}</strong> registros cargados · selecciona una fila para generar informe individual · las filas con borde rojo tienen actividad ilegal reportada`;
+    `<strong>${DATOS.length.toLocaleString("es")}</strong> registros cargados · seleccione una fila para generar informe individual · los registros con borde rojo reportan actividad ilegal`;
+}
+
+function inicializarControlesTabla(vistas){
+  const byId=id=>document.getElementById(id);
+  const llenar=(id,vals,ph)=>{
+    const el=byId(id);if(!el)return;
+    el.innerHTML=`<option value="">${ph}</option>`;
+    vals.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=cleanLabel(v);el.appendChild(o);});
+  };
+  llenar("tb-guarda",[...new Set(DATOS.map(r=>r["Guarda recursos responsable"]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"es")),"Todos");
+  llenar("tb-municipio",[...new Set(DATOS.map(r=>r["Municipio"]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"es")),"Todos");
+  llenar("tb-area",[...new Set(DATOS.map(r=>r.__area_norm).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"es")),"Todas");
+  llenar("tb-tipo",[...new Set(DATOS.map(r=>r["Tipo de patrullaje"]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"es")),"Todos");
+
+  const dates=DATOS.map(r=>r.__dt).filter(d=>d&&!isNaN(d)).sort((a,b)=>a-b);
+  if(dates.length){byId("tb-desde").value=isoDate(dates[0]);byId("tb-hasta").value=isoDate(dates[dates.length-1]);}
+
+  byId("tb-vista").addEventListener("change",e=>{tablaTabulator.setColumns(vistas[e.target.value]||vistas.operativa);setTimeout(aplicarFiltrosTabla,0);});
+  ["tb-search","tb-desde","tb-hasta","tb-guarda","tb-municipio","tb-area","tb-tipo","tb-ubic","tb-ilegal","tb-coord"].forEach(id=>{
+    const el=byId(id);if(el)el.addEventListener(id==="tb-search"?"input":"change",aplicarFiltrosTabla);
+  });
+  byId("tb-limpiar").addEventListener("click",()=>{
+    byId("tb-search").value="";byId("tb-guarda").value="";byId("tb-municipio").value="";byId("tb-area").value="";byId("tb-tipo").value="";byId("tb-ubic").value="";byId("tb-ilegal").value="";byId("tb-coord").value="";
+    if(dates.length){byId("tb-desde").value=isoDate(dates[0]);byId("tb-hasta").value=isoDate(dates[dates.length-1]);}
+    aplicarFiltrosTabla();
+  });
+}
+
+function aplicarFiltrosTabla(){
+  const q=canonStr(document.getElementById("tb-search")?.value||"");
+  const desde=document.getElementById("tb-desde")?.value?new Date(document.getElementById("tb-desde").value+"T00:00:00"):null;
+  const hasta=document.getElementById("tb-hasta")?.value?new Date(document.getElementById("tb-hasta").value+"T23:59:59"):null;
+  const guarda=document.getElementById("tb-guarda")?.value||"";
+  const muni=document.getElementById("tb-municipio")?.value||"";
+  const area=document.getElementById("tb-area")?.value||"";
+  const tipo=document.getElementById("tb-tipo")?.value||"";
+  const ubic=document.getElementById("tb-ubic")?.value||"";
+  const ilegal=document.getElementById("tb-ilegal")?.value||"";
+  const coord=document.getElementById("tb-coord")?.value||"";
+
+  tablaTabulator.setFilter(data=>{
+    if(desde&&(!data.__dt||data.__dt<desde))return false;
+    if(hasta&&(!data.__dt||data.__dt>hasta))return false;
+    if(guarda&&data["Guarda recursos responsable"]!==guarda)return false;
+    if(muni&&data["Municipio"]!==muni)return false;
+    if(area&&data.__area_norm!==area)return false;
+    if(tipo&&data["Tipo de patrullaje"]!==tipo)return false;
+    if(ubic&&data.__cu!==ubic)return false;
+    if(ilegal&&data.__ci!==ilegal)return false;
+    if(coord&&data.__coord_estado!==coord)return false;
+    if(q){
+      const txt=canonStr([
+        data["Guarda recursos responsable"],data["Fecha de patrullaje"],data["Municipio"],data["Area protegida"],data.__area_norm,
+        data["Tipo de patrullaje"],data["Ubicacion"],data["Region"],data["Instituciones involucradas"],data["Actividad ilegal observada"]
+      ].join(" "));
+      if(!txt.includes(q))return false;
+    }
+    return true;
+  });
+  setTimeout(()=>actualizarResumenTabla(tablaTabulator.getData("active")),0);
+}
+
+function actualizarResumenTabla(rows){
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  const total=rows.length;
+  const guardas=new Set(rows.map(r=>r["Guarda recursos responsable"]).filter(Boolean)).size;
+  const munis=new Set(rows.map(r=>r["Municipio"]).filter(Boolean)).size;
+  const km=rows.reduce((a,r)=>a+(r.__km||0),0);
+  const inc=rows.filter(r=>r.__ci==="si").length;
+  const coord=rows.filter(r=>r.__coord_estado==="Válidas").length;
+  const rev=rows.filter(r=>r.__calidad!=="Completo").length;
+  set("tb-r-total",total.toLocaleString("es"));
+  set("tb-r-guardas",guardas.toLocaleString("es"));
+  set("tb-r-munis",munis.toLocaleString("es"));
+  set("tb-r-km",km.toLocaleString("en-US",{maximumFractionDigits:0}));
+  set("tb-r-inc",inc.toLocaleString("es"));
+  set("tb-r-coord",coord.toLocaleString("es"));
+  set("tb-r-rev",rev.toLocaleString("es"));
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1472,9 +1784,20 @@ function generarInformeMensual(fmt){
 }
 
 /* ═══════════════════════════════════════════════════
+   DETECCIÓN DE DISPOSITIVO
+═══════════════════════════════════════════════════ */
+function aplicarClaseDispositivo(){
+  const w=window.innerWidth;
+  document.body.classList.remove("device-mobile","device-tablet","device-desktop");
+  document.body.classList.add(w<640?"device-mobile":w<1024?"device-tablet":"device-desktop");
+}
+window.addEventListener("resize",aplicarClaseDispositivo,{passive:true});
+
+/* ═══════════════════════════════════════════════════
    INICIO
 ═══════════════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded",function(){
+  aplicarClaseDispositivo();
   if(typeof Tabulator==="undefined"){alert("No se pudo cargar Tabulator.");return}
 
   document.getElementById("btn-informe-guarda").addEventListener("click",generarInformeGuarda);
