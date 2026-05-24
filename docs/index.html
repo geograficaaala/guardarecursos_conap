@@ -37,7 +37,7 @@
     @keyframes stripeIn  { from { transform: scaleX(0); } to { transform: scaleX(1); } }
     @keyframes blink     { 0%,100% { opacity:1;transform:scale(1); } 50% { opacity:.35;transform:scale(.6); } }
     @keyframes fadeUp    { from { opacity:0;transform:translateY(18px); } to { opacity:1;transform:translateY(0); } }
-    @media (prefers-reduced-motion: reduce) { body, .card { animation: none !important; opacity: 1 !important; transform: none !important; } }
+    @media (prefers-reduced-motion: reduce) { body, .menu-card { animation: none !important; transition: none !important; } }
 
     /* ── HEADER ─────────────────────────────────── */
     header {
@@ -288,122 +288,369 @@
       max-width: 580px;
     }
 
-    /* ── CARDS ───────────────────────────────────── */
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-    }
-    .card {
-      background: var(--surface);
+/* ── CARRUSEL 2D DE MÓDULOS ───────────────────── */
+    .menu-shell {
+      position: relative;
       border: 1px solid var(--borde);
-      border-radius: 16px; overflow: hidden;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 18% 10%, rgba(201,168,76,.18), transparent 28%),
+        radial-gradient(circle at 82% 18%, rgba(26,92,58,.12), transparent 32%),
+        linear-gradient(180deg, rgba(255,255,255,.96), rgba(246,250,247,.92));
+      box-shadow: 0 18px 60px rgba(10,61,43,.10);
+      overflow: hidden;
+      padding: 28px 26px 30px;
+    }
+    .menu-shell::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(10,61,43,.055) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.85), transparent 78%);
+      pointer-events: none;
+    }
+    .menu-topbar {
+      position: relative; z-index: 5;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 18px; margin-bottom: 20px;
+    }
+    .menu-label {
+      display: inline-flex; align-items: center; gap: 9px;
+      font-size: 11px; font-weight: 800;
+      letter-spacing: .13em; text-transform: uppercase;
+      color: var(--verde-oscuro);
+      background: rgba(10,61,43,.07);
+      border: 1px solid rgba(10,61,43,.10);
+      border-radius: 999px; padding: 8px 14px;
+    }
+    .menu-label span {
+      width: 7px; height: 7px; border-radius: 999px;
+      background: var(--dorado);
+      box-shadow: 0 0 0 4px rgba(201,168,76,.18);
+    }
+    .menu-hint {
+      font-size: 12.5px; color: var(--muted); font-weight: 500;
+      text-align: right;
+    }
+    .coverflow {
+      position: relative; z-index: 2;
+    }
+    .cover-stage {
+      position: relative;
+      height: 430px;
+      overflow: hidden;
+      border-radius: 24px;
+      outline: none;
+    }
+    .cover-stage:focus-visible {
+      box-shadow: 0 0 0 3px rgba(201,168,76,.38);
+    }
+    .menu-card {
+      --accent: var(--verde-medio);
+      --accent-soft: rgba(26,92,58,.12);
+      position: absolute;
+      top: 22px; left: 50%;
+      width: min(520px, 72vw);
+      min-height: 364px;
       display: flex;
-      box-shadow: 0 1px 8px var(--sombra);
-      transition: transform .25s ease, box-shadow .25s ease;
-      animation: fadeUp .5s cubic-bezier(.22,.68,0,1.1) both;
+      flex-direction: column;
+      background: rgba(255,255,255,.94);
+      border: 1px solid rgba(216,228,221,.95);
+      border-radius: 24px;
+      box-shadow: 0 14px 42px rgba(10,61,43,.10);
+      overflow: hidden;
+      cursor: pointer;
+      transition:
+        transform .48s cubic-bezier(.22,.68,0,1),
+        opacity .35s ease,
+        filter .35s ease,
+        box-shadow .35s ease;
+      will-change: transform, opacity;
+      transform: translateX(-50%) scale(.74);
+      opacity: 0;
+      pointer-events: none;
+      filter: saturate(.82);
     }
-    .card:nth-child(1) { animation-delay: .08s; }
-    .card:nth-child(2) { animation-delay: .14s; }
-    .card:nth-child(3) { animation-delay: .20s; }
-    .card:nth-child(4) { animation-delay: .26s; }
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 36px rgba(10,61,43,.12);
+    .menu-card::before {
+      content: '';
+      height: 7px;
+      background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 68%, #ffffff));
+      flex-shrink: 0;
     }
-    .card-stripe { width: 4px; flex-shrink: 0; }
-    .card-body {
-      flex: 1; padding: 26px 24px 22px;
-      display: flex; flex-direction: column;
-      min-width: 0;
+    .menu-card[data-state="active"] {
+      transform: translateX(-50%) scale(1);
+      opacity: 1;
+      z-index: 10;
+      pointer-events: auto;
+      cursor: default;
+      filter: none;
+      box-shadow: 0 22px 68px rgba(10,61,43,.18);
     }
-    .card-top {
-      display: flex; align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px; margin-bottom: 14px; flex-wrap: wrap;
+    .menu-card[data-state="prev"] {
+      transform: translateX(calc(-50% - 390px)) scale(.84);
+      opacity: .52;
+      z-index: 6;
+      pointer-events: auto;
     }
-    .card-code {
-      font-size: 10px; font-weight: 700;
-      letter-spacing: .14em; text-transform: uppercase;
+    .menu-card[data-state="next"] {
+      transform: translateX(calc(-50% + 390px)) scale(.84);
+      opacity: .52;
+      z-index: 6;
+      pointer-events: auto;
     }
-    .card-tag {
-      font-size: 10px; font-weight: 600;
-      color: var(--muted);
-      background: var(--surface-2);
-      border: 1px solid var(--borde);
-      border-radius: 999px; padding: 3px 10px;
-      white-space: nowrap; letter-spacing: .04em; flex-shrink: 0;
+    .menu-card[data-state="far-prev"] {
+      transform: translateX(calc(-50% - 675px)) scale(.68);
+      opacity: .18;
+      z-index: 2;
     }
-    .card h3 {
+    .menu-card[data-state="far-next"] {
+      transform: translateX(calc(-50% + 675px)) scale(.68);
+      opacity: .18;
+      z-index: 2;
+    }
+    .menu-card[data-state="hidden"] {
+      opacity: 0;
+      z-index: 1;
+      transform: translateX(-50%) scale(.62);
+    }
+    .menu-card:hover:not([data-state="active"]) {
+      opacity: .72;
+      filter: none;
+    }
+    .module-card-body {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 28px 30px 26px;
+      flex: 1;
+    }
+    .module-card-body::after {
+      content: '';
+      position: absolute;
+      right: -54px; top: -54px;
+      width: 170px; height: 170px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      pointer-events: none;
+    }
+    .module-head {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 18px; position: relative; z-index: 1;
+    }
+    .module-code {
+      display: inline-flex; align-items: center;
+      font-size: 11px; font-weight: 800;
+      letter-spacing: .15em; text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .module-title {
       font-family: 'Playfair Display', serif;
-      font-size: 18.5px; font-weight: 700;
-      color: var(--ink); line-height: 1.22;
-      margin-bottom: 10px; letter-spacing: -.015em;
+      font-size: clamp(26px, 2.8vw, 36px);
+      line-height: 1.04;
+      letter-spacing: -.03em;
+      color: var(--ink);
+      max-width: 360px;
     }
-    .card-desc {
-      font-size: 13.5px; color: var(--muted);
-      line-height: 1.68; font-weight: 400;
-      margin-bottom: 20px; flex: 1;
+    .module-icon {
+      width: 62px; height: 62px;
+      display: grid; place-items: center;
+      border-radius: 20px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.65);
     }
-    .card-subpages {
-      display: flex; gap: 6px; flex-wrap: wrap;
-      margin-bottom: 20px;
+    .module-desc {
+      position: relative; z-index: 1;
+      font-size: 14.5px;
+      color: var(--muted);
+      line-height: 1.72;
+      font-weight: 400;
+      max-width: 440px;
     }
-    .sub-link {
-      display: inline-flex; align-items: center; gap: 5px;
-      text-decoration: none; font-size: 12px; font-weight: 600;
+    .module-tags {
+      position: relative; z-index: 1;
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .module-tag {
+      font-size: 11px;
+      font-weight: 700;
       color: var(--ink-2);
       background: var(--surface-2);
       border: 1px solid var(--borde);
-      border-radius: 8px; padding: 5px 11px;
-      transition: all .18s; white-space: nowrap;
+      border-radius: 999px;
+      padding: 6px 10px;
+      white-space: nowrap;
     }
-    .sub-link:hover {
-      background: var(--bg);
-      border-color: #94a3b8;
-      color: var(--ink);
-    }
-    .sub-link svg { flex-shrink: 0; opacity: .55; }
-    .card-foot {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      padding-top: 16px;
+    .module-actions {
+      position: relative; z-index: 1;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 10px;
+      margin-top: auto;
+      padding-top: 18px;
       border-top: 1px solid var(--borde);
-      margin-top: auto; gap: 12px;
     }
-    .card-meta {
-      font-size: 11.5px; color: var(--muted);
-      font-weight: 500; min-width: 0;
+    .module-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 42px;
+      border-radius: 13px;
+      text-decoration: none;
+      font-size: 12.5px;
+      font-weight: 800;
+      letter-spacing: -.01em;
+      transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+      white-space: nowrap;
     }
-    .card-cta {
-      display: inline-flex; align-items: center; gap: 6px;
-      text-decoration: none; font-size: 13px; font-weight: 600;
-      color: #fff; padding: 8px 16px;
-      border-radius: 9px; white-space: nowrap; flex-shrink: 0;
-      transition: opacity .18s, transform .18s;
+    .module-btn svg { flex-shrink: 0; }
+    .module-btn.primary {
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 24%, transparent);
     }
-    .card-cta:hover { opacity: .88; transform: translateX(2px); }
-    .card-cta svg { transition: transform .18s; }
-    .card-cta:hover svg { transform: translateX(2px); }
+    .module-btn.secondary {
+      color: var(--ink-2);
+      background: var(--surface-2);
+      border: 1px solid var(--borde);
+    }
+    .module-btn:hover {
+      transform: translateY(-2px);
+    }
+    .module-btn.primary:hover {
+      box-shadow: 0 14px 30px color-mix(in srgb, var(--accent) 34%, transparent);
+    }
+    .menu-card:not([data-state="active"]) .module-desc,
+    .menu-card:not([data-state="active"]) .module-tags,
+    .menu-card:not([data-state="active"]) .module-actions {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .menu-card:not([data-state="active"]) .module-card-body {
+      justify-content: center;
+    }
+    .menu-card:not([data-state="active"]) .module-title {
+      font-size: 24px;
+      max-width: 260px;
+    }
+    .menu-card:not([data-state="active"]) .module-icon {
+      width: 54px; height: 54px;
+      border-radius: 18px;
+    }
+    .cover-controls {
+      position: absolute; inset: 0;
+      pointer-events: none;
+      z-index: 15;
+    }
+    .cover-nav {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      width: 46px; height: 46px;
+      border: 1px solid rgba(216,228,221,.92);
+      border-radius: 999px;
+      background: rgba(255,255,255,.92);
+      color: var(--verde-oscuro);
+      box-shadow: 0 12px 32px rgba(10,61,43,.12);
+      display: grid; place-items: center;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+    .cover-nav:hover {
+      background: #fff;
+      transform: translateY(-50%) scale(1.05);
+      box-shadow: 0 16px 38px rgba(10,61,43,.18);
+    }
+    .cover-nav:focus-visible,
+    .module-btn:focus-visible,
+    .dot-btn:focus-visible,
+    .quick-module:focus-visible,
+    .menu-card:focus-visible {
+      outline: 3px solid rgba(201,168,76,.45);
+      outline-offset: 3px;
+    }
+    .cover-prev { left: 10px; }
+    .cover-next { right: 10px; }
+    .cover-dots {
+      position: relative; z-index: 4;
+      display: flex; justify-content: center; align-items: center;
+      gap: 9px; margin-top: 2px;
+    }
+    .dot-btn {
+      width: 10px; height: 10px;
+      border: 0;
+      border-radius: 999px;
+      background: #cbd8d1;
+      cursor: pointer;
+      transition: width .24s ease, background .24s ease, transform .18s ease;
+    }
+    .dot-btn:hover { transform: scale(1.16); }
+    .dot-btn[aria-selected="true"] {
+      width: 34px;
+      background: var(--verde-oscuro);
+    }
+    .quick-access {
+      position: relative; z-index: 3;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .quick-module {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink-2);
+      background: rgba(255,255,255,.72);
+      border: 1px solid var(--borde);
+      border-radius: 16px;
+      padding: 12px 13px;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease;
+      min-width: 0;
+    }
+    .quick-module:hover {
+      transform: translateY(-2px);
+      background: #fff;
+      border-color: rgba(10,61,43,.18);
+    }
+    .quick-dot {
+      width: 10px; height: 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+    .quick-text { min-width: 0; }
+    .quick-code {
+      display: block;
+      font-size: 9.5px;
+      font-weight: 800;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2px;
+    }
+    .quick-name {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 800;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-    /* Colores por módulo */
-    .m-pat .card-stripe { background: #1e3a8a; }
-    .m-pat .card-code   { color: #2563eb; }
-    .m-pat .card-cta    { background: #1e3a8a; }
+    .m-pat { --accent: #1e3a8a; --accent-soft: rgba(37,99,235,.12); }
+    .m-viv { --accent: #14532d; --accent-soft: rgba(34,197,94,.13); }
+    .m-con { --accent: #9a3412; --accent-soft: rgba(249,115,22,.14); }
+    .m-ref { --accent: #4c1d95; --accent-soft: rgba(124,58,237,.13); }
 
-    .m-viv .card-stripe { background: #14532d; }
-    .m-viv .card-code   { color: #16a34a; }
-    .m-viv .card-cta    { background: #14532d; }
-
-    .m-con .card-stripe { background: #9a3412; }
-    .m-con .card-code   { color: #ea580c; }
-    .m-con .card-cta    { background: #9a3412; }
-
-    .m-ref .card-stripe { background: #4c1d95; }
-    .m-ref .card-code   { color: #7c3aed; }
-    .m-ref .card-cta    { background: #4c1d95; }
-
-    /* ── FOOTER ──────────────────────────────────── */
+        /* ── FOOTER ──────────────────────────────────── */
     footer {
       background: var(--verde-oscuro);
       position: relative; overflow: hidden;
@@ -470,13 +717,39 @@
       .hero-panel  { max-width: 440px; }
       .ctx-inner   { grid-template-columns: repeat(2,1fr); }
       .ctx-item:nth-child(2n) { border-right: none; }
-      .cards { grid-template-columns: 1fr; }
+      .menu-shell { padding: 24px 18px 26px; }
+      .cover-stage { height: 420px; }
+      .menu-card { width: min(500px, 78vw); }
+      .menu-card[data-state="prev"] { transform: translateX(calc(-50% - 300px)) scale(.82); }
+      .menu-card[data-state="next"] { transform: translateX(calc(-50% + 300px)) scale(.82); }
+      .menu-card[data-state="far-prev"] { transform: translateX(calc(-50% - 520px)) scale(.66); }
+      .menu-card[data-state="far-next"] { transform: translateX(calc(-50% + 520px)) scale(.66); }
+      .quick-access { grid-template-columns: repeat(2, 1fr); }
       .footer-inner { grid-template-columns: 1fr; gap: 22px; }
       .footer-col-right { text-align: left; }
     }
     @media (max-width: 600px) {
       .hero  { padding: 52px 20px 60px; }
       .modulos { padding: 40px 20px 64px; }
+      .menu-topbar { align-items: flex-start; flex-direction: column; gap: 10px; }
+      .menu-hint { text-align: left; }
+      .cover-stage { height: 500px; }
+      .menu-card { width: min(360px, 86vw); min-height: 442px; top: 18px; }
+      .menu-card[data-state="prev"] { transform: translateX(calc(-50% - 230px)) scale(.80); opacity: .18; }
+      .menu-card[data-state="next"] { transform: translateX(calc(-50% + 230px)) scale(.80); opacity: .18; }
+      .menu-card[data-state="far-prev"],
+      .menu-card[data-state="far-next"] { opacity: 0; pointer-events: none; }
+      .module-card-body { padding: 24px 22px 22px; gap: 16px; }
+      .module-head { gap: 12px; }
+      .module-icon { width: 54px; height: 54px; border-radius: 18px; }
+      .module-title { font-size: 28px; }
+      .module-actions { grid-template-columns: 1fr; }
+      .cover-nav { width: 42px; height: 42px; top: auto; bottom: 16px; transform: none; }
+      .cover-nav:hover { transform: scale(1.04); }
+      .cover-prev { left: calc(50% - 58px); }
+      .cover-next { right: calc(50% - 58px); }
+      .cover-dots { margin-top: 12px; }
+      .quick-access { grid-template-columns: 1fr; }
       .ctx-inner  { grid-template-columns: 1fr 1fr; padding: 0 20px; }
       header { padding: 12px 20px 0; }
     }
@@ -608,148 +881,175 @@
 <section class="modulos" id="modulos">
   <div class="sec-head">
     <div class="sec-eyebrow">Boletas de campo</div>
-    <h2 class="sec-title">Módulos de consulta</h2>
-    <p class="sec-desc">Seleccione una boleta para acceder al mapa geográfico, el tablero de análisis dinámico y la tabla completa de registros.</p>
+    <h2 class="sec-title">Seleccione un módulo de consulta</h2>
+    <p class="sec-desc">Desplácese entre las boletas disponibles y elija la vista que desea abrir: mapa geográfico, tablero dinámico o registros completos.</p>
   </div>
 
-  <div class="cards">
+  <div class="menu-shell" aria-label="Carrusel de módulos de consulta">
+    <div class="menu-topbar">
+      <div class="menu-label"><span aria-hidden="true"></span> Menú de módulos</div>
+      <p class="menu-hint">Use las flechas, los puntos, el teclado o deslice en pantalla táctil.</p>
+    </div>
 
-    <!-- AC192 Patrullajes -->
-    <article class="card m-pat">
-      <div class="card-stripe" aria-hidden="true"></div>
-      <div class="card-body">
-        <div class="card-top">
-          <span class="card-code">AC 192 · Patrullajes</span>
-          <span class="card-tag">Datos diarios</span>
-        </div>
-        <h3>Control y vigilancia de áreas protegidas</h3>
-        <p class="card-desc">Registro de patrullajes de control y vigilancia realizados por guardarecursos. Incluye duración de jornada, kilómetros recorridos, tipo de patrullaje e incidencias con actividad ilegal observada.</p>
-        <div class="card-subpages">
-          <a href="boletas/patrullajes/dashboard.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-            Mapa geográfico
-          </a>
-          <a href="boletas/patrullajes/tablero.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Tablero dinámico
-          </a>
-          <a href="boletas/patrullajes/registros.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-            Registros
-          </a>
-        </div>
-        <div class="card-foot">
-          <span class="card-meta">Control · Vigilancia · Incidencias · Kilómetros</span>
-          <a href="boletas/patrullajes/dashboard.html" class="card-cta">
-            Abrir módulo
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
+    <div class="coverflow">
+      <div class="cover-stage" id="moduleCarousel" tabindex="0" aria-roledescription="carrusel" aria-label="Selector de boletas de campo">
+
+        <!-- AC192 Patrullajes -->
+        <article class="menu-card m-pat" data-index="0" tabindex="0" aria-label="AC 192 Patrullajes">
+          <div class="module-card-body">
+            <div class="module-head">
+              <div>
+                <span class="module-code">AC 192 · Patrullajes</span>
+                <h3 class="module-title">Control y vigilancia de áreas protegidas</h3>
+              </div>
+              <div class="module-icon" aria-hidden="true">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-12 2 7 5 2-13 3Z"/><path d="M7 22l2-4"/><path d="M2 12l5 2"/></svg>
+              </div>
+            </div>
+            <p class="module-desc">Registro de patrullajes realizados por guardarecursos: duración de jornada, kilómetros recorridos, tipo de patrullaje e incidencias observadas.</p>
+            <div class="module-tags" aria-label="Temas del módulo">
+              <span class="module-tag">Control</span>
+              <span class="module-tag">Vigilancia</span>
+              <span class="module-tag">Incidencias</span>
+              <span class="module-tag">Kilómetros</span>
+            </div>
+            <div class="module-actions">
+              <a href="boletas/patrullajes/dashboard.html" class="module-btn primary">
+                Abrir módulo
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </a>
+              <a href="boletas/patrullajes/tablero.html" class="module-btn secondary">Tablero</a>
+              <a href="boletas/patrullajes/registros.html" class="module-btn secondary">Registros</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- AC210 Viveros -->
+        <article class="menu-card m-viv" data-index="1" tabindex="0" aria-label="AC 210 Asistencia a viveros">
+          <div class="module-card-body">
+            <div class="module-head">
+              <div>
+                <span class="module-code">AC 210 · Viveros</span>
+                <h3 class="module-title">Asistencia técnica a viveros forestales</h3>
+              </div>
+              <div class="module-icon" aria-hidden="true">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12"/><path d="M12 12c-4.5 0-8-2.5-8-6.5C8.5 5 12 7.5 12 12Z"/><path d="M12 12c4.5 0 8-2.5 8-6.5C15.5 5 12 7.5 12 12Z"/><path d="M5 22h14"/></svg>
+              </div>
+            </div>
+            <p class="module-desc">Seguimiento de asistencias técnicas brindadas a viveros comunitarios e institucionales, con actividades por visita, jornada y cobertura territorial.</p>
+            <div class="module-tags" aria-label="Temas del módulo">
+              <span class="module-tag">Viveros</span>
+              <span class="module-tag">Asistencia</span>
+              <span class="module-tag">Jornadas</span>
+              <span class="module-tag">Cobertura</span>
+            </div>
+            <div class="module-actions">
+              <a href="boletas/viveros/dashboard.html" class="module-btn primary">
+                Abrir módulo
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </a>
+              <a href="boletas/viveros/tablero.html" class="module-btn secondary">Tablero</a>
+              <a href="boletas/viveros/datos.html" class="module-btn secondary">Datos</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- AC297 Consumo Forestal -->
+        <article class="menu-card m-con" data-index="2" tabindex="0" aria-label="AC 297 Consumo forestal familiar">
+          <div class="module-card-body">
+            <div class="module-head">
+              <div>
+                <span class="module-code">AC 297 · Consumo familiar</span>
+                <h3 class="module-title">Consumo forestal familiar autorizado</h3>
+              </div>
+              <div class="module-icon" aria-hidden="true">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V8"/><path d="M5 12c0-4 3-8 7-10 4 2 7 6 7 10a7 7 0 0 1-14 0Z"/><path d="M8.5 13.5 12 10l3.5 3.5"/></svg>
+              </div>
+            </div>
+            <p class="module-desc">Control del consumo forestal familiar autorizado en comunidades del área de influencia: especies, cantidades aprobadas y compromisos de reforestación.</p>
+            <div class="module-tags" aria-label="Temas del módulo">
+              <span class="module-tag">Especies</span>
+              <span class="module-tag">Volúmenes</span>
+              <span class="module-tag">Autorizaciones</span>
+              <span class="module-tag">Compromisos</span>
+            </div>
+            <div class="module-actions">
+              <a href="boletas/consumo_forestal/dashboard.html" class="module-btn primary">
+                Abrir módulo
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </a>
+              <a href="boletas/consumo_forestal/tablero.html" class="module-btn secondary">Tablero</a>
+              <a href="boletas/consumo_forestal/registros.html" class="module-btn secondary">Registros</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- AC282 Reforestaciones -->
+        <article class="menu-card m-ref" data-index="3" tabindex="0" aria-label="AC 282 Reforestaciones">
+          <div class="module-card-body">
+            <div class="module-head">
+              <div>
+                <span class="module-code">AC 282 · Reforestaciones</span>
+                <h3 class="module-title">Monitoreo a reforestaciones por compromiso</h3>
+              </div>
+              <div class="module-icon" aria-hidden="true">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 22h10"/><path d="M12 22V11"/><path d="M17 8a5 5 0 0 0-10 0c0 3.5 5 7 5 7s5-3.5 5-7Z"/><path d="M10 8h4"/></svg>
+              </div>
+            </div>
+            <p class="module-desc">Asistencia técnica y monitoreo de reforestaciones establecidas por compromiso de consumo forestal familiar: área, especies y responsable del monitoreo.</p>
+            <div class="module-tags" aria-label="Temas del módulo">
+              <span class="module-tag">Área</span>
+              <span class="module-tag">Especies</span>
+              <span class="module-tag">Monitoreo</span>
+              <span class="module-tag">Compromisos</span>
+            </div>
+            <div class="module-actions">
+              <a href="boletas/reforestaciones/dashboard.html" class="module-btn primary">
+                Abrir módulo
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </a>
+              <a href="boletas/reforestaciones/tablero.html" class="module-btn secondary">Tablero</a>
+              <a href="boletas/reforestaciones/datos.html" class="module-btn secondary">Verificador</a>
+            </div>
+          </div>
+        </article>
+
+        <div class="cover-controls" aria-hidden="false">
+          <button class="cover-nav cover-prev" type="button" aria-label="Módulo anterior">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button class="cover-nav cover-next" type="button" aria-label="Módulo siguiente">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
         </div>
       </div>
-    </article>
 
-    <!-- AC210 Viveros -->
-    <article class="card m-viv">
-      <div class="card-stripe" aria-hidden="true"></div>
-      <div class="card-body">
-        <div class="card-top">
-          <span class="card-code">AC 210 · Viveros</span>
-          <span class="card-tag">Datos diarios</span>
-        </div>
-        <h3>Asistencia técnica a viveros forestales</h3>
-        <p class="card-desc">Seguimiento de asistencias técnicas brindadas a viveros comunitarios e institucionales. Registra actividades realizadas por visita, duración de jornada y cobertura territorial dentro y fuera del área protegida.</p>
-        <div class="card-subpages">
-          <a href="boletas/viveros/dashboard.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-            Mapa geográfico
-          </a>
-          <a href="boletas/viveros/tablero.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Tablero dinámico
-          </a>
-          <a href="boletas/viveros/datos.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-            Tabla de datos
-          </a>
-        </div>
-        <div class="card-foot">
-          <span class="card-meta">Viveros · Actividades · Jornadas · Cobertura</span>
-          <a href="boletas/viveros/dashboard.html" class="card-cta">
-            Abrir módulo
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-        </div>
+      <div class="cover-dots" role="tablist" aria-label="Seleccionar módulo">
+        <button class="dot-btn" type="button" data-go="0" aria-label="Ir a Patrullajes"></button>
+        <button class="dot-btn" type="button" data-go="1" aria-label="Ir a Viveros"></button>
+        <button class="dot-btn" type="button" data-go="2" aria-label="Ir a Consumo forestal"></button>
+        <button class="dot-btn" type="button" data-go="3" aria-label="Ir a Reforestaciones"></button>
       </div>
-    </article>
+    </div>
 
-    <!-- AC297 Consumo Forestal -->
-    <article class="card m-con">
-      <div class="card-stripe" aria-hidden="true"></div>
-      <div class="card-body">
-        <div class="card-top">
-          <span class="card-code">AC 297 · Consumo Familiar</span>
-          <span class="card-tag">Datos diarios</span>
-        </div>
-        <h3>Consumo forestal familiar autorizado</h3>
-        <p class="card-desc">Registro y control del consumo forestal familiar autorizado en comunidades del área de influencia. Incluye especies autorizadas, cantidades de árboles aprobados y compromisos adquiridos de reforestación.</p>
-        <div class="card-subpages">
-          <a href="boletas/consumo_forestal/dashboard.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-            Mapa geográfico
-          </a>
-          <a href="boletas/consumo_forestal/tablero.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Tablero dinámico
-          </a>
-          <a href="boletas/consumo_forestal/registros.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-            Registros y datos
-          </a>
-        </div>
-        <div class="card-foot">
-          <span class="card-meta">Especies · Volúmenes · Compromisos</span>
-          <a href="boletas/consumo_forestal/dashboard.html" class="card-cta">
-            Abrir módulo
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-        </div>
-      </div>
-    </article>
-
-    <!-- AC282 Reforestaciones -->
-    <article class="card m-ref">
-      <div class="card-stripe" aria-hidden="true"></div>
-      <div class="card-body">
-        <div class="card-top">
-          <span class="card-code">AC 282 · Reforestaciones</span>
-          <span class="card-tag">Datos diarios</span>
-        </div>
-        <h3>Monitoreo a reforestaciones por compromiso</h3>
-        <p class="card-desc">Asistencia técnica y monitoreo a reforestaciones establecidas por compromiso de consumo forestal familiar. Registra área reforestada, especies plantadas y guardarecursos responsable del monitoreo.</p>
-        <div class="card-subpages">
-          <a href="boletas/reforestaciones/dashboard.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-            Mapa geográfico
-          </a>
-          <a href="boletas/reforestaciones/tablero.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Tablero dinámico
-          </a>
-          <a href="boletas/reforestaciones/datos.html" class="sub-link">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-            Verificador
-          </a>
-        </div>
-        <div class="card-foot">
-          <span class="card-meta">Área · Especies · Monitoreo · Compromisos</span>
-          <a href="boletas/reforestaciones/dashboard.html" class="card-cta">
-            Abrir módulo
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-        </div>
-      </div>
-    </article>
-
+    <div class="quick-access" aria-label="Accesos rápidos">
+      <a href="boletas/patrullajes/dashboard.html" class="quick-module m-pat">
+        <span class="quick-dot" aria-hidden="true"></span>
+        <span class="quick-text"><span class="quick-code">AC 192</span><span class="quick-name">Patrullajes</span></span>
+      </a>
+      <a href="boletas/viveros/dashboard.html" class="quick-module m-viv">
+        <span class="quick-dot" aria-hidden="true"></span>
+        <span class="quick-text"><span class="quick-code">AC 210</span><span class="quick-name">Viveros</span></span>
+      </a>
+      <a href="boletas/consumo_forestal/dashboard.html" class="quick-module m-con">
+        <span class="quick-dot" aria-hidden="true"></span>
+        <span class="quick-text"><span class="quick-code">AC 297</span><span class="quick-name">Consumo forestal</span></span>
+      </a>
+      <a href="boletas/reforestaciones/dashboard.html" class="quick-module m-ref">
+        <span class="quick-dot" aria-hidden="true"></span>
+        <span class="quick-text"><span class="quick-code">AC 282</span><span class="quick-name">Reforestaciones</span></span>
+      </a>
+    </div>
   </div>
 </section>
 
@@ -775,6 +1075,116 @@
     <div class="footer-copy">© 2026 · Todos los datos son de uso oficial · Sistema de Monitoreo CONAP</div>
   </div>
 </footer>
+
+
+<script>
+  (function () {
+    const stage = document.getElementById('moduleCarousel');
+    if (!stage) return;
+
+    const cards = Array.from(stage.querySelectorAll('.menu-card'));
+    const dots = Array.from(document.querySelectorAll('.dot-btn'));
+    const prevBtn = stage.querySelector('.cover-prev');
+    const nextBtn = stage.querySelector('.cover-next');
+    const total = cards.length;
+    let activeIndex = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    function circularDistance(index, active) {
+      let diff = index - active;
+      if (diff > total / 2) diff -= total;
+      if (diff < -total / 2) diff += total;
+      return diff;
+    }
+
+    function setActive(nextIndex) {
+      activeIndex = (nextIndex + total) % total;
+
+      cards.forEach((card, index) => {
+        const diff = circularDistance(index, activeIndex);
+        let state = 'hidden';
+
+        if (diff === 0) state = 'active';
+        else if (diff === -1) state = 'prev';
+        else if (diff === 1) state = 'next';
+        else if (diff < -1) state = 'far-prev';
+        else if (diff > 1) state = 'far-next';
+
+        card.dataset.state = state;
+        card.setAttribute('aria-current', state === 'active' ? 'true' : 'false');
+      });
+
+      dots.forEach((dot, index) => {
+        const selected = index === activeIndex;
+        dot.setAttribute('aria-selected', selected ? 'true' : 'false');
+        dot.tabIndex = selected ? 0 : -1;
+      });
+    }
+
+    function goNext() { setActive(activeIndex + 1); }
+    function goPrev() { setActive(activeIndex - 1); }
+
+    prevBtn.addEventListener('click', goPrev);
+    nextBtn.addEventListener('click', goNext);
+
+    cards.forEach((card, index) => {
+      card.addEventListener('click', (event) => {
+        if (event.target.closest('a')) return;
+        if (index !== activeIndex) setActive(index);
+      });
+
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          if (index !== activeIndex) setActive(index);
+        }
+      });
+    });
+
+    dots.forEach((dot) => {
+      dot.addEventListener('click', () => setActive(Number(dot.dataset.go)));
+    });
+
+    stage.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        goNext();
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        goPrev();
+      }
+      if (event.key === 'Home') {
+        event.preventDefault();
+        setActive(0);
+      }
+      if (event.key === 'End') {
+        event.preventDefault();
+        setActive(total - 1);
+      }
+    });
+
+    stage.addEventListener('touchstart', (event) => {
+      const touch = event.changedTouches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, { passive: true });
+
+    stage.addEventListener('touchend', (event) => {
+      const touch = event.changedTouches[0];
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+        if (dx < 0) goNext();
+        else goPrev();
+      }
+    }, { passive: true });
+
+    setActive(0);
+  })();
+</script>
 
 </body>
 </html>
