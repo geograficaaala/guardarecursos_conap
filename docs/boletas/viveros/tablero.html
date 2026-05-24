@@ -13,33 +13,26 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
-      --verde-oscuro:  #0a3d2b;
-      --verde-medio:   #1a5c3a;
-      --azul:          #1e40af;
-      --azul-medio:    #2563eb;
-      --azul-claro:    #3b82f6;
-      --crema:         #f5f0e8;
-      --blanco:        #ffffff;
-      --bg:            #f0f4f8;
-      --surface:       #ffffff;
-      --surface-2:     #f8fafc;
-      --ink:           #0d2a1c;
-      --ink-2:         #334155;
-      --muted:         #6b7280;
-      --borde:         #e5e7eb;
-      --sombra:        rgba(0,0,0,0.08);
-      --acento:        #2563eb;
-      --acento-bg:     rgba(37,99,235,0.08);
-      --acento-borde:  rgba(37,99,235,0.20);
-      --dorado:        #c9a84c;
-      --dorado-claro:  #e8c97a;
-      --mod-dark:      #0a3d2b;
-      --mod-mid:       #1a5c3a;
-      --mod-light:     #3b82f6;
+      --verde-oscuro: #064e3b;
+      --verde-medio:  #16a34a;
+      --bg:           #f3f8f4;
+      --surface:      #ffffff;
+      --surface-2:    #f7fcf8;
+      --ink:          #102218;
+      --ink-2:        #254736;
+      --muted:        #5f7b6e;
+      --borde:        #d7eadf;
+      --sombra:       rgba(6,78,59,0.07);
+      --acento:       #16a34a;
+      --acento-bg:    rgba(34,197,94,0.10);
+      --acento-borde: rgba(34,197,94,0.28);
+      --dorado:       #d8b94f;
+      --dorado-claro: #f4d35e;
+      --mod-dark:#047857; --mod-mid:#22c55e; --mod-light:#86efac;
 
-      --d0:#2563eb; --d1:#1a5c3a; --d2:#0f766e; --d3:#9333ea;
-      --d4:#b91c1c; --d5:#0369a1; --d6:#b45309; --d7:#047857;
-      --d8:#be185d; --d9:#4d7c0f; --d10:#c2410c; --d11:#4338ca;
+      --d0:#4ade80; --d1:#fb7185; --d2:#60a5fa; --d3:#fbbf24;
+      --d4:#f87171; --d5:#2dd4bf; --d6:#c084fc; --d7:#34d399;
+      --d8:#f9a8d4; --d9:#a3e635; --d10:#fb923c; --d11:#93c5fd;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
@@ -459,8 +452,8 @@
 <header>
   <div class="header-inner">
     <div class="logo-group">
-      <img src="../../assets/conap_logo.jpg" alt="CONAP">
-      <img src="../../assets/aala_logo.png" alt="AALA">
+      <img src="../../assets/conap_logo.jpg" alt="CONAP" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/assets/conap_logo.jpg';">
+      <img src="../../assets/aala_logo.png" alt="AALA" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/assets/aala_logo.png';">
     </div>
     <div class="header-right">
       <h1>Centro de consulta de datos</h1>
@@ -571,7 +564,6 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Concentración por día y hora de inicio</div>
-          <div class="cc-hint">Concentración de asistencias técnicas por día de semana y hora de inicio</div>
         </div>
         <button class="btn-png" id="png-heatmap">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -684,16 +676,6 @@
       <div class="cw h340"><canvas id="c-area"></canvas></div>
     </div>
 
-    <div class="cc full">
-      <div class="cc-head">
-        <div class="cc-meta">
-          <div class="cc-title">Distribución geográfica de asistencias técnicas</div>
-          <div class="cc-hint">Ubicación de registros con coordenadas válidas dentro del territorio de Guatemala</div>
-        </div>
-      </div>
-      <div class="mapbox"><div id="map"></div></div>
-      <div class="mapmeta" id="mapmeta">Sin información disponible</div>
-    </div>
 
   </div>
 
@@ -750,8 +732,8 @@
 <script>
 /* Paleta institucional alineada con Patrullajes */
 const PAL = [
-  "#2563eb","#1a5c3a","#0f766e","#9333ea","#b91c1c","#0369a1",
-  "#b45309","#047857","#be185d","#4d7c0f","#c2410c","#4338ca"
+  "#4ade80","#fb7185","#60a5fa","#fbbf24","#f87171","#2dd4bf",
+  "#c084fc","#34d399","#f9a8d4","#a3e635","#fb923c","#93c5fd"
 ];
 const PAL_A = PAL.map(c => c + "bb");
 
@@ -1109,6 +1091,8 @@ function g9(rows){
 /* ═══ MAPA ════════════════════════════════════════════════ */
 let MAP=null, LAYER=null;
 function renderMap(rows){
+  const mapEl = document.getElementById("map");
+  if(!mapEl) return;
   if(!MAP){
     MAP=L.map("map",{scrollWheelZoom:false});
     LAYER=L.layerGroup().addTo(MAP);
@@ -1134,7 +1118,8 @@ function renderMap(rows){
       .addTo(LAYER);
   });
   if(ok>0){ const b=L.latLngBounds(pts.map(p=>[p[0],p[1]])); MAP.fitBounds(b,{padding:[20,20],maxZoom:13}); } else { MAP.setView([14.69,-91.20],10); }
-  document.getElementById("mapmeta").textContent=`Puntos dibujados: ${ok}. Sin coordenadas válidas: ${bad}`;
+  const metaEl = document.getElementById("mapmeta");
+  if(metaEl) metaEl.textContent=`Puntos dibujados: ${ok}. Sin coordenadas válidas: ${bad}`;
   setTimeout(()=>MAP.invalidateSize(),0);
 }
 
@@ -1215,7 +1200,7 @@ function applyAll(){
 <script>
 (function(){
   /* Paleta institucional alineada con el diseño de Patrullajes */
-  var G = ['#2563eb','#1a5c3a','#0f766e','#9333ea','#b91c1c','#0369a1','#b45309','#047857','#be185d','#4d7c0f','#c2410c','#4338ca'];
+  var G = ['#4ade80','#fb7185','#60a5fa','#fbbf24','#f87171','#2dd4bf','#c084fc','#34d399','#f9a8d4','#a3e635','#fb923c','#93c5fd'];
   if(window.PAL && Array.isArray(PAL))   PAL.splice.apply(PAL,   [0, PAL.length].concat(G));
   if(window.PAL_A && Array.isArray(PAL_A)) PAL_A.splice.apply(PAL_A, [0, PAL_A.length].concat(G.map(function(c){ return c+'bb'; })));
 
@@ -1224,7 +1209,7 @@ function applyAll(){
     Chart.defaults.font.family = "'DM Sans', sans-serif";
     var LL = Chart.defaults.plugins.legend.labels;
     LL.usePointStyle = false; LL.boxWidth = 12; LL.boxHeight = 12;
-    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(10,61,43,.94)';
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(6,55,38,.94)';
     Chart.defaults.plugins.tooltip.cornerRadius = 10;
     Chart.defaults.plugins.tooltip.padding = 12;
     Chart.defaults.plugins.tooltip.titleFont = {size:13, weight:'600', family:"'DM Sans',sans-serif"};
