@@ -9,7 +9,6 @@
   <script src="../../assets/tabulator.min.js"></script>
   <script src="../../assets/papaparse.min.js"></script>
   <script src="../../assets/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.7/pizzip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
@@ -1702,6 +1701,37 @@ function crearTablaGuardarecursosWordXml(guardasConsol){
   </w:tbl>`;
 }
 
+
+async function loadExternalScriptOnce(src){
+  return new Promise((resolve)=>{
+    if(document.querySelector(`script[data-loader-src="${src}"]`)){resolve(true);return;}
+    const sc=document.createElement("script");
+    sc.src=src;
+    sc.async=true;
+    sc.dataset.loaderSrc=src;
+    sc.onload=()=>resolve(true);
+    sc.onerror=()=>resolve(false);
+    document.head.appendChild(sc);
+  });
+}
+async function ensurePizZipLoaded(){
+  if(typeof PizZip!=="undefined")return true;
+  const sources=[
+    "../../assets/pizzip.min.js",
+    "../../assets/PizZip.min.js",
+    "https://cdn.jsdelivr.net/npm/pizzip@3.1.7/dist/pizzip.min.js",
+    "https://unpkg.com/pizzip@3.1.7/dist/pizzip.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.7/pizzip.min.js",
+    "https://cdn.jsdelivr.net/npm/pizzip@3.1.5/dist/pizzip.min.js",
+    "https://unpkg.com/pizzip@3.1.5/dist/pizzip.min.js"
+  ];
+  for(const src of sources){
+    await loadExternalScriptOnce(src);
+    if(typeof PizZip!=="undefined")return true;
+  }
+  return false;
+}
+
 async function cargarPlantillaInforme(){
   const candidates=[INFORME_TEMPLATE_URL, encodeURI(INFORME_TEMPLATE_URL), "./"+encodeURI(INFORME_TEMPLATE_URL)];
   for(const url of candidates){
@@ -1714,8 +1744,8 @@ async function cargarPlantillaInforme(){
 }
 async function generarInformeDesdePlantillaWord(nombre,inicio,fin,regs){
   if(!regs.length){alert("No hay registros para el periodo seleccionado.");return}
-  if(typeof PizZip==="undefined"){
-    alert("No se pudo cargar la librería necesaria para editar la plantilla Word. Revise la conexión o agregue PizZip localmente en assets.");
+  if(!(await ensurePizZipLoaded())){
+    alert("No se pudo cargar PizZip para editar la plantilla Word. La página intentó cargarlo desde assets y desde varios CDN. Si la red institucional bloquea CDN, coloque pizzip.min.js en docs/assets/.");
     return;
   }
   const data=datosInformePlantilla(inicio,fin,regs);
