@@ -9,6 +9,7 @@
   <script src="../../assets/tabulator.min.js"></script>
   <script src="../../assets/papaparse.min.js"></script>
   <script src="../../assets/xlsx.full.min.js"></script>
+  <script src="../../assets/pizzip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
@@ -1248,7 +1249,7 @@ function generarInformeGuarda(){
 
 
 /* ═══ INFORME GENERAL CON PLANTILLA WORD ═════════════════ */
-const INFORME_TEMPLATE_URL = "ESQUELETO INFORME GENERAL DE VIVEROS FORESTALES.docx";
+const INFORME_TEMPLATE_URL = "ESQUELETO INFORME GENERAL DE VIVEROS.docx";
 
 function fmtGT(n, max = 0, min = 0) {
   if (n === null || n === undefined || !isFinite(n)) return "–";
@@ -1537,11 +1538,23 @@ async function ensurePizZipLoaded() {
 }
 
 async function cargarPlantillaInforme() {
-  const resp = await fetch(INFORME_TEMPLATE_URL, { cache: "no-store" });
-  if (!resp.ok) {
-    throw new Error(`No se encontró la plantilla Word: ${INFORME_TEMPLATE_URL}`);
+  const candidates = [
+    INFORME_TEMPLATE_URL,
+    encodeURI(INFORME_TEMPLATE_URL),
+    "./" + INFORME_TEMPLATE_URL,
+    "./" + encodeURI(INFORME_TEMPLATE_URL)
+  ];
+
+  for (const url of candidates) {
+    try {
+      const resp = await fetch(url, { cache: "no-store" });
+      if (resp.ok) return await resp.arrayBuffer();
+    } catch (e) {}
   }
-  return resp.arrayBuffer();
+
+  throw new Error(
+    `No se encontró la plantilla Word: ${INFORME_TEMPLATE_URL}. Debe estar en docs/boletas/viveros/`
+  );
 }
 
 async function generarInformeDesdePlantillaWordViveros(nombre, inicio, fin, regs) {
@@ -1569,15 +1582,24 @@ async function generarInformeDesdePlantillaWordViveros(nombre, inicio, fin, regs
     const data = datosInformePlantillaViveros(inicio, fin, regs);
     const guardasConsol = data.__guardasConsol || [];
 
+    // Mantiene el mismo comportamiento del informe de Patrullajes:
+    // los marcadores deben escribirse en Word como {{NOMBRE_DEL_MARCADOR}}.
+    xml = replaceDocxToken(xml, "{{TABLA_GUARDARECURSOS}}", "__TABLA_GUARDARECURSOS__");
+
     Object.entries(data).forEach(([k, v]) => {
       if (k.startsWith("__")) return;
       if (k === "TABLA_GUARDARECURSOS") return;
-      xml = replaceDocxToken(xml, k, v);
+      xml = replaceDocxToken(xml, `{{${k}}}`, v);
     });
 
     const tableXml = crearTablaGuardarecursosWordXmlViveros(guardasConsol);
 
-    if (xml.includes("__TABLA_GUARDARECURSOS__")) {
+    const markerParagraphRe =
+      /<w:p\b(?:(?!<\/w:p>)[\s\S])*?__TABLA_GUARDARECURSOS__(?:(?!<\/w:p>)[\s\S])*?<\/w:p>/;
+
+    if (markerParagraphRe.test(xml)) {
+      xml = xml.replace(markerParagraphRe, tableXml);
+    } else if (xml.includes("__TABLA_GUARDARECURSOS__")) {
       xml = xml.replace("__TABLA_GUARDARECURSOS__", "");
       xml = xml.replace("</w:body>", tableXml + "</w:body>");
     }
