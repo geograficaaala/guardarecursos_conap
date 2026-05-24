@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>AC192 · Tablero dinámico · Patrullajes</title>
+  <title>AC192. Tablero dinámico. Patrullajes</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
@@ -426,6 +426,64 @@
     @media (max-width: 1100px) { .filtros-grid { grid-template-columns: 1fr 1fr 1fr; } }
     @media (max-width: 660px)  { .filtros-grid { grid-template-columns: 1fr 1fr; } }
 
+
+    /* ── LECTURA RÁPIDA / ANÁLISIS AVANZADO ── */
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 14px;
+      margin: 0 0 28px;
+    }
+    .insight-card {
+      background: var(--surface);
+      border: 1px solid var(--borde);
+      border-radius: 14px;
+      padding: 16px 16px 14px;
+      box-shadow: 0 1px 8px var(--sombra);
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .insight-label {
+      font-size: 9.8px;
+      font-weight: 800;
+      color: var(--muted);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .insight-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 21px;
+      font-weight: 900;
+      color: var(--ink);
+      line-height: 1.08;
+      word-break: break-word;
+    }
+    .insight-sub {
+      margin-top: 8px;
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .matrix-wrap {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 8px;
+    }
+    #matrix-gm-svg { display: block; min-width: 720px; }
+    .chart-footnote {
+      margin-top: 10px;
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    @media (max-width: 1180px) { .insights-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 660px)  { .insights-grid { grid-template-columns: repeat(2, 1fr); } }
+
+
   </style>
 </head>
 <body>
@@ -438,10 +496,10 @@
     </div>
     <div class="header-right">
       <h1>Centro de consulta de datos</h1>
-      <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
+      <p>Sistema de monitoreo. CONAP – Dirección Regional Altiplano Central</p>
       <div class="header-chip">
         <span class="chip-dot"></span>
-        AC192 · Patrullajes
+        AC192. Patrullajes
       </div>
     </div>
   </div>
@@ -545,6 +603,41 @@
     </div>
   </div>
 
+  <!-- LECTURA RÁPIDA -->
+  <div class="sec-divider">Lectura rápida del período</div>
+  <div class="insights-grid" id="insights-grid">
+    <div class="insight-card">
+      <div class="insight-label">Municipio principal</div>
+      <div class="insight-value" id="insight-muni">–</div>
+      <div class="insight-sub" id="insight-muni-sub">sin registros filtrados</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-label">Mayor participación</div>
+      <div class="insight-value" id="insight-guarda">–</div>
+      <div class="insight-sub" id="insight-guarda-sub">sin registros filtrados</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-label">Tasa de incidentes</div>
+      <div class="insight-value" id="insight-incidencia">–</div>
+      <div class="insight-sub" id="insight-incidencia-sub">actividad ilegal observada</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-label">Cobertura RUMCLA</div>
+      <div class="insight-value" id="insight-rumcla">–</div>
+      <div class="insight-sub" id="insight-rumcla-sub">patrullajes dentro del área</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-label">Km promedio</div>
+      <div class="insight-value" id="insight-km-prom">–</div>
+      <div class="insight-sub">kilómetros por patrullaje</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-label">Hora frecuente</div>
+      <div class="insight-value" id="insight-hora">–</div>
+      <div class="insight-sub" id="insight-hora-sub">hora de inicio registrada</div>
+    </div>
+  </div>
+
   <!-- SECCIÓN 1 — TEMPORAL -->
   <div class="sec-divider">Análisis temporal</div>
   <div class="charts-grid">
@@ -553,7 +646,7 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Tendencia mensual de patrullajes</div>
-          <div class="cc-hint">Volumen total por mes · la línea punteada indica el promedio del período seleccionado</div>
+          <div class="cc-hint">Volumen total por mes. La línea punteada indica el promedio del período seleccionado.</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-tendencia','tendencia_mensual')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -567,8 +660,8 @@
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Mapa de calor · día de semana × hora de inicio</div>
-          <div class="cc-hint">Cada celda muestra cuántos patrullajes iniciaron en ese día y hora · tonos más oscuros indican mayor concentración</div>
+          <div class="cc-title">Mapa de calor por día de la semana y hora de inicio</div>
+          <div class="cc-hint">Cada celda muestra la cantidad de patrullajes iniciados según el día de la semana y la hora de inicio. Los tonos más oscuros indican mayor concentración.</div>
         </div>
         <button class="btn-png" onclick="downloadSVGasPNG('heatmap-svg','heatmap_dia_hora')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -583,7 +676,7 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Distribución de duración</div>
-          <div class="cc-hint">Histograma de horas efectivas · registros con horario válido de inicio y fin</div>
+          <div class="cc-hint">Histograma de horas efectivas. Se consideran únicamente registros con hora de inicio y hora de finalización válidas.</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-duracion','distribucion_duracion')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -597,8 +690,8 @@
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Hora de inicio vs. duración</div>
-          <div class="cc-hint">Cada punto representa un patrullaje · explora si la hora de salida influye en la duración</div>
+          <div class="cc-title">Relación entre hora de inicio y duración del patrullaje</div>
+          <div class="cc-hint">Cada punto representa un patrullaje con horario válido de inicio y finalización</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-scatter','hora_vs_duracion')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -612,7 +705,7 @@
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Volumen por día de la semana</div>
+          <div class="cc-title">Patrullajes por día de la semana</div>
           <div class="cc-hint">Total acumulado de patrullajes según el día en que fueron realizados</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-diaSem','patrullajes_por_dia')">
@@ -642,8 +735,8 @@
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Evolución mensual por municipio — top 8</div>
-          <div class="cc-hint">Distribución geográfica de patrullajes a lo largo del tiempo · identifica tendencias por territorio</div>
+          <div class="cc-title">Evolución mensual de patrullajes por municipio</div>
+          <div class="cc-hint">Distribución mensual por municipio dentro del período filtrado</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-muniMes','evolucion_municipal')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -664,7 +757,7 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Cobertura territorial</div>
-          <div class="cc-hint">Patrullajes dentro vs. fuera del área protegida RUMCLA</div>
+          <div class="cc-hint">Comparación de patrullajes dentro y fuera del área protegida RUMCLA.</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-rumcla','cobertura_rumcla')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -724,7 +817,7 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Incidentes por municipio</div>
-          <div class="cc-hint">Patrullajes con actividad ilegal vs. sin incidente · haga clic en una barra para filtrar el tablero por municipio</div>
+          <div class="cc-hint">Comparación de patrullajes con actividad ilegal reportada y patrullajes sin incidente. Al seleccionar una barra se filtra el tablero por municipio.</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-ilegalMuni','incidentes_municipio')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -739,7 +832,7 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Patrullajes por área protegida</div>
-          <div class="cc-hint">Distribución según el área cubierta · refleja la carga de trabajo por zona de conservación</div>
+          <div class="cc-hint">Distribución por área protegida con nombres normalizados para consolidar variantes tipográficas del mismo sitio.</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-areaProt','patrullajes_area_protegida')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -752,15 +845,114 @@
 
   </div>
 
-  <!-- SECCIÓN 3 — GUARDARECURSOS -->
+
+
+  <!-- SECCIÓN 3 — ANÁLISIS AVANZADO -->
+  <div class="sec-divider">Análisis avanzado</div>
+  <div class="charts-grid">
+
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Tendencia mensual de incidentes</div>
+          <div class="cc-hint">Evolución mensual de patrullajes con actividad ilegal observada y proporción sobre el total mensual</div>
+        </div>
+        <button class="btn-png" onclick="downloadChart('c-incidentesMes','incidentes_por_mes')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-incidentesMes"></canvas></div>
+    </div>
+
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Cobertura mensual dentro y fuera de RUMCLA</div>
+          <div class="cc-hint">Comparación mensual de patrullajes registrados dentro y fuera del área protegida</div>
+        </div>
+        <button class="btn-png" onclick="downloadChart('c-rumclaMes','rumcla_por_mes')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-rumclaMes"></canvas></div>
+    </div>
+
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Tasa de incidentes por municipio</div>
+          <div class="cc-hint">Porcentaje de patrullajes con actividad ilegal observada respecto al total de patrullajes del municipio</div>
+        </div>
+        <button class="btn-png" onclick="downloadChart('c-tasaMuni','tasa_incidentes_municipio')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h360"><canvas id="c-tasaMuni"></canvas></div>
+    </div>
+
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Kilómetros promedio por patrullaje por guardarecurso</div>
+          <div class="cc-hint">Promedio de kilómetros por registro, calculado con los registros del período filtrado</div>
+        </div>
+        <button class="btn-png" onclick="downloadChart('c-kmPromGuarda','km_promedio_guardarecursos')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h420"><canvas id="c-kmPromGuarda"></canvas></div>
+    </div>
+
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Índice operativo descriptivo por guardarecurso</div>
+          <div class="cc-hint">Índice interno de comparación: volumen, cobertura municipal, meses activos, kilómetros e incidentes observados</div>
+        </div>
+        <button class="btn-png" onclick="downloadChart('c-scoreGuarda','indice_operativo_guardarecursos')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h460"><canvas id="c-scoreGuarda"></canvas></div>
+      <div class="chart-footnote">El índice es descriptivo. No constituye calificación laboral ni evaluación de desempeño individual.</div>
+    </div>
+
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Matriz por guardarecurso y municipio</div>
+          <div class="cc-hint">Cruce de patrullajes por guardarecurso y municipio. Celdas con mayor intensidad indican mayor frecuencia registrada</div>
+        </div>
+        <button class="btn-png" onclick="downloadSVGasPNG('matrix-gm-svg','matriz_guardarecurso_municipio')">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="matrix-wrap"><svg id="matrix-gm-svg"></svg></div>
+    </div>
+
+  </div>
+
+  <!-- SECCIÓN 4 — GUARDARECURSOS -->
   <div class="sec-divider">Análisis por guardarecursos</div>
   <div class="charts-grid">
 
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Radar de actividad por guardarecursos</div>
-          <div class="cc-hint">Perfil multidimensional: volumen, municipios cubiertos, duración media, meses activos e incidentes</div>
+          <div class="cc-title">Perfil comparativo por guardarecurso</div>
+          <div class="cc-hint">Perfil comparativo: volumen, municipios cubiertos, duración media, meses activos e incidentes</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-radar','radar_guardarecursos')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -769,7 +961,7 @@
       </div>
       <div class="cc-filters">
         <label>Guardarecursos:</label>
-        <select id="f-radar-guarda" style="min-width:210px"><option value="">— Top 6 por volumen —</option></select>
+        <select id="f-radar-guarda" style="min-width:210px"><option value="">— Comparativo general —</option></select>
       </div>
       <div class="cw h340"><canvas id="c-radar"></canvas></div>
     </div>
@@ -796,8 +988,8 @@
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Ranking de guardarecursos — patrullajes e incidentes</div>
-          <div class="cc-hint">Barras = total de patrullajes · puntos rojos = incidentes reportados · se puede aplicar un rango de fechas propio independiente de los filtros globales</div>
+          <div class="cc-title">Ranking de guardarecursos por patrullajes e incidentes</div>
+          <div class="cc-hint">Las barras muestran el total de patrullajes y los puntos indican incidentes reportados. Esta gráfica permite aplicar un rango de fechas independiente de los filtros globales.</div>
         </div>
         <button class="btn-png" onclick="downloadChart('c-rankGuarda','ranking_guardarecursos')">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -831,17 +1023,17 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
-        AC 192 · Patrullajes
+        AC 192. Patrullajes
       </div>
       <div class="footer-mod-desc">Control y vigilancia de áreas protegidas</div>
     </div>
     <div class="footer-col footer-col-right">
       <span>Desarrollado por</span>
-      <strong>Laboratorio SIG · AALA</strong>
+      <strong>Laboratorio SIG. AALA</strong>
       <span>Asociación Amigos del Lago de Atitlán</span>
     </div>
     <div class="footer-divider"></div>
-    <div class="footer-copy">© 2026 · Todos los datos son de uso oficial · Sistema de Monitoreo CONAP</div>
+    <div class="footer-copy">© 2026. Todos los datos son de uso oficial. Sistema de Monitoreo CONAP</div>
   </div>
 </footer>
 
@@ -976,6 +1168,68 @@ function mShort(k){const[y,m]=k.split("-");return MESES_S[+m-1]+" '"+String(y).s
 function dowMon(dt){return(dt.getUTCDay()+6)%7;}
 function bestL(a,b){a=norm(a);b=norm(b);if(!a)return b;if(!b)return a;const ht=s=>/[áéíóúüñÁÉÍÓÚÜÑ]/.test(s);if(ht(b)&&!ht(a))return b;return b.length>a.length?b:a;}
 
+
+/* ─── NORMALIZACIÓN DE ÁREA PROTEGIDA ─────────────────────────
+   Uso interno del tablero. No modifica el CSV; solo agrupa variantes
+   tipográficas para la gráfica "Patrullajes por área protegida". */
+function cleanAreaKey(value){
+  return canonStr(value)
+    .replace(/[^a-z0-9\s]/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+}
+function areaObj(key,label){return {key,label};}
+function canonAreaProtegida(value){
+  const raw=norm(value);
+  const c=cleanAreaKey(raw);
+  if(!c||c==="si")return areaObj("sin_dato","Sin dato");
+
+  // Reserva de Usos Múltiples de la Cuenca del Lago de Atitlán / RUMCLA
+  if(
+    c.includes("rumcla") ||
+    c.includes("atitlan") && (c.includes("reserva")||c.includes("cuenca")||c.includes("lago")) ||
+    c==="reserva de usos multiples" ||
+    c==="cuenca del lago"
+  )return areaObj("rumcla","Reserva de Usos Múltiples de la Cuenca del Lago de Atitlán");
+
+  // Áreas/parques con variantes frecuentes
+  if(c.includes("iximche"))return areaObj("iximche","Parque Arqueológico Iximché");
+  if(c.includes("volcan")&&c.includes("acatenango"))return areaObj("volcan_acatenango","Volcán Acatenango");
+  if((c.includes("tecpan")||c.includes("tecpqn"))&&(c.includes("astill")||c.includes("aatill")||c.includes("municipal")||c.includes("minicipal")))return areaObj("astillero_tecpan","Parque Regional Municipal Astillero de Tecpán");
+  if(c.includes("chirijuyu"))return areaObj("chirijuyu","Reserva Natural Privada Finca Chirijuyú");
+  if(c.includes("balam")||c.includes("balan juyu"))return areaObj("balam_juyu","Balam Juyú");
+
+  // Conjunto de astilleros municipales de Parramos
+  if(c.includes("pajales")&&c.includes("chicorona")&&c.includes("grande")&&c.includes("pequeno"))return areaObj("astilleros_parramos","Astilleros Municipales de Parramos");
+  if(c.includes("astilleros municipales"))return areaObj("astilleros_parramos","Astilleros Municipales de Parramos");
+  if(c.includes("plantacion voluntaria")&&c.includes("astillero municipal"))return areaObj("astillero_municipal_sin_especificar","Astillero Municipal, sin especificar");
+  if(c.includes("pajales")&&c.includes("grande"))return areaObj("pajales_grande","Astilleros Pajales y Grande, Parramos");
+  if(c.includes("pajales"))return areaObj("astillero_pajales","Astillero Pajales, Parramos");
+  if(c.includes("chicorona"))return areaObj("astillero_chicorona","Astillero Chicorona, Parramos");
+  if(c.includes("grande")&&c.includes("astillero"))return areaObj("astillero_grande","Astillero Grande, Parramos");
+  if((c.includes("pequeno")||c.includes("astllero pequeno"))&&(c.includes("astill")||c.includes("astllero")||c.includes("area")))return areaObj("astillero_pequeno","Astillero Pequeño, Parramos");
+  if((c.includes("parramos")||c.includes("parrmos"))&&(c.includes("area")||c.includes("protejida")||c.includes("protegida")||c.includes("protenida")||c.includes("privada")))return areaObj("area_protegida_parramos","Área Protegida Parramos, Chimaltenango");
+
+  // Sitios de Acatenango y registros relacionados
+  if(c.includes("campana")||c.includes("conpana")||c.includes("serro la campana")||c.includes("nacimientos de agua"))return areaObj("cerro_la_campana","Cerro La Campana, Acatenango");
+  if(c.includes("cipreson"))return areaObj("cerro_el_cipreson","Cerro El Cipresón, Aldea Los Planes, Acatenango");
+  if(c.includes("sanay"))return areaObj("cerro_el_sanay","Cerro El Sanay, Aldea Pajales, Acatenango");
+  if(c.includes("socorro")&&!c.includes("chalabal"))return areaObj("montana_el_socorro","Montaña El Socorro, Acatenango");
+  if(/\bsoco\b/.test(c)||c.includes("porvenir"))return areaObj("montana_el_soco","Montaña El Soco y El Porvenir, San Antonio Nejapa, Acatenango");
+  if(c.includes("chalabal")||c.includes("fimca chalabal"))return areaObj("finca_chalabal","Finca Chalabal, Aldea El Socorro, Acatenango");
+  if(c.includes("balastrera"))return areaObj("balastrera","La Balastrera, Acatenango");
+  if(c.includes("san antonio nejapa")&&c.includes("astillero"))return areaObj("astillero_san_antonio_nejapa","Astillero San Antonio Nejapa, Acatenango");
+
+  // Linderos y otros sitios reportados de forma recurrente
+  if(c.includes("linderos")&&c.includes("parramos")&&c.includes("itzapa"))return areaObj("linderos_parramos_itzapa","Linderos Parramos–San Andrés Itzapa");
+  if(c.includes("santiago atitlan"))return areaObj("santiago_atitlan","Santiago Atitlán");
+  if(c.includes("finca san carlos"))return areaObj("finca_san_carlos","Finca San Carlos");
+  if(c.includes("nuevas reservas"))return areaObj("nuevas_reservas","Nuevas reservas en proceso de inscripción");
+  if(c.includes("area protejida")||c.includes("area protegida"))return areaObj("area_protegida_sin_especificar","Área protegida sin especificar");
+
+  return areaObj(c,cleanLabel(raw));
+}
+
 /* ─── CARGA CSV ─────────────────────────────────────────────── */
 async function loadCSV(){
   const urls=["../../datos/datos_patrullaje.csv","https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/datos_patrullaje.csv"];
@@ -1020,12 +1274,13 @@ function enrich(data){
     rr.__dur=calcDur(r["Hora de Inicio del patrullaje"],r["Hora de finalizacion de patrullaje"]);
     rr.__cm=canonStr(r["Municipio"]);rr.__cg=canonStr(gn);
     rr.__cu=canonU(r["Ubicacion"]);rr.__ci=canonI(r["Actividad ilegal observada"]);
-    rr.__cap=canonStr(r["Area protegida"]);rr.__ctp=canonStr(r["Tipo de patrullaje"]);
+    const ap=canonAreaProtegida(r["Area protegida"]);
+    rr.__cap=ap.key;rr.__ctp=canonStr(r["Tipo de patrullaje"]);
     rr.__cin=canonI(r["Hay mas instituciones involucradas en el patrullaje"]);
     const km=parseFloat(r["Kilometros recorridos"]||"");rr.__km=isNaN(km)?null:km;
     if(rr.__cm)LABELS.muni.set(rr.__cm,bestL(LABELS.muni.get(rr.__cm),r["Municipio"]));
     if(rr.__cg)LABELS.guarda.set(rr.__cg,bestL(LABELS.guarda.get(rr.__cg),gn));
-    if(rr.__cap)LABELS.ap.set(rr.__cap,bestL(LABELS.ap.get(rr.__cap),r["Area protegida"]));
+    if(rr.__cap)LABELS.ap.set(rr.__cap,ap.label);
     if(rr.__ctp)LABELS.tp.set(rr.__ctp,bestL(LABELS.tp.get(rr.__ctp),r["Tipo de patrullaje"]));
     out.push(rr);
   }
@@ -1039,7 +1294,7 @@ function initSelects(){
   const sM=[...LABELS.muni.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));fillSel("f-municipio",sM,"Todos los municipios");
   const sG=[...LABELS.guarda.entries()].sort((a,b)=>(a[1]||"").localeCompare(b[1]||"","es")).map(([k,l])=>({v:k,l}));fillSel("f-guarda",sG,"Todos");
   const rSel=document.getElementById("f-radar-guarda");
-  if(rSel){rSel.innerHTML='<option value="">— Top 6 por volumen —</option>';sG.forEach(({v,l})=>{const o=document.createElement("option");o.value=v;o.textContent=cleanLabel(l);rSel.appendChild(o);});}
+  if(rSel){rSel.innerHTML='<option value="">— Comparativo general —</option>';sG.forEach(({v,l})=>{const o=document.createElement("option");o.value=v;o.textContent=cleanLabel(l);rSel.appendChild(o);});}
   const dates=ROWS.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
   if(dates.length){const iso=d=>d.toISOString().slice(0,10);document.getElementById("f-desde").value=iso(dates[0]);document.getElementById("f-hasta").value=iso(dates[dates.length-1]);}
 }
@@ -1138,15 +1393,16 @@ function g4(rows){
       scales:{x:{min:5,max:19,grid:{color:GRID_COLOR},...TICK_FONT,ticks:{...TICK_FONT.font,callback:v=>`${v}h`},title:{display:true,text:"Hora de inicio",...AXIS_TITLE_FONT}},y:{min:0,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Duración (h)",...AXIS_TITLE_FONT}}}}});
 }
 
-/* ─── G5 Stacked muni × mes ────────────────────────────────── */
+/* ─── G5 Stacked muni y mes ────────────────────────────────── */
 function g5(rows){
-  const mc=countBy(rows,r=>r.__cm);const top8=topN(mc,8).map(([k])=>k);
+  const mc=countBy(rows,r=>r.__cm);
+  const municipios=[...mc.entries()].sort((a,b)=>b[1]-a[1]).map(([k])=>k);
   const months=uniq(rows.map(r=>r.__mes)).sort();
-  const datasets=top8.map((cm,i)=>({label:LABELS.muni.get(cm)||cm,data:months.map(mo=>rows.filter(r=>r.__cm===cm&&r.__mes===mo).length),backgroundColor:PAL_A[i%PAL.length],borderColor:PAL[i%PAL.length],borderWidth:1,borderRadius:3,borderSkipped:false}));
+  const datasets=municipios.map((cm,i)=>({label:cleanLabel(LABELS.muni.get(cm)||cm),data:months.map(mo=>rows.filter(r=>r.__cm===cm&&r.__mes===mo).length),backgroundColor:PAL_A[i%PAL.length],borderColor:PAL[i%PAL.length],borderWidth:0,borderRadius:3,borderSkipped:false}));
   mkChart("c-muniMes",{type:"bar",data:{labels:months.map(mShort),datasets},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-      plugins:{legend:{position:"top",labels:{font:{size:12.5},padding:14,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT}},
-      scales:{x:{stacked:true,grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{stacked:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
+      plugins:{legend:{position:"bottom",labels:{font:{size:11.5},padding:10,usePointStyle:false,boxWidth:12,boxHeight:12}},tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y} patrullajes`}}},
+      scales:{x:{stacked:true,grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{stacked:true,beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
 /* ─── G6 Radar ─────────────────────────────────────────────── */
@@ -1157,22 +1413,24 @@ function g6(rows){
   const nrm=(v,mx)=>mx?Math.round(v/mx*100):0;
   const AXES=["Volumen","Municipios\ncubiertos","Duración\nmedia","Meses\nactivos","Incidentes"];
   const radarOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:12,usePointStyle:true}},tooltip:{...TT}},scales:{r:{beginAtZero:true,max:100,ticks:{display:false},grid:{color:"rgba(0,0,0,0.07)"},pointLabels:{font:{size:12.5}}}}};
+  const allM=allG.map(cg=>metOf(cg,ROWS));
+  const mxP=Math.max(...allM.map(x=>x.p),1),mxM=Math.max(...allM.map(x=>x.m),1),mxD=Math.max(...allM.map(x=>x.d),.1),mxMes=Math.max(...allM.map(x=>x.mes),1),mxI=Math.max(...allM.map(x=>x.i),1);
+  const toA=o=>[nrm(o.p,mxP),nrm(o.m,mxM),nrm(o.d,mxD),nrm(o.mes,mxMes),nrm(o.i,mxI)];
   if(sel){
-    const allM=allG.map(cg=>metOf(cg,ROWS));
-    const gAvg={p:avg_(allM.map(x=>x.p)),m:avg_(allM.map(x=>x.m)),d:avg_(allM.map(x=>x.d)),mes:avg_(allM.map(x=>x.mes)),i:avg_(allM.map(x=>x.i))};
     const sM=metOf(sel,ROWS);
-    const mxP=Math.max(...allM.map(x=>x.p),1),mxM=Math.max(...allM.map(x=>x.m),1),mxD=Math.max(...allM.map(x=>x.d),.1),mxMes=Math.max(...allM.map(x=>x.mes),1),mxI=Math.max(...allM.map(x=>x.i),1);
-    const toA=o=>[nrm(o.p,mxP),nrm(o.m,mxM),nrm(o.d,mxD),nrm(o.mes,mxMes),nrm(o.i,mxI)];
+    const gAvg={p:avg_(allM.map(x=>x.p)),m:avg_(allM.map(x=>x.m)),d:avg_(allM.map(x=>x.d)),mes:avg_(allM.map(x=>x.mes)),i:avg_(allM.map(x=>x.i))};
     const lbl=cleanLabel(LABELS.guarda.get(sel)||sel).split(" ").slice(0,3).join(" ");
     mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:[
       {label:lbl,data:toA(sM),backgroundColor:PAL[0]+"2a",borderColor:PAL[0],borderWidth:2.5,pointBackgroundColor:PAL[0],pointRadius:4,pointBorderColor:"#fff",pointBorderWidth:1.5},
-      {label:"Media global",data:toA(gAvg),backgroundColor:"rgba(168,28,42,0.10)",borderColor:"rgba(168,28,42,0.60)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(168,28,42,0.6)",pointRadius:3}
+      {label:"Media general",data:toA(gAvg),backgroundColor:"rgba(168,28,42,0.10)",borderColor:"rgba(168,28,42,0.60)",borderWidth:2,borderDash:[5,4],pointBackgroundColor:"rgba(168,28,42,0.6)",pointRadius:3}
     ]},options:radarOpts});
   }else{
-    const gc=countBy(rows,r=>r.__cg);const top6=topN(gc,6).map(([k])=>k);
-    const allT=top6.map(cg=>metOf(cg,rows));
-    const mxP=Math.max(...allT.map(x=>x.p),1),mxM=Math.max(...allT.map(x=>x.m),1),mxD=Math.max(...allT.map(x=>x.d),.1),mxMes=Math.max(...allT.map(x=>x.mes),1),mxI=Math.max(...allT.map(x=>x.i),1);
-    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:top6.map((cg,i)=>{const o=metOf(cg,rows);return{label:cleanLabel(LABELS.guarda.get(cg)||cg).split(" ").slice(0,2).join(" "),data:[nrm(o.p,mxP),nrm(o.m,mxM),nrm(o.d,mxD),nrm(o.mes,mxMes),nrm(o.i,mxI)],backgroundColor:PAL[i]+"2a",borderColor:PAL[i],borderWidth:2,pointBackgroundColor:PAL[i],pointRadius:3};})},options:radarOpts});
+    const gAvg={p:avg_(allM.map(x=>x.p)),m:avg_(allM.map(x=>x.m)),d:avg_(allM.map(x=>x.d)),mes:avg_(allM.map(x=>x.mes)),i:avg_(allM.map(x=>x.i))};
+    const gMax={p:mxP,m:mxM,d:mxD,mes:mxMes,i:mxI};
+    mkChart("c-radar",{type:"radar",data:{labels:AXES,datasets:[
+      {label:"Media general",data:toA(gAvg),backgroundColor:PAL[0]+"24",borderColor:PAL[0],borderWidth:2.5,pointBackgroundColor:PAL[0],pointRadius:4},
+      {label:"Máximo observado",data:toA(gMax),backgroundColor:PAL[4]+"12",borderColor:PAL[4],borderWidth:2,borderDash:[5,4],pointBackgroundColor:PAL[4],pointRadius:3}
+    ]},options:radarOpts});
   }
 }
 
@@ -1189,41 +1447,43 @@ function g7(rows){
 
 /* ─── G8 Ilegal por municipio ──────────────────────────────── */
 function g8(rows){
-  const mc=countBy(rows,r=>r.__cm);const top=topN(mc,12).map(([k])=>k);
-  const lbls=top.map(cm=>LABELS.muni.get(cm)||cm);
-  const si=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="si").length);
-  const no=top.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="no").length);
+  const mc=countBy(rows,r=>r.__cm);
+  const munis=[...mc.entries()].sort((a,b)=>b[1]-a[1]).map(([k])=>k);
+  const lbls=munis.map(cm=>cleanLabel(LABELS.muni.get(cm)||cm));
+  const si=munis.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="si").length);
+  const no=munis.map(cm=>rows.filter(r=>r.__cm===cm&&r.__ci==="no").length);
+  const cv=document.getElementById("c-ilegalMuni");if(cv)cv.parentElement.style.height=Math.max(300,munis.length*26+90)+"px";
   mkChart("c-ilegalMuni",{type:"bar",data:{labels:lbls,datasets:[
-    {label:"Sin incidente",data:no,backgroundColor:PAL[1]+"bb",borderColor:PAL[1],borderWidth:1,borderRadius:4,borderSkipped:false},
-    {label:"Con incidente",data:si,backgroundColor:PAL[4]+"cc",borderColor:PAL[4],borderWidth:1,borderRadius:4,borderSkipped:false}
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-    plugins:{legend:{position:"top",labels:{font:{size:13},padding:14,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT}},
-    scales:{x:{stacked:true,grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:35}},y:{stacked:true,beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}},
-    onClick:(e,els)=>{if(!els.length)return;document.getElementById("f-municipio").value=top[els[0].index];applyAll();}}});
+    {label:"Sin incidente",data:no,backgroundColor:PAL[1]+"bb",borderColor:PAL[1],borderWidth:0,borderRadius:4,borderSkipped:false},
+    {label:"Con incidente",data:si,backgroundColor:PAL[4]+"cc",borderColor:PAL[4],borderWidth:0,borderRadius:4,borderSkipped:false}
+  ]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{position:"top",labels:{font:{size:13},padding:14,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.x}`}}},
+    scales:{x:{stacked:true,beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT},y:{stacked:true,grid:{display:false},...TICK_FONT,ticks:{font:{size:12}}}},
+    onClick:(e,els)=>{if(!els.length)return;document.getElementById("f-municipio").value=munis[els[0].index];applyAll();}}});
 }
 
 /* ─── G9 Área protegida ────────────────────────────────────── */
 function g9(rows){
-  const mc=countBy(rows,r=>r.__cap);const sorted=topN(mc,14);
-  const labels=sorted.map(([k])=>{const l=LABELS.ap.get(k)||k;return l.length>52?l.slice(0,50)+"…":l;});
+  const mc=countBy(rows,r=>r.__cap);const sorted=[...mc.entries()].sort((a,b)=>b[1]-a[1]);
+  const labels=sorted.map(([k])=>{const l=cleanLabel(LABELS.ap.get(k)||k);return l.length>58?l.slice(0,56)+"…":l;});
   const vals=sorted.map(([,v])=>v);
-  const ctx=document.getElementById("c-areaProt").getContext("2d");
-  const gr=ctx.createLinearGradient(500,0,0,0);gr.addColorStop(0,PAL[1]+"cc");gr.addColorStop(1,PAL[0]+"88");
-  mkChart("c-areaProt",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:vals,backgroundColor:gr,borderColor:PAL[1],borderWidth:1,borderRadius:5,borderSkipped:false}]},
+  const cv=document.getElementById("c-areaProt");if(cv)cv.parentElement.style.height=Math.max(420,sorted.length*28+90)+"px";
+  mkChart("c-areaProt",{type:"bar",data:{labels,datasets:[{label:"Patrullajes",data:vals,backgroundColor:PAL[1]+"bb",borderColor:PAL[1],borderWidth:0,borderRadius:5,borderSkipped:false}]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} patrullajes`}},
-        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:11,weight:"700",family:"'Inter',system-ui,sans-serif"},formatter:v=>v>0?fmtNum(v):""}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?fmtNum(v):""}},
       scales:{x:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12}}}}}});
 }
 
 /* ─── G10 Tipo de patrullaje ───────────────────────────────── */
 function g10(rows){
-  const mc=countBy(rows,r=>r.__ctp);const sorted=topN(mc,7);
-  const labels=sorted.map(([k])=>{const l=LABELS.tp.get(k)||k;return l.length>38?l.slice(0,36)+"…":l;});
-  const vals=sorted.map(([,v])=>v);const cols=PAL.slice(0,vals.length);
-  mkChart("c-tipoPat",{type:"doughnut",data:{labels,datasets:[{data:vals,backgroundColor:cols.map(c=>c+"cc"),borderColor:cols,borderWidth:2,hoverOffset:12}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:"60%",
-      plugins:{legend:{position:"bottom",labels:{font:{size:12.5},padding:10,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+  const mc=countBy(rows,r=>r.__ctp);const sorted=[...mc.entries()].sort((a,b)=>b[1]-a[1]);
+  const labels=sorted.map(([k])=>{const l=cleanLabel(LABELS.tp.get(k)||k);return l.length>42?l.slice(0,40)+"…":l;});
+  const vals=sorted.map(([,v])=>v);const cols=vals.map((_,i)=>PAL[i%PAL.length]);
+  mkChart("c-tipoPat",{type:"doughnut",data:{labels,datasets:[{data:vals,backgroundColor:cols.map(c=>c+"cc"),borderColor:cols,borderWidth:0,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"62%",
+      plugins:{legend:{position:"bottom",labels:{font:{size:12},padding:9,usePointStyle:false,boxWidth:12,boxHeight:12}},tooltip:{...TT,callbacks:{label:c=>{const pct=rows.length?Math.round(c.parsed/rows.length*100):0;return` ${c.label}: ${c.parsed} (${pct}%)`;}}},
+        datalabels:{display:true,color:"#0c1e13",font:{size:11,weight:"800",family:"'DM Sans',sans-serif"},formatter:(v)=>rows.length&&v/rows.length>=.08?Math.round(v/rows.length*100)+"%":""}}}});
 }
 
 /* ─── G11 Día de semana ────────────────────────────────────── */
@@ -1292,11 +1552,129 @@ function g12(rows){
     scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:42,minRotation:28}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
 }
 
+
+/* ─── ANÁLISIS AVANZADO ───────────────────────────────────── */
+function safePct(num,den){return den?num/den*100:0;}
+function setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+function labelShort(value,words=3){return cleanLabel(value||"").split(" ").slice(0,words).join(" ");}
+
+function renderInsights(rows){
+  const total=rows.length;
+  const muni=[...countBy(rows,r=>r.__cm).entries()].sort((a,b)=>b[1]-a[1])[0];
+  const guarda=[...countBy(rows,r=>r.__cg).entries()].sort((a,b)=>b[1]-a[1])[0];
+  const inc=rows.filter(r=>r.__ci==="si").length;
+  const rum=rows.filter(r=>r.__cu==="rumcla").length;
+  const kms=rows.map(r=>r.__km).filter(v=>v!==null);
+  const horas=countBy(rows,r=>r.__hora===null?"":String(Math.floor(r.__hora)).padStart(2,"0")+":00");
+  const hora=[...horas.entries()].sort((a,b)=>b[1]-a[1])[0];
+
+  setText("insight-muni",muni?cleanLabel(LABELS.muni.get(muni[0])||muni[0]):"–");
+  setText("insight-muni-sub",muni?`${fmtNum(muni[1])} patrullajes registrados`:"sin registros filtrados");
+  setText("insight-guarda",guarda?labelShort(LABELS.guarda.get(guarda[0])||guarda[0],3):"–");
+  setText("insight-guarda-sub",guarda?`${fmtNum(guarda[1])} patrullajes registrados`:"sin registros filtrados");
+  setText("insight-incidencia",total?safePct(inc,total).toFixed(1)+"%":"–");
+  setText("insight-incidencia-sub",`${fmtNum(inc)} de ${fmtNum(total)} registros`);
+  setText("insight-rumcla",total?safePct(rum,total).toFixed(1)+"%":"–");
+  setText("insight-rumcla-sub",`${fmtNum(rum)} de ${fmtNum(total)} registros`);
+  setText("insight-km-prom",kms.length?(sum_(kms)/kms.length).toFixed(2)+" km":"–");
+  setText("insight-hora",hora?hora[0]:"–");
+  setText("insight-hora-sub",hora?`${fmtNum(hora[1])} inicios registrados`:"sin hora válida");
+}
+
+function gIncidentesMes(rows){
+  const months=uniq(rows.map(r=>r.__mes)).sort();
+  const totals=months.map(m=>rows.filter(r=>r.__mes===m).length);
+  const inc=months.map(m=>rows.filter(r=>r.__mes===m&&r.__ci==="si").length);
+  const rate=months.map((m,i)=>parseFloat(safePct(inc[i],totals[i]).toFixed(1)));
+  mkChart("c-incidentesMes",{type:"bar",data:{labels:months.map(mShort),datasets:[
+    {label:"Incidentes",data:inc,backgroundColor:PAL[4]+"cc",borderColor:PAL[4],borderWidth:0,borderRadius:5,borderSkipped:false,yAxisID:"y",order:2},
+    {label:"Tasa mensual",data:rate,type:"line",borderColor:PAL[0],backgroundColor:PAL[0],borderWidth:2.5,pointRadius:4,pointHoverRadius:6,tension:.28,yAxisID:"y1",order:1}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{position:"top",labels:{font:{size:13},padding:14,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT,callbacks:{label:c=>c.dataset.yAxisID==="y1"?` Tasa: ${c.parsed.y.toFixed(1)}%`:` Incidentes: ${c.parsed.y}`}}},
+    scales:{x:{grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Incidentes",...AXIS_TITLE_FONT}},y1:{beginAtZero:true,position:"right",grid:{display:false},ticks:{callback:v=>v+"%",font:{size:12.5}},title:{display:true,text:"Tasa",...AXIS_TITLE_FONT}}}}});
+}
+
+function gRumclaMes(rows){
+  const months=uniq(rows.map(r=>r.__mes)).sort();
+  const dentro=months.map(m=>rows.filter(r=>r.__mes===m&&r.__cu==="rumcla").length);
+  const fuera=months.map(m=>rows.filter(r=>r.__mes===m&&r.__cu==="fuera").length);
+  const nd=months.map((m,i)=>rows.filter(r=>r.__mes===m).length-dentro[i]-fuera[i]);
+  mkChart("c-rumclaMes",{type:"bar",data:{labels:months.map(mShort),datasets:[
+    {label:"Dentro RUMCLA",data:dentro,backgroundColor:PAL[0]+"cc",borderWidth:0,borderRadius:4,borderSkipped:false},
+    {label:"Fuera RUMCLA",data:fuera,backgroundColor:PAL[2]+"cc",borderWidth:0,borderRadius:4,borderSkipped:false},
+    {label:"Sin dato",data:nd,backgroundColor:"#d9e2dd",borderWidth:0,borderRadius:4,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+    plugins:{legend:{position:"top",labels:{font:{size:13},padding:14,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT}},
+    scales:{x:{stacked:true,grid:{display:false},...TICK_FONT,ticks:{...TICK_FONT.font,maxRotation:40}},y:{stacked:true,beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT}}}});
+}
+
+function gTasaMuni(rows){
+  const totals=countBy(rows,r=>r.__cm);
+  const items=[...totals.entries()].map(([cm,total])=>{const inc=rows.filter(r=>r.__cm===cm&&r.__ci==="si").length;return{cm,total,inc,rate:safePct(inc,total)};}).sort((a,b)=>b.rate-a.rate||b.total-a.total);
+  const labels=items.map(x=>cleanLabel(LABELS.muni.get(x.cm)||x.cm));
+  const vals=items.map(x=>parseFloat(x.rate.toFixed(1)));
+  const cv=document.getElementById("c-tasaMuni");if(cv)cv.parentElement.style.height=Math.max(360,items.length*28+90)+"px";
+  mkChart("c-tasaMuni",{type:"bar",data:{labels,datasets:[{label:"Tasa de incidentes",data:vals,backgroundColor:PAL[4]+"bb",borderColor:PAL[4],borderWidth:0,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>{const x=items[c.dataIndex];return[` Tasa: ${x.rate.toFixed(1)}%`,` Incidentes: ${x.inc}`,` Patrullajes: ${x.total}`];}}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toFixed(1)+"%":""}},
+      scales:{x:{beginAtZero:true,grid:{color:GRID_COLOR},ticks:{callback:v=>v+"%",font:{size:12.5}},title:{display:true,text:"Porcentaje",...AXIS_TITLE_FONT}},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12}}}}}});
+}
+
+function gKmPromGuarda(rows){
+  const groups=new Map();
+  rows.forEach(r=>{if(!r.__cg||r.__km===null)return;if(!groups.has(r.__cg))groups.set(r.__cg,{sum:0,n:0});const g=groups.get(r.__cg);g.sum+=r.__km;g.n++;});
+  const items=[...groups.entries()].map(([cg,o])=>({cg,n:o.n,avg:o.n?o.sum/o.n:0,sum:o.sum})).sort((a,b)=>b.avg-a.avg||b.n-a.n);
+  const labels=items.map(x=>labelShort(LABELS.guarda.get(x.cg)||x.cg,3));
+  const vals=items.map(x=>parseFloat(x.avg.toFixed(2)));
+  const cv=document.getElementById("c-kmPromGuarda");if(cv)cv.parentElement.style.height=Math.max(420,items.length*26+90)+"px";
+  mkChart("c-kmPromGuarda",{type:"bar",data:{labels,datasets:[{label:"Km promedio",data:vals,backgroundColor:PAL[5]+"bb",borderColor:PAL[5],borderWidth:0,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>{const x=items[c.dataIndex];return[` Promedio: ${x.avg.toFixed(2)} km`,` Registros: ${x.n}`,` Total: ${x.sum.toFixed(1)} km`];}}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v?`${v.toFixed(2)} km`:""}},
+      scales:{x:{beginAtZero:true,suggestedMax:5,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Km por patrullaje",...AXIS_TITLE_FONT}},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12}}}}}});
+}
+
+function gScoreGuarda(rows){
+  const guardas=uniq(rows.map(r=>r.__cg)).filter(Boolean);
+  const metrics=guardas.map(cg=>{const s=rows.filter(r=>r.__cg===cg);const km=sum_(s.map(r=>r.__km).filter(v=>v!==null));return{cg,p:s.length,m:uniq(s.map(r=>r.__cm)).length,mes:uniq(s.map(r=>r.__mes)).length,km,i:s.filter(r=>r.__ci==="si").length};});
+  const max={p:Math.max(...metrics.map(x=>x.p),1),m:Math.max(...metrics.map(x=>x.m),1),mes:Math.max(...metrics.map(x=>x.mes),1),km:Math.max(...metrics.map(x=>x.km),1),i:Math.max(...metrics.map(x=>x.i),1)};
+  const items=metrics.map(x=>({...x,score:((x.p/max.p)*35+(x.m/max.m)*20+(x.mes/max.mes)*15+(x.km/max.km)*20+(x.i/max.i)*10)})).sort((a,b)=>b.score-a.score||b.p-a.p);
+  const labels=items.map(x=>labelShort(LABELS.guarda.get(x.cg)||x.cg,3));
+  const vals=items.map(x=>parseFloat(x.score.toFixed(1)));
+  const cv=document.getElementById("c-scoreGuarda");if(cv)cv.parentElement.style.height=Math.max(460,items.length*26+90)+"px";
+  mkChart("c-scoreGuarda",{type:"bar",data:{labels,datasets:[{label:"Índice",data:vals,backgroundColor:items.map((_,i)=>PAL[i%PAL.length]+"bb"),borderWidth:0,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>{const x=items[c.dataIndex];return[` Índice: ${x.score.toFixed(1)}`,` Patrullajes: ${x.p}`,` Municipios: ${x.m}`,` Meses activos: ${x.mes}`,` Kilómetros: ${x.km.toFixed(1)}`,` Incidentes: ${x.i}`];}}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#2a4535",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toFixed(1):""}},
+      scales:{x:{beginAtZero:true,grid:{color:GRID_COLOR},...TICK_FONT,title:{display:true,text:"Índice descriptivo",...AXIS_TITLE_FONT}},y:{grid:{display:false},...TICK_FONT,ticks:{font:{size:12}}}}}});
+}
+
+function gMatrizGM(rows){
+  const gCounts=countBy(rows,r=>r.__cg);
+  const mCounts=countBy(rows,r=>r.__cm);
+  const guardas=[...gCounts.entries()].sort((a,b)=>b[1]-a[1]).map(([k])=>k);
+  const munis=[...mCounts.entries()].sort((a,b)=>b[1]-a[1]).map(([k])=>k);
+  const mat=guardas.map(g=>munis.map(m=>rows.filter(r=>r.__cg===g&&r.__cm===m).length));
+  const maxV=Math.max(1,...mat.flat());
+  const cellW=44,cellH=28,left=190,top=118,right=24,bottom=34;
+  const W=Math.max(760,left+munis.length*cellW+right),H=top+guardas.length*cellH+bottom;
+  const svg=document.getElementById("matrix-gm-svg");if(!svg)return;
+  svg.setAttribute("width",W);svg.setAttribute("height",H);svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  function fill(v){if(!v)return"#edf2ee";const t=Math.pow(v/maxV,.55);return`rgb(${Math.round(232-t*202)},${Math.round(242-t*118)},${Math.round(238-t*182)})`;}
+  let html=`<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/>`;
+  munis.forEach((m,i)=>{const x=left+i*cellW+cellW/2;const lab=cleanLabel(LABELS.muni.get(m)||m);html+=`<text x="${x-4}" y="${top-10}" transform="rotate(-50 ${x-4} ${top-10})" text-anchor="start" font-size="10.5" fill="#6a8878" font-family="DM Sans,sans-serif" font-weight="700">${lab.length>22?lab.slice(0,21)+'…':lab}</text>`;});
+  guardas.forEach((g,ri)=>{const y=top+ri*cellH;const gl=labelShort(LABELS.guarda.get(g)||g,4);html+=`<text x="${left-10}" y="${y+cellH/2+4}" text-anchor="end" font-size="11" fill="#2a4535" font-family="DM Sans,sans-serif" font-weight="700">${gl}</text>`;munis.forEach((m,ci)=>{const v=mat[ri][ci],x=left+ci*cellW;const tc=v/maxV>.45?"#fff":"#162a1c";html+=`<rect x="${x}" y="${y}" width="${cellW-3}" height="${cellH-3}" rx="5" fill="${fill(v)}" stroke="#d8e4dd" stroke-width=".5"/>`;if(v>0)html+=`<text x="${x+cellW/2-2}" y="${y+cellH/2+4}" text-anchor="middle" font-size="10" fill="${tc}" font-family="DM Sans,sans-serif" font-weight="800">${v}</text>`;});});
+  html+=`<text x="${left}" y="${H-10}" font-size="10.5" fill="#9ab0a6" font-family="DM Sans,sans-serif">Valores: cantidad de patrullajes registrados.</text>`;
+  svg.innerHTML=html;
+}
+
 /* ─── RENDER TOTAL ─────────────────────────────────────────── */
 function applyAll(){
   const f=getF();renderChips(f);const rows=applyF(f);
-  updateKPIs(rows);
+  updateKPIs(rows);renderInsights(rows);
   g1(rows);g2(rows);g3(rows);g4(rows);g5(rows);g6(rows);g7(rows);g8(rows);g9(rows);g10(rows);g11(rows);g12(rows);gKmMes(rows);gKmGuarda(rows);gInst(rows);
+  gIncidentesMes(rows);gRumclaMes(rows);gTasaMuni(rows);gKmPromGuarda(rows);gScoreGuarda(rows);gMatrizGM(rows);
   const el=document.getElementById("estado");
   if(el)el.innerHTML=`Mostrando <strong>${rows.length.toLocaleString("en-US")}</strong> de <strong>${ROWS.length.toLocaleString("en-US")}</strong> registros`;
 }
@@ -1382,7 +1760,7 @@ function applyAll(){
   document.head.appendChild(st);
 
   /* Mapeo chartId → función de redibujado */
-  var FN = {'c-tendencia':function(r){if(typeof g1!=='undefined')g1(r);},'c-duracion':function(r){if(typeof g3!=='undefined')g3(r);},'c-scatter':function(r){if(typeof g4!=='undefined')g4(r);},'c-diaSem':function(r){if(typeof g11!=='undefined')g11(r);},'c-kmMes':function(r){if(typeof gKmMes!=='undefined')gKmMes(r);},'c-muniMes':function(r){if(typeof g5!=='undefined')g5(r);},'c-rumcla':function(r){if(typeof g7!=='undefined')g7(r);},'c-ilegal':function(r){if(typeof g7!=='undefined')g7(r);},'c-tipoPat':function(r){if(typeof g10!=='undefined')g10(r);},'c-inst':function(r){if(typeof gInst!=='undefined')gInst(r);},'c-ilegalMuni':function(r){if(typeof g8!=='undefined')g8(r);},'c-areaProt':function(r){if(typeof g9!=='undefined')g9(r);},'c-kmGuarda':function(r){if(typeof gKmGuarda!=='undefined')gKmGuarda(r);}};
+  var FN = {'c-tendencia':function(r){if(typeof g1!=='undefined')g1(r);},'c-duracion':function(r){if(typeof g3!=='undefined')g3(r);},'c-scatter':function(r){if(typeof g4!=='undefined')g4(r);},'c-diaSem':function(r){if(typeof g11!=='undefined')g11(r);},'c-kmMes':function(r){if(typeof gKmMes!=='undefined')gKmMes(r);},'c-muniMes':function(r){if(typeof g5!=='undefined')g5(r);},'c-rumcla':function(r){if(typeof g7!=='undefined')g7(r);},'c-ilegal':function(r){if(typeof g7!=='undefined')g7(r);},'c-tipoPat':function(r){if(typeof g10!=='undefined')g10(r);},'c-inst':function(r){if(typeof gInst!=='undefined')gInst(r);},'c-ilegalMuni':function(r){if(typeof g8!=='undefined')g8(r);},'c-areaProt':function(r){if(typeof g9!=='undefined')g9(r);},'c-kmGuarda':function(r){if(typeof gKmGuarda!=='undefined')gKmGuarda(r);},'c-incidentesMes':function(r){if(typeof gIncidentesMes!=='undefined')gIncidentesMes(r);},'c-rumclaMes':function(r){if(typeof gRumclaMes!=='undefined')gRumclaMes(r);},'c-tasaMuni':function(r){if(typeof gTasaMuni!=='undefined')gTasaMuni(r);},'c-kmPromGuarda':function(r){if(typeof gKmPromGuarda!=='undefined')gKmPromGuarda(r);},'c-scoreGuarda':function(r){if(typeof gScoreGuarda!=='undefined')gScoreGuarda(r);}};
 
   /* Filtrado por fechas locales (sobre filtro global activo) */
   function locRows(desde, hasta){
