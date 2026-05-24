@@ -1603,40 +1603,43 @@ function inicializarSelectorMeses(){
 }
 
 const CSS_REPORTE_CORTE=`<style>
-  @page{size:A4;margin:28mm 13mm 15mm 13mm}
-  .report-doc{font-family:"Times New Roman",serif;color:#000;background:#fff;width:184mm;box-sizing:border-box;padding:0;position:relative}
-  .report-doc,.report-doc p,.report-doc li{font-size:11.2pt;line-height:1.14;text-align:justify;color:#000;orphans:3;widows:3}
-  .report-doc h1{font-family:"Times New Roman",serif;font-size:15.5pt;font-weight:bold;text-align:center;margin:0 0 6pt;color:#000;line-height:1.05;text-transform:uppercase;page-break-after:avoid;break-after:avoid}
-  .report-doc h2{font-family:"Times New Roman",serif;font-size:12.7pt;font-weight:bold;margin:8pt 0 4pt;color:#000;line-height:1.06;page-break-after:avoid;break-after:avoid}
-  .report-doc h3{font-family:"Times New Roman",serif;font-size:11.6pt;font-weight:bold;margin:6pt 0 3pt;color:#000;line-height:1.06;page-break-after:avoid;break-after:avoid}
+  @page{size:A4;margin:27mm 18mm 14mm 18mm}
+  .report-doc{font-family:"Times New Roman",serif;color:#000;background:#fff;width:172mm;max-width:172mm;box-sizing:border-box;padding:0;margin:0 auto;position:relative;overflow:visible}
+  .report-doc,.report-doc p,.report-doc li{font-size:10.8pt;line-height:1.12;text-align:justify;color:#000;orphans:3;widows:3;word-break:normal;overflow-wrap:normal;hyphens:none}
+  .report-doc h1{font-family:"Times New Roman",serif;font-size:15.2pt;font-weight:bold;text-align:center;margin:0 0 6pt;color:#000;line-height:1.05;text-transform:uppercase;page-break-after:avoid;break-after:avoid}
+  .report-doc h2{font-family:"Times New Roman",serif;font-size:12.4pt;font-weight:bold;margin:8pt 0 4pt;color:#000;line-height:1.06;page-break-after:avoid;break-after:avoid}
+  .report-doc h3{font-family:"Times New Roman",serif;font-size:11.3pt;font-weight:bold;margin:6pt 0 3pt;color:#000;line-height:1.06;page-break-after:avoid;break-after:avoid}
   .report-doc p{margin:0 0 5pt}
-  .report-doc .center{text-align:center}.report-doc .small{font-size:10pt}.report-doc .mini{font-size:8.6pt}
-  .report-doc .portada{margin:0 0 9pt;padding-bottom:7pt;border-bottom:1px solid #999}
-  .report-doc .section{break-inside:auto;page-break-inside:auto}
+  .report-doc .center{text-align:center}.report-doc .small{font-size:9.8pt}.report-doc .mini{font-size:8.4pt}
+  .report-doc .portada{margin:0 0 9pt;padding-bottom:7pt;border-bottom:1px solid #999;break-inside:avoid;page-break-inside:avoid}
+  .report-doc .section{break-inside:auto;page-break-inside:auto;overflow:visible}
   .report-doc .section.keep{break-inside:avoid;page-break-inside:avoid}
-  .report-doc .tabla-final{break-before:page;page-break-before:always;padding-top:0}
-  .report-doc table{width:100%;border-collapse:collapse;margin-top:5pt;font-family:"Times New Roman",serif;color:#000;table-layout:fixed;page-break-inside:auto;break-inside:auto}
+  .report-doc .tabla-final{break-before:page;page-break-before:always;padding-top:0;overflow:visible}
+  .report-doc table{width:100%;max-width:100%;border-collapse:collapse;margin-top:5pt;font-family:"Times New Roman",serif;color:#000;table-layout:fixed;page-break-inside:auto;break-inside:auto;overflow:visible}
   .report-doc thead{display:table-header-group}.report-doc tfoot{display:table-footer-group}
   .report-doc tr{page-break-inside:avoid;break-inside:avoid}
-  .report-doc th{background:#e9f0ec;border:1px solid #666;padding:2pt 2pt;font-weight:bold;text-align:center;font-size:7.6pt;line-height:1.0;vertical-align:middle}
-  .report-doc td{border:1px solid #888;padding:2pt 2pt;font-size:7.6pt;line-height:1.0;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere}
+  .report-doc th{background:#e9f0ec;border:1px solid #666;padding:1.7pt 1.6pt;font-weight:bold;text-align:center;font-size:6.7pt;line-height:1.0;vertical-align:middle;white-space:normal;overflow:hidden}
+  .report-doc td{border:1px solid #888;padding:1.7pt 1.6pt;font-size:6.7pt;line-height:1.02;vertical-align:top;word-break:normal;overflow-wrap:break-word;overflow:hidden}
   .report-doc td.num{text-align:right;white-space:nowrap}.report-doc td.center{text-align:center}
-  .report-doc .w-num{width:4.5%}.report-doc .w-name{width:30%}.report-doc .w-sm{width:8.2%}.report-doc .w-med{width:10.7%}
-  .report-doc .firma-oficial{break-inside:avoid;page-break-inside:avoid;text-align:center;margin:12pt auto 7pt;width:360pt;min-height:108pt;position:relative;color:#000}
-  .report-doc .firma-oficial .firma-bocel{position:absolute;left:50%;top:-8pt;transform:translateX(-50%);width:292pt;max-height:76pt;object-fit:contain;z-index:2;opacity:.96}
-  .report-doc .firma-oficial .sello-rumcla{position:absolute;right:28pt;top:4pt;width:70pt;max-height:70pt;object-fit:contain;z-index:3;opacity:.92}
-  .report-doc .firma-oficial .firma-linea{border-top:1px solid #000;width:230pt;margin:58pt auto 4pt;height:1px;position:relative;z-index:1}
-  .report-doc .firma-oficial .firma-texto{text-align:center;font-size:10.7pt;line-height:1.12;font-weight:bold;position:relative;z-index:4}
+  .report-doc .w-num{width:4.5%}.report-doc .w-name{width:34%}.report-doc .w-sm{width:7.2%}.report-doc .w-med{width:9.2%}
+  .report-doc .firma-oficial{break-inside:avoid;page-break-inside:avoid;text-align:center;margin:24pt auto 10pt;width:350pt;max-width:100%;min-height:132pt;position:relative;color:#000;overflow:visible}
+  .report-doc .firma-oficial .firma-bocel{position:absolute;left:50%;top:-18pt;transform:translateX(-50%);width:330pt;max-width:100%;max-height:112pt;object-fit:contain;z-index:1;opacity:.97}
+  .report-doc .firma-oficial .sello-rumcla{position:absolute;right:30pt;top:28pt;width:76pt;max-height:76pt;object-fit:contain;z-index:4;opacity:.94}
+  .report-doc .firma-oficial .firma-linea{border-top:1px solid #000;width:245pt;margin:74pt auto 5pt;height:1px;position:relative;z-index:2}
+  .report-doc .firma-oficial .firma-texto{text-align:center;font-size:10.5pt;line-height:1.12;font-weight:bold;position:relative;z-index:5;background:transparent}
   .report-doc .firma-oficial .firma-texto span{display:block;text-align:center}
 </style>`;
-
 
 function assetUrlReporte(nombre){
   try{return new URL("../../"+nombre, window.location.href).href;}catch(e){return "../../"+nombre;}
 }
+function assetUrlRepoRoot(nombre){
+  try{return new URL("../../../"+nombre, window.location.href).href;}catch(e){return "../../../"+nombre;}
+}
 function logoConapReporte(){return assetUrlReporte("conap.png");}
 function selloRumclaReporte(){return assetUrlReporte("sello.png");}
-function firmaBocelReporte(){return assetUrlReporte("bocel.png");}
+function firmaBocelReporte(){return assetUrlRepoRoot("bocel.png");}
+function firmaBocelFallbackReporte(){return assetUrlReporte("bocel.png");}
 function imgDataUrl(src){
   return new Promise(resolve=>{
     try{
@@ -1654,6 +1657,17 @@ function imgDataUrl(src){
       img.src=src;
     }catch(e){resolve(null);}
   });
+}
+function waitReportImages(root){
+  const imgs=[...root.querySelectorAll("img")];
+  if(!imgs.length)return Promise.resolve();
+  return Promise.all(imgs.map(img=>new Promise(resolve=>{
+    if(img.complete&&img.naturalWidth>0)return resolve();
+    const done=()=>resolve();
+    img.addEventListener("load",done,{once:true});
+    img.addEventListener("error",done,{once:true});
+    setTimeout(resolve,2500);
+  }))).then(()=>{});
 }
 
 function construirInformeCorteHTML(inicio,fin,regs){
@@ -1682,6 +1696,7 @@ function construirInformeCorteHTML(inicio,fin,regs){
   const conapLogo=logoConapReporte();
   const selloLogo=selloRumclaReporte();
   const firmaBocel=firmaBocelReporte();
+  const firmaBocelFallback=firmaBocelFallbackReporte();
   const tablaGuardas=guardasConsol.map((o,i)=>`<tr><td class="center">${i+1}</td><td>${escH(o.g)}</td><td class="num">${fmtGT(o.total,0)}</td><td class="num">${fmtGT(o.km,1,1)}</td><td class="num">${fmtGT(o.inc,0)}</td><td class="num">${fmtGT(o.municipios,0)}</td><td class="num">${o.dur!==null?fmtGT(o.dur,1,1)+" h":"–"}</td><td class="num">${fmtGT(o.rumcla,0)}</td><td class="num">${fmtGT(o.fuera,0)}</td></tr>`).join("");
 
   return `<div class="report-doc">
@@ -1752,7 +1767,7 @@ function construirInformeCorteHTML(inicio,fin,regs){
     </div>
 
     <div class="section keep firma-oficial">
-      <img class="firma-bocel" src="${firmaBocel}" alt="Firma"/>
+      <img class="firma-bocel" src="${firmaBocel}" data-fallback="${firmaBocelFallback}" onerror="if(this.dataset.fallback&&this.src!==this.dataset.fallback){this.src=this.dataset.fallback;this.removeAttribute('data-fallback');}else{this.style.display='none';}" alt="Firma"/>
       <img class="sello-rumcla" src="${selloLogo}" alt="Sello RUMCLA CONAP"/>
       <div class="firma-linea"></div>
       <div class="firma-texto">
@@ -1784,7 +1799,7 @@ function docWordReporteCorte(nombre,html){
     </p>
   </div>`;
   const wordCss=`<style>
-    @page Section1{size:8.5in 11in;margin:.62in .50in .55in .50in;mso-header:hReporte;}
+    @page Section1{size:8.5in 11in;margin:.72in .62in .58in .62in;mso-header:hReporte;}
     div.Section1{page:Section1;}
   </style>`;
   const src="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_REPORTE_CORTE+wordCss+"</head><body><div class='Section1'>"+wordHeader+html+"</div></body></html>";
@@ -1795,41 +1810,43 @@ function docPDFReporteCorte(nombre,html){
   const d=document.createElement("div");
   d.innerHTML=CSS_REPORTE_CORTE+html;
   d.style.background="#fff";
-  d.style.width="184mm";
+  d.style.width="172mm";
+  d.style.maxWidth="172mm";
   d.style.boxSizing="border-box";
+  d.style.margin="0";
+  d.style.padding="0";
+  d.style.overflow="visible";
   document.body.appendChild(d);
   const opt={
-    margin:[28,13,15,13],
+    margin:[27,18,14,18],
     filename:nombre,
     image:{type:"jpeg",quality:.98},
-    html2canvas:{scale:2,useCORS:true,allowTaint:false,backgroundColor:"#ffffff",scrollY:0},
+    html2canvas:{scale:2,useCORS:true,allowTaint:false,backgroundColor:"#ffffff",scrollX:0,scrollY:0,windowWidth:Math.ceil(d.scrollWidth||720)},
     pagebreak:{mode:["css","legacy"],avoid:["tr","thead","h1","h2","h3",".firma-oficial"]},
-    jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
+    jsPDF:{unit:"mm",format:"a4",orientation:"portrait",compress:true}
   };
   const logoUrl=logoConapReporte();
-  const selloUrl=selloRumclaReporte();
-  const firmaUrl=firmaBocelReporte();
-  Promise.all([imgDataUrl(logoUrl),imgDataUrl(selloUrl),imgDataUrl(firmaUrl)]).then(async ([logoData])=>{
+  Promise.all([imgDataUrl(logoUrl),waitReportImages(d)]).then(([logoData])=>{
     html2pdf().set(opt).from(d).toPdf().get("pdf").then(pdf=>{
       const total=pdf.internal.getNumberOfPages();
       const pageW=pdf.internal.pageSize.getWidth();
       const pageH=pdf.internal.pageSize.getHeight();
       for(let i=1;i<=total;i++){
         pdf.setPage(i);
-        if(logoData)pdf.addImage(logoData,"PNG",13,7.5,13,13,undefined,"FAST");
+        if(logoData)pdf.addImage(logoData,"PNG",18,7.2,12.5,12.5,undefined,"FAST");
         pdf.setTextColor(0);
         pdf.setFont("times","bold");
-        pdf.setFontSize(8.6);
-        pdf.text("Consejo Nacional de Áreas Protegidas",29,11.5);
+        pdf.setFontSize(8.3);
+        pdf.text("Consejo Nacional de Áreas Protegidas",33,11.2);
         pdf.setFont("times","normal");
-        pdf.setFontSize(7.6);
-        pdf.text("Dirección Regional Altiplano Central · Sistema de monitoreo AC192",29,16.2);
+        pdf.setFontSize(7.3);
+        pdf.text("Dirección Regional Altiplano Central · Sistema de monitoreo AC192",33,15.8);
         pdf.setDrawColor(130);
         pdf.setLineWidth(.18);
-        pdf.line(13,23,pageW-13,23);
-        pdf.setFontSize(7.3);
+        pdf.line(18,22.5,pageW-18,22.5);
+        pdf.setFontSize(7.1);
         pdf.setTextColor(90);
-        pdf.text(String(i)+" / "+String(total),pageW-21,pageH-7);
+        pdf.text(String(i)+" / "+String(total),pageW-26,pageH-7);
         pdf.setTextColor(0);
       }
     }).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d));
