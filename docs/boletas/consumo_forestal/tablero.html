@@ -575,8 +575,8 @@
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Tendencia mensual de consumos y árboles aprobados</div>
-          <div class="cc-hint">Comparación mensual entre consumos registrados y árboles aprobados en el período analizado</div>
+          <div class="cc-title">Tendencia mensual de consumos registrados</div>
+          <div class="cc-hint">Evolución mensual de los consumos registrados en el período analizado</div>
         </div>
         <button class="btn-png" id="png-tendencia">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -818,18 +818,18 @@ const PAL  = ["#4ade80","#fb7185","#60a5fa","#fbbf24","#f87171","#2dd4bf","#c084
 const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 const ESPECIES = [
-  {field:"Cantidad de Pino (Pinus pseudostrobus)",          label:"Pino",         color:"#4ade80"},
-  {field:"Cantidad de Cipres (Cupressus lusitanica)",       label:"Ciprés",       color:"#60a5fa"},
-  {field:"Cantidad de Aliso (Alnus jorullensis)",           label:"Aliso",        color:"#fbbf24"},
-  {field:"Cantidad de Encino (Quercus sp)",                 label:"Encino",       color:"#c084fc"},
-  {field:"Cantidad de Palo Blanco (Vernonia patens)",       label:"Palo Blanco",  color:"#2dd4bf"},
-  {field:"Cantidad de Cajete (Heliocarpus donnellsmithii)", label:"Cajete",       color:"#fb923c"},
-  {field:"Cantidad de Madron (Arbutus xalapensis)",         label:"Madrón",       color:"#93c5fd"},
-  {field:"Cantidad de Mano de mono (Oreopanax xalapensis)", label:"Mano de mono", color:"#f9a8d4"},
-  {field:"Cantidad de Matilisguate (Tabebuia rosea)",       label:"Matilisguate", color:"#a3e635"},
-  {field:"Cantidad de Aguacate (Persea americana)",         label:"Aguacate",     color:"#fb7185"},
-  {field:"Cantidad de Casuarina (Casuarina equisetifolia)", label:"Casuarina",    color:"#c084fc"},
-  {field:"Cantidad de Otro",                                label:"Otro",         color:"#94a3b8"},
+  {field:"Cantidad de Pino (Pinus pseudostrobus)",          label:"Pino",         color:PAL[0]},
+  {field:"Cantidad de Cipres (Cupressus lusitanica)",       label:"Ciprés",       color:PAL[2]},
+  {field:"Cantidad de Aliso (Alnus jorullensis)",           label:"Aliso",        color:PAL[3]},
+  {field:"Cantidad de Encino (Quercus sp)",                 label:"Encino",       color:PAL[6]},
+  {field:"Cantidad de Palo Blanco (Vernonia patens)",       label:"Palo Blanco",  color:PAL[5]},
+  {field:"Cantidad de Cajete (Heliocarpus donnellsmithii)", label:"Cajete",       color:PAL[10]},
+  {field:"Cantidad de Madron (Arbutus xalapensis)",         label:"Madrón",       color:PAL[11]},
+  {field:"Cantidad de Mano de mono (Oreopanax xalapensis)", label:"Mano de mono", color:PAL[8]},
+  {field:"Cantidad de Matilisguate (Tabebuia rosea)",       label:"Matilisguate", color:PAL[9]},
+  {field:"Cantidad de Aguacate (Persea americana)",         label:"Aguacate",     color:PAL[1]},
+  {field:"Cantidad de Casuarina (Casuarina equisetifolia)", label:"Casuarina",    color:PAL[7]},
+  {field:"Cantidad de Otro",                                label:"Otro",         color:PAL[4]},
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -866,10 +866,13 @@ function normGuarda(n){ if(!n)return null; const c=canonStr(n); if(EXCLUIDOS.has
 Chart.defaults.font.family = "'DM Sans',sans-serif";
 Chart.defaults.font.size   = 13;
 Chart.defaults.color       = "#5f7b6e";
+Chart.defaults.locale      = "en-US";
 Chart.defaults.plugins.legend.labels.usePointStyle = false;
 Chart.defaults.plugins.legend.labels.boxWidth = 12;
 Chart.defaults.plugins.legend.labels.boxHeight = 12;
 Chart.defaults.plugins.legend.labels.borderRadius = 0;
+
+Chart.defaults.scales.linear.ticks.callback = value => Number(value).toLocaleString("en-US");
 if(typeof ChartDataLabels !== "undefined"){
   Chart.register(ChartDataLabels);
   Chart.defaults.set("plugins.datalabels",{display:false});
@@ -928,7 +931,7 @@ function bestL(a,b){ a=norm(a);b=norm(b);if(!a)return b;if(!b)return a;const ht=
 function canonArea(v){ const c=canonStr(v);if(c.includes("rumcla"))return"rumcla";if(c.includes("fuera"))return"fuera";return c; }
 function canonFuera(v){ const c=canonStr(v);return(c==="si"||c==="sí")?"si":c==="no"?"no":""; }
 function safeInt(v){ const n=parseInt(String(v).trim());return isNaN(n)?0:n; }
-function rnd(n,d){ if(!isFinite(n))return"–";const f=Math.pow(10,d);return(Math.round(n*f)/f).toLocaleString("es",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function rnd(n,d){ if(!isFinite(n))return"–";const f=Math.pow(10,d);return(Math.round(n*f)/f).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}); }
 function shortName(name){ const parts=(name||"").trim().split(" ");if(parts.length<=3)return parts.join(" ");return parts.slice(0,3).join(" "); }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1030,9 +1033,9 @@ function updateKPIs(rows){
   const total   = rows.length;
   const arboles = sum_(rows.map(r=>r.__arboles));
   const meta    = arboles * 10;
-  document.getElementById("k-total").textContent   = total.toLocaleString("es");
-  document.getElementById("k-arboles").textContent = arboles.toLocaleString("es");
-  document.getElementById("k-meta").textContent    = meta.toLocaleString("es");
+  document.getElementById("k-total").textContent   = total.toLocaleString("en-US");
+  document.getElementById("k-arboles").textContent = arboles.toLocaleString("en-US");
+  document.getElementById("k-meta").textContent    = meta.toLocaleString("en-US");
   document.getElementById("k-prom").textContent    = total?rnd(arboles/total,1):"–";
   document.getElementById("k-munis").textContent   = new Set(rows.map(r=>r.__cm).filter(Boolean)).size;
   document.getElementById("k-guardas").textContent = new Set(rows.map(r=>r.__cg).filter(Boolean)).size;
@@ -1043,20 +1046,62 @@ function updateKPIs(rows){
 ═══════════════════════════════════════════════════════════ */
 function g1(rows){
   const mm=new Map();
-  rows.forEach(r=>{if(!r.__mes)return;if(!mm.has(r.__mes))mm.set(r.__mes,{cnt:0,arb:0});const e=mm.get(r.__mes);e.cnt++;e.arb+=r.__arboles;});
+  rows.forEach(r=>{
+    if(!r.__mes)return;
+    if(!mm.has(r.__mes))mm.set(r.__mes,{cnt:0});
+    mm.get(r.__mes).cnt++;
+  });
   const keys=[...mm.keys()].sort();
   const cnts=keys.map(k=>mm.get(k).cnt);
-  const arbs=keys.map(k=>mm.get(k).arb);
   const ctx=document.getElementById("c-tendencia").getContext("2d");
-  const gr=ctx.createLinearGradient(0,0,0,300);gr.addColorStop(0,"rgba(31,108,176,0.22)");gr.addColorStop(1,"rgba(31,108,176,0.01)");
-  mkChart("c-tendencia",{type:"bar",data:{labels:keys.map(mShort),datasets:[
-    {label:"Consumos",data:cnts,backgroundColor:gr,borderColor:PAL[0],borderWidth:1.5,borderRadius:5,borderSkipped:false,yAxisID:"y"},
-    {label:"Árboles aprobados",data:arbs,type:"line",borderColor:PAL[2],backgroundColor:PAL[2],borderWidth:2.5,pointRadius:6,pointHoverRadius:8,pointBackgroundColor:PAL[2],pointBorderColor:"#fff",pointBorderWidth:2,tension:0.3,fill:false,yAxisID:"y1"}
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-    plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>c.dataset.label==="Consumos"?` Consumos: ${c.parsed.y}`:` Árboles: ${c.parsed.y}`}}},
-    scales:{x:{grid:{display:false},ticks:{font:{size:12.5},maxRotation:40}},
-      y:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}},title:{display:true,text:"Consumos",font:{size:12,weight:"600"},color:"#5f7b6e"}},
-      y1:{beginAtZero:true,position:"right",grid:{display:false},ticks:{font:{size:12}},title:{display:true,text:"Árboles",font:{size:12,weight:"600"},color:"#5f7b6e"}}}}});
+  const gr=ctx.createLinearGradient(0,0,0,300);
+  gr.addColorStop(0,"rgba(74,222,128,0.30)");
+  gr.addColorStop(0.55,"rgba(74,222,128,0.13)");
+  gr.addColorStop(1,"rgba(74,222,128,0.02)");
+  mkChart("c-tendencia",{
+    type:"line",
+    data:{
+      labels:keys.map(mShort),
+      datasets:[{
+        label:"Consumos registrados",
+        data:cnts,
+        borderColor:PAL[0],
+        backgroundColor:gr,
+        borderWidth:2.6,
+        tension:0.36,
+        fill:true,
+        pointRadius:4,
+        pointHoverRadius:6,
+        pointBackgroundColor:"#ffffff",
+        pointBorderColor:PAL[0],
+        pointBorderWidth:2,
+        pointHitRadius:12
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:"index",intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          ...TT,
+          callbacks:{
+            label:c=>` Consumos registrados: ${Number(c.parsed.y||0).toLocaleString("en-US")}`
+          }
+        }
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:12.5},maxRotation:40}},
+        y:{
+          beginAtZero:true,
+          grid:{color:GC},
+          ticks:{font:{size:12},callback:v=>Number(v).toLocaleString("en-US")},
+          title:{display:true,text:"Consumos registrados",font:{size:12,weight:"600"},color:"#5f7b6e"}
+        }
+      }
+    }
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1069,7 +1114,7 @@ function g2(rows){
   const gr=ctx.createLinearGradient(0,0,0,280);gr.addColorStop(0,PAL[5]+"cc");gr.addColorStop(1,PAL[5]+"22");
   mkChart("c-diames",{type:"bar",data:{labels:Array.from({length:31},(_,i)=>String(i+1)),datasets:[{label:"Consumos",data:bins,backgroundColor:gr,borderColor:PAL[5],borderWidth:1,borderRadius:4,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`Día ${c[0].label} del mes`,label:c=>` ${c.parsed.y} consumos`}}},
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`Día ${c[0].label} del mes`,label:c=>` ${Number(c.parsed.y||0).toLocaleString("en-US")} consumos`}}},
       scales:{x:{grid:{display:false},ticks:{font:{size:11.5}}},y:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}}}}}});
 }
 
@@ -1086,7 +1131,7 @@ function g3(rows){
   const gr=ctx.createLinearGradient(0,0,0,280);gr.addColorStop(0,PAL[2]+"cc");gr.addColorStop(1,PAL[2]+"22");
   mkChart("c-hist",{type:"bar",data:{labels,datasets:[{label:"Consumos",data:bins,backgroundColor:gr,borderColor:PAL[2],borderWidth:1,borderRadius:4,borderSkipped:false}]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].label} árboles`,label:c=>` ${c.parsed.y} consumos`}}},
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>`${c[0].label} árboles`,label:c=>` ${Number(c.parsed.y||0).toLocaleString("en-US")} consumos`}}},
       scales:{x:{grid:{display:false},ticks:{font:{size:11.5}},title:{display:true,text:"Árboles por solicitud",font:{size:12,weight:"600"},color:"#5f7b6e"}},
         y:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}},title:{display:true,text:"Frecuencia",font:{size:12,weight:"600"},color:"#5f7b6e"}}}}});
 }
@@ -1100,8 +1145,8 @@ function g4(rows){
   const grandTotal=sum_(sorted.map(e=>e.total));
   mkChart("c-especies",{type:"bar",data:{labels:sorted.map(e=>e.label),datasets:[{label:"Árboles",data:sorted.map(e=>e.total),backgroundColor:sorted.map(e=>e.color+"cc"),borderColor:sorted.map(e=>e.color),borderWidth:1.5,borderRadius:5,borderSkipped:false}]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("es")} árboles (${Math.round(c.parsed.x/grandTotal*100)}%)`}},
-        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#254736",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("en-US")} árboles (${Math.round(c.parsed.x/grandTotal*100)}%)`}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#254736",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("en-US"):""}},
       scales:{x:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12.5}}},y:{grid:{display:false},ticks:{font:{size:12.5}}}}}});
 }
 
@@ -1114,7 +1159,7 @@ function g5(rows){
   const grandTotal=sum_(filtered.map(e=>e.total));
   mkChart("c-donut",{type:"doughnut",data:{labels:filtered.map(e=>e.label),datasets:[{data:filtered.map(e=>e.total),backgroundColor:filtered.map(e=>e.color+"cc"),borderColor:filtered.map(e=>e.color),borderWidth:2,hoverOffset:12}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"62%",
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed.toLocaleString("es")} (${Math.round(c.parsed/grandTotal*100)}%)`}}}}});
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed.toLocaleString("en-US")} (${Math.round(c.parsed/grandTotal*100)}%)`}}}}});
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1146,8 +1191,8 @@ function g7(rows){
   const gr=ctx.createLinearGradient(400,0,0,0);gr.addColorStop(0,PAL[0]+"cc");gr.addColorStop(1,PAL[0]+"44");
   mkChart("c-muni",{type:"bar",data:{labels,datasets:[{label:"Consumos",data:G7_DATA.map(([,v])=>v),backgroundColor:gr,borderColor:PAL[0],borderWidth:1,borderRadius:5,borderSkipped:false}]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x} consumos`}},
-        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#254736",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${Number(c.parsed.x||0).toLocaleString("en-US")} consumos`}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#254736",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("en-US"):""}},
       scales:{x:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}}},y:{grid:{display:false},ticks:{font:{size:12}}}},
       onClick:(e,els)=>{if(!els.length)return;document.getElementById("f-muni").value=G7_DATA[els[0].index][0];applyAll();}}});
 }
@@ -1163,8 +1208,8 @@ function g8(rows){
   const gr=ctx.createLinearGradient(400,0,0,0);gr.addColorStop(0,PAL[1]+"cc");gr.addColorStop(1,PAL[5]+"66");
   mkChart("c-muniArb",{type:"bar",data:{labels,datasets:[{label:"Árboles aprobados",data:sorted.map(([,v])=>v),backgroundColor:gr,borderColor:PAL[1],borderWidth:1,borderRadius:5,borderSkipped:false}]},
     options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("es")} árboles`}},
-        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#254736",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("es"):""}},
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("en-US")} árboles`}},
+        datalabels:{display:true,anchor:"end",align:"end",offset:4,color:"#254736",font:{size:11,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("en-US"):""}},
       scales:{x:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}}},y:{grid:{display:false},ticks:{font:{size:12}}}}}});
 }
 
@@ -1179,7 +1224,7 @@ function g9(rows){
     labels:["Dentro RUMCLA","Fuera RUMCLA",...(sd>0?["Sin dato"]:[])],
     datasets:[{data:[ru,fu,...(sd>0?[sd]:[])],backgroundColor:[PAL[0]+"cc",PAL[2]+"cc","#e5e7eb"],borderColor:[PAL[0],PAL[2],"#d1d5db"],borderWidth:2,hoverOffset:12}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"66%",
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${Number(c.parsed||0).toLocaleString("en-US")} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1193,7 +1238,7 @@ function g10(rows){
     labels:["Dentro de su municipio","Fuera (cedido)",...(sd>0?["Sin dato"]:[])],
     datasets:[{data:[no,si,...(sd>0?[sd]:[])],backgroundColor:[PAL[1]+"cc",PAL[3]+"cc","#e5e7eb"],borderColor:[PAL[1],PAL[3],"#d1d5db"],borderWidth:2,hoverOffset:12}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"66%",
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
+      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${Number(c.parsed||0).toLocaleString("en-US")} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1260,7 +1305,7 @@ function gRanking(baseRows){
             display:true,anchor:"end",align:"top",offset:3,
             color:PAL[0],
             font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},
-            formatter:v=>v>0?v.toLocaleString("es"):""
+            formatter:v=>v>0?v.toLocaleString("en-US"):""
           }
         },
         // Línea: árboles aprobados (eje derecho)
@@ -1281,7 +1326,7 @@ function gRanking(baseRows){
             display:true,anchor:"end",align:"top",offset:6,
             color:PAL[2],
             font:{size:10,weight:"700",family:"'DM Sans',sans-serif"},
-            formatter:v=>v>0?v.toLocaleString("es"):""
+            formatter:v=>v>0?v.toLocaleString("en-US"):""
           }
         },
         // Línea punteada: compromiso reforestación = árboles × 10 (eje derecho)
@@ -1304,7 +1349,7 @@ function gRanking(baseRows){
             display:true,anchor:"start",align:"bottom",offset:6,
             color:PAL[1],
             font:{size:10,weight:"700",family:"'DM Sans',sans-serif"},
-            formatter:v=>v>0?v.toLocaleString("es"):""
+            formatter:v=>v>0?v.toLocaleString("en-US"):""
           }
         }
       ]
@@ -1320,9 +1365,9 @@ function gRanking(baseRows){
           ...TT,
           callbacks:{
             label:c=>{
-              if(c.dataset.label==="Consumos registrados") return ` Consumos: ${c.parsed.y.toLocaleString("es")}`;
-              if(c.dataset.label==="Árboles aprobados")   return ` Árboles aprobados: ${c.parsed.y.toLocaleString("es")}`;
-              return ` Compromiso reforestación: ${c.parsed.y.toLocaleString("es")} árboles`;
+              if(c.dataset.label==="Consumos registrados") return ` Consumos: ${c.parsed.y.toLocaleString("en-US")}`;
+              if(c.dataset.label==="Árboles aprobados")   return ` Árboles aprobados: ${c.parsed.y.toLocaleString("en-US")}`;
+              return ` Compromiso reforestación: ${c.parsed.y.toLocaleString("en-US")} árboles`;
             }
           }
         },
@@ -1388,7 +1433,7 @@ function applyAll(){
   g7(rows); g8(rows); g9(rows); g10(rows);
   gRanking(rows); gEspGuarda(rows);
   const el=document.getElementById("estado");
-  if(el) el.innerHTML=`Mostrando <strong>${rows.length.toLocaleString("es")}</strong> de <strong>${ROWS.length.toLocaleString("es")}</strong> registros`;
+  if(el) el.innerHTML=`Mostrando <strong>${rows.length.toLocaleString("en-US")}</strong> de <strong>${ROWS.length.toLocaleString("en-US")}</strong> registros`;
 }
 
 /* ═══════════════════════════════════════════════════════════
