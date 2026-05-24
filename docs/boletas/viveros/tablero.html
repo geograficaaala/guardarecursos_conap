@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>AC210 · Tablero dinámico · Asistencia a viveros</title>
+  <title>Tablero dinámico de asistencia técnica a viveros forestales</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
   <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -13,26 +13,33 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
-      --verde-oscuro: #0a3d2b;
-      --verde-medio:  #1a5c3a;
-      --bg:           #f0f4f1;
-      --surface:      #ffffff;
-      --surface-2:    #f6faf7;
-      --ink:          #0c1e13;
-      --ink-2:        #2a4535;
-      --muted:        #6a8878;
-      --borde:        #d8e4dd;
-      --sombra:       rgba(10,61,43,0.06);
-      --acento:       #1a5c3a;
-      --acento-bg:    rgba(26,92,58,0.06);
-      --acento-borde: rgba(26,92,58,0.20);
-      --dorado:       #c9a84c;
-      --dorado-claro: #e8c97a;
-      --mod-dark:#14532d; --mod-mid:#16a34a; --mod-light:#22c55e;
+      --verde-oscuro:  #0a3d2b;
+      --verde-medio:   #1a5c3a;
+      --azul:          #1e40af;
+      --azul-medio:    #2563eb;
+      --azul-claro:    #3b82f6;
+      --crema:         #f5f0e8;
+      --blanco:        #ffffff;
+      --bg:            #f0f4f8;
+      --surface:       #ffffff;
+      --surface-2:     #f8fafc;
+      --ink:           #0d2a1c;
+      --ink-2:         #334155;
+      --muted:         #6b7280;
+      --borde:         #e5e7eb;
+      --sombra:        rgba(0,0,0,0.08);
+      --acento:        #2563eb;
+      --acento-bg:     rgba(37,99,235,0.08);
+      --acento-borde:  rgba(37,99,235,0.20);
+      --dorado:        #c9a84c;
+      --dorado-claro:  #e8c97a;
+      --mod-dark:      #0a3d2b;
+      --mod-mid:       #1a5c3a;
+      --mod-light:     #3b82f6;
 
-      --d0:#1f6cb0; --d1:#1a7a38; --d2:#b05608; --d3:#6b2680;
-      --d4:#a81c2a; --d5:#016660; --d6:#7a4508; --d7:#3d8fbf;
-      --d8:#b51a72; --d9:#448a1e; --d10:#c85840; --d11:#4e359a;
+      --d0:#2563eb; --d1:#1a5c3a; --d2:#0f766e; --d3:#9333ea;
+      --d4:#b91c1c; --d5:#0369a1; --d6:#b45309; --d7:#047857;
+      --d8:#be185d; --d9:#4d7c0f; --d10:#c2410c; --d11:#4338ca;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
@@ -150,8 +157,8 @@
       white-space: nowrap; height: 50px;
       transition: color .18s, border-color .18s;
     }
-    .nav-tab:hover  { color: var(--acento); border-bottom-color: rgba(26,92,58,.2); }
-    .nav-tab.active { color: var(--acento); border-bottom-color: var(--acento); font-weight: 600; }
+    .nav-tab:hover  { color: var(--azul-medio); border-bottom-color: rgba(37,99,235,.25); }
+    .nav-tab.active { color: var(--azul-medio); border-bottom-color: var(--azul-medio); font-weight: 600; }
 
     /* ── PÁGINA ── */
     .page {
@@ -457,10 +464,10 @@
     </div>
     <div class="header-right">
       <h1>Centro de consulta de datos</h1>
-      <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
+      <p>Sistema de monitoreo institucional. Consejo Nacional de Áreas Protegidas. Dirección Regional Altiplano Central</p>
       <div class="header-chip">
         <span class="chip-dot"></span>
-        AC210 · Viveros
+        Módulo de viveros forestales
       </div>
     </div>
   </div>
@@ -484,7 +491,7 @@
     </a>
     <a href="datos.html" class="nav-tab">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-      Tabla de datos
+      Registros y análisis
     </a>
   </div>
 </nav>
@@ -495,7 +502,7 @@
   <div class="filtros-panel">
     <div class="filtros-titulo">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-      Filtros globales — aplican a todos los gráficos
+      Filtros globales para todos los gráficos
     </div>
     <div class="filtros-grid">
       <div class="fg"><label>Desde</label><input type="date" id="f-desde"/></div>
@@ -533,12 +540,12 @@
 
   <!-- KPIs -->
   <div class="kpis">
-    <div class="kpi kpi-0"><div class="kpi-label">Asistencias</div><div class="kpi-value" id="k-total">–</div><div class="kpi-sub">registros totales</div></div>
+    <div class="kpi kpi-0"><div class="kpi-label">Asistencias técnicas</div><div class="kpi-value" id="k-total">–</div><div class="kpi-sub">registros de asistencia técnica</div></div>
     <div class="kpi kpi-1"><div class="kpi-label">Municipios</div><div class="kpi-value" id="k-munis">–</div><div class="kpi-sub">cobertura territorial</div></div>
-    <div class="kpi kpi-2"><div class="kpi-label">Guardarecursos</div><div class="kpi-value" id="k-guardas">–</div><div class="kpi-sub">activos en período</div></div>
-    <div class="kpi kpi-3"><div class="kpi-label">Apoyo fuera</div><div class="kpi-value" id="k-apoyo">–</div><div class="kpi-sub">% de asistencias externas</div></div>
+    <div class="kpi kpi-2"><div class="kpi-label">Personal guardarecurso</div><div class="kpi-value" id="k-guardas">–</div><div class="kpi-sub">personal activo en el período</div></div>
+    <div class="kpi kpi-3"><div class="kpi-label">Apoyo fuera del municipio</div><div class="kpi-value" id="k-apoyo">–</div><div class="kpi-sub">% de asistencias externas</div></div>
     <div class="kpi kpi-4"><div class="kpi-label">Jornada media</div><div class="kpi-value" id="k-horas">–</div><div class="kpi-sub">horas promedio</div></div>
-    <div class="kpi kpi-5"><div class="kpi-label">Viveros distintos</div><div class="kpi-value" id="k-viveros">–</div><div class="kpi-sub">lugares únicos</div></div>
+    <div class="kpi kpi-5"><div class="kpi-label">Viveros atendidos</div><div class="kpi-value" id="k-viveros">–</div><div class="kpi-sub">lugares registrados</div></div>
   </div>
 
   <!-- SECCIÓN 1 — TEMPORAL -->
@@ -548,8 +555,8 @@
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Tendencia mensual de asistencias</div>
-          <div class="cc-hint">Conteo mensual según los filtros activos · haz clic en un punto para fijar ese mes</div>
+          <div class="cc-title">Tendencia mensual de asistencias técnicas</div>
+          <div class="cc-hint">Conteo mensual según los filtros activos. Seleccione un punto para filtrar el mes correspondiente</div>
         </div>
         <button class="btn-png" id="png-tiempo">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -563,8 +570,8 @@
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Heatmap día × hora de inicio</div>
-          <div class="cc-hint">Concentración de asistencias por día de semana y hora de inicio</div>
+          <div class="cc-title">Concentración por día y hora de inicio</div>
+          <div class="cc-hint">Concentración de asistencias técnicas por día de semana y hora de inicio</div>
         </div>
         <button class="btn-png" id="png-heatmap">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -578,8 +585,8 @@
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Distribución de duración de jornada</div>
-          <div class="cc-hint">Histograma de horas efectivas de asistencia · solo registros con horario válido</div>
+          <div class="cc-title">Distribución de la duración de la jornada</div>
+          <div class="cc-hint">Histograma de horas efectivas de asistencia técnica. Incluye únicamente registros con horario válido</div>
         </div>
         <button class="btn-png" id="png-dur">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -599,8 +606,8 @@
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Actividades más frecuentes</div>
-          <div class="cc-hint">Un registro puede tener múltiples actividades · haz clic para filtrar por actividad</div>
+          <div class="cc-title">Actividades realizadas con mayor frecuencia</div>
+          <div class="cc-hint">Un registro puede tener múltiples actividades. Seleccione una barra para filtrar por actividad</div>
         </div>
         <button class="btn-png" id="png-act">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -614,8 +621,8 @@
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Combinaciones de actividades por asistencia</div>
-          <div class="cc-hint">Top de combinaciones de actividades más reportadas en una sola visita</div>
+          <div class="cc-title">Combinaciones de actividades por asistencia técnica</div>
+          <div class="cc-hint">Principales combinaciones de actividades reportadas en una sola visita</div>
         </div>
         <button class="btn-png" id="png-combo">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -629,8 +636,8 @@
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Actividades por guardarecursos — mapa de calor</div>
-          <div class="cc-hint">Qué tipo de actividades realiza cada guardarecursos con mayor frecuencia</div>
+          <div class="cc-title">Actividades por guardarecursos según frecuencia</div>
+          <div class="cc-hint">Frecuencia de actividades reportadas por cada guardarecurso</div>
         </div>
         <button class="btn-png" id="png-actguarda">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -650,8 +657,8 @@
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Municipios con más asistencias</div>
-          <div class="cc-hint">Top 12 municipios · haz clic en una barra para filtrar</div>
+          <div class="cc-title">Municipios con mayor cantidad de asistencias técnicas</div>
+          <div class="cc-hint">Principales doce municipios. Seleccione una barra para aplicar el filtro</div>
         </div>
         <button class="btn-png" id="png-muni">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -665,8 +672,8 @@
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Cobertura RUMCLA</div>
-          <div class="cc-hint">Proporción de asistencias dentro y fuera del área protegida</div>
+          <div class="cc-title">Cobertura dentro de la Reserva de Uso Múltiple Cuenca del Lago de Atitlán</div>
+          <div class="cc-hint">Proporción de asistencias técnicas dentro y fuera del área protegida</div>
         </div>
         <button class="btn-png" id="png-area">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -680,12 +687,12 @@
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Mapa de registros georreferenciados</div>
-          <div class="cc-hint">Puntos con coordenadas válidas dentro del territorio de Guatemala</div>
+          <div class="cc-title">Distribución geográfica de asistencias técnicas</div>
+          <div class="cc-hint">Ubicación de registros con coordenadas válidas dentro del territorio de Guatemala</div>
         </div>
       </div>
       <div class="mapbox"><div id="map"></div></div>
-      <div class="mapmeta" id="mapmeta">—</div>
+      <div class="mapmeta" id="mapmeta">Sin información disponible</div>
     </div>
 
   </div>
@@ -697,8 +704,8 @@
     <div class="cc full">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Ranking de guardarecursos por asistencias</div>
-          <div class="cc-hint">Total de registros de asistencia técnica a viveros por guardarecursos · todos los activos</div>
+          <div class="cc-title">Clasificación de guardarecursos por asistencias técnicas</div>
+          <div class="cc-hint">Total de registros de asistencia técnica a viveros por guardarecurso. Incluye todo el personal activo</div>
         </div>
         <button class="btn-png" id="png-guarda">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -722,29 +729,29 @@
       <span>Dirección Regional Altiplano Central</span>
     </div>
     <div class="footer-center">
-      <div class="footer-badge" style="background:rgba(22,163,74,.18);border:1px solid rgba(22,163,74,.38);color:#86efac;">
+      <div class="footer-badge" style="background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.20);color:rgba(255,255,255,.86);">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <path d="M12 22V12"/><path d="M12 12C12 12 7 9 7 5a5 5 0 0 1 10 0c0 4-5 7-5 7z"/><path d="M12 12c0 0-5 2-7 6"/>
         </svg>
-        AC 210 · Viveros
+        Módulo de viveros forestales
       </div>
       <div class="footer-mod-desc">Asistencia técnica a viveros forestales</div>
     </div>
     <div class="footer-col footer-col-right">
       <span>Desarrollado por</span>
-      <strong>Laboratorio SIG · AALA</strong>
+      <strong>Laboratorio SIG de AALA</strong>
       <span>Asociación Amigos del Lago de Atitlán</span>
     </div>
     <div class="footer-divider"></div>
-    <div class="footer-copy">© 2026 · Todos los datos son de uso oficial · Sistema de Monitoreo CONAP</div>
+    <div class="footer-copy">© 2026. Todos los datos son de uso oficial. Sistema de Monitoreo CONAP</div>
   </div>
 </footer>
 
 <script>
-/* ═══ PALETA — misma que patrullajes ═══════════════════════ */
+/* Paleta institucional alineada con Patrullajes */
 const PAL = [
-  "#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660",
-  "#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"
+  "#2563eb","#1a5c3a","#0f766e","#9333ea","#b91c1c","#0369a1",
+  "#b45309","#047857","#be185d","#4d7c0f","#c2410c","#4338ca"
 ];
 const PAL_A = PAL.map(c => c + "bb");
 
@@ -937,7 +944,7 @@ function applyF(f){
 function renderChips(f){
   const w=document.getElementById("chips-wrap"); if(!w)return; w.innerHTML="";
   const add=txt=>{ const s=document.createElement("span"); s.className="chip-activo"; s.textContent=txt; w.appendChild(s); };
-  if(f.desde||f.hasta){ const de=f.desde?f.desde.split("-").reverse().join("/"):"inicio"; const ha=f.hasta?f.hasta.split("-").reverse().join("/"):"hoy"; add(`${de} — ${ha}`); }
+  if(f.desde||f.hasta){ const de=f.desde?f.desde.split("-").reverse().join("/"):"inicio"; const ha=f.hasta?f.hasta.split("-").reverse().join("/"):"hoy"; add(`${de} a ${ha}`); }
   if(f.muni)add(LABELS.muni.get(f.muni)||f.muni);
   if(f.area)add(LABELS.area.get(f.area)||f.area);
   if(f.guar)add(LABELS.guarda.get(f.guar)||f.guar);
@@ -967,12 +974,12 @@ function g1(rows){
     {label:"Asistencias",data:vals,fill:true,tension:0.38,borderColor:PAL[0],backgroundColor:gr,borderWidth:2.5,pointBackgroundColor:PAL[0],pointRadius:5,pointHoverRadius:7,pointBorderColor:"#fff",pointBorderWidth:2},
     {label:"Promedio",data:keys.map(()=>Math.round(mean)),borderColor:"rgba(168,28,42,0.50)",borderWidth:1.5,borderDash:[6,5],pointRadius:0,fill:false,tension:0}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-    plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:true,pointStyleWidth:10}}},
+    plugins:{tooltip:{...TT,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}`}},legend:{position:"top",labels:{font:{size:13},padding:18,usePointStyle:false,boxWidth:14,boxHeight:14}}},
     scales:{x:{grid:{display:false},ticks:{font:{size:12.5},maxRotation:40}},y:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12.5}}}},
     onClick:(e,els)=>{ if(!els.length)return; const k=keys[els[0].index]; document.getElementById("f-desde").value=k+"-01"; const d=new Date(+k.split("-")[0],+k.split("-")[1],0); document.getElementById("f-hasta").value=isoDate(d); applyAll(); }}});
 }
 
-/* ═══ GRÁFICA 2 — Heatmap día × hora ════════════════════ */
+/* Gráfica 2. Concentración por día y hora */
 function g2(rows){
   const mat=Array.from({length:7},()=>new Array(14).fill(0)); let maxV=0;
   rows.forEach(r=>{ if(r.__dow===null||r.__hora===null)return; const h=Math.floor(r.__hora)-5; if(h<0||h>13)return; mat[r.__dow][h]++; if(mat[r.__dow][h]>maxV)maxV=mat[r.__dow][h]; });
@@ -1007,7 +1014,7 @@ function g3(rows){
       scales:{x:{grid:{display:false},ticks:{font:{size:12}},title:{display:true,text:"Duración (horas)",font:{size:12,weight:"600"},color:"#6a8878"}},y:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}}}}}});
 }
 
-/* ═══ GRÁFICA 4 — Actividades top (horizontal) ══════════ */
+/* Gráfica 4. Actividades principales */
 function g4(rows){
   const actC=new Map(); rows.forEach(r=>r.__acts.forEach(a=>{ const c=canonStr(a); if(c)actC.set(c,(actC.get(c)||0)+1); }));
   const sorted=[...actC.entries()].sort((a,b)=>b[1]-a[1]);
@@ -1036,7 +1043,7 @@ function g5(rows){
       scales:{x:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}}},y:{grid:{display:false},ticks:{font:{size:11.5}}}}}});
 }
 
-/* ═══ GRÁFICA 6 — Actividades × Guardarecursos (stacked) */
+/* Gráfica 6. Actividades por guardarecursos */
 function g6(rows){
   const actC=new Map(); rows.forEach(r=>r.__acts.forEach(a=>{ const c=canonStr(a); if(c)actC.set(c,(actC.get(c)||0)+1); }));
   const topActs=[...actC.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k])=>k);
@@ -1050,7 +1057,7 @@ function g6(rows){
   }));
   mkChart("c-actguarda",{type:"bar",data:{labels:gLabels,datasets},
     options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
-      plugins:{legend:{position:"top",labels:{font:{size:12},padding:12,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT}},
+      plugins:{legend:{position:"top",labels:{font:{size:12},padding:12,usePointStyle:false,boxWidth:14,boxHeight:14}},tooltip:{...TT}},
       scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:11.5},maxRotation:38}},y:{stacked:true,beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}}}}}});
 }
 
@@ -1070,16 +1077,16 @@ function g7(rows){
       onClick:(e,els)=>{ if(!els.length)return; document.getElementById("f-muni").value=sorted[els[0].index][0]; applyAll(); }}});
 }
 
-/* ═══ GRÁFICA 8 — RUMCLA donut ══════════════════════════ */
+/* Gráfica 8. Cobertura del área protegida */
 function g8(rows){
   const ru=rows.filter(r=>r.__ca==="rumcla").length;
   const fu=rows.filter(r=>r.__ca==="fuera").length;
   const sd=rows.length-ru-fu;
   mkChart("c-area",{type:"doughnut",data:{
-    labels:["Dentro RUMCLA","Fuera RUMCLA",...(sd>0?["Sin dato"]:[])],
+    labels:["Dentro de la reserva","Fuera de la reserva",...(sd>0?["Sin dato"]:[])],
     datasets:[{data:[ru,fu,...(sd>0?[sd]:[])],backgroundColor:[PAL[0]+"cc",PAL[2]+"cc","#e5e7eb"],borderColor:[PAL[0],PAL[2],"#d1d5db"],borderWidth:2,hoverOffset:12}]},
     options:{responsive:true,maintainAspectRatio:false,cutout:"66%",
-      plugins:{legend:{position:"bottom",labels:{font:{size:13},padding:14,usePointStyle:true,pointStyleWidth:10}},
+      plugins:{legend:{position:"bottom",labels:{font:{size:13},padding:14,usePointStyle:false,boxWidth:14,boxHeight:14}},
                tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/rows.length*100)}%)`}}}}});
 }
 
@@ -1127,7 +1134,7 @@ function renderMap(rows){
       .addTo(LAYER);
   });
   if(ok>0){ const b=L.latLngBounds(pts.map(p=>[p[0],p[1]])); MAP.fitBounds(b,{padding:[20,20],maxZoom:13}); } else { MAP.setView([14.69,-91.20],10); }
-  document.getElementById("mapmeta").textContent=`Puntos dibujados: ${ok} · Sin coordenadas válidas: ${bad}`;
+  document.getElementById("mapmeta").textContent=`Puntos dibujados: ${ok}. Sin coordenadas válidas: ${bad}`;
   setTimeout(()=>MAP.invalidateSize(),0);
 }
 
@@ -1207,8 +1214,8 @@ function applyAll(){
 
 <script>
 (function(){
-  /* paleta verde elegante */
-  var G = ['#0d4a32','#1a7050','#28936c','#3aad84','#4ec49a','#2a6e58','#3a8a72','#5aaa90','#1e5e48','#4a8068','#7aaa96','#156040'];
+  /* Paleta institucional alineada con el diseño de Patrullajes */
+  var G = ['#2563eb','#1a5c3a','#0f766e','#9333ea','#b91c1c','#0369a1','#b45309','#047857','#be185d','#4d7c0f','#c2410c','#4338ca'];
   if(window.PAL && Array.isArray(PAL))   PAL.splice.apply(PAL,   [0, PAL.length].concat(G));
   if(window.PAL_A && Array.isArray(PAL_A)) PAL_A.splice.apply(PAL_A, [0, PAL_A.length].concat(G.map(function(c){ return c+'bb'; })));
 
@@ -1217,7 +1224,7 @@ function applyAll(){
     Chart.defaults.font.family = "'DM Sans', sans-serif";
     var LL = Chart.defaults.plugins.legend.labels;
     LL.usePointStyle = false; LL.boxWidth = 12; LL.boxHeight = 12;
-    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(6,22,14,.94)';
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(10,61,43,.94)';
     Chart.defaults.plugins.tooltip.cornerRadius = 10;
     Chart.defaults.plugins.tooltip.padding = 12;
     Chart.defaults.plugins.tooltip.titleFont = {size:13, weight:'600', family:"'DM Sans',sans-serif"};
@@ -1244,7 +1251,7 @@ function applyAll(){
         /* sin bordes en barras y donuts */
         if(['bar','doughnut','pie'].indexOf(t) > -1 || ds.type === 'bar') ds.borderWidth = 0;
         if(['doughnut','pie'].indexOf(t) > -1) ds.borderColor = 'transparent';
-        /* arrays de colores (barras multicolor) — sin borde */
+        /* Colores institucionales sin borde */
         if(Array.isArray(ds.backgroundColor)) ds.borderWidth = 0;
       });
       _mk(id, cfg);
@@ -1253,7 +1260,7 @@ function applyAll(){
 
   /* CSS del sistema local */
   var st = document.createElement('style');
-  st.textContent = '.cdf{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;background:#f6faf7;border:1px solid #d8e4dd;border-radius:9px;margin-bottom:12px}.cdf-lbl{font-size:9.5px;font-weight:700;color:#6a8878;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}.cdf input[type=date]{border:1.5px solid #d8e4dd;border-radius:7px;padding:4px 8px;font-size:12px;font-family:inherit;background:#fff;color:#0c1e13;outline:none}.cdf input[type=date]:focus{border-color:#1a5c3a;box-shadow:0 0 0 2px rgba(26,92,58,.1)}.cdf-x{padding:3px 9px;border-radius:6px;border:1.5px solid #d8e4dd;background:#fff;color:#6a8878;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}.cdf-x:hover{border-color:#94a3b8;color:#0c1e13}.cw{position:relative}.cc-tip{position:absolute;top:8px;right:8px;max-width:210px;background:rgba(6,22,14,.92);color:#b8f0d4;font-size:11px;line-height:1.5;padding:9px 12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .22s;z-index:20;border:1px solid rgba(255,255,255,.08)}.cw:hover .cc-tip{opacity:1}';
+  st.textContent = '.cdf{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:9px;margin-bottom:12px}.cdf-lbl{font-size:9.5px;font-weight:700;color:#6b7280;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}.cdf input[type=date]{border:1.5px solid #e5e7eb;border-radius:7px;padding:4px 8px;font-size:12px;font-family:inherit;background:#fff;color:#0d2a1c;outline:none}.cdf input[type=date]:focus{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.1)}.cdf-x{padding:3px 9px;border-radius:6px;border:1.5px solid #e5e7eb;background:#fff;color:#6b7280;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}.cdf-x:hover{border-color:#94a3b8;color:#0d2a1c}.cw{position:relative}.cc-tip{position:absolute;top:8px;right:8px;max-width:210px;background:rgba(10,61,43,.92);color:#d1fae5;font-size:11px;line-height:1.5;padding:9px 12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .22s;z-index:20;border:1px solid rgba(255,255,255,.08)}.cw:hover .cc-tip{opacity:1}';
   document.head.appendChild(st);
 
   /* Mapeo chartId → función de redibujado */
@@ -1308,9 +1315,9 @@ function applyAll(){
       div.innerHTML =
         '<span class="cdf-lbl">Período</span>' +
         '<input type="date" class="cdf-d" title="Desde">' +
-        '<span style="color:#9ab0a6;font-size:13px">—</span>' +
+        '<span style="color:#6b7280;font-size:12px">hasta</span>' +
         '<input type="date" class="cdf-h" title="Hasta">' +
-        '<button class="cdf-x" type="button" title="Limpiar período">×</button>';
+        '<button class="cdf-x" type="button" title="Limpiar período">Limpiar</button>';
       sep.after(div);
 
       div.querySelector('.cdf-d').addEventListener('change', function(){ redrawOne(cid, card); });
