@@ -807,7 +807,7 @@
     }
 
 
-    /* ── AJUSTES V4: flotación suave + transición inmersiva al entrar ── */
+    /* ── AJUSTES V5: flotación suave + apertura sin pantalla de salida ── */
     @keyframes menuFloatActive {
       0%, 100% { translate: 0 0; }
       50% { translate: 0 -8px; }
@@ -824,15 +824,15 @@
         translate: 0 0;
         filter: brightness(1) saturate(1);
       }
-      45% {
-        scale: 1.045;
-        translate: 0 -10px;
+      55% {
+        scale: 1.035;
+        translate: 0 -8px;
         filter: brightness(1.03) saturate(1.05);
       }
       100% {
-        scale: 1.14;
-        translate: 0 -18px;
-        filter: brightness(1.08) saturate(1.08);
+        scale: 1.06;
+        translate: 0 -12px;
+        filter: brightness(1.06) saturate(1.08);
       }
     }
 
@@ -862,7 +862,7 @@
 
     .cover-stage.is-entering .menu-card:not(.is-entering-module) {
       opacity: 0 !important;
-      filter: blur(5px) saturate(.65);
+      filter: blur(4px) saturate(.72);
       pointer-events: none;
     }
 
@@ -870,77 +870,22 @@
       z-index: 80 !important;
       cursor: progress !important;
       pointer-events: none;
-      animation: moduleEnter .72s cubic-bezier(.18,.78,.12,1) forwards !important;
+      animation: moduleEnter .42s cubic-bezier(.18,.78,.12,1) forwards !important;
       box-shadow: 0 34px 92px rgba(10,61,43,.30) !important;
     }
 
     .menu-card.is-entering-module::after {
-      content: 'Entrando…';
+      content: 'Abriendo';
       color: #fff;
       background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, #0a3d2b));
       border-color: transparent;
       box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 28%, transparent);
     }
 
-    .module-transition-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      display: grid;
-      place-items: center;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity .22s ease;
-      background:
-        radial-gradient(circle at 50% 45%, rgba(201,168,76,.20), transparent 28%),
-        radial-gradient(circle at 50% 55%, rgba(34,108,73,.34), transparent 42%),
-        rgba(6,38,27,.38);
-      backdrop-filter: blur(3px);
-    }
-
-    .module-transition-overlay__content {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 13px 18px;
-      border-radius: 999px;
-      color: #fff;
-      background: rgba(10,61,43,.72);
-      border: 1px solid rgba(255,255,255,.20);
-      box-shadow: 0 18px 50px rgba(0,0,0,.20);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-    }
-
-    .module-transition-overlay__pulse {
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: var(--dorado);
-      box-shadow: 0 0 0 0 rgba(201,168,76,.48);
-      animation: modulePulse 1.05s ease-out infinite;
-    }
-
-    @keyframes modulePulse {
-      0% { box-shadow: 0 0 0 0 rgba(201,168,76,.52); }
-      100% { box-shadow: 0 0 0 14px rgba(201,168,76,0); }
-    }
-
-    body.is-opening-module .module-transition-overlay {
-      opacity: 1;
-    }
-
     @media (prefers-reduced-motion: reduce) {
-      .menu-card,
-      .module-transition-overlay__pulse {
+      .menu-card {
         animation: none !important;
         translate: 0 0 !important;
-      }
-
-      .module-transition-overlay {
-        transition: none !important;
       }
     }
 
@@ -1157,13 +1102,6 @@
 <div class="footer-copy">© 2026 · Todos los datos son de uso oficial · Sistema de Monitoreo CONAP</div>
 </div>
 </footer>
-<div aria-hidden="true" class="module-transition-overlay">
-  <div class="module-transition-overlay__content">
-    <span class="module-transition-overlay__pulse"></span>
-    <span>Entrando al módulo</span>
-  </div>
-</div>
-
 <script>
   (function () {
     const stage = document.getElementById('moduleCarousel');
@@ -1226,6 +1164,16 @@
     function goNext() { setActive(activeIndex + 1); }
     function goPrev() { setActive(activeIndex - 1); }
 
+    function resetOpeningState() {
+      isOpening = false;
+      stage.classList.remove('is-entering');
+      stage.removeAttribute('aria-busy');
+      cards.forEach((card) => card.classList.remove('is-entering-module'));
+      setActive(activeIndex);
+    }
+
+    window.addEventListener('pageshow', resetOpeningState);
+
     function openActiveCard() {
       if (isOpening) return;
 
@@ -1234,14 +1182,13 @@
       if (!href) return;
 
       isOpening = true;
-      document.body.classList.add('is-opening-module');
       stage.classList.add('is-entering');
       stage.setAttribute('aria-busy', 'true');
       activeCard.classList.add('is-entering-module');
 
       window.setTimeout(() => {
         window.location.href = href;
-      }, prefersReducedMotion.matches ? 80 : 720);
+      }, prefersReducedMotion.matches ? 40 : 430);
     }
 
     if (prevBtn) prevBtn.addEventListener('click', goPrev);
