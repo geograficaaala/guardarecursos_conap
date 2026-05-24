@@ -432,7 +432,11 @@
       <div class="actions-bar" style="justify-content:flex-end">
         <button class="btn btn-informe-periodo" id="btn-informe-general-periodo">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
-          Generar informe del periodo seleccionado
+          Generar informe PDF del periodo seleccionado
+        </button>
+        <button class="btn btn-blue" id="btn-informe-general-periodo-word">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Generar informe Word del periodo seleccionado
         </button>
       </div>
     </div>
@@ -1599,26 +1603,62 @@ function inicializarSelectorMeses(){
 }
 
 const CSS_REPORTE_CORTE=`<style>
-  @page{size:A4;margin:16mm 15mm 15mm 15mm}
-  .report-doc{font-family:"Times New Roman",serif;color:#000;background:#fff;width:100%;box-sizing:border-box}
-  .report-doc,.report-doc p,.report-doc li{font-size:12pt;line-height:1.0;text-align:justify;color:#000}
-  .report-doc h1{font-family:"Times New Roman",serif;font-size:16pt;font-weight:bold;text-align:center;margin:0 0 8pt;color:#000;line-height:1.0}
-  .report-doc h2{font-family:"Times New Roman",serif;font-size:13pt;font-weight:bold;margin:9pt 0 5pt;color:#000;line-height:1.0}
-  .report-doc h3{font-family:"Times New Roman",serif;font-size:12pt;font-weight:bold;margin:7pt 0 4pt;color:#000;line-height:1.0}
-  .report-doc p{margin:0 0 6pt}
-  .report-doc .center{text-align:center}.report-doc .small{font-size:10.5pt}.report-doc .mini{font-size:9pt}
-  .report-doc .portada{margin-bottom:10pt;padding-bottom:8pt;border-bottom:1px solid #999}
+  @page{size:A4;margin:0}
+  .report-doc{font-family:"Times New Roman",serif;color:#000;background:#fff;width:210mm;min-height:297mm;box-sizing:border-box;padding:27mm 13mm 15mm 13mm;position:relative}
+  .report-doc,.report-doc p,.report-doc li{font-size:11.4pt;line-height:1.12;text-align:justify;color:#000;orphans:3;widows:3}
+  .report-doc h1{font-family:"Times New Roman",serif;font-size:15.5pt;font-weight:bold;text-align:center;margin:0 0 6pt;color:#000;line-height:1.05;text-transform:uppercase}
+  .report-doc h2{font-family:"Times New Roman",serif;font-size:12.7pt;font-weight:bold;margin:8pt 0 4pt;color:#000;line-height:1.05;page-break-after:avoid;break-after:avoid}
+  .report-doc h3{font-family:"Times New Roman",serif;font-size:11.6pt;font-weight:bold;margin:6pt 0 3pt;color:#000;line-height:1.05;page-break-after:avoid;break-after:avoid}
+  .report-doc p{margin:0 0 5pt}
+  .report-doc .center{text-align:center}.report-doc .small{font-size:10pt}.report-doc .mini{font-size:8.6pt}
+  .report-doc .report-header{position:absolute;top:7mm;left:13mm;right:13mm;height:15mm;border-bottom:1px solid #888;display:flex;align-items:center;gap:8pt;color:#000}
+  .report-doc .report-header img{width:13mm;height:13mm;object-fit:contain;display:block}
+  .report-doc .report-header-title{font-size:9.2pt;line-height:1.12;text-align:left;font-weight:bold;text-transform:uppercase}
+  .report-doc .report-header-sub{font-size:8pt;line-height:1.08;text-align:left;font-weight:normal;text-transform:none;margin-top:1pt}
+  .report-doc .portada{margin-bottom:9pt;padding-bottom:7pt;border-bottom:1px solid #999}
   .report-doc .section{break-inside:auto;page-break-inside:auto}
-  .report-doc .firma{margin-top:16pt;text-align:center;display:grid;grid-template-columns:1fr 1fr;gap:22pt}
+  .report-doc .section.keep{break-inside:avoid;page-break-inside:avoid}
   .report-doc .tabla-final{break-before:page;page-break-before:always}
-  .report-doc table{width:100%;border-collapse:collapse;margin-top:6pt;font-family:"Times New Roman",serif;color:#000;table-layout:fixed;page-break-inside:auto;break-inside:auto}
+  .report-doc table{width:100%;border-collapse:collapse;margin-top:5pt;font-family:"Times New Roman",serif;color:#000;table-layout:fixed;page-break-inside:auto;break-inside:auto}
   .report-doc thead{display:table-header-group}.report-doc tfoot{display:table-footer-group}
   .report-doc tr{page-break-inside:avoid;break-inside:avoid}
-  .report-doc th{background:#e9f0ec;border:1px solid #777;padding:3pt 3pt;font-weight:bold;text-align:center;font-size:8.4pt;line-height:1.0;vertical-align:middle}
-  .report-doc td{border:1px solid #999;padding:3pt 3pt;font-size:8.4pt;line-height:1.0;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere}
+  .report-doc th{background:#e9f0ec;border:1px solid #666;padding:2pt 2pt;font-weight:bold;text-align:center;font-size:7.5pt;line-height:1.0;vertical-align:middle}
+  .report-doc td{border:1px solid #888;padding:2pt 2pt;font-size:7.5pt;line-height:1.0;vertical-align:top;word-wrap:break-word;overflow-wrap:anywhere}
   .report-doc td.num{text-align:right;white-space:nowrap}.report-doc td.center{text-align:center}
-  .report-doc .w-num{width:5%}.report-doc .w-name{width:31%}.report-doc .w-sm{width:8%}.report-doc .w-med{width:11%}
+  .report-doc .w-num{width:4.5%}.report-doc .w-name{width:30%}.report-doc .w-sm{width:8.2%}.report-doc .w-med{width:10.7%}
+  .report-doc .firma-oficial{break-inside:avoid;page-break-inside:avoid;text-align:center;margin:18pt auto 8pt;width:330pt;min-height:126pt;position:relative;color:#000}
+  .report-doc .firma-oficial .firma-bocel{position:absolute;left:50%;top:0;transform:translateX(-50%);width:282pt;max-height:88pt;object-fit:contain;z-index:2;opacity:.96}
+  .report-doc .firma-oficial .sello-rumcla{position:absolute;right:16pt;top:8pt;width:82pt;max-height:82pt;object-fit:contain;z-index:3;opacity:.92}
+  .report-doc .firma-oficial .firma-linea{border-top:1px solid #000;width:226pt;margin:73pt auto 4pt;height:1px;position:relative;z-index:1}
+  .report-doc .firma-oficial .firma-texto{text-align:center;font-size:11pt;line-height:1.15;font-weight:bold;position:relative;z-index:4}
+  .report-doc .firma-oficial .firma-texto span{display:block;text-align:center}
 </style>`;
+
+
+function assetUrlReporte(nombre){
+  try{return new URL("../../"+nombre, window.location.href).href;}catch(e){return "../../"+nombre;}
+}
+function logoConapReporte(){return assetUrlReporte("conap.png");}
+function selloRumclaReporte(){return assetUrlReporte("sello.png");}
+function firmaBocelReporte(){return assetUrlReporte("bocel.png");}
+function imgDataUrl(src){
+  return new Promise(resolve=>{
+    try{
+      const img=new Image();
+      img.crossOrigin="anonymous";
+      img.onload=()=>{
+        try{
+          const cv=document.createElement("canvas");
+          cv.width=img.naturalWidth||img.width;cv.height=img.naturalHeight||img.height;
+          const ctx=cv.getContext("2d");ctx.drawImage(img,0,0);
+          resolve(cv.toDataURL("image/png"));
+        }catch(e){resolve(null);}
+      };
+      img.onerror=()=>resolve(null);
+      img.src=src;
+    }catch(e){resolve(null);}
+  });
+}
 
 function construirInformeCorteHTML(inicio,fin,regs){
   const total=regs.length;
@@ -1643,12 +1683,22 @@ function construirInformeCorteHTML(inicio,fin,regs){
   const guardasConsol=consolidarGuardas(regs);
   const topGuardas=guardasConsol.slice(0,5);
   const etiqueta=`${fmtDateDisplay(inicio)} al ${fmtDateDisplay(fin)}`;
+  const conapLogo=logoConapReporte();
+  const selloLogo=selloRumclaReporte();
+  const firmaBocel=firmaBocelReporte();
   const tablaGuardas=guardasConsol.map((o,i)=>`<tr><td class="center">${i+1}</td><td>${escH(o.g)}</td><td class="num">${fmtGT(o.total,0)}</td><td class="num">${fmtGT(o.km,1,1)}</td><td class="num">${fmtGT(o.inc,0)}</td><td class="num">${fmtGT(o.municipios,0)}</td><td class="num">${o.dur!==null?fmtGT(o.dur,1,1)+" h":"–"}</td><td class="num">${fmtGT(o.rumcla,0)}</td><td class="num">${fmtGT(o.fuera,0)}</td></tr>`).join("");
 
   return `<div class="report-doc">
+    <div class="report-header">
+      <img src="${conapLogo}" alt="CONAP"/>
+      <div>
+        <div class="report-header-title">Consejo Nacional de Áreas Protegidas</div>
+        <div class="report-header-sub">Dirección Regional Altiplano Central · Sistema de monitoreo AC192</div>
+      </div>
+    </div>
     <div class="portada">
-      <h1>INFORME MENSUAL DE PATRULLAJES</h1>
-      <p class="center"><strong>Periodo operativo de corte 25 a 25: ${escH(etiqueta)}</strong></p>
+      <h1>INFORME GENERAL DE PATRULLAJES</h1>
+      <p class="center"><strong>Periodo seleccionado: ${escH(etiqueta)}</strong></p>
       <p class="center small">Consejo Nacional de Áreas Protegidas – Dirección Regional Altiplano Central</p>
       <p class="center small">Sistema de monitoreo de patrullajes AC192</p>
     </div>
@@ -1710,7 +1760,18 @@ function construirInformeCorteHTML(inicio,fin,regs){
       <h2>9. Consideraciones metodológicas</h2>
       <p>El informe fue generado automáticamente a partir de los registros disponibles en el archivo de patrullajes. Los cálculos de patrullajes, incidentes y kilómetros se realizan sobre los registros incluidos en el periodo de corte seleccionado. La duración media se calcula únicamente cuando los campos de hora de inicio y hora de finalización permiten estimar una duración válida.</p>
       <p>Los nombres de guardarecursos se presentan de forma consolidada según la normalización aplicada en el sistema. La tabla final agrupa los registros por persona y no por boleta individual, por lo que cada fila representa un resumen operativo del guardarecurso durante el periodo.</p>
-      <div class="firma"><p>______________________________<br/>Responsable de revisión</p><p>______________________________<br/>Coordinación / Supervisión</p></div>
+    </div>
+
+    <div class="section keep firma-oficial">
+      <img class="firma-bocel" src="${firmaBocel}" alt="Firma"/>
+      <img class="sello-rumcla" src="${selloLogo}" alt="Sello RUMCLA CONAP"/>
+      <div class="firma-linea"></div>
+      <div class="firma-texto">
+        <span>Ing. Juan Carlos Bocel Chiroy</span>
+        <span>CONAP</span>
+        <span>Encargado Unidad Técnica Atitlán</span>
+        <span>RUMCLA-SOLOLÁ</span>
+      </div>
     </div>
 
     <div class="section tabla-final">
@@ -1725,7 +1786,19 @@ function construirInformeCorteHTML(inicio,fin,regs){
 }
 
 function docWordReporteCorte(nombre,html){
-  const src="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_REPORTE_CORTE+"</head><body>"+html+"</body></html>";
+  const logo=logoConapReporte();
+  const wordHeader=`<div style="mso-element:header" id="hReporte">
+    <p style="font-family:'Times New Roman';font-size:9pt;margin:0;border-bottom:1px solid #777;padding-bottom:4pt">
+      <img src="${logo}" width="42" height="42" style="vertical-align:middle;margin-right:8pt"/>
+      <span style="font-weight:bold">Consejo Nacional de Áreas Protegidas</span><br/>
+      <span>Dirección Regional Altiplano Central · Sistema de monitoreo AC192</span>
+    </p>
+  </div>`;
+  const wordCss=`<style>
+    @page Section1{size:8.5in 11in;margin:.62in .50in .55in .50in;mso-header:hReporte;}
+    div.Section1{page:Section1;}
+  </style>`;
+  const src="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_REPORTE_CORTE+wordCss+"</head><body><div class='Section1'>"+wordHeader+html+"</div></body></html>";
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff",src],{type:"application/msword"}));a.download=nombre;document.body.appendChild(a);a.click();document.body.removeChild(a);
 }
 function docPDFReporteCorte(nombre,html){
@@ -1736,14 +1809,33 @@ function docPDFReporteCorte(nombre,html){
   d.style.width="210mm";
   d.style.minHeight="297mm";
   document.body.appendChild(d);
-  html2pdf().set({
+  const opt={
     margin:0,
     filename:nombre,
     image:{type:"jpeg",quality:.98},
-    html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",scrollY:0},
-    pagebreak:{mode:["css","legacy"],avoid:["tr","thead","h1","h2","h3"]},
+    html2canvas:{scale:2,useCORS:true,allowTaint:false,backgroundColor:"#ffffff",scrollY:0},
+    pagebreak:{mode:["css","legacy"],avoid:["tr","thead","h1","h2","h3",".firma-oficial"]},
     jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}
-  }).from(d).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d));
+  };
+  const logoUrl=logoConapReporte();
+  const selloUrl=selloRumclaReporte();
+  const firmaUrl=firmaBocelReporte();
+  Promise.all([imgDataUrl(logoUrl),imgDataUrl(selloUrl),imgDataUrl(firmaUrl)]).then(()=>{
+    html2pdf().set(opt).from(d).toPdf().get("pdf").then(async pdf=>{
+      const logoData=await imgDataUrl(logoUrl);
+      const total=pdf.internal.getNumberOfPages();
+      const pageW=pdf.internal.pageSize.getWidth();
+      for(let i=1;i<=total;i++){
+        pdf.setPage(i);
+        if(logoData)pdf.addImage(logoData,"PNG",13,7,13,13,undefined,"FAST");
+        pdf.setFont("times","bold");pdf.setFontSize(8.5);pdf.text("Consejo Nacional de Áreas Protegidas",29,11);
+        pdf.setFont("times","normal");pdf.setFontSize(7.6);pdf.text("Dirección Regional Altiplano Central · Sistema de monitoreo AC192",29,16);
+        pdf.setDrawColor(130);pdf.setLineWidth(.18);pdf.line(13,23,pageW-13,23);
+        pdf.setFontSize(7.3);pdf.setTextColor(90);pdf.text(String(i)+" / "+String(total),pageW-21,289);
+        pdf.setTextColor(0);
+      }
+    }).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d));
+  });
 }
 function descargarInformeCorte(fmt,inicio,fin,regs){
   if(!regs.length){alert("No hay registros para el periodo seleccionado.");return}
@@ -1759,9 +1851,20 @@ function generarInformeCorteDesdeVerificacion(fmt){
   const fin=new Date(hastaStr+"T23:59:59");
   descargarInformeCorte(fmt,inicio,fin,regsPorRango(inicio,fin));
 }
-function nombrePeriodoInforme(inicio,fin){
+function nombrePeriodoInforme(inicio,fin,ext="pdf"){
   const f=d=>String(d.getDate()).padStart(2,"0")+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+d.getFullYear();
-  return `Informe general periodo ${f(inicio)} al ${f(fin)}.pdf`;
+  return `Informe general periodo ${f(inicio)} al ${f(fin)}.${ext}`;
+}
+function generarInformePeriodoSeleccionadoWord(){
+  const desdeStr=document.getElementById("vc-desde").value;
+  const hastaStr=document.getElementById("vc-hasta").value;
+  if(!desdeStr||!hastaStr){alert("Defina el período completo en la pestaña de verificación.");return}
+  const inicio=new Date(desdeStr+"T00:00:00");
+  const fin=new Date(hastaStr+"T23:59:59");
+  const regs=regsPorRango(inicio,fin);
+  if(!regs.length){alert("No hay registros para el periodo seleccionado.");return}
+  const html=construirInformeCorteHTML(inicio,fin,regs);
+  docWordReporteCorte(nombrePeriodoInforme(inicio,fin,"doc"),html);
 }
 function generarInformePeriodoSeleccionadoPDF(){
   const desdeStr=document.getElementById("vc-desde").value;
@@ -1772,7 +1875,7 @@ function generarInformePeriodoSeleccionadoPDF(){
   const regs=regsPorRango(inicio,fin);
   if(!regs.length){alert("No hay registros para el periodo seleccionado.");return}
   const html=construirInformeCorteHTML(inicio,fin,regs);
-  docPDFReporteCorte(nombrePeriodoInforme(inicio,fin),html);
+  docPDFReporteCorte(nombrePeriodoInforme(inicio,fin,"pdf"),html);
 }
 function generarInformeMensual(fmt){
   if(!DATOS.length){alert("No hay datos cargados.");return}
@@ -1810,6 +1913,7 @@ document.addEventListener("DOMContentLoaded",function(){
   document.getElementById("vc-informe-pdf")?.addEventListener("click",()=>generarInformeCorteDesdeVerificacion("pdf"));
   document.getElementById("vc-informe-periodo-pdf")?.addEventListener("click",generarInformePeriodoSeleccionadoPDF);
   document.getElementById("btn-informe-general-periodo")?.addEventListener("click",generarInformePeriodoSeleccionadoPDF);
+  document.getElementById("btn-informe-general-periodo-word")?.addEventListener("click",generarInformePeriodoSeleccionadoWord);
 
   sugerirPeriodo();
 
