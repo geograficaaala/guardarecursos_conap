@@ -274,8 +274,8 @@
       </div>
 
       <div class="nota-meta">
-        <strong>Regla de meta de reforestación:</strong> por cada 10 árboles aprobados en consumo forestal familiar, el guardarecursos genera 1 árbol de compromiso de reforestación.
-        La columna <strong>"Meta reforest."</strong> muestra cuántos árboles debe comprometerse a reponer en el período.
+        <strong>Regla de meta de reforestación:</strong> por cada árbol aprobado para corte en consumo forestal familiar, se deben sembrar 10 árboles como compromiso de reforestación.
+        La columna <strong>"Meta reforest."</strong> muestra cuántos árboles debe comprometerse a sembrar en el período.
       </div>
 
       <div class="verif-controls">
@@ -298,7 +298,7 @@
       <div class="verif-resumen" id="vc-resumen" style="display:none">
         <div class="vr-card" style="border-top:3px solid var(--d0)"><div class="vr-label">Consumos en período</div><div class="vr-value" id="vc-total">–</div><div class="vr-sub">registros</div></div>
         <div class="vr-card" style="border-top:3px solid var(--d1)"><div class="vr-label">Árboles aprobados</div><div class="vr-value" id="vc-arboles">–</div><div class="vr-sub">total a talar</div></div>
-        <div class="vr-card" style="border-top:3px solid var(--d4)"><div class="vr-label">Meta reforestación</div><div class="vr-value" id="vc-meta-ref">–</div><div class="vr-sub">árboles a reponer (÷10)</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d4)"><div class="vr-label">Meta reforestación</div><div class="vr-value" id="vc-meta-ref">–</div><div class="vr-sub">árboles a sembrar (×10)</div></div>
         <div class="vr-card" style="border-top:3px solid var(--d2)"><div class="vr-label">Guardarecursos activos</div><div class="vr-value" id="vc-guardas">–</div><div class="vr-sub">en el período</div></div>
         <div class="vr-card" style="border-top:3px solid var(--d5)"><div class="vr-label">Municipios cubiertos</div><div class="vr-value" id="vc-munis">–</div><div class="vr-sub">distintos</div></div>
       </div>
@@ -426,7 +426,7 @@
     <div id="guarda-kpis" class="kpis-guarda" style="display:none">
       <div class="kpi-g kpi-g-0"><div class="kpi-g-label">Consumos</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">total registrados</div></div>
       <div class="kpi-g kpi-g-1"><div class="kpi-g-label">Árboles aprobados</div><div class="kpi-g-value" id="g-arboles">–</div><div class="kpi-g-sub">total a talar</div></div>
-      <div class="kpi-g kpi-g-2"><div class="kpi-g-label">Meta reforestación</div><div class="kpi-g-value" id="g-meta">–</div><div class="kpi-g-sub">árboles a reponer (÷10)</div></div>
+      <div class="kpi-g kpi-g-2"><div class="kpi-g-label">Meta reforestación</div><div class="kpi-g-value" id="g-meta">–</div><div class="kpi-g-sub">árboles a sembrar (×10)</div></div>
       <div class="kpi-g kpi-g-3"><div class="kpi-g-label">Municipios</div><div class="kpi-g-value" id="g-munis">–</div><div class="kpi-g-sub">distintos cubiertos</div></div>
       <div class="kpi-g kpi-g-4"><div class="kpi-g-label">Promedio</div><div class="kpi-g-value" id="g-prom">–</div><div class="kpi-g-sub">árboles por consumo</div></div>
     </div>
@@ -538,7 +538,7 @@ function procesarDatos(raw){
     const espMap={};ESPECIES.forEach(e=>{espMap[e.field]=safeInt(r[e.field]||"0");});
     if(cm)LABELS.muni.set(cm,bestL(LABELS.muni.get(cm),r["Municipio"]));
     if(cg)LABELS.guarda.set(cg,bestL(LABELS.guarda.get(cg),gn));
-    return{...r,__guarda:gn,__dt:dt,__periodo:periodoOp(dt),__arboles:arboles,__meta:Math.floor(arboles/10),__cm:cm,__cg:cg,...espMap};
+    return{...r,__guarda:gn,__dt:dt,__periodo:periodoOp(dt),__arboles:arboles,__meta:arboles*10,__cm:cm,__cg:cg,...espMap};
   }).filter(Boolean);
 }
 
@@ -590,7 +590,7 @@ function ejecutarVerificacion(){
 
   // KPIs globales
   const totalArboles=sum_(enPeriodo.map(r=>r.__arboles));
-  const metaRef=Math.floor(totalArboles/10);
+  const metaRef=totalArboles*10;
   document.getElementById("vc-total").textContent=enPeriodo.length.toLocaleString("es");
   document.getElementById("vc-arboles").textContent=totalArboles.toLocaleString("es");
   document.getElementById("vc-meta-ref").textContent=metaRef.toLocaleString("es");
@@ -611,7 +611,7 @@ function ejecutarVerificacion(){
     const sub=enPeriodo.filter(r=>r.__guarda===g).sort((a,b)=>a.__dt-b.__dt);
     const cnt=sub.length;
     const arb=sum_(sub.map(r=>r.__arboles));
-    const metaG=Math.floor(arb/10);
+    const metaG=arb*10;
     const munis=new Set(sub.map(r=>r.__cm).filter(Boolean)).size;
 
     // Especie principal
@@ -643,7 +643,7 @@ function ejecutarVerificacion(){
       <td><strong style="color:var(--d1)">${arb.toLocaleString("es")}</strong> árbol${arb!==1?"es":""}</td>
       <td><span class="meta-tag">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        ${metaG} a reponer
+        ${metaG} a sembrar
       </span></td>
       <td>${munis}</td>
       <td><span class="badge badge-gris" style="font-size:11px">${escH(espPrincipal)}</span></td>
@@ -749,7 +749,7 @@ function inicializarTabla(){
     {title:"Usuario",field:"Nombre del usuario",headerFilter:"input",width:200},
     {title:"Referencia",field:"Referencia de ubicacion",headerFilter:"input",width:200},
     {title:"Total árboles",field:"Cantidad total de arboles a talar",width:120,hozAlign:"center",formatter:c=>{const v=safeInt(c.getValue());return v>0?`<strong style="font-size:14px;color:#1a7a38">${v}</strong>`:"–";}},
-    {title:"Meta reforest.",field:"__meta_display",width:120,hozAlign:"center",formatter:c=>{const r=c.getRow().getData();const m=Math.floor(safeInt(r["Cantidad total de arboles a talar"])/10);return m>0?`<span style="background:rgba(168,28,42,0.08);border:1px solid rgba(168,28,42,0.25);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;color:#a81c2a">${m}</span>`:"<span style='color:#d1d5db'>0</span>";}},
+    {title:"Meta reforest.",field:"__meta_display",width:120,hozAlign:"center",formatter:c=>{const r=c.getRow().getData();const m=safeInt(r["Cantidad total de arboles a talar"])*10;return m>0?`<span style="background:rgba(168,28,42,0.08);border:1px solid rgba(168,28,42,0.25);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;color:#a81c2a">${m}</span>`:"<span style='color:#d1d5db'>0</span>";}},
     {title:"Área protegida",field:"Area protegida",headerFilter:"input",width:180},
     ...espCols,
     {title:"Latitud",field:"Y",width:100,hozAlign:"right"},
@@ -798,7 +798,7 @@ function renderGuarda(nombre){
   document.getElementById("guarda-empty").style.display="none";
   document.getElementById("estado-analisis").textContent=`Perfil de ${nombre} · ${regs.length} consumos`;
   const arboles=sum_(regs.map(r=>r.__arboles));
-  const meta=Math.floor(arboles/10);
+  const meta=arboles*10;
   const munis=new Set(regs.map(r=>r.__cm).filter(Boolean));
   const prom=regs.length?arboles/regs.length:0;
   document.getElementById("g-total").textContent=regs.length;
@@ -824,7 +824,7 @@ function renderGuarda(nombre){
   const mMuni=new Map();regs.forEach(r=>{if(r.__cm)mMuni.set(r.__cm,(mMuni.get(r.__cm)||{cnt:0,arb:0}));const e=mMuni.get(r.__cm);e.cnt++;e.arb+=r.__arboles;});
   const tbody=document.getElementById("guarda-tbody");tbody.innerHTML="";
   [...mMuni.entries()].sort((a,b)=>b[1].arb-a[1].arb).forEach(([cm,{cnt,arb}])=>{
-    const metaMu=Math.floor(arb/10);
+    const metaMu=arb*10;
     const muLabel=LABELS.muni.get(cm)||cm;
     const sub=regs.filter(r=>r.__cm===cm);
     const fueraCount=sub.filter(r=>canonStr(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"])==="si"||canonStr(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"]).includes("si")).length;
@@ -848,11 +848,11 @@ function generarInformeRegistro(fmt){
   const ref=r["Referencia de ubicacion"]||"",area=r["Area protegida"]||"",obs=r["Observaciones"]||"";
   const dt=parseCreation(r["CreationDate"]);
   const arboles=safeInt(r["Cantidad total de arboles a talar"]);
-  const meta=Math.floor(arboles/10);
+  const meta=arboles*10;
   const espDetalle=ESPECIES.filter(e=>safeInt(r[e.field]||"0")>0).map(e=>`${e.label}: ${r[e.field]}`).join(", ")||"–";
   let h=`<section><h1>Informe de consumo forestal familiar (AC297)</h1><p style="text-align:center">Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><hr/></section>`;
   h+=`<section><h2>1. Datos de identificación</h2><p><strong>Guardarecursos:</strong> ${escH(guarda)}</p><p><strong>Fecha:</strong> ${fmtDate(dt)}</p><p><strong>Municipio:</strong> ${escH(muni)}</p><p><strong>Nombre del usuario:</strong> ${escH(usuario)}</p><p><strong>Referencia de ubicación:</strong> ${escH(ref)}</p><p><strong>Área protegida:</strong> ${escH(area)}</p></section>`;
-  h+=`<section><h2>2. Árboles aprobados y meta de reforestación</h2><p><strong>Total de árboles a talar:</strong> ${arboles}</p><p><strong>Meta de reforestación por compromiso:</strong> ${meta} árbol${meta!==1?"es":""} (${arboles} ÷ 10)</p><p><strong>Desglose por especie:</strong> ${escH(espDetalle)}</p></section>`;
+  h+=`<section><h2>2. Árboles aprobados y meta de reforestación</h2><p><strong>Total de árboles a talar:</strong> ${arboles}</p><p><strong>Meta de reforestación por compromiso:</strong> ${meta} árbol${meta!==1?"es":""} (${arboles} × 10)</p><p><strong>Desglose por especie:</strong> ${escH(espDetalle)}</p></section>`;
   h+=`<section><h2>3. Observaciones</h2><p>${escH(obs||"Sin observaciones registradas.")}</p></section>`;
   h+=`<section><h2>4. Firmas</h2><p>______________________________<br/>Guardarecursos / Responsable</p><p>______________________________<br/>Supervisión</p></section>`;
   const base="informe_ac297_"+slug(guarda)+"_"+slug(fmtDate(dt));
@@ -868,17 +868,17 @@ function generarInformeMensual(fmt){
   if(!regs.length){alert("Sin registros para "+etiq);return}
   const total=regs.length;
   const arboles=sum_(regs.map(r=>r.__arboles));
-  const meta=Math.floor(arboles/10);
+  const meta=arboles*10;
   const munis=new Set(regs.map(r=>norm(r["Municipio"])).filter(Boolean));
   const guardas=new Set(regs.map(r=>r.__guarda).filter(Boolean));
   const mGuar={};regs.forEach(r=>{if(r.__guarda)mGuar[r.__guarda]={cnt:(mGuar[r.__guarda]?.cnt||0)+1,arb:(mGuar[r.__guarda]?.arb||0)+r.__arboles};});
   const gOrd=Object.entries(mGuar).sort((a,b)=>b[1].arb-a[1].arb);
   const espTot=ESPECIES.map(e=>({label:e.label,total:sum_(regs.map(r=>r[e.field]||0))})).filter(e=>e.total>0).sort((a,b)=>b.total-a.total);
   let h=`<section><h1>Informe mensual de consumo forestal familiar (AC297)</h1><p style="text-align:center">CONAP - DRAC - Altiplano Central · <strong>${escH(etiq)}</strong></p><hr/></section>`;
-  h+=`<section><h2>1. Resumen general</h2><p>En ${escH(etiq)} se registraron <strong>${total}</strong> consumos forestales familiares en <strong>${munis.size}</strong> municipio(s), atendidos por <strong>${guardas.size}</strong> guardarecursos.</p><p>Total de árboles aprobados: <strong>${arboles.toLocaleString("es")}</strong> · Meta de reforestación por compromiso: <strong>${meta.toLocaleString("es")}</strong> árbol${meta!==1?"es":""} (razón 1:10)</p></section>`;
-  h+=`<section><h2>2. Guardarecursos con más árboles aprobados</h2><p>${gOrd.slice(0,5).map(([g,{cnt,arb}])=>`<strong>${escH(g)}</strong>: ${cnt} consumo${cnt!==1?"s":""}, ${arb} árbol${arb!==1?"es":""}, meta: ${Math.floor(arb/10)}`).join("<br/>")}</p></section>`;
+  h+=`<section><h2>1. Resumen general</h2><p>En ${escH(etiq)} se registraron <strong>${total}</strong> consumos forestales familiares en <strong>${munis.size}</strong> municipio(s), atendidos por <strong>${guardas.size}</strong> guardarecursos.</p><p>Total de árboles aprobados: <strong>${arboles.toLocaleString("es")}</strong> · Meta de reforestación por compromiso: <strong>${meta.toLocaleString("es")}</strong> árbol${meta!==1?"es":""} (razón 1:10, por cada árbol cortado se siembran diez)</p></section>`;
+  h+=`<section><h2>2. Guardarecursos con más árboles aprobados</h2><p>${gOrd.slice(0,5).map(([g,{cnt,arb}])=>`<strong>${escH(g)}</strong>: ${cnt} consumo${cnt!==1?"s":""}, ${arb} árbol${arb!==1?"es":""}, meta: ${arb*10}`).join("<br/>")}</p></section>`;
   h+=`<section><h2>3. Especies más solicitadas</h2><ul>${espTot.slice(0,6).map(e=>`<li>${escH(e.label)}: ${e.total} árbol${e.total!==1?"es":""} (${Math.round(e.total/arboles*100)}%)</li>`).join("")}</ul></section>`;
-  h+=`<section><h2>4. Nota metodológica</h2><p>Generado automáticamente desde el sistema AC297 de CONAP-DRAC. La meta de reforestación se calcula dividiendo el total de árboles aprobados entre 10.</p></section>`;
+  h+=`<section><h2>4. Nota metodológica</h2><p>Generado automáticamente desde el sistema AC297 de CONAP-DRAC. La meta de reforestación se calcula multiplicando por 10 el total de árboles aprobados para corte.</p></section>`;
   const base="informe_mensual_ac297_"+anio+"_"+String(mes).padStart(2,"0");
   fmt==="pdf"?docPDF(base+".pdf",h):docWord(base+".doc",h);
 }
@@ -886,7 +886,7 @@ function generarInformeMensual(fmt){
 function generarInformeGuarda(){
   const nombre=document.getElementById("sel-guarda").value;if(!nombre)return;
   const regs=DATOS.filter(r=>r.__guarda===nombre);if(!regs.length){alert("Sin registros");return}
-  const arboles=sum_(regs.map(r=>r.__arboles));const meta=Math.floor(arboles/10);
+  const arboles=sum_(regs.map(r=>r.__arboles));const meta=arboles*10;
   const munis=[...new Set(regs.map(r=>norm(r["Municipio"])).filter(Boolean))];
   const espFilt=ESPECIES.map(e=>({...e,total:sum_(regs.map(r=>r[e.field]||0))})).filter(e=>e.total>0).sort((a,b)=>b.total-a.total);
   let h=`<section><h1>Perfil de consumo forestal familiar</h1><p style="text-align:center">AC297 · <strong>${escH(nombre)}</strong></p><hr/></section>`;
@@ -1009,7 +1009,7 @@ function datosInformePlantillaConsumo(inicio, fin, regs) {
     const o = porGuarda.get(g);
     o.total += 1;
     o.arboles += Number(r.__arboles || 0);
-    o.meta += Math.floor(Number(r.__arboles || 0) / 10);
+    o.meta += Number(r.__arboles || 0) * 10;
     if (r["Municipio"]) o.municipios.add(cleanLabel(r["Municipio"]));
     if (r["Nombre del usuario"]) o.usuarios.add(cleanLabel(r["Nombre del usuario"]));
     ESPECIES.forEach(e => {
@@ -1022,7 +1022,7 @@ function datosInformePlantillaConsumo(inicio, fin, regs) {
     const especiePrincipal = [...o.especies.entries()].sort((a, b) => b[1] - a[1])[0];
     return {
       ...o,
-      meta: Math.floor(o.arboles / 10),
+      meta: o.arboles * 10,
       especiePrincipal: especiePrincipal ? `${especiePrincipal[0]} (${fmtGT(especiePrincipal[1])})` : "Sin dato"
     };
   }).sort((a, b) => b.arboles - a.arboles);
@@ -1131,7 +1131,7 @@ function crearTablaGuardarecursosConsumoWordXml(guardasConsol) {
       o.g,
       fmtGT(o.total, 0),
       fmtGT(o.arboles, 0),
-      fmtGT(Math.floor(o.arboles / 10), 0),
+      fmtGT(o.arboles * 10, 0),
       fmtGT(o.municipios.size, 0),
       o.especiePrincipal
     ];
