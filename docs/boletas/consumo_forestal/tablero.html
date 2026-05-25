@@ -701,7 +701,7 @@
         </button>
       </div>
       <div class="cc-sep"></div>
-      <div class="cw h300"><canvas id="c-muniArb"></canvas></div>
+      <div class="cw h360"><canvas id="c-muniArb"></canvas></div>
     </div>
 
     <div class="cc">
@@ -949,6 +949,18 @@ function canonFuera(v){ const c=canonStr(v);return(c==="si"||c==="sí")?"si":c==
 function safeInt(v){ const n=parseInt(String(v).trim());return isNaN(n)?0:n; }
 function rnd(n,d){ if(!isFinite(n))return"–";const f=Math.pow(10,d);return(Math.round(n*f)/f).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}); }
 function shortName(name){ const parts=(name||"").trim().split(" ");if(parts.length<=3)return parts.join(" ");return parts.slice(0,3).join(" "); }
+function wrapLabel(label, maxChars=24){
+  const words=String(label||"").split(/\s+/).filter(Boolean);
+  const lines=[];
+  let line="";
+  words.forEach(w=>{
+    const next=line ? line + " " + w : w;
+    if(next.length > maxChars && line){ lines.push(line); line=w; }
+    else line=next;
+  });
+  if(line) lines.push(line);
+  return lines.length ? lines : [String(label||"")];
+}
 
 /* ═══════════════════════════════════════════════════════════
    CARGA CSV
@@ -1198,14 +1210,72 @@ function g7(rows){
    G8 — Municipios árboles
 ═══════════════════════════════════════════════════════════ */
 function g8(rows){
-  const ma=new Map();rows.forEach(r=>{if(r.__cm)ma.set(r.__cm,(ma.get(r.__cm)||0)+r.__arboles);});
+  const ma=new Map();
+  rows.forEach(r=>{if(r.__cm)ma.set(r.__cm,(ma.get(r.__cm)||0)+r.__arboles);});
   const sorted=[...ma.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);
   const labels=sorted.map(([k])=>LABELS.muni.get(k)||k);
-  mkChart("c-muniArb",{type:"bar",data:{labels,datasets:[{label:"Árboles aprobados",data:sorted.map(([,v])=>v),backgroundColor:COLOR_ARBOLES,borderColor:COLOR_ARBOLES,borderWidth:1,borderRadius:5,borderSkipped:false}]},
-    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.x.toLocaleString("en-US")} árboles`}},
-        datalabels:{display:true,anchor:"end",align:"right",offset:6,clamp:true,clip:false,color:"#254736",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?v.toLocaleString("en-US"):""}},
-      scales:{x:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12}}},y:{grid:{display:false},ticks:{font:{size:12}}}}}});
+  const values=sorted.map(([,v])=>v);
+  const maxValue=Math.max(0,...values);
+
+  // Altura y margen dinámico para que los municipios y las etiquetas no se corten.
+  const cw=document.getElementById("c-muniArb")?.closest(".cw");
+  if(cw) cw.style.height=Math.max(360, labels.length*34 + 90) + "px";
+
+  mkChart("c-muniArb",{
+    type:"bar",
+    data:{
+      labels,
+      datasets:[{
+        label:"Árboles aprobados",
+        data:values,
+        backgroundColor:COLOR_ARBOLES,
+        borderColor:COLOR_ARBOLES,
+        borderWidth:1,
+        borderRadius:5,
+        borderSkipped:false
+      }]
+    },
+    options:{
+      indexAxis:"y",
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{top:8,right:76,left:8,bottom:8}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{...TT,callbacks:{label:c=>` ${Number(c.parsed.x||0).toLocaleString("en-US")} árboles`}},
+        datalabels:{
+          display:true,
+          anchor:"end",
+          align:"right",
+          offset:6,
+          clamp:true,
+          clip:false,
+          color:"#254736",
+          font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},
+          formatter:v=>v>0?Number(v).toLocaleString("en-US"):""
+        }
+      },
+      scales:{
+        x:{
+          beginAtZero:true,
+          suggestedMax:maxValue ? maxValue*1.18 : undefined,
+          grid:{color:GC},
+          ticks:{font:{size:12},callback:v=>Number(v).toLocaleString("en-US")}
+        },
+        y:{
+          grid:{display:false},
+          ticks:{
+            autoSkip:false,
+            crossAlign:"far",
+            padding:8,
+            font:{size:11.2,weight:"600"},
+            color:"#254736",
+            callback:function(value){return wrapLabel(this.getLabelForValue(value), 22);}
+          }
+        }
+      }
+    }
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1513,7 +1583,7 @@ function applyAll(){
   }
   /* CSS del sistema local */
   var st = document.createElement('style');
-  st.textContent = '.cdf{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;background:#f7fcf8;border:1px solid #d7eadf;border-radius:9px;margin-bottom:12px}.cdf-lbl{font-size:9.5px;font-weight:700;color:#5f7b6e;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}.cdf input[type=date]{border:1.5px solid #d7eadf;border-radius:7px;padding:4px 8px;font-size:12px;font-family:inherit;background:#fff;color:#102218;outline:none}.cdf input[type=date]:focus{border-color:#16a34a;box-shadow:0 0 0 2px rgba(26,92,58,.1)}.cdf-x{padding:3px 9px;border-radius:6px;border:1.5px solid #d7eadf;background:#fff;color:#5f7b6e;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}.cdf-x:hover{border-color:#94a3b8;color:#102218}.cw{position:relative}.cc-tip{position:absolute;top:8px;right:8px;max-width:210px;background:rgba(6,22,14,.92);color:#b8f0d4;font-size:11px;line-height:1.5;padding:9px 12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .22s;z-index:20;border:1px solid rgba(255,255,255,.08)}.cw:hover .cc-tip{opacity:1}';
+  st.textContent = '.cdf{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;background:#f7fcf8;border:1px solid #d7eadf;border-radius:9px;margin-bottom:12px}.cdf-lbl{font-size:9.5px;font-weight:700;color:#5f7b6e;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}.cdf input[type=date]{border:1.5px solid #d7eadf;border-radius:7px;padding:4px 8px;font-size:12px;font-family:inherit;background:#fff;color:#102218;outline:none}.cdf input[type=date]:focus{border-color:#16a34a;box-shadow:0 0 0 2px rgba(26,92,58,.1)}.cdf-x{padding:3px 9px;border-radius:6px;border:1.5px solid #d7eadf;background:#fff;color:#5f7b6e;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}.cdf-x:hover{border-color:#94a3b8;color:#102218}.cw{position:relative}';
   document.head.appendChild(st);
 
   /* Mapeo chartId → función de redibujado */
@@ -1540,21 +1610,13 @@ function applyAll(){
     if(FN[cid]) FN[cid](rows);
   }
 
-  /* Agregar tooltip contextual + selector de fecha a cada tarjeta */
+  /* Agregar selector de fecha a cada tarjeta */
   function setup(){
     document.querySelectorAll('.cc').forEach(function(card){
       var cv   = card.querySelector('canvas');
       var sep  = card.querySelector('.cc-sep');
       var hint = card.querySelector('.cc-hint');
       var cw   = card.querySelector('.cw');
-
-      /* tooltip: muestra la descripción al pasar el mouse sobre el gráfico */
-      if(cw && hint && hint.textContent.trim()){
-        var tip = document.createElement('div');
-        tip.className = 'cc-tip';
-        tip.textContent = hint.textContent.trim();
-        cw.appendChild(tip);
-      }
 
       /* selector de fechas local */
       if(!cv || !cv.id) return;
