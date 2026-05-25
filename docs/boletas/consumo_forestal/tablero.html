@@ -549,7 +549,7 @@
     <div class="kpi kpi-2">
       <div class="kpi-label">Compromiso reforestación</div>
       <div class="kpi-value" id="k-meta">–</div>
-      <div class="kpi-sub">árboles a reponer (×10)</div>
+      <div class="kpi-sub">10 árboles a sembrar por cada árbol aprobado</div>
     </div>
     <div class="kpi kpi-3">
       <div class="kpi-label">Promedio por consumo</div>
@@ -745,7 +745,7 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Consumos, árboles aprobados y compromiso de reforestación por guardarecursos</div>
-          <div class="cc-hint">Barras azules = consumos registrados · puntos naranjas = árboles aprobados · puntos verdes = compromiso de reforestación (árboles × 10)</div>
+          <div class="cc-hint">Barras azules = consumos registrados · puntos naranjas = árboles aprobados · puntos verdes = compromiso de reforestación (10 árboles por cada árbol aprobado)</div>
         </div>
         <button class="btn-png" id="png-ranking">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -1394,7 +1394,7 @@ function gRanking(baseRows){
             formatter:v=>v>0?v.toLocaleString("en-US"):""
           }
         },
-        // Línea punteada: compromiso reforestación = árboles × 10 (eje derecho)
+        // Línea punteada: compromiso reforestación = árboles aprobados × 10 (eje derecho)
         {
           label:"Compromiso reforestación",
           data:compromisos,
