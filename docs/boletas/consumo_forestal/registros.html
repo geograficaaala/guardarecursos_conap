@@ -9,16 +9,32 @@
   <script src="../../assets/tabulator.min.js"></script>
   <script src="../../assets/papaparse.min.js"></script>
   <script src="../../assets/xlsx.full.min.js"></script>
+  <script src="../../assets/pizzip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --verde-oscuro:#0a3d2b; --verde-medio:#1a5c3a;
-      --bg:#f0f4f1; --surface:#ffffff; --surface-2:#f6faf7;
-      --ink:#0c1e13; --ink-2:#2a4535; --muted:#6a8878;
-      --borde:#d8e4dd; --sombra:rgba(10,61,43,0.06);
-      --acento:#1a5c3a; --acento-bg:rgba(26,92,58,0.06); --acento-borde:rgba(26,92,58,0.20);
-      --d0:#1f6cb0;--d1:#1a7a38;--d2:#b05608;--d3:#6b2680;--d4:#a81c2a;--d5:#016660;
+      --verde-oscuro: #064e3b;
+      --verde-medio:  #16a34a;
+      --bg:           #f3f8f4;
+      --surface:      #ffffff;
+      --surface-2:    #f7fcf8;
+      --ink:          #102218;
+      --ink-2:        #254736;
+      --muted:        #5f7b6e;
+      --borde:        #d7eadf;
+      --sombra:       rgba(6,78,59,0.07);
+      --acento:       #16a34a;
+      --acento-bg:    rgba(34,197,94,0.10);
+      --acento-borde: rgba(34,197,94,0.28);
+      --dorado:       #d8b94f;
+      --dorado-claro: #f4d35e;
+      --mod-dark:     #047857;
+      --mod-mid:      #22c55e;
+      --mod-light:    #86efac;
+      --d0:#4ade80; --d1:#fb7185; --d2:#60a5fa; --d3:#fbbf24;
+      --d4:#f87171; --d5:#2dd4bf; --d6:#c084fc; --d7:#34d399;
+      --d8:#f9a8d4; --d9:#a3e635; --d10:#fb923c; --d11:#93c5fd;
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{scroll-behavior:smooth}
@@ -70,6 +86,9 @@
     .btn:hover{border-color:#94a3b8;background:var(--bg);transform:translateY(-1px)}
     .btn-primary{background:var(--verde-oscuro);color:#fff;border-color:var(--verde-oscuro)}
     .btn-primary:hover{background:var(--verde-medio);box-shadow:0 4px 12px rgba(10,61,43,.25)}
+    .btn-informe-periodo{background:var(--verde-oscuro);color:#fff;border-color:var(--verde-oscuro);font-weight:700;letter-spacing:.01em;padding:11px 18px;box-shadow:0 6px 16px rgba(10,61,43,.18)}
+    .btn-informe-periodo:hover{background:var(--verde-medio);border-color:var(--verde-medio);color:#fff;box-shadow:0 8px 20px rgba(10,61,43,.26);transform:translateY(-1px)}
+
     .btn-blue{background:var(--d0);color:#fff;border-color:var(--d0)}
     .btn-blue:hover{background:#1558a0;box-shadow:0 4px 12px rgba(31,108,176,.3)}
     .btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
@@ -175,9 +194,29 @@
     .informe-bar select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--ink);outline:none;transition:border-color .18s}
     .sin-datos{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
 
+
+    .header-stripe{height:4px;background:linear-gradient(90deg,var(--mod-dark),var(--mod-mid),var(--mod-light));margin:0 -28px -16px;transform-origin:left}
+
+
+    .tabla-control-card{padding:18px 20px}
+    .table-note{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.45}
+    .tabulator .tabulator-header .tabulator-col{background:#edf9f0!important;border-right:1px solid var(--borde)!important}
+    .tabulator .tabulator-header .tabulator-col-title{color:var(--ink-2);font-weight:800}
+    .tabulator .tabulator-header-filter input{border:1px solid #cde7d6;border-radius:7px;padding:4px 7px;font-size:11.5px;background:#fff;color:var(--ink)}
+    .tabulator-row{border-bottom:1px solid #edf4ef!important}
+    .tabulator-row.tabulator-row-even{background:#fbfffc!important}
+    .tabulator-row:hover{background:#edfff4!important}
+    .tabulator-row.tabulator-selected{background:#d1fae5!important}
+    .tb-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+    .tb-chip-ok{background:#dcfce7;color:#166534;border:1px solid #86efac}
+    .tb-chip-warn{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}
+    .tb-chip-bad{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+    .tb-chip-info{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
+    .tb-chip-neutral{background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb}
+
     /* FOOTER */
-    footer{background:var(--verde-oscuro);color:rgba(255,255,255,.42);text-align:center;padding:16px 24px;font-size:12px;font-weight:300;letter-spacing:.04em;flex-shrink:0}
-    footer strong{color:rgba(255,255,255,.75);font-weight:500}
+    footer{background:linear-gradient(105deg,var(--verde-oscuro),#0f6b45);color:rgba(255,255,255,.52);text-align:center;padding:22px 24px;font-size:12px;font-weight:400;letter-spacing:.04em;flex-shrink:0;position:relative;overflow:hidden}
+    footer strong{color:rgba(255,255,255,.86);font-weight:700}
   </style>
 </head>
 <body>
@@ -194,6 +233,7 @@
       <div class="header-chip"><span class="chip-dot"></span>AC297 · Registros y verificación</div>
     </div>
   </div>
+  <div class="header-stripe" aria-hidden="true"></div>
 </header>
 
 <nav class="module-nav">
@@ -309,6 +349,19 @@
         <p style="margin-top:12px">Seleccione el período y haga clic en <strong>Verificar</strong></p>
       </div>
     </div>
+
+    <div class="card informe-general-card">
+      <div class="card-title">Informe general del periodo seleccionado</div>
+      <div class="card-hint">
+        Este informe usa únicamente las fechas seleccionadas arriba. No depende del guardarecurso elegido, de la meta ni de haber presionado Verificar. Siempre consolida todos los guardarecursos del periodo.
+      </div>
+      <div class="actions-bar" style="justify-content:flex-end">
+        <button class="btn btn-informe-periodo" id="btn-informe-general-periodo-word">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+          Generar informe Word del periodo seleccionado
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- ══ PANEL 2 — TABLA ════════════════════════════ -->
@@ -357,7 +410,7 @@
         </button>
       </div>
     </div>
-    <div class="card" style="padding:0;overflow:hidden"><div id="tabla-registros"></div></div>
+    <div class="card tabla-control-card" style="overflow:hidden"><div id="tabla-registros"></div><div class="table-note">Puede usar los filtros de columna, seleccionar una fila para informe individual y exportar los registros visibles.</div></div>
   </div>
 
   <!-- ══ PANEL 3 — ANÁLISIS ═════════════════════════ -->
@@ -449,7 +502,7 @@ function normGuarda(n){if(!n)return null;const c=canonStr(n);if(EXCLUIDOS.has(c)
 let DATOS=[];
 let tablaTabulator;
 let mapaMeses=new Map();
-const PAL=["#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660","#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"];
+const PAL=["#4ade80","#fb7185","#60a5fa","#fbbf24","#f87171","#2dd4bf","#c084fc","#34d399","#f9a8d4","#a3e635","#fb923c","#93c5fd"];
 const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MESES_ES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 const LABELS={muni:new Map(),guarda:new Map()};
@@ -842,6 +895,442 @@ function generarInformeGuarda(){
   docWord("perfil_ac297_"+slug(nombre)+".doc",h);
 }
 
+
+/* ═══════════════════════════════════════════════════
+   INFORME GENERAL DESDE PLANTILLA WORD
+   Machote recomendado:
+   docs/boletas/consumo_forestal/ESQUELETO INFORME GENERAL DE CONSUMO FORESTAL FAMILIAR.docx
+
+   Requisito:
+   docs/assets/pizzip.min.js
+
+   El botón reemplaza marcadores de texto como {{TOTAL_CONSUMOS}}
+   y coloca la tabla consolidada en {{TABLA_GUARDARECURSOS}}.
+═══════════════════════════════════════════════════ */
+const INFORME_TEMPLATE_URL = "ESQUELETO INFORME GENERAL DE CONSUMO FORESTAL FAMILIAR.docx";
+const INFORME_TEMPLATE_CANDIDATES = [
+  INFORME_TEMPLATE_URL,
+  "ESQUELETO INFORME GENERAL DE CONSUMO FORESTAL.docx",
+  "ESQUELETO INFORME GENERAL DE CONSUMOS FORESTALES.docx",
+  "ESQUELETO INFORME GENERAL DE CONSUMOS.docx"
+];
+
+function fmtGT(n, max = 0, min = 0) {
+  if (n === null || n === undefined || !isFinite(n)) return "–";
+  return Number(n).toLocaleString("en-US", {
+    minimumFractionDigits: min,
+    maximumFractionDigits: max
+  });
+}
+
+function cleanLabel(v) {
+  const s = String(v || "").trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Sin dato";
+}
+
+function fechaInforme(dt) {
+  if (!dt || isNaN(dt)) return "–";
+  return dt.toLocaleDateString("es-GT", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+function cFrases(arr) {
+  if (!arr.length) return "";
+  if (arr.length === 1) return arr[0];
+  return arr.slice(0, -1).join(", ") + " y " + arr[arr.length - 1];
+}
+
+function topMapInforme(regs, fn) {
+  const m = new Map();
+  regs.forEach(r => {
+    const k = cleanLabel(fn(r));
+    if (k && k !== "Sin dato") m.set(k, (m.get(k) || 0) + 1);
+  });
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+function topMapSumInforme(regs, kFn, vFn) {
+  const m = new Map();
+  regs.forEach(r => {
+    const k = cleanLabel(kFn(r));
+    const v = Number(vFn(r) || 0);
+    if (k && k !== "Sin dato" && isFinite(v)) m.set(k, (m.get(k) || 0) + v);
+  });
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+function textListTopPlain(arr, n = 5, suffix = "registros") {
+  const out = arr.slice(0, n).map(([k, v]) => `${k} (${fmtGT(v, 0)} ${suffix})`);
+  return out.length ? cFrases(out) : "No se identificaron registros suficientes para establecer un ranking.";
+}
+
+function regsPorRangoInforme(inicio, fin) {
+  return DATOS.filter(r =>
+    r.__dt &&
+    !isNaN(r.__dt) &&
+    r.__dt >= inicio &&
+    r.__dt <= fin
+  );
+}
+
+function datosInformePlantillaConsumo(inicio, fin, regs) {
+  const total = regs.length;
+  const totalArboles = sum_(regs.map(r => r.__arboles));
+  const metaReforestacion = Math.floor(totalArboles / 10);
+  const guardas = new Set(regs.map(r => r.__guarda).filter(Boolean));
+  const municipios = new Set(regs.map(r => norm(r["Municipio"])).filter(Boolean));
+  const areas = new Set(regs.map(r => cleanLabel(r["Area protegida"])).filter(v => v && v !== "Sin dato"));
+  const usuarios = new Set(regs.map(r => norm(r["Nombre del usuario"])).filter(Boolean));
+  const promedioArboles = total ? totalArboles / total : 0;
+
+  const especiesTotales = ESPECIES
+    .map(e => ({ label: e.label, total: sum_(regs.map(r => Number(r[e.field] || 0))) }))
+    .filter(e => e.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  const topMunicipiosConsumos = topMapInforme(regs, r => r["Municipio"]);
+  const topMunicipiosArboles = topMapSumInforme(regs, r => r["Municipio"], r => r.__arboles);
+  const topAreas = topMapInforme(regs, r => r["Area protegida"]);
+  const topEspecies = especiesTotales.map(e => [e.label, e.total]);
+
+  const porGuarda = new Map();
+  regs.forEach(r => {
+    const g = r.__guarda || "Sin guardarecurso";
+    if (!porGuarda.has(g)) {
+      porGuarda.set(g, {
+        g,
+        total: 0,
+        arboles: 0,
+        meta: 0,
+        municipios: new Set(),
+        usuarios: new Set(),
+        especies: new Map()
+      });
+    }
+    const o = porGuarda.get(g);
+    o.total += 1;
+    o.arboles += Number(r.__arboles || 0);
+    o.meta += Math.floor(Number(r.__arboles || 0) / 10);
+    if (r["Municipio"]) o.municipios.add(cleanLabel(r["Municipio"]));
+    if (r["Nombre del usuario"]) o.usuarios.add(cleanLabel(r["Nombre del usuario"]));
+    ESPECIES.forEach(e => {
+      const val = Number(r[e.field] || 0);
+      if (val > 0) o.especies.set(e.label, (o.especies.get(e.label) || 0) + val);
+    });
+  });
+
+  const guardasConsol = [...porGuarda.values()].map(o => {
+    const especiePrincipal = [...o.especies.entries()].sort((a, b) => b[1] - a[1])[0];
+    return {
+      ...o,
+      meta: Math.floor(o.arboles / 10),
+      especiePrincipal: especiePrincipal ? `${especiePrincipal[0]} (${fmtGT(especiePrincipal[1])})` : "Sin dato"
+    };
+  }).sort((a, b) => b.arboles - a.arboles);
+
+  return {
+    FECHA_INICIO: fechaInforme(inicio),
+    FECHA_FIN: fechaInforme(fin),
+    FECHA_GENERACION: fechaInforme(new Date()),
+
+    TOTAL_CONSUMOS: fmtGT(total, 0),
+    TOTAL_GUARDARECURSOS: fmtGT(guardas.size, 0),
+    TOTAL_MUNICIPIOS: fmtGT(municipios.size, 0),
+    TOTAL_AREAS_PROTEGIDAS: fmtGT(areas.size, 0),
+    TOTAL_USUARIOS: fmtGT(usuarios.size, 0),
+    TOTAL_ARBOLES_APROBADOS: fmtGT(totalArboles, 0),
+    META_REFORESTACION: fmtGT(metaReforestacion, 0),
+    PROMEDIO_ARBOLES_CONSUMO: fmtGT(promedioArboles, 2, 2),
+
+    TOP_MUNICIPIOS_CONSUMOS: textListTopPlain(topMunicipiosConsumos, 5, "consumos"),
+    TOP_MUNICIPIOS_ARBOLES: textListTopPlain(topMunicipiosArboles, 5, "árboles"),
+    TOP_AREAS_PROTEGIDAS: textListTopPlain(topAreas, 5, "registros"),
+    TOP_ESPECIES: textListTopPlain(topEspecies, 6, "árboles"),
+    TOP_GUARDARECURSOS_CONSUMOS: textListTopPlain(
+      guardasConsol.map(o => [o.g, o.total]),
+      5,
+      "consumos"
+    ),
+    TOP_GUARDARECURSOS_ARBOLES: textListTopPlain(
+      guardasConsol.map(o => [o.g, o.arboles]),
+      5,
+      "árboles"
+    ),
+
+    __guardasConsol: guardasConsol
+  };
+}
+
+function xmlEsc(v) {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function regEsc(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function tokenRegex(token) {
+  const gap = '(?:</w:t>(?:\\s|<[^>]+>)*<w:t[^>]*>)?';
+  return new RegExp(token.split("").map(regEsc).join(gap), "g");
+}
+
+function replaceDocxToken(xml, token, value) {
+  return xml.replace(tokenRegex(token), xmlEsc(value));
+}
+
+function wCell(text, width, opts = {}) {
+  const align = opts.align || "left";
+  const bold = opts.bold || false;
+  const shade = opts.shade ? `<w:shd w:fill="${opts.shade}"/>` : "";
+  const size = opts.size || "14";
+
+  return `
+    <w:tc>
+      <w:tcPr>
+        <w:tcW w:w="${width}" w:type="dxa"/>
+        ${shade}
+        <w:vAlign w:val="center"/>
+      </w:tcPr>
+      <w:p>
+        <w:pPr><w:jc w:val="${align}"/></w:pPr>
+        <w:r>
+          <w:rPr>
+            ${bold ? "<w:b/>" : ""}
+            <w:sz w:val="${size}"/>
+            <w:szCs w:val="${size}"/>
+          </w:rPr>
+          <w:t xml:space="preserve">${xmlEsc(text)}</w:t>
+        </w:r>
+      </w:p>
+    </w:tc>
+  `;
+}
+
+function crearTablaGuardarecursosConsumoWordXml(guardasConsol) {
+  const widths = [520, 3300, 920, 1040, 920, 1120, 1700];
+  const headers = ["#", "Guardarecurso", "Consumos", "Árboles", "Meta", "Municipios", "Especie principal"];
+
+  const grid = widths.map(w => `<w:gridCol w:w="${w}"/>`).join("");
+
+  const headerRow =
+    `<w:tr>${headers.map((h, i) =>
+      wCell(h, widths[i], {
+        bold: true,
+        shade: "DCFCE7",
+        align: i === 0 ? "center" : "left",
+        size: "13"
+      })
+    ).join("")}</w:tr>`;
+
+  const rows = guardasConsol.map((o, i) => {
+    const cells = [
+      String(i + 1),
+      o.g,
+      fmtGT(o.total, 0),
+      fmtGT(o.arboles, 0),
+      fmtGT(Math.floor(o.arboles / 10), 0),
+      fmtGT(o.municipios.size, 0),
+      o.especiePrincipal
+    ];
+
+    return `<w:tr>${cells.map((c, j) =>
+      wCell(c, widths[j], {
+        align: j === 0 || j >= 2 && j <= 5 ? "center" : "left",
+        size: "13"
+      })
+    ).join("")}</w:tr>`;
+  }).join("");
+
+  const empty =
+    `<w:tr>${wCell("Sin registros en el período seleccionado.", widths.reduce((a, b) => a + b, 0), { size: "13" })}</w:tr>`;
+
+  return `
+    <w:tbl>
+      <w:tblPr>
+        <w:tblW w:w="0" w:type="auto"/>
+        <w:tblBorders>
+          <w:top w:val="single" w:sz="4"/>
+          <w:left w:val="single" w:sz="4"/>
+          <w:bottom w:val="single" w:sz="4"/>
+          <w:right w:val="single" w:sz="4"/>
+          <w:insideH w:val="single" w:sz="4"/>
+          <w:insideV w:val="single" w:sz="4"/>
+        </w:tblBorders>
+        <w:tblCellMar>
+          <w:top w:w="40" w:type="dxa"/>
+          <w:left w:w="50" w:type="dxa"/>
+          <w:bottom w:w="40" w:type="dxa"/>
+          <w:right w:w="50" w:type="dxa"/>
+        </w:tblCellMar>
+      </w:tblPr>
+      <w:tblGrid>${grid}</w:tblGrid>
+      ${headerRow}
+      ${rows || empty}
+    </w:tbl>
+  `;
+}
+
+async function ensurePizZipLoaded() {
+  if (typeof PizZip !== "undefined") return true;
+
+  if (window.PizZipReady && typeof window.PizZipReady.then === "function") {
+    try {
+      await window.PizZipReady;
+      if (typeof PizZip !== "undefined") return true;
+    } catch (e) {}
+  }
+
+  await new Promise(resolve => {
+    const existe = document.querySelector('script[data-local-pizzip="1"]');
+    if (existe) {
+      setTimeout(resolve, 300);
+      return;
+    }
+
+    const sc = document.createElement("script");
+    sc.src = "../../assets/pizzip.min.js";
+    sc.async = false;
+    sc.dataset.localPizzip = "1";
+    sc.onload = async () => {
+      if (window.PizZipReady && typeof window.PizZipReady.then === "function") {
+        try { await window.PizZipReady; } catch (e) {}
+      }
+      resolve();
+    };
+    sc.onerror = () => resolve();
+    document.head.appendChild(sc);
+  });
+
+  return typeof PizZip !== "undefined";
+}
+
+async function cargarPlantillaInformeConsumo() {
+  const expanded = [];
+  INFORME_TEMPLATE_CANDIDATES.forEach(name => {
+    expanded.push(name, encodeURI(name), "./" + encodeURI(name));
+  });
+
+  for (const url of expanded) {
+    try {
+      const r = await fetch(url, { cache: "no-store" });
+      if (r.ok) return await r.arrayBuffer();
+    } catch (e) {}
+  }
+
+  throw new Error(
+    "No se pudo cargar la plantilla Word del informe. Verifique que el archivo exista en docs/boletas/consumo_forestal/."
+  );
+}
+
+async function generarInformeConsumoDesdePlantillaWord(nombre, inicio, fin, regs) {
+  if (!regs.length) {
+    alert("No hay registros para el periodo seleccionado.");
+    return;
+  }
+
+  const okPizZip = await ensurePizZipLoaded();
+
+  if (!okPizZip) {
+    alert("No se pudo cargar PizZip desde docs/assets/pizzip.min.js.");
+    return;
+  }
+
+  let buf;
+
+  try {
+    buf = await cargarPlantillaInformeConsumo();
+  } catch (err) {
+    alert(err.message || "No se pudo cargar la plantilla Word.");
+    return;
+  }
+
+  const data = datosInformePlantillaConsumo(inicio, fin, regs);
+  const zip = new PizZip(buf);
+
+  const file = zip.file("word/document.xml");
+
+  if (!file) {
+    alert("La plantilla no contiene word/document.xml válido.");
+    return;
+  }
+
+  let xml = file.asText();
+
+  xml = replaceDocxToken(xml, "{{TABLA_GUARDARECURSOS}}", "__TABLA_GUARDARECURSOS__");
+
+  Object.entries(data).forEach(([k, v]) => {
+    if (k.startsWith("__")) return;
+    xml = replaceDocxToken(xml, `{{${k}}}`, v);
+  });
+
+  const tableXml = crearTablaGuardarecursosConsumoWordXml(data.__guardasConsol);
+
+  const markerParagraphRe =
+    /<w:p\b(?:(?!<\/w:p>)[\s\S])*?__TABLA_GUARDARECURSOS__(?:(?!<\/w:p>)[\s\S])*?<\/w:p>/;
+
+  if (markerParagraphRe.test(xml)) {
+    xml = xml.replace(markerParagraphRe, tableXml);
+  } else {
+    xml = xml.replace("__TABLA_GUARDARECURSOS__", "");
+    xml = xml.replace("</w:body>", tableXml + "</w:body>");
+  }
+
+  zip.file("word/document.xml", xml);
+
+  const blob = zip.generate({
+    type: "blob",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  });
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = nombre;
+  document.body.appendChild(a);
+  a.click();
+
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    document.body.removeChild(a);
+  }, 0);
+}
+
+function nombrePeriodoInformeConsumo(inicio, fin) {
+  const fi = isoDate(inicio);
+  const ff = isoDate(fin);
+  return `informe_general_consumo_forestal_${fi}_al_${ff}.docx`;
+}
+
+function generarInformePeriodoSeleccionadoConsumoWord() {
+  const desdeStr = document.getElementById("vc-desde")?.value;
+  const hastaStr = document.getElementById("vc-hasta")?.value;
+
+  if (!desdeStr || !hastaStr) {
+    alert("Defina el período completo antes de generar el informe.");
+    return;
+  }
+
+  const inicio = new Date(desdeStr + "T00:00:00");
+  const fin = new Date(hastaStr + "T23:59:59");
+
+  if (isNaN(inicio) || isNaN(fin) || inicio > fin) {
+    alert("El período seleccionado no es válido.");
+    return;
+  }
+
+  const regs = regsPorRangoInforme(inicio, fin);
+
+  generarInformeConsumoDesdePlantillaWord(
+    nombrePeriodoInformeConsumo(inicio, fin),
+    inicio,
+    fin,
+    regs
+  );
+}
+
+
 /* ═══ INICIO ══════════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded",function(){
   if(typeof Tabulator==="undefined"){alert("No se pudo cargar Tabulator.");return}
@@ -851,6 +1340,7 @@ document.addEventListener("DOMContentLoaded",function(){
   document.getElementById("generate-monthly-report-word").addEventListener("click",()=>generarInformeMensual("word"));
   document.getElementById("generate-monthly-report-pdf").addEventListener("click",()=>generarInformeMensual("pdf"));
   document.getElementById("vc-aplicar").addEventListener("click",ejecutarVerificacion);
+  document.getElementById("btn-informe-general-periodo-word").addEventListener("click",generarInformePeriodoSeleccionadoConsumoWord);
 
   const urls=["../../datos/base3_datos.csv","https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base3_datos.csv"];
   let p=Promise.reject();
