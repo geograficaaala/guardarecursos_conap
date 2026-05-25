@@ -975,26 +975,79 @@ function regsPorRangoInforme(inicio, fin) {
 function datosInformePlantillaConsumo(inicio, fin, regs) {
   const total = regs.length;
   const totalArboles = sum_(regs.map(r => r.__arboles));
-  const metaReforestacion = Math.floor(totalArboles / 10);
+
+  // Regla correcta:
+  // por cada árbol aprobado para corte, se deben sembrar 10 árboles.
+  const metaReforestacion = totalArboles * 10;
+
   const guardas = new Set(regs.map(r => r.__guarda).filter(Boolean));
   const municipios = new Set(regs.map(r => norm(r["Municipio"])).filter(Boolean));
-  const areas = new Set(regs.map(r => cleanLabel(r["Area protegida"])).filter(v => v && v !== "Sin dato"));
   const usuarios = new Set(regs.map(r => norm(r["Nombre del usuario"])).filter(Boolean));
   const promedioArboles = total ? totalArboles / total : 0;
 
+  function areaNormalizadaInforme(v) {
+    const c = canonStr(v);
+
+    if (!c) return "Sin dato";
+    if (c.includes("fuera")) return "Fuera de RUMCLA";
+    if (c.includes("rumcla")) return "RUMCLA";
+
+    return cleanLabel(v);
+  }
+
+  function esDentroRumcla(v) {
+    const c = canonStr(v);
+    if (!c) return false;
+    if (c.includes("fuera")) return false;
+    return c.includes("rumcla");
+  }
+
+  function esFueraRumcla(v) {
+    const c = canonStr(v);
+    if (!c) return false;
+    if (c.includes("fuera")) return true;
+    return !c.includes("rumcla");
+  }
+
+  function esSi(v) {
+    const c = canonStr(v);
+    return c === "si" || c === "sí";
+  }
+
+  const CAMPO_APOYO_EXTERNO = "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?";
+
+  const totalRumcla = regs.filter(r => esDentroRumcla(r["Area protegida"])).length;
+  const totalFueraRumcla = regs.filter(r => esFueraRumcla(r["Area protegida"])).length;
+
+  const totalApoyoExterno = regs.filter(r => esSi(r[CAMPO_APOYO_EXTERNO])).length;
+  const totalSinApoyo = total - totalApoyoExterno;
+  const porcentajeApoyo = total ? (totalApoyoExterno / total) * 100 : 0;
+
+  const areas = new Set(
+    regs
+      .map(r => areaNormalizadaInforme(r["Area protegida"]))
+      .filter(v => v && v !== "Sin dato")
+  );
+
   const especiesTotales = ESPECIES
-    .map(e => ({ label: e.label, total: sum_(regs.map(r => Number(r[e.field] || 0))) }))
+    .map(e => ({
+      label: e.label,
+      total: sum_(regs.map(r => Number(r[e.field] || 0)))
+    }))
     .filter(e => e.total > 0)
     .sort((a, b) => b.total - a.total);
 
   const topMunicipiosConsumos = topMapInforme(regs, r => r["Municipio"]);
   const topMunicipiosArboles = topMapSumInforme(regs, r => r["Municipio"], r => r.__arboles);
-  const topAreas = topMapInforme(regs, r => r["Area protegida"]);
+
+  const topAreas = topMapInforme(regs, r => areaNormalizadaInforme(r["Area protegida"]));
   const topEspecies = especiesTotales.map(e => [e.label, e.total]);
 
   const porGuarda = new Map();
+
   regs.forEach(r => {
     const g = r.__guarda || "Sin guardarecurso";
+
     if (!porGuarda.has(g)) {
       porGuarda.set(g, {
         g,
@@ -1006,26 +1059,37 @@ function datosInformePlantillaConsumo(inicio, fin, regs) {
         especies: new Map()
       });
     }
+
     const o = porGuarda.get(g);
+
     o.total += 1;
     o.arboles += Number(r.__arboles || 0);
     o.meta += Number(r.__arboles || 0) * 10;
+
     if (r["Municipio"]) o.municipios.add(cleanLabel(r["Municipio"]));
     if (r["Nombre del usuario"]) o.usuarios.add(cleanLabel(r["Nombre del usuario"]));
+
     ESPECIES.forEach(e => {
       const val = Number(r[e.field] || 0);
-      if (val > 0) o.especies.set(e.label, (o.especies.get(e.label) || 0) + val);
+      if (val > 0) {
+        o.especies.set(e.label, (o.especies.get(e.label) || 0) + val);
+      }
     });
   });
 
-  const guardasConsol = [...porGuarda.values()].map(o => {
-    const especiePrincipal = [...o.especies.entries()].sort((a, b) => b[1] - a[1])[0];
-    return {
-      ...o,
-      meta: o.arboles * 10,
-      especiePrincipal: especiePrincipal ? `${especiePrincipal[0]} (${fmtGT(especiePrincipal[1])})` : "Sin dato"
-    };
-  }).sort((a, b) => b.arboles - a.arboles);
+  const guardasConsol = [...porGuarda.values()]
+    .map(o => {
+      const especiePrincipal = [...o.especies.entries()].sort((a, b) => b[1] - a[1])[0];
+
+      return {
+        ...o,
+        meta: o.arboles * 10,
+        especiePrincipal: especiePrincipal
+          ? `${especiePrincipal[0]} (${fmtGT(especiePrincipal[1])})`
+          : "Sin dato"
+      };
+    })
+    .sort((a, b) => b.arboles - a.arboles);
 
   return {
     FECHA_INICIO: fechaInforme(inicio),
@@ -1037,19 +1101,32 @@ function datosInformePlantillaConsumo(inicio, fin, regs) {
     TOTAL_MUNICIPIOS: fmtGT(municipios.size, 0),
     TOTAL_AREAS_PROTEGIDAS: fmtGT(areas.size, 0),
     TOTAL_USUARIOS: fmtGT(usuarios.size, 0),
+
     TOTAL_ARBOLES_APROBADOS: fmtGT(totalArboles, 0),
     META_REFORESTACION: fmtGT(metaReforestacion, 0),
+
+    // Se dejan ambos nombres para que funcione con cualquier versión del machote.
+    PROMEDIO_ARBOLES: fmtGT(promedioArboles, 2, 2),
     PROMEDIO_ARBOLES_CONSUMO: fmtGT(promedioArboles, 2, 2),
+
+    TOTAL_RUMCLA: fmtGT(totalRumcla, 0),
+    TOTAL_FUERA_RUMCLA: fmtGT(totalFueraRumcla, 0),
+
+    TOTAL_APOYO_EXTERNO: fmtGT(totalApoyoExterno, 0),
+    TOTAL_SIN_APOYO: fmtGT(totalSinApoyo, 0),
+    PORCENTAJE_APOYO: fmtGT(porcentajeApoyo, 1, 1),
 
     TOP_MUNICIPIOS_CONSUMOS: textListTopPlain(topMunicipiosConsumos, 5, "consumos"),
     TOP_MUNICIPIOS_ARBOLES: textListTopPlain(topMunicipiosArboles, 5, "árboles"),
     TOP_AREAS_PROTEGIDAS: textListTopPlain(topAreas, 5, "registros"),
     TOP_ESPECIES: textListTopPlain(topEspecies, 6, "árboles"),
+
     TOP_GUARDARECURSOS_CONSUMOS: textListTopPlain(
       guardasConsol.map(o => [o.g, o.total]),
       5,
       "consumos"
     ),
+
     TOP_GUARDARECURSOS_ARBOLES: textListTopPlain(
       guardasConsol.map(o => [o.g, o.arboles]),
       5,
