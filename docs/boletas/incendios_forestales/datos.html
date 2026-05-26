@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>AC283 · Registros y verificación · Incendios forestales</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/tabulator.min.css">
+  <script src="../../assets/tabulator.min.js"></script>
+  <script src="../../assets/papaparse.min.js"></script>
+  <script src="../../assets/xlsx.full.min.js"></script>
+  <script src="../../assets/pizzip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --verde-oscuro: #064e3b;
+      --verde-medio:  #16a34a;
+      --bg:           #f3f8f4;
+      --surface:      #ffffff;
+      --surface-2:    #f7fcf8;
+      --ink:          #102218;
+      --ink-2:        #254736;
+      --muted:        #5f7b6e;
+      --borde:        #d7eadf;
+      --sombra:       rgba(6,78,59,0.07);
+      --acento:       #16a34a;
+      --acento-bg:    rgba(34,197,94,0.10);
+      --acento-borde: rgba(34,197,94,0.28);
+      --dorado:       #d8b94f;
+      --dorado-claro: #f4d35e;
+      --mod-dark:     #047857;
+      --mod-mid:      #22c55e;
+      --mod-light:    #86efac;
+      /* Paleta de datos — pastel viva */
+      --d0:#4ade80; --d1:#fb7185; --d2:#60a5fa; --d3:#fbbf24;
+      --d4:#f87171; --d5:#2dd4bf; --d6:#c084fc; --d7:#34d399;
+      --d8:#f9a8d4; --d9:#a3e635; --d10:#fb923c; --d11:#93c5fd;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;font-size:14px;line-height:1.55;opacity:0;animation:bodyIn .45s cubic-bezier(.22,.68,0,1.2) forwards}
+    @keyframes bodyIn{to{opacity:1}}
+    @media(prefers-reduced-motion:reduce){body{animation:none;opacity:1}}
+
+    /* HEADER */
+    header{background:linear-gradient(105deg,var(--verde-oscuro) 0%,var(--verde-medio) 100%);color:#fff;padding:14px 28px 16px;position:sticky;top:0;z-index:200;box-shadow:0 2px 28px rgba(0,0,0,.26);flex-shrink:0}
+    .header-inner{max-width:1480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:5px 14px}
+    .logo-group img{height:36px;max-width:112px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 8px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+    .header-right{text-align:right;flex:1}
+    .header-right h1{font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:1px}
+    .header-right p{font-size:12px;opacity:.58;font-weight:300}
+    .header-chip{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.20);background:rgba(255,255,255,.08);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+    .chip-dot{width:6px;height:6px;border-radius:50%;background:#86efac;animation:blink 2.4s ease-in-out infinite}
+    @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.6)}}
+
+    /* NAV */
+    .module-nav{background:var(--surface);border-bottom:1px solid var(--borde);padding:0 28px;box-shadow:0 1px 8px rgba(0,0,0,.04);flex-shrink:0}
+    .module-nav-inner{max-width:1480px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+    .module-nav-inner::-webkit-scrollbar{display:none}
+    .nav-back{display:flex;align-items:center;gap:6px;padding:13px 18px 13px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap;transition:color .18s}
+    .nav-back:hover{color:var(--verde-medio)}
+    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;height:50px;transition:color .18s,border-color .18s}
+    .nav-tab:hover{color:var(--acento);border-bottom-color:rgba(26,92,58,.2)}
+    .nav-tab.active{color:var(--acento);border-bottom-color:var(--acento);font-weight:600}
+
+    /* PÁGINA */
+    .page{max-width:1480px;width:100%;margin:0 auto;padding:28px 28px 72px;flex:1}
+
+    /* TABS INTERNOS */
+    .inner-tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--borde);border-radius:12px;padding:4px;box-shadow:0 1px 8px var(--sombra)}
+    .inner-tab{flex:1;text-align:center;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;border:none;background:none;font-family:inherit}
+    .inner-tab.active{background:var(--verde-oscuro);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(10,61,43,.25)}
+    .inner-tab:hover:not(.active){background:var(--bg);color:var(--ink)}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block;animation:panelIn .25s ease both}
+    @keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* CARDS */
+    .card{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:22px 24px;box-shadow:0 1px 10px var(--sombra);margin-bottom:16px}
+    .card-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:4px}
+    .card-hint{font-size:12.5px;color:var(--muted);font-weight:400;margin-bottom:16px;line-height:1.5}
+
+    /* BOTONES */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;border:1.5px solid var(--borde);background:var(--surface);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;color:var(--ink);transition:all .18s;text-decoration:none}
+    .btn:hover{border-color:#94a3b8;background:var(--bg);transform:translateY(-1px)}
+    .btn-primary{background:var(--verde-oscuro);color:#fff;border-color:var(--verde-oscuro)}
+    .btn-primary:hover{background:var(--verde-medio);border-color:var(--verde-medio);box-shadow:0 4px 12px rgba(10,61,43,.25)}
+    .btn-informe-periodo{background:var(--verde-oscuro);color:#fff;border-color:var(--verde-oscuro);font-weight:700;letter-spacing:.01em;padding:11px 18px;box-shadow:0 6px 16px rgba(10,61,43,.18)}
+    .btn-informe-periodo:hover{background:var(--verde-medio);border-color:var(--verde-medio);color:#fff;box-shadow:0 8px 20px rgba(10,61,43,.26);transform:translateY(-1px)}
+    .btn-blue{background:var(--d0);color:#fff;border-color:var(--d0)}
+    .btn-blue:hover{background:#1558a0;border-color:#1558a0;box-shadow:0 4px 12px rgba(31,108,176,.3)}
+    .btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+    .actions-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+    /* ESTADO */
+    .estado-txt{font-size:13px;color:var(--muted);font-weight:400;margin-bottom:16px}
+    .estado-txt.error{color:#9b1c1c;font-weight:600}
+    .estado-txt strong{color:var(--ink);font-weight:600}
+
+    /* ═══════════════════════════════════
+       HERRAMIENTA DE VERIFICACIÓN
+    ═══════════════════════════════════ */
+    .verif-panel{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:22px 24px;box-shadow:0 1px 10px var(--sombra);margin-bottom:20px}
+    .verif-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:4px}
+    .verif-hint{font-size:12.5px;color:var(--muted);margin-bottom:18px;line-height:1.55}
+
+    .verif-controls{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:18px}
+    @media(max-width:900px){.verif-controls{grid-template-columns:1fr 1fr}}
+    @media(max-width:600px){.verif-controls{grid-template-columns:1fr}}
+
+    .vc-group{display:flex;flex-direction:column;gap:5px}
+    .vc-group label{font-size:10.5px;font-weight:700;color:var(--ink-2);letter-spacing:.07em;text-transform:uppercase}
+    .vc-group select,.vc-group input{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13.5px;font-family:inherit;background:var(--surface-2);color:var(--ink);outline:none;transition:border-color .18s,box-shadow .18s;width:100%}
+    .vc-group select:focus,.vc-group input:focus{border-color:var(--acento);box-shadow:0 0 0 3px rgba(26,92,58,.10);background:var(--surface)}
+
+    /* Resumen de verificación */
+    .verif-resumen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:900px){.verif-resumen{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){.verif-resumen{grid-template-columns:repeat(2,1fr)}}
+
+    .vr-card{border-radius:12px;padding:14px 16px;border:1px solid var(--borde);background:var(--surface)}
+    .vr-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase;margin-bottom:8px}
+    .vr-value{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;line-height:1;margin-bottom:4px}
+    .vr-sub{font-size:11.5px;color:var(--muted)}
+    .vr-cumple{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+    .vr-incumple{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
+    .vr-neutral{color:var(--ink)}
+
+    /* Tabla de guardas en período */
+    .verif-table-wrap{overflow-x:auto}
+    .verif-table{width:100%;border-collapse:collapse;font-size:13px}
+    .verif-table th{background:var(--bg);padding:10px 14px;text-align:left;font-weight:700;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:2px solid var(--borde);white-space:nowrap}
+    .verif-table td{padding:10px 14px;border-bottom:1px solid var(--borde);vertical-align:middle}
+    .verif-table tr:last-child td{border-bottom:none}
+    .verif-table tr:hover td{background:var(--surface-2)}
+    .verif-table td:first-child{font-weight:500}
+
+    .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;gap:4px}
+    .badge-verde{background:#dcfce7;color:#15803d}
+    .badge-rojo{background:#fee2e2;color:#b91c1c}
+    .badge-amarillo{background:#fef9c3;color:#854d0e}
+    .badge-azul{background:#dbeafe;color:#1e40af}
+    .badge-gris{background:#f3f4f6;color:#6b7280}
+
+    /* Barra de progreso */
+    .prog-wrap{display:flex;align-items:center;gap:8px}
+    .prog-bar-bg{flex:1;height:7px;background:var(--borde);border-radius:999px;overflow:hidden;min-width:60px}
+    .prog-bar-fill{height:100%;border-radius:999px;transition:width .4s ease}
+    .prog-fill-verde{background:#22c55e}
+    .prog-fill-amarillo{background:#f59e0b}
+    .prog-fill-rojo{background:#ef4444}
+    .prog-num{font-size:12px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+
+    /* Período display */
+    .periodo-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:999px;background:rgba(26,92,58,.07);border:1px solid rgba(26,92,58,.20);font-size:12.5px;font-weight:600;color:var(--acento);margin-bottom:16px}
+
+    /* TABLA REGISTROS */
+    #tabla-registros .tabulator{border-radius:12px;overflow:hidden;font-size:13px;font-family:'DM Sans',sans-serif}
+    .tabulator .tabulator-header{background:var(--bg)!important;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .tabulator-row.tabulator-selected{background:#dbeafe!important}
+    .tabulator-row:hover{background:var(--surface-2)!important}
+
+    /* ANÁLISIS POR GUARDA */
+    .guarda-selector{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:20px}
+    .guarda-selector label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:5px}
+    .guarda-selector select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface-2);color:var(--ink);outline:none;min-width:280px;transition:border-color .18s}
+    .guarda-selector select:focus{border-color:var(--acento)}
+
+    .kpis-guarda{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:900px){.kpis-guarda{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){.kpis-guarda{grid-template-columns:repeat(2,1fr)}}
+
+    .kpi-g{background:var(--surface);border:1px solid var(--borde);border-top:3px solid transparent;border-radius:14px;padding:14px 16px;box-shadow:0 1px 8px var(--sombra)}
+    .kpi-g-0{border-top-color:var(--d0)}.kpi-g-1{border-top-color:var(--d1)}.kpi-g-2{border-top-color:var(--d2)}.kpi-g-3{border-top-color:var(--d4)}.kpi-g-4{border-top-color:var(--d5)}
+    .kpi-g-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:8px}
+    .kpi-g-value{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;line-height:1;color:var(--ink);margin-bottom:3px}
+    .kpi-g-sub{font-size:11px;color:var(--muted)}
+
+    .charts-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    @media(max-width:700px){.charts-2{grid-template-columns:1fr}}
+    .cw{position:relative;height:240px}
+
+    .resumen-table{width:100%;border-collapse:collapse;font-size:13px}
+    .resumen-table th{background:var(--bg);padding:9px 13px;text-align:left;font-weight:700;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--borde)}
+    .resumen-table td{padding:9px 13px;border-bottom:1px solid var(--borde)}
+    .resumen-table tr:last-child td{border-bottom:none}
+    .resumen-table tr:hover td{background:var(--surface-2)}
+
+    .sin-datos{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
+
+    /* Selector mes informe */
+    .informe-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:16px 18px;background:var(--surface-2);border:1px solid var(--borde);border-radius:12px;margin-bottom:16px}
+    .informe-bar label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:5px}
+    .informe-bar select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--ink);outline:none;transition:border-color .18s}
+    .informe-bar select:focus{border-color:var(--acento)}
+
+    /* FILAS EXPANDIBLES */
+    .vc-row-guarda{cursor:pointer;user-select:none}
+    .vc-row-guarda:hover td{background:rgba(26,92,58,0.04)!important}
+    .vc-row-guarda td{transition:background .15s}
+    .vc-toggle{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--surface-2);border:1px solid var(--borde);color:var(--muted);transition:transform .2s,background .15s;flex-shrink:0}
+    .vc-row-guarda.open .vc-toggle{transform:rotate(90deg);background:var(--acento);color:#fff;border-color:var(--acento)}
+    .vc-subrows{display:none}
+    .vc-subrows.open{display:table-row-group}
+    .vc-sub-row td{background:#f8fbf9;border-bottom:1px solid #e8f0eb;font-size:12.5px}
+    .vc-sub-row:last-child td{border-bottom:2px solid var(--borde)}
+    .vc-sub-row td:first-child{width:28px;padding:0}
+    .vc-num{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:50%;background:var(--borde);font-size:10px;font-weight:700;color:var(--muted)}
+    .vc-coord{font-family:monospace;font-size:11px;color:var(--muted)}
+
+    .vc-row-guarda-simple td{background:#fff;border-bottom:1px solid var(--borde);padding:12px 14px}
+    .vc-row-guarda-simple:hover td{background:rgba(26,92,58,0.045)!important}
+    .vc-row-guarda-simple td:nth-child(3){text-align:right}
+    .vc-km-total{display:inline-flex;align-items:center;justify-content:flex-end;border-radius:999px;background:rgba(1,102,96,0.08);border:1px solid rgba(1,102,96,0.18);padding:5px 12px;font-family:monospace;font-weight:700;color:var(--d5);white-space:nowrap}
+
+    /* FOOTER */
+    footer{background:var(--verde-oscuro);color:rgba(255,255,255,.42);text-align:center;padding:16px 24px;font-size:12px;font-weight:300;letter-spacing:.04em;flex-shrink:0}
+    footer strong{color:rgba(255,255,255,.75);font-weight:500}
+  
+    .vc-area-total{display:inline-flex;align-items:center;justify-content:flex-end;border-radius:999px;background:rgba(1,102,96,0.08);border:1px solid rgba(1,102,96,0.18);padding:5px 12px;font-family:monospace;font-weight:700;color:var(--d5);white-space:nowrap}
+    .report-source{position:absolute;left:-9999px;top:0;width:210mm;background:#fff;color:#111}
+
+
+    /* HOMOLOGACIÓN VISUAL CON REGISTROS DE PATRULLAJES */
+    .header-stripe{height:4px;background:linear-gradient(90deg,var(--mod-dark),var(--mod-mid),var(--mod-light));margin:0 -28px -16px;transform-origin:left;animation:stripeIn .65s cubic-bezier(.22,.68,0,1.1) .25s both}
+    .tabla-control-card{padding:18px 20px}
+    .table-note{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.45}
+    .tabulator .tabulator-header .tabulator-col{background:#edf9f0!important;border-right:1px solid var(--borde)!important}
+    .tabulator .tabulator-header .tabulator-col-title{color:var(--ink-2);font-weight:800}
+    .tabulator .tabulator-header-filter input{border:1px solid #cde7d6;border-radius:7px;padding:4px 7px;font-size:11.5px;background:#fff;color:var(--ink)}
+    .tabulator-row{border-bottom:1px solid #edf4ef!important}
+    .tabulator-row.tabulator-row-even{background:#fbfffc!important}
+    .tabulator-row:hover{background:#edfff4!important}
+    .tabulator-row.tabulator-selected{background:#d1fae5!important}
+    .tb-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+    .tb-chip-ok{background:#dcfce7;color:#166534;border:1px solid #86efac}
+    .tb-chip-warn{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}
+    .tb-chip-bad{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+    .tb-chip-info{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
+    .tb-chip-neutral{background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb}
+    .tb-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono',monospace;font-size:11.5px}
+    .tb-strong{font-weight:800;color:var(--ink)}
+    .tb-muted{color:#9ca3af}
+    .vc-area-total{display:inline-flex;align-items:center;justify-content:flex-end;border-radius:999px;background:rgba(1,102,96,0.08);border:1px solid rgba(1,102,96,0.18);padding:5px 12px;font-family:monospace;font-weight:700;color:var(--d5);white-space:nowrap}
+    footer{background:linear-gradient(105deg,var(--verde-oscuro),#0f6b45);color:rgba(255,255,255,.52);text-align:center;padding:22px 24px;font-size:12px;font-weight:400;letter-spacing:.04em;flex-shrink:0;position:relative;overflow:hidden}
+    footer strong{color:rgba(255,255,255,.86);font-weight:700}
+    @media(max-width:860px){
+      header{position:relative;padding:12px 16px 16px}.header-inner{align-items:flex-start}.header-right{text-align:left;flex-basis:100%}.header-right h1{font-size:15px}.header-right p{font-size:11.5px}.logo-group img{height:32px}
+      .module-nav{padding:0 14px}.nav-tab{padding:0 13px}.page{padding:18px 14px 54px}.inner-tabs{overflow-x:auto}.inner-tab{min-width:180px;flex:0 0 auto}
+      .card,.verif-panel{padding:18px 16px}.tabulator{font-size:12.5px}.tabulator .tabulator-header{font-size:10px}
+    }
+    @media(max-width:560px){
+      body{font-size:13px}.logo-group{padding:4px 9px}.logo-group img{height:28px;max-width:92px}.header-chip{font-size:9px}
+      .actions-bar{display:grid;grid-template-columns:1fr}.btn{justify-content:center;width:100%}.guarda-selector select{min-width:100%;width:100%}.kpis-guarda,.verif-resumen{grid-template-columns:1fr 1fr}
+    }
+
+  
+
+    /* Ajustes específicos AC283 */
+    .verif-resumen { grid-template-columns: repeat(6,1fr); }
+    .kpis-guarda { grid-template-columns: repeat(6,1fr); }
+    .kpi-g-5{border-top-color:var(--d10)}
+    .fire-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;font-size:11.5px;font-weight:800;white-space:nowrap}
+    .ha-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:11.5px;font-weight:800;white-space:nowrap}
+    .time-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:#dbeafe;border:1px solid #bfdbfe;color:#1e40af;font-size:11.5px;font-weight:800;white-space:nowrap}
+    @media(max-width:1100px){.verif-resumen,.kpis-guarda{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:680px){.verif-resumen,.kpis-guarda{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="header-inner"><div class="logo-group"><img src="../../assets/conap_logo.jpg" alt="CONAP"><img src="../../assets/aala_logo.png" alt="AALA"></div><div class="header-right"><h1>Centro de consulta de datos</h1><p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p><div class="header-chip"><span class="chip-dot"></span>AC283 · Registros y verificación</div></div></div><div class="header-stripe" aria-hidden="true"></div></header>
+<nav class="module-nav"><div class="module-nav-inner"><a href="../../index.html" class="nav-back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Inicio</a><a href="dashboard.html" class="nav-tab"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Mapa geográfico</a><a href="tablero.html" class="nav-tab"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Tablero dinámico</a><a href="datos.html" class="nav-tab active"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>Registros y verificación</a></div></nav>
+<div class="page"><div class="inner-tabs"><button class="inner-tab active" data-panel="panel-verif">Verificación del periodo</button><button class="inner-tab" data-panel="panel-registros">Tabla de registros y exportación</button><button class="inner-tab" data-panel="panel-analisis">Análisis por guardarecursos</button></div>
+<div id="panel-verif" class="tab-panel active"><div class="verif-panel"><div class="verif-title">Verificación de incendios forestales por periodo</div><div class="verif-hint">Seleccione un rango de fechas para consolidar incendios registrados, superficie afectada, tiempos de control/liquidación y detalle por guardarecurso. La meta es opcional y sirve solo para comparar registros por responsable.</div><div class="verif-controls"><div class="vc-group"><label>Desde</label><input type="date" id="vc-desde"/></div><div class="vc-group"><label>Hasta</label><input type="date" id="vc-hasta"/></div><div class="vc-group"><label>Guardarecursos</label><select id="vc-guarda"><option value="">Todos</option></select></div><div class="vc-group"><label>Meta de registros</label><input type="number" id="vc-meta" value="0" min="0"/></div><button class="btn btn-primary" id="vc-aplicar" style="height:40px;align-self:flex-end">Verificar</button></div><div id="vc-periodo-tag" class="periodo-tag" style="display:none"><span id="vc-periodo-label"></span></div><div class="verif-resumen" id="vc-resumen" style="display:none"><div class="vr-card"><div class="vr-label">Incendios</div><div class="vr-value" id="vc-total">–</div><div class="vr-sub">registros</div></div><div class="vr-card"><div class="vr-label">Guardarecursos</div><div class="vr-value" id="vc-guardas">–</div><div class="vr-sub">activos</div></div><div class="vr-card"><div class="vr-label">Superficie</div><div class="vr-value" id="vc-km">–</div><div class="vr-sub">ha afectadas</div></div><div class="vr-card"><div class="vr-label">Prom. ha</div><div class="vr-value" id="vc-prom">–</div><div class="vr-sub">por incendio</div></div><div class="vr-card"><div class="vr-label">Aéreos</div><div class="vr-value" id="vc-aereos">–</div><div class="vr-sub">con apoyo</div></div><div class="vr-card"><div class="vr-label">Prom. control</div><div class="vr-value" id="vc-control">–</div><div class="vr-sub">aviso a control</div></div></div><div id="vc-tabla-wrap" style="display:none"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px"><span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase">Detalle por guardarecurso — clic para ver incendios individuales</span><div style="display:flex;gap:6px"><button class="btn" id="vc-expand-all" style="font-size:11.5px;padding:5px 12px">Expandir todos</button><button class="btn" id="vc-collapse-all" style="font-size:11.5px;padding:5px 12px">Colapsar todos</button></div></div><div class="verif-table-wrap"><table class="verif-table"><thead><tr><th></th><th>Guardarecurso</th><th>Incendios</th><th>Superficie</th><th>Prom. control</th><th>Meta</th><th>Avance</th></tr></thead><tbody id="vc-tbody"></tbody></table></div><div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="vc-export-xlsx">Exportar verificación Excel</button><button class="btn" id="vc-export-csv">Exportar CSV completo</button></div></div><div id="vc-empty" class="sin-datos"><p>Seleccione el período y haga clic en <strong>Verificar</strong></p></div></div><div class="card informe-general-card"><div class="card-title">Informe general del periodo seleccionado</div><div class="card-hint">Deja listo el uso de <strong>../../assets/pizzip.min.js</strong> y busca el machote <strong>ESQUELETO INFORME GENERAL DE INCENDIOS FORESTALES.docx</strong> en esta carpeta.</div><div class="actions-bar" style="justify-content:flex-end"><button class="btn btn-informe-periodo" id="btn-informe-general-periodo-word">Generar informe Word del periodo seleccionado</button></div></div></div>
+<div id="panel-registros" class="tab-panel"><p class="estado-txt" id="estado-registros">Cargando datos…</p><div class="card"><div class="card-title">Exportar registros</div><div class="card-hint">Descarga todos los registros visibles en la tabla con los filtros activos</div><div class="actions-bar"><button class="btn" id="download-csv">Descargar CSV</button><button class="btn btn-primary" id="download-xlsx">Descargar Excel</button></div></div><div class="card"><div class="card-title">Informe de registro individual</div><div class="card-hint">Selecciona una fila para generar un informe individual simple</div><div class="actions-bar"><button class="btn btn-blue" id="generate-report-word">Informe Word</button><button class="btn" id="generate-report-pdf">Informe PDF</button></div></div><div class="card tabla-control-card" style="overflow:hidden"><div id="tabla-registros"></div><div class="table-note">Use filtros de columna, selección de fila y exportación de registros visibles.</div></div></div>
+<div id="panel-analisis" class="tab-panel"><p class="estado-txt" id="estado-analisis">Selecciona un guardarecurso para ver su perfil</p><div class="guarda-selector"><div><label>Guardarecursos</label><select id="sel-guarda"><option value="">Selecciona…</option></select></div><button class="btn btn-primary" id="btn-informe-guarda" disabled>Exportar perfil Word</button></div><div id="guarda-kpis" class="kpis-guarda" style="display:none"><div class="kpi-g kpi-g-0"><div class="kpi-g-label">Incendios</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">registros</div></div><div class="kpi-g kpi-g-1"><div class="kpi-g-label">Superficie</div><div class="kpi-g-value" id="g-sup">–</div><div class="kpi-g-sub">ha</div></div><div class="kpi-g kpi-g-2"><div class="kpi-g-label">Municipios</div><div class="kpi-g-value" id="g-munis">–</div><div class="kpi-g-sub">cubiertos</div></div><div class="kpi-g kpi-g-3"><div class="kpi-g-label">Prom. ha</div><div class="kpi-g-value" id="g-prom">–</div><div class="kpi-g-sub">por incendio</div></div><div class="kpi-g kpi-g-4"><div class="kpi-g-label">Prom. control</div><div class="kpi-g-value" id="g-control">–</div><div class="kpi-g-sub">aviso a control</div></div><div class="kpi-g kpi-g-5"><div class="kpi-g-label">Prom. liquidación</div><div class="kpi-g-value" id="g-liquidacion">–</div><div class="kpi-g-sub">aviso a liquidación</div></div></div><div id="guarda-charts" class="charts-2" style="display:none"><div class="card"><div class="card-title">Incendios por mes</div><div class="cw"><canvas id="g-c-mes"></canvas></div></div><div class="card"><div class="card-title">Causas frecuentes</div><div class="cw"><canvas id="g-c-causas"></canvas></div></div><div class="card" style="grid-column:1/-1"><div class="card-title">Instituciones participantes</div><div class="cw"><canvas id="g-c-inst"></canvas></div></div></div><div id="guarda-tabla-wrap" class="card" style="display:none"><div class="card-title">Detalle por municipio</div><div style="overflow-x:auto"><table class="resumen-table"><thead><tr><th>Municipio</th><th>Incendios</th><th>Superficie ha</th><th>Causa principal</th><th>Tipo principal</th><th>Prom. control</th><th>Con aéreos</th></tr></thead><tbody id="guarda-tbody"></tbody></table></div></div><div id="guarda-empty" class="sin-datos"><p>Selecciona un guardarecurso para ver su análisis individual</p></div></div>
+</div><footer><strong>CONAP · Dirección Regional Altiplano Central</strong> · Laboratorio SIG AALA · © 2026</footer><script>
+/* ═══════════════════════════════════════════════════════════
+   AC283 · DATOS / VERIFICADOR / INFORMES
+═══════════════════════════════════════════════════════════ */
+const CSV_URLS=["../../datos/base5_datos.csv","https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base5_datos.csv"];
+const TEMPLATE_CANDIDATES=["ESQUELETO INFORME GENERAL DE INCENDIOS FORESTALES.docx","ESQUELETO INFORME GENERAL DE INCENDIOS.docx","ESQUELETO INFORME AC283 INCENDIOS FORESTALES.docx"];
+const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+let DATOS=[]; let tablaTabulator=null; let chartMes=null, chartCausa=null, chartInst=null;
+const norm=v=>v==null?"":String(v).trim().replace(/\s+/g," ");
+const canon=v=>norm(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+const sum=arr=>arr.reduce((a,b)=>a+b,0);
+const avg=arr=>{const v=arr.filter(x=>Number.isFinite(x));return v.length?sum(v)/v.length:null};
+const uniq=arr=>[...new Set(arr.filter(Boolean))];
+const esc=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const fmt=(n,d=0)=>Number(n||0).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+function cleanLabel(v){const s=norm(v).replace(/_/g," ");return s?s.replace(/\b\w/g,c=>c.toLocaleUpperCase("es-GT")):"Sin dato"}
+function labelValue(v){const c=canon(v);const map={"si":"Sí","no":"No","telefono":"Teléfono","redes sociales":"Redes sociales","personal":"Personal","radio":"Radio","rumcla":"RUMCLA","fuera de rumcla":"Fuera de RUMCLA","plantacion":"Plantación","bosque natural":"Bosque natural","rastrero":"Rastrero","de copas":"De copas","copas":"De copas","subterraneo":"Subterráneo","ataque directo":"Ataque directo","ataque indirecto":"Ataque indirecto","control natural":"Control natural","quemas agricolas":"Quemas agrícolas","quemas de pastos":"Quemas de pastos","quema de basura":"Quema de basura","lenadores":"Leñadores","causa natural":"Causa natural","desconocida":"Desconocida","intencionales":"Intencionales","del estado":"Del Estado","comunal":"Comunal","privada":"Privada","municipal":"Municipal","mixto":"Mixto","bomberos voluntarios":"Bomberos Voluntarios","policia nacional civil pnc":"Policía Nacional Civil PNC","conap":"CONAP","conred":"CONRED","marn":"MARN","inab":"INAB","ongs":"ONGs"};return map[c]||cleanLabel(v)}
+function parseNumber(v){if(v==null||v==="")return 0;const n=parseFloat(String(v).trim().replace(/,/g,".").replace(/[^0-9.\-]/g,""));return Number.isFinite(n)?n:0}
+function parseDate(v){const s=norm(v);if(!s)return null;let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);if(m){const a=+m[1],b=+m[2],y=+m[3];const month=a>12?b:a;const day=a>12?a:b;return new Date(Date.UTC(y,month-1,day,+(m[4]||0),+(m[5]||0),+(m[6]||0)))}m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);if(m)return new Date(Date.UTC(+m[1],+m[2]-1,+m[3],+(m[4]||0),+(m[5]||0),+(m[6]||0)));const d=new Date(s);return isNaN(d)?null:d}
+function parseTimeParts(v){const s=norm(v);if(!s)return{h:0,m:0,s:0};const m=s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);if(!m)return{h:0,m:0,s:0};let h=+m[1];const mi=+m[2],se=+(m[3]||0),ap=(m[4]||"").toUpperCase();if(ap==="PM"&&h<12)h+=12;if(ap==="AM"&&h===12)h=0;return{h,m:mi,s:se}}
+function combineDateTime(dv,tv){const d=parseDate(dv);if(!d)return null;const t=parseTimeParts(tv);return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),t.h,t.m,t.s))}
+function hoursBetween(a,b){if(!a||!b||isNaN(a)||isNaN(b)||b<a)return null;return (b-a)/3600000}
+function fmtHours(h){if(!Number.isFinite(h))return"–";if(h<1)return `${Math.round(h*60)} min`;if(h<24)return `${fmt(h,1)} h`;return `${fmt(h/24,1)} días`}
+function fmtDate(dt){if(!dt)return"–";return String(dt.getUTCDate()).padStart(2,"0")+"/"+String(dt.getUTCMonth()+1).padStart(2,"0")+"/"+dt.getUTCFullYear()}
+function fechaLarga(dt){if(!dt||isNaN(dt))return"–";return dt.toLocaleDateString("es-GT",{timeZone:"UTC",day:"2-digit",month:"long",year:"numeric"})}
+function isoDate(dt){return dt?dt.toISOString().slice(0,10):""}
+function mKey(dt){return dt.getUTCFullYear()+"-"+String(dt.getUTCMonth()+1).padStart(2,"0")}
+function mShort(k){const[y,m]=k.split("-");return MESES_S[+m-1]+"'"+String(y).slice(2)}
+function splitMulti(v){const s=norm(v);if(!s)return[];return s.split(/[,;|]+|\s{2,}/).map(x=>labelValue(x)).filter(Boolean).filter(x=>canon(x)!=="nan")}
+function firstNonEmpty(...vals){return vals.find(v=>norm(v))||""}
+function levenshtein(a,b){a=canon(a);b=canon(b);if(a===b)return 0;if(!a)return b.length;if(!b)return a.length;const prev=Array.from({length:b.length+1},(_,i)=>i),curr=new Array(b.length+1);for(let i=1;i<=a.length;i++){curr[0]=i;for(let j=1;j<=b.length;j++){const cost=a[i-1]===b[j-1]?0:1;curr[j]=Math.min(curr[j-1]+1,prev[j]+1,prev[j-1]+cost)}for(let j=0;j<=b.length;j++)prev[j]=curr[j]}return prev[b.length]}
+const MUNIS=["Acatenango","Concepción","Nahualá","Panajachel","San Andrés Semetabaj","San Antonio Palopó","San José Chacayá","San Juan La Laguna","San Lucas Tolimán","San Marcos La Laguna","San Pablo La Laguna","San Pedro La Laguna","Santa Catarina Ixtahuacán","Santa Catarina Palopó","Santa Clara La Laguna","Santa Cruz La Laguna","Santa Lucía Utatlán","Santa María Visitación","Santiago Atitlán","Sololá","Tecpán"];
+const ALIAS=new Map([["solola","Sololá"],["sololas","Sololá"],["nahuala","Nahualá"],["tecpan","Tecpán"],["acatenango","Acatenango"],["san andres semetabaj","San Andrés Semetabaj"],["santa lucia utatlan","Santa Lucía Utatlán"],["san jose chacaya","San José Chacayá"],["san lucas toliman","San Lucas Tolimán"],["san lucas toliman solola","San Lucas Tolimán"],["santa maria visitacion","Santa María Visitación"],["santa cruz la lagunacaserill","Santa Cruz La Laguna"],["santa cruz la laguna caserill","Santa Cruz La Laguna"],["santa cruz la laguna","Santa Cruz La Laguna"],["santiago atitlan","Santiago Atitlán"],["san pedro la laguna","San Pedro La Laguna"],["santa catarina palopo","Santa Catarina Palopó"]]);
+function normalizarMunicipio(v){const raw=norm(v),c=canon(raw);if(!c)return{label:"Sin municipio",key:"sin municipio"};if(ALIAS.has(c)){const x=ALIAS.get(c);return{label:x,key:canon(x)}}let mejor=null,dist=Infinity;MUNIS.forEach(n=>{const d=levenshtein(c,n);if(d<dist){dist=d;mejor=n}});const lim=c.length<=8?1:c.length<=16?2:3;if(mejor&&dist<=lim)return{label:mejor,key:canon(mejor)};const lab=cleanLabel(raw);return{label:lab,key:canon(lab)}}
+async function loadCSV(){for(const url of CSV_URLS){try{const r=await fetch(url,{cache:"no-store"});if(!r.ok)continue;const text=await r.text();const parsed=parseCSV(text);if(parsed.data.length)return parsed}catch(e){}}throw new Error("No se pudo cargar base5_datos.csv")}
+function parseCSV(text){const first=text.split(/\r?\n/)[0]||"";const delim=[";",",","\t"].sort((a,b)=>first.split(b).length-first.split(a).length)[0];const rows=[];let row=[],field="",q=false;for(let i=0;i<text.length;i++){const c=text[i];if(q){if(c==='"'){if(text[i+1]==='"'){field+='"';i++}else q=false}else field+=c;continue}if(c==='"'){q=true;continue}if(c===delim){row.push(field);field="";continue}if(c==='\n'){row.push(field);rows.push(row);row=[];field="";continue}if(c==='\r')continue;field+=c}row.push(field);rows.push(row);const headers=(rows.shift()||[]).map(h=>norm(h).replace(/^\uFEFF/,""));const data=rows.filter(r=>r.some(v=>norm(v))).map(r=>Object.fromEntries(headers.map((h,i)=>[h,norm(r[i]||"")])));return{headers,data,delimiter:delim}}
+function complejidad(r){let score=0;if(r.__sup>=5)score++;if(Number.isFinite(r.__hControl)&&r.__hControl>=6)score++;if(Number.isFinite(r.__hLiquidacion)&&r.__hLiquidacion>=12)score++;if(r.__aereo)score++;if(r.__instituciones.length>=3)score++;if(r.__tipoIncendio.some(x=>["de copas","subterraneo"].includes(canon(x))))score++;return{score,label:score>=4?"Alta":score>=2?"Media":"Baja"}}
+function enrich(data){return data.map((r,idx)=>{const muni=normalizarMunicipio(firstNonEmpty(r["Municipio"],r["Municipio calculado"]));const aviso=combineDateTime(r["Fecha aviso"],r["Hora aviso"]);const llegadaMT=combineDateTime(r["Fecha llegada medios terrestres"],r["Hora llegada medios terrestres"]);const llegadaMA=combineDateTime(r["Fecha llegada medios aereos"],r["Hora llegada medios aereos"]);const control=combineDateTime(r["Fecha control"],r["Hora control"]);const liquidacion=combineDateTime(r["Fecha liquidacion"],r["Hora liquidacion"]);const areaProt=labelValue(firstNonEmpty(r["Area protegida"],r["Especifique el area protegida"]));const out={...r,__idx:idx+1,__guarda:labelValue(r["Nombre del guardarrecursos"]),__cg:canon(r["Nombre del guardarrecursos"]),__region:labelValue(r["Region"]),__areaProt:areaProt,__cap:canon(areaProt),__departamento:labelValue(r["Departamento"]),__municipio:muni.label,__cm:muni.key,__referencia:norm(r["Referencia de ubicacion"]),__dt:aviso,__mes:aviso?mKey(aviso):"",__llegadaMT:llegadaMT,__llegadaMA:llegadaMA,__control:control,__liquidacion:liquidacion,__forma:labelValue(r["Forma de aviso"]),__aereo:canon(r["Llegaron medios aereos"])==="si",__propiedad:splitMulti(r["Propiedad del terreno"]),__tipoBosque:splitMulti(r["Tipo de bosque"]),__plantacion:parseNumber(r["Area plantacion ha"]),__bosqueNatural:parseNumber(r["Area bosque natural ha"]),__sup:parseNumber(r["Superficie total ha"]),__tipoIncendio:splitMulti(r["Tipo de incendio"]),__tecnicas:splitMulti(r["Tecnicas de extincion"]),__instituciones:splitMulti(r["Instituciones participantes"]).concat(splitMulti(r["Instituciones otro"])),__causas:splitMulti(r["Causas incendio"]).concat(splitMulti(r["Causas otro"])),__obs:norm(r["Observaciones"]),__x:parseNumber(r["X"]),__y:parseNumber(r["Y"])};out.__hRespMT=hoursBetween(out.__dt,out.__llegadaMT);out.__hRespMA=hoursBetween(out.__dt,out.__llegadaMA);out.__hControl=hoursBetween(out.__dt,out.__control);out.__hLiquidacion=hoursBetween(out.__dt,out.__liquidacion);out.__hControlLiquidacion=hoursBetween(out.__control,out.__liquidacion);const cx=complejidad(out);out.__score=cx.score;out.__complejidad=cx.label;return out})}
+function group(rows,fn){const m=new Map();rows.forEach(r=>{const k=fn(r);if(!k)return;m.set(k,(m.get(k)||0)+1)});return[...m.entries()]}
+function groupSum(rows,kfn,vfn){const m=new Map();rows.forEach(r=>{const k=kfn(r);if(!k)return;m.set(k,(m.get(k)||0)+(vfn(r)||0))});return[...m.entries()]}
+function explodeGroup(rows,lfn){const m=new Map();rows.forEach(r=>lfn(r).forEach(k=>m.set(k,(m.get(k)||0)+1)));return[...m.entries()]}
+function topPairs(pairs,n=5){return pairs.filter(p=>p[0]&&p[0]!=="Sin dato").sort((a,b)=>(b[1]||0)-(a[1]||0)||String(a[0]).localeCompare(String(b[0]),"es")).slice(0,n)}
+function textListTop(arr,n=5,suf="registros"){const out=arr.slice(0,n).map(([k,v])=>`${k} (${fmt(v,0)} ${suf})`);return out.length?(out.length===1?out[0]:out.slice(0,-1).join(", ")+" y "+out.at(-1)):"No se identificaron registros suficientes."}
+function initVc(){const guardas=uniq(DATOS.map(r=>r.__guarda)).sort();const sel=document.getElementById("vc-guarda");sel.innerHTML='<option value="">Todos los guardarecursos</option>';guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o)});const dates=DATOS.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);if(dates.length){document.getElementById("vc-desde").value=isoDate(dates[0]);document.getElementById("vc-hasta").value=isoDate(dates[dates.length-1])}}
+function regsRango(){const ds=document.getElementById("vc-desde").value,hs=document.getElementById("vc-hasta").value,g=document.getElementById("vc-guarda").value;if(!ds||!hs)return[];const d=new Date(ds+"T00:00:00Z"),h=new Date(hs+"T23:59:59Z");return DATOS.filter(r=>r.__dt&&r.__dt>=d&&r.__dt<=h&&(!g||r.__guarda===g))}
+function verificar(){const regs=regsRango();const meta=parseInt(document.getElementById("vc-meta").value)||0;const ds=document.getElementById("vc-desde").value,hs=document.getElementById("vc-hasta").value;document.getElementById("vc-periodo-tag").style.display="";document.getElementById("vc-periodo-label").textContent=`Período: ${ds.split("-").reverse().join("/")} al ${hs.split("-").reverse().join("/")}`;const sup=sum(regs.map(r=>r.__sup));document.getElementById("vc-total").textContent=fmt(regs.length);document.getElementById("vc-guardas").textContent=fmt(uniq(regs.map(r=>r.__cg)).length);document.getElementById("vc-km").textContent=fmt(sup,sup%1?1:0);document.getElementById("vc-prom").textContent=fmt(regs.length?sup/regs.length:0,1);document.getElementById("vc-aereos").textContent=fmt(regs.filter(r=>r.__aereo).length);document.getElementById("vc-control").textContent=fmtHours(avg(regs.map(r=>r.__hControl)));document.getElementById("vc-resumen").style.display="grid";renderVcTable(regs,meta);document.getElementById("vc-tabla-wrap").style.display="";document.getElementById("vc-empty").style.display="none"}
+function renderVcTable(regs,meta){const tb=document.getElementById("vc-tbody");tb.innerHTML="";const gs=uniq(DATOS.map(r=>r.__guarda)).filter(Boolean).sort();const source=document.getElementById("vc-guarda").value?[document.getElementById("vc-guarda").value]:gs;const colspan=7;source.forEach((g,idx)=>{const sub=regs.filter(r=>r.__guarda===g).sort((a,b)=>(a.__dt||0)-(b.__dt||0));const sup=sum(sub.map(r=>r.__sup));const mun=uniq(sub.map(r=>r.__cm)).length;const causa=topPairs(explodeGroup(sub,r=>r.__causas),1)[0]?.[0]||"–";const avgC=avg(sub.map(r=>r.__hControl));const pct=meta?Math.min(100,Math.round(sub.length/meta*100)):0;const estado=meta?sub.length>=meta?"Cumplido":sub.length?"Parcial":"Sin registro":"Sin meta";const bcls=meta?sub.length>=meta?"badge-verde":sub.length?"badge-amarillo":"badge-rojo":"badge-gris";const uid="vc"+idx;const tr=document.createElement("tr");tr.className="vc-row-guarda";tr.dataset.uid=uid;tr.innerHTML=`<td><span class="vc-toggle">›</span></td><td><strong>${esc(g)}</strong><br><span style="font-size:11px;color:var(--muted)">${mun} municipio(s) · causa principal: ${esc(causa)}</span></td><td><span class="fire-tag">${fmt(sub.length)} incendio(s)</span></td><td><span class="ha-tag">${fmt(sup,sup%1?1:0)} ha</span></td><td><span class="time-tag">${fmtHours(avgC)}</span></td><td><span class="badge ${bcls}">${estado}${meta?` (${sub.length}/${meta})`:""}</span></td><td>${meta?`<div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar-fill ${pct>=100?"prog-fill-verde":pct>=60?"prog-fill-amarillo":"prog-fill-rojo"}" style="width:${pct}%"></div></div><span class="prog-num">${pct}%</span></div>`:"–"}</td>`;tb.appendChild(tr);const subtr=document.createElement("tr");subtr.className="vc-subrows";subtr.dataset.uid=uid;subtr.innerHTML=`<td colspan="${colspan}" style="padding:0"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr><th>#</th><th>Fecha aviso</th><th>Municipio</th><th>Referencia</th><th>Superficie</th><th>Causa</th><th>Tipo</th><th>Instituciones</th><th>Control</th><th>Liquidación</th></tr></thead><tbody>${sub.map((r,i)=>`<tr><td>${i+1}</td><td>${fmtDate(r.__dt)}</td><td>${esc(r.__municipio)}</td><td>${esc(r.__referencia||"–")}</td><td>${fmt(r.__sup,r.__sup%1?1:0)} ha</td><td>${esc(r.__causas.join(", ")||"–")}</td><td>${esc(r.__tipoIncendio.join(", ")||"–")}</td><td>${esc(r.__instituciones.join(", ")||"–")}</td><td>${fmtHours(r.__hControl)}</td><td>${fmtHours(r.__hLiquidacion)}</td></tr>`).join("")}</tbody></table></td>`;tb.appendChild(subtr)});tb.querySelectorAll(".vc-row-guarda").forEach(row=>row.addEventListener("click",()=>{const uid=row.dataset.uid;const open=row.classList.toggle("open");tb.querySelectorAll(`.vc-subrows[data-uid="${uid}"]`).forEach(s=>s.classList.toggle("open",open))}));document.getElementById("vc-expand-all").onclick=()=>{tb.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));tb.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"))};document.getElementById("vc-collapse-all").onclick=()=>{tb.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.remove("open"));tb.querySelectorAll(".vc-subrows").forEach(s=>s.classList.remove("open"))};document.getElementById("vc-export-csv").onclick=()=>exportVcCSV(regs);document.getElementById("vc-export-xlsx").onclick=()=>exportVcXLSX(regs)}
+function exportVcCSV(rows){const header=["Guardarecurso","Fecha aviso","Municipio","Referencia","Superficie ha","Plantación ha","Bosque natural ha","Causas","Tipo incendio","Técnicas","Instituciones","Control horas","Liquidación horas","X","Y"];const data=rows.map(r=>[r.__guarda,fmtDate(r.__dt),r.__municipio,r.__referencia,r.__sup,r.__plantacion,r.__bosqueNatural,r.__causas.join(", "),r.__tipoIncendio.join(", "),r.__tecnicas.join(", "),r.__instituciones.join(", "),r.__hControl??"",r.__hLiquidacion??"",r.__x,r.__y]);const csv=[header,...data].map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\n");const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download="verificacion_incendios_ac283.csv";a.click()}
+function exportVcXLSX(rows){if(typeof XLSX==="undefined"){alert("XLSX no disponible");return}const aoa=[["Guardarecurso","Fecha aviso","Municipio","Referencia","Superficie ha","Plantación ha","Bosque natural ha","Causas","Tipo incendio","Técnicas","Instituciones","Control horas","Liquidación horas","X","Y"],...rows.map(r=>[r.__guarda,fmtDate(r.__dt),r.__municipio,r.__referencia,r.__sup,r.__plantacion,r.__bosqueNatural,r.__causas.join(", "),r.__tipoIncendio.join(", "),r.__tecnicas.join(", "),r.__instituciones.join(", "),r.__hControl??"",r.__hLiquidacion??"",r.__x,r.__y])];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),"Verificacion");XLSX.writeFile(wb,"verificacion_incendios_ac283.xlsx")}
+function initTabla(){tablaTabulator=new Tabulator("#tabla-registros",{data:DATOS,height:"620px",layout:"fitDataStretch",selectable:1,pagination:"local",paginationSize:20,paginationSizeSelector:[10,20,50,100,true],movableColumns:true,columns:[{title:"Fecha aviso",field:"__dt",formatter:c=>fmtDate(c.getValue()),width:120,headerFilter:"input"},{title:"Guardarecurso",field:"__guarda",width:220,headerFilter:"input"},{title:"Municipio",field:"__municipio",width:160,headerFilter:"input"},{title:"Referencia",field:"__referencia",width:260,headerFilter:"input"},{title:"Superficie",field:"__sup",width:105,hozAlign:"right",sorter:"number",formatter:c=>`<span class="ha-tag">${fmt(c.getValue(),c.getValue()%1?1:0)} ha</span>`},{title:"Bosque natural",field:"__bosqueNatural",width:120,hozAlign:"right",sorter:"number"},{title:"Plantación",field:"__plantacion",width:110,hozAlign:"right",sorter:"number"},{title:"Causas",field:"__causas",width:180,formatter:c=>esc((c.getValue()||[]).join(", ")),headerFilter:"input"},{title:"Tipo incendio",field:"__tipoIncendio",width:140,formatter:c=>esc((c.getValue()||[]).join(", ")),headerFilter:"input"},{title:"Técnicas",field:"__tecnicas",width:180,formatter:c=>esc((c.getValue()||[]).join(", ")),headerFilter:"input"},{title:"Instituciones",field:"__instituciones",width:240,formatter:c=>esc((c.getValue()||[]).join(", ")),headerFilter:"input"},{title:"Aéreos",field:"__aereo",width:90,formatter:c=>c.getValue()?'<span class="tb-chip tb-chip-warn">Sí</span>':'<span class="tb-chip tb-chip-neutral">No</span>'},{title:"Control",field:"__hControl",width:105,formatter:c=>fmtHours(c.getValue())},{title:"Liquidación",field:"__hLiquidacion",width:115,formatter:c=>fmtHours(c.getValue())},{title:"X",field:"__x",width:105},{title:"Y",field:"__y",width:105}]});document.getElementById("estado-registros").innerHTML=`<strong>${DATOS.length.toLocaleString("en-US")}</strong> registros cargados desde base5_datos.csv`}
+function getVisibleRows(){return tablaTabulator?tablaTabulator.getData("active"):DATOS}
+function generarIndividual(fmtType){const r=tablaTabulator?.getSelectedData()[0];if(!r){alert("Seleccione una fila de la tabla.");return}const html=`<h1>Informe individual de incendio forestal</h1><p><strong>Fecha aviso:</strong> ${fmtDate(r.__dt)}</p><p><strong>Guardarecurso:</strong> ${esc(r.__guarda)}</p><p><strong>Municipio:</strong> ${esc(r.__municipio)}</p><p><strong>Referencia:</strong> ${esc(r.__referencia)}</p><h2>Datos del incendio</h2><p><strong>Superficie total:</strong> ${fmt(r.__sup,r.__sup%1?1:0)} ha</p><p><strong>Bosque natural:</strong> ${fmt(r.__bosqueNatural,r.__bosqueNatural%1?1:0)} ha · <strong>Plantación:</strong> ${fmt(r.__plantacion,r.__plantacion%1?1:0)} ha</p><p><strong>Causas:</strong> ${esc(r.__causas.join(", ")||"–")}</p><p><strong>Tipo:</strong> ${esc(r.__tipoIncendio.join(", ")||"–")}</p><p><strong>Técnicas:</strong> ${esc(r.__tecnicas.join(", ")||"–")}</p><p><strong>Instituciones:</strong> ${esc(r.__instituciones.join(", ")||"–")}</p><h2>Tiempos</h2><p><strong>Respuesta terrestre:</strong> ${fmtHours(r.__hRespMT)} · <strong>Control:</strong> ${fmtHours(r.__hControl)} · <strong>Liquidación:</strong> ${fmtHours(r.__hLiquidacion)}</p><h2>Observaciones</h2><p>${esc(r.__obs||"Sin observaciones")}</p>`;if(fmtType==="pdf"){const el=document.createElement("div");el.style.padding="24px";el.innerHTML=html;document.body.appendChild(el);html2pdf().set({filename:"informe_individual_incendio.pdf",margin:.4,html2canvas:{scale:2},jsPDF:{unit:"in",format:"letter"}}).from(el).save().then(()=>el.remove())}else{const blob=new Blob([`<!doctype html><html><head><meta charset="utf-8"></head><body>${html}</body></html>`],{type:"application/msword"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="informe_individual_incendio.doc";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}}
+function initAnalisis(){const sel=document.getElementById("sel-guarda");sel.innerHTML='<option value="">Selecciona…</option>';uniq(DATOS.map(r=>r.__guarda)).sort().forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o)});sel.addEventListener("change",()=>renderGuarda(sel.value))}
+function renderGuarda(g){const regs=DATOS.filter(r=>r.__guarda===g);document.getElementById("btn-informe-guarda").disabled=!g;if(!regs.length){document.getElementById("guarda-empty").style.display="";["guarda-kpis","guarda-charts","guarda-tabla-wrap"].forEach(id=>document.getElementById(id).style.display="none");return}document.getElementById("guarda-empty").style.display="none";document.getElementById("guarda-kpis").style.display="grid";document.getElementById("guarda-charts").style.display="grid";document.getElementById("guarda-tabla-wrap").style.display="block";const sup=sum(regs.map(r=>r.__sup));document.getElementById("g-total").textContent=fmt(regs.length);document.getElementById("g-sup").textContent=fmt(sup,sup%1?1:0);document.getElementById("g-munis").textContent=fmt(uniq(regs.map(r=>r.__cm)).length);document.getElementById("g-prom").textContent=fmt(regs.length?sup/regs.length:0,1);document.getElementById("g-control").textContent=fmtHours(avg(regs.map(r=>r.__hControl)));document.getElementById("g-liquidacion").textContent=fmtHours(avg(regs.map(r=>r.__hLiquidacion)));renderGuardaCharts(regs);renderGuardaTable(regs)}
+function renderGuardaCharts(regs){const byMes=group(regs,r=>r.__mes).sort((a,b)=>a[0].localeCompare(b[0]));if(chartMes)chartMes.destroy();chartMes=new Chart(document.getElementById("g-c-mes"),{type:"bar",data:{labels:byMes.map(x=>mShort(x[0])),datasets:[{data:byMes.map(x=>x[1]),backgroundColor:"#b91c1c",borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});const causas=topPairs(explodeGroup(regs,r=>r.__causas),8);if(chartCausa)chartCausa.destroy();chartCausa=new Chart(document.getElementById("g-c-causas"),{type:"doughnut",data:{labels:causas.map(x=>x[0]),datasets:[{data:causas.map(x=>x[1]),backgroundColor:["#b91c1c","#ea580c","#ca8a04","#15803d","#60a5fa","#c084fc"]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right"}}}});const inst=topPairs(explodeGroup(regs,r=>r.__instituciones),8);if(chartInst)chartInst.destroy();chartInst=new Chart(document.getElementById("g-c-inst"),{type:"bar",data:{labels:inst.map(x=>x[0]),datasets:[{data:inst.map(x=>x[1]),backgroundColor:"#a16207",borderRadius:6}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}})}
+function renderGuardaTable(regs){const m=new Map();regs.forEach(r=>{const k=r.__municipio;if(!m.has(k))m.set(k,[]);m.get(k).push(r)});document.getElementById("guarda-tbody").innerHTML=[...m.entries()].map(([m,sub])=>`<tr><td>${esc(m)}</td><td>${fmt(sub.length)}</td><td>${fmt(sum(sub.map(r=>r.__sup)),1)}</td><td>${topPairs(explodeGroup(sub,r=>r.__causas),1)[0]?.[0]||"–"}</td><td>${topPairs(explodeGroup(sub,r=>r.__tipoIncendio),1)[0]?.[0]||"–"}</td><td>${fmtHours(avg(sub.map(r=>r.__hControl)))}</td><td>${sub.filter(r=>r.__aereo).length}</td></tr>`).join("")}
+function datosInforme(inicio,fin,regs){const total=regs.length,sup=sum(regs.map(r=>r.__sup)),plant=sum(regs.map(r=>r.__plantacion)),bosque=sum(regs.map(r=>r.__bosqueNatural));const areas=new Set(regs.map(r=>r.__cap).filter(Boolean));const guardas=new Set(regs.map(r=>r.__cg).filter(Boolean));const munis=new Set(regs.map(r=>r.__cm).filter(Boolean));const totalRumcla=regs.filter(r=>!canon(r.__areaProt).includes("fuera")).length;const totalFuera=regs.filter(r=>canon(r.__areaProt).includes("fuera")).length;const aereos=regs.filter(r=>r.__aereo).length;const gmap=new Map();regs.forEach(r=>{const g=r.__guarda||"Sin guardarecurso";if(!gmap.has(g))gmap.set(g,{g,total:0,sup:0,munis:new Set(),causas:new Map(),tipo:new Map(),ultimo:null});const o=gmap.get(g);o.total++;o.sup+=r.__sup;o.munis.add(r.__municipio);r.__causas.forEach(c=>o.causas.set(c,(o.causas.get(c)||0)+1));r.__tipoIncendio.forEach(c=>o.tipo.set(c,(o.tipo.get(c)||0)+1));if(r.__dt&&(!o.ultimo||r.__dt>o.ultimo))o.ultimo=r.__dt});const guardasConsol=[...gmap.values()].sort((a,b)=>b.sup-a.sup);return{FECHA_INICIO:fechaLarga(inicio),FECHA_FIN:fechaLarga(fin),FECHA_GENERACION:fechaLarga(new Date()),TOTAL_INCENDIOS:fmt(total),TOTAL_MONITOREOS:fmt(total),TOTAL_GUARDARECURSOS:fmt(guardas.size),TOTAL_MUNICIPIOS:fmt(munis.size),TOTAL_AREAS_PROTEGIDAS:fmt(areas.size),SUPERFICIE_TOTAL_HA:fmt(sup,1),TOTAL_SUPERFICIE_HA:fmt(sup,1),AREA_PLANTACION_HA:fmt(plant,1),AREA_BOSQUE_NATURAL_HA:fmt(bosque,1),PROMEDIO_SUPERFICIE_HA:fmt(total?sup/total:0,1),MAX_SUPERFICIE_HA:fmt(Math.max(0,...regs.map(r=>r.__sup)),1),TOTAL_RUMCLA:fmt(totalRumcla),TOTAL_FUERA_RUMCLA:fmt(totalFuera),TOTAL_MEDIOS_AEREOS:fmt(aereos),PORCENTAJE_MEDIOS_AEREOS:fmt(total?aereos/total*100:0,1),PROMEDIO_RESPUESTA_TERRESTRE:fmtHours(avg(regs.map(r=>r.__hRespMT))),PROMEDIO_TIEMPO_CONTROL:fmtHours(avg(regs.map(r=>r.__hControl))),PROMEDIO_TIEMPO_LIQUIDACION:fmtHours(avg(regs.map(r=>r.__hLiquidacion))),TOP_MUNICIPIOS_INCENDIOS:textListTop(topPairs(group(regs,r=>r.__municipio),5),5,"incendios"),TOP_MUNICIPIOS_SUPERFICIE:textListTop(topPairs(groupSum(regs,r=>r.__municipio,r=>r.__sup),5),5,"ha"),TOP_GUARDARECURSOS_INCENDIOS:textListTop(topPairs(group(regs,r=>r.__guarda),5),5,"incendios"),TOP_GUARDARECURSOS_SUPERFICIE:textListTop(topPairs(groupSum(regs,r=>r.__guarda,r=>r.__sup),5),5,"ha"),TOP_CAUSAS:textListTop(topPairs(explodeGroup(regs,r=>r.__causas),6),6,"registros"),TOP_TIPOS_INCENDIO:textListTop(topPairs(explodeGroup(regs,r=>r.__tipoIncendio),6),6,"registros"),TOP_TECNICAS_EXTINCION:textListTop(topPairs(explodeGroup(regs,r=>r.__tecnicas),6),6,"registros"),TOP_INSTITUCIONES:textListTop(topPairs(explodeGroup(regs,r=>r.__instituciones),8),8,"registros"),TOP_PROPIEDADES:textListTop(topPairs(explodeGroup(regs,r=>r.__propiedad),6),6,"registros"),TOP_TIPOS_BOSQUE:textListTop(topPairs(explodeGroup(regs,r=>r.__tipoBosque),6),6,"registros"),__guardasConsol:guardasConsol,__regs:regs}}
+function xmlEsc(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;")}
+function replaceToken(xml,token,value){xml=xml.replace(new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"g"),xmlEsc(value));const chars=token.split("").map(ch=>ch.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));return xml.replace(new RegExp(chars.join("(?:(?!</w:body>)[\\s\\S])*?")),xmlEsc(value))}
+function wText(t,b=false){return`<w:r><w:rPr>${b?"<w:b/>":""}</w:rPr><w:t>${xmlEsc(t)}</w:t></w:r>`}function wCell(t,w,b=false){return`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/></w:tcPr><w:p>${wText(t,b)}</w:p></w:tc>`}
+function tablaGuardasXml(gs){const widths=[500,3100,900,1100,1100,2200,1200];const head=["#","Guardarecurso","Incendios","Superficie","Municipios","Causa principal","Última fecha"];const row=vals=>`<w:tr>${vals.map((v,i)=>wCell(v,widths[i],i<4)).join("")}</w:tr>`;return`<w:tbl><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/></w:tblBorders></w:tblPr>${row(head)}${gs.map((o,i)=>row([String(i+1),o.g,fmt(o.total),fmt(o.sup,1),fmt(o.munis.size),[...o.causas.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||"–",fmtDate(o.ultimo)])).join("")}</w:tbl>`}
+function tablaPriorizadosXml(regs){const top=[...regs].sort((a,b)=>b.__score-a.__score||b.__sup-a.__sup).slice(0,10);const widths=[500,1300,1600,1100,1200,1800,1100];const head=["#","Fecha","Municipio","Superficie","Complejidad","Causa","Control"];const row=vals=>`<w:tr>${vals.map((v,i)=>wCell(v,widths[i],i<1)).join("")}</w:tr>`;return`<w:tbl><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/></w:tblBorders></w:tblPr>${row(head)}${top.map((r,i)=>row([String(i+1),fmtDate(r.__dt),r.__municipio,fmt(r.__sup,1),r.__complejidad,r.__causas.join(", ")||"–",fmtHours(r.__hControl)])).join("")}</w:tbl>`}
+async function cargarTemplate(){for(const u of TEMPLATE_CANDIDATES){try{const r=await fetch(u,{cache:"no-store"});if(r.ok)return await r.arrayBuffer()}catch(e){}}throw new Error("No se encontró el machote Word. Suba la plantilla a la carpeta del módulo con el nombre ESQUELETO INFORME GENERAL DE INCENDIOS FORESTALES.docx")}
+async function generarInformeGeneral(){const ds=document.getElementById("vc-desde").value,hs=document.getElementById("vc-hasta").value;if(!ds||!hs){alert("Seleccione fechas.");return}const inicio=new Date(ds+"T00:00:00Z"),fin=new Date(hs+"T23:59:59Z");const regs=DATOS.filter(r=>r.__dt&&r.__dt>=inicio&&r.__dt<=fin);if(!regs.length){alert("No hay registros en el periodo.");return}if(typeof PizZip==="undefined"){alert("No se pudo cargar ../../assets/pizzip.min.js");return}let buf;try{buf=await cargarTemplate()}catch(e){alert(e.message);return}const data=datosInforme(inicio,fin,regs);const zip=new PizZip(buf);let file=zip.file("word/document.xml");if(!file){alert("Plantilla Word no válida.");return}let xml=file.asText();xml=replaceToken(xml,"{{TABLA_GUARDARECURSOS}}","__TABLA_GUARDARECURSOS__");xml=replaceToken(xml,"{{TABLA_INCENDIOS_PRIORIZADOS}}","__TABLA_INCENDIOS_PRIORIZADOS__");Object.entries(data).forEach(([k,v])=>{if(!k.startsWith("__"))xml=replaceToken(xml,`{{${k}}}`,v)});xml=xml.replace(/<w:p\b(?:(?!<\/w:p>)[\s\S])*?__TABLA_GUARDARECURSOS__(?:(?!<\/w:p>)[\s\S])*?<\/w:p>/,tablaGuardasXml(data.__guardasConsol));xml=xml.replace(/<w:p\b(?:(?!<\/w:p>)[\s\S])*?__TABLA_INCENDIOS_PRIORIZADOS__(?:(?!<\/w:p>)[\s\S])*?<\/w:p>/,tablaPriorizadosXml(data.__regs));xml=xml.replace(/\{\{[^}]+\}\}/g,"–");zip.file("word/document.xml",xml);const blob=zip.generate({type:"blob",mimeType:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`informe_general_incendios_${ds}_al_${hs}.docx`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500)}
+function informeGuarda(){const g=document.getElementById("sel-guarda").value;if(!g)return;const regs=DATOS.filter(r=>r.__guarda===g);const sup=sum(regs.map(r=>r.__sup));const html=`<h1>Perfil operativo AC283</h1><p><strong>Guardarecurso:</strong> ${esc(g)}</p><p><strong>Incendios:</strong> ${fmt(regs.length)}</p><p><strong>Superficie total:</strong> ${fmt(sup,1)} ha</p><p><strong>Municipios:</strong> ${uniq(regs.map(r=>r.__municipio)).join(", ")}</p><p><strong>Causas principales:</strong> ${textListTop(topPairs(explodeGroup(regs,r=>r.__causas),5),5,"registros")}</p>`;const blob=new Blob([`<!doctype html><html><head><meta charset="utf-8"></head><body>${html}</body></html>`],{type:"application/msword"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="perfil_guardarecurso_incendios.doc";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+document.querySelectorAll(".inner-tab").forEach(tab=>tab.addEventListener("click",()=>{document.querySelectorAll(".inner-tab").forEach(t=>t.classList.remove("active"));document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));tab.classList.add("active");document.getElementById(tab.dataset.panel).classList.add("active")}));
+async function init(){try{const parsed=await loadCSV();DATOS=enrich(parsed.data);initVc();initTabla();initAnalisis();document.getElementById("vc-aplicar").onclick=verificar;document.getElementById("btn-informe-general-periodo-word").onclick=generarInformeGeneral;document.getElementById("download-csv").onclick=()=>tablaTabulator.download("csv","registros_incendios_ac283.csv");document.getElementById("download-xlsx").onclick=()=>tablaTabulator.download("xlsx","registros_incendios_ac283.xlsx",{sheetName:"Registros"});document.getElementById("generate-report-word").onclick=()=>generarIndividual("word");document.getElementById("generate-report-pdf").onclick=()=>generarIndividual("pdf");document.getElementById("btn-informe-guarda").onclick=informeGuarda}catch(e){document.getElementById("estado-registros").textContent=e.message;document.getElementById("estado-registros").className="estado-txt error"}}
+init();
+</script></body></html>
