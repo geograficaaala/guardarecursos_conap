@@ -1,1259 +1,1444 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Sistema de Monitoreo · CONAP Altiplano Central</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&amp;family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&amp;display=swap" rel="stylesheet"/>
-<style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>AC297 · Registros y verificación · Consumo Forestal Familiar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/tabulator.min.css">
+  <script src="../../assets/tabulator.min.js"></script>
+  <script src="../../assets/papaparse.min.js"></script>
+  <script src="../../assets/xlsx.full.min.js"></script>
+  <script src="../../assets/pizzip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
     :root {
-      --verde-oscuro: #0a3d2b;
-      --verde-medio:  #1a5c3a;
-      --bg:           #f0f4f1;
+      --verde-oscuro: #064e3b;
+      --verde-medio:  #16a34a;
+      --bg:           #f3f8f4;
       --surface:      #ffffff;
-      --surface-2:    #f6faf7;
-      --ink:          #0c1e13;
-      --ink-2:        #2a4535;
-      --muted:        #6a8878;
-      --borde:        #d8e4dd;
-      --sombra:       rgba(10,61,43,0.06);
-      --dorado:       #c9a84c;
-      --dorado-claro: #e8c97a;
+      --surface-2:    #f7fcf8;
+      --ink:          #102218;
+      --ink-2:        #254736;
+      --muted:        #5f7b6e;
+      --borde:        #d7eadf;
+      --sombra:       rgba(6,78,59,0.07);
+      --acento:       #16a34a;
+      --acento-bg:    rgba(34,197,94,0.10);
+      --acento-borde: rgba(34,197,94,0.28);
+      --dorado:       #d8b94f;
+      --dorado-claro: #f4d35e;
+      --mod-dark:     #047857;
+      --mod-mid:      #22c55e;
+      --mod-light:    #86efac;
+      --d0:#4ade80; --d1:#fb7185; --d2:#60a5fa; --d3:#fbbf24;
+      --d4:#f87171; --d5:#2dd4bf; --d6:#c084fc; --d7:#34d399;
+      --d8:#f9a8d4; --d9:#a3e635; --d10:#fb923c; --d11:#93c5fd;
     }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;font-size:14px;line-height:1.55;opacity:0;animation:bodyIn .45s cubic-bezier(.22,.68,0,1.2) forwards}
+    @keyframes bodyIn{to{opacity:1}}
+    @media(prefers-reduced-motion:reduce){body{animation:none;opacity:1}}
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+    /* HEADER */
+    header{background:linear-gradient(105deg,var(--verde-oscuro) 0%,var(--verde-medio) 100%);color:#fff;padding:14px 28px 16px;position:sticky;top:0;z-index:200;box-shadow:0 2px 28px rgba(0,0,0,.26);flex-shrink:0}
+    .header-inner{max-width:1480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .logo-group{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:5px 14px}
+    .logo-group img{height:36px;max-width:112px;object-fit:contain;background:#fff;border-radius:999px;padding:3px 8px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+    .header-right{text-align:right;flex:1}
+    .header-right h1{font-size:16px;font-weight:600;letter-spacing:-.01em;margin-bottom:1px}
+    .header-right p{font-size:12px;opacity:.58;font-weight:300}
+    .header-chip{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:3px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.20);background:rgba(255,255,255,.08);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+    .chip-dot{width:6px;height:6px;border-radius:50%;background:#86efac;animation:blink 2.4s ease-in-out infinite}
+    @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.6)}}
 
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-      min-height: 100vh;
-      overflow-x: hidden;
-      opacity: 0;
-      animation: bodyIn .45s cubic-bezier(.22,.68,0,1.2) forwards;
-    }
-    @keyframes bodyIn  { to { opacity: 1; } }
-    @keyframes stripeIn  { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-    @keyframes blink     { 0%,100% { opacity:1;transform:scale(1); } 50% { opacity:.35;transform:scale(.6); } }
-    @keyframes fadeUp    { from { opacity:0;transform:translateY(18px); } to { opacity:1;transform:translateY(0); } }
-    @media (prefers-reduced-motion: reduce) { body, .menu-card { animation: none !important; transition: none !important; } }
+    /* NAV */
+    .module-nav{background:var(--surface);border-bottom:1px solid var(--borde);padding:0 28px;box-shadow:0 1px 8px rgba(0,0,0,.04);flex-shrink:0}
+    .module-nav-inner{max-width:1480px;margin:0 auto;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+    .module-nav-inner::-webkit-scrollbar{display:none}
+    .nav-back{display:flex;align-items:center;gap:6px;padding:13px 18px 13px 0;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-right:1px solid var(--borde);margin-right:8px;white-space:nowrap;transition:color .18s}
+    .nav-back:hover{color:var(--verde-medio)}
+    .nav-tab{display:flex;align-items:center;gap:7px;padding:0 18px;text-decoration:none;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;height:50px;transition:color .18s,border-color .18s}
+    .nav-tab:hover{color:var(--acento);border-bottom-color:rgba(26,92,58,.2)}
+    .nav-tab.active{color:var(--acento);border-bottom-color:var(--acento);font-weight:600}
 
-    /* ── HEADER ─────────────────────────────────── */
-    header {
-      background: linear-gradient(105deg, var(--verde-oscuro) 0%, var(--verde-medio) 100%);
-      color: #fff;
-      padding: 14px 28px 0;
-      position: sticky; top: 0; z-index: 200;
-      box-shadow: 0 2px 28px rgba(0,0,0,.26);
-      overflow: hidden;
-    }
-    .header-inner {
-      max-width: 1480px; margin: 0 auto;
-      display: flex; align-items: center;
-      justify-content: space-between; gap: 16px; flex-wrap: wrap;
-      position: relative; z-index: 1;
-      padding-bottom: 13px;
-    }
-    .header-wm {
-      position: absolute; right: 22px; top: 50%;
-      transform: translateY(-54%);
-      font-family: 'Playfair Display', serif;
-      font-size: 74px; font-weight: 900;
-      letter-spacing: -.04em;
-      color: #fff; opacity: .05;
-      pointer-events: none; user-select: none;
-      line-height: 1; z-index: 0;
-    }
-    .header-stripe {
-      height: 4px;
-      background: linear-gradient(90deg, var(--dorado), var(--dorado-claro));
-      transform-origin: left;
-      animation: stripeIn .65s cubic-bezier(.22,.68,0,1.1) .25s both;
-    }
-    .logo-group {
-      display: flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.16);
-      border-radius: 999px; padding: 5px 14px;
-    }
-    .logo-group a {
-      display: inline-flex;
-      border-radius: 999px; overflow: hidden;
-      transition: opacity .18s;
-    }
-    .logo-group a:hover { opacity: .85; }
-    .logo-group img {
-      height: 36px; max-width: 112px; object-fit: contain;
-      background: #fff; border-radius: 999px; padding: 3px 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.2);
-    }
-    .header-right { text-align: right; flex: 1; }
-    .header-right h1 {
-      font-size: 16px; font-weight: 600;
-      letter-spacing: -.01em; margin-bottom: 1px; color: #fff;
-    }
-    .header-right p  { font-size: 12px; opacity: .55; font-weight: 300; color: #fff; }
-    .header-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      margin-top: 6px; padding: 3px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.20);
-      background: rgba(255,255,255,.08);
-      font-size: 10px; letter-spacing: .12em;
-      text-transform: uppercase; font-weight: 600; color: #fff;
-    }
-    .chip-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: #86efac;
-      animation: blink 2.4s ease-in-out infinite;
-    }
+    /* PÁGINA */
+    .page{max-width:1480px;width:100%;margin:0 auto;padding:28px 28px 72px;flex:1}
 
-    /* ── HERO ────────────────────────────────────── */
-    .hero {
-      background: var(--verde-oscuro);
-      position: relative; overflow: hidden;
-      padding: 80px 28px 88px;
-    }
-    .hero-texture {
-      position: absolute; inset: 0;
-      background-image: radial-gradient(circle, rgba(255,255,255,.04) 1px, transparent 1px);
-      background-size: 28px 28px;
-      pointer-events: none; z-index: 0;
-    }
-    .hero-glow {
-      position: absolute; bottom: -120px; right: -80px;
-      width: 560px; height: 560px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(201,168,76,.07) 0%, transparent 65%);
-      pointer-events: none; z-index: 0;
-    }
-    .hero-inner {
-      max-width: 1480px; margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 360px;
-      gap: 72px; align-items: center;
-      position: relative; z-index: 1;
-    }
+    /* TABS */
+    .inner-tabs{display:flex;gap:4px;margin-bottom:24px;background:var(--surface);border:1px solid var(--borde);border-radius:12px;padding:4px;box-shadow:0 1px 8px var(--sombra)}
+    .inner-tab{flex:1;text-align:center;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .2s;border:none;background:none;font-family:inherit}
+    .inner-tab.active{background:var(--verde-oscuro);color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(10,61,43,.25)}
+    .inner-tab:hover:not(.active){background:var(--bg);color:var(--ink)}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block;animation:panelIn .25s ease both}
+    @keyframes panelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-    /* Left col */
-    .hero-eyebrow {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(201,168,76,.14);
-      border: 1px solid rgba(201,168,76,.36);
-      color: var(--dorado-claro);
-      font-size: 10.5px; font-weight: 700;
-      letter-spacing: .15em; text-transform: uppercase;
-      padding: 5px 14px; border-radius: 999px;
-      margin-bottom: 26px;
-    }
-    .hero-eyebrow .dot {
-      width: 5px; height: 5px; border-radius: 50%;
-      background: var(--dorado-claro);
-      animation: blink 2s ease-in-out infinite;
-    }
-    .hero-title {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(36px, 4.2vw, 60px);
-      font-weight: 900; color: #fff;
-      line-height: 1.06; letter-spacing: -.025em;
-      margin-bottom: 24px;
-    }
-    .hero-title em {
-      color: var(--dorado-claro);
-      font-style: normal;
-    }
-    .hero-desc {
-      font-size: 16px; font-weight: 300;
-      color: rgba(255,255,255,.65);
-      line-height: 1.72; max-width: 500px;
-      margin-bottom: 42px;
-    }
-    .hero-stats {
-      display: flex; align-items: center;
-      gap: 0; flex-wrap: wrap;
-    }
-    .hero-stat {
-      padding-right: 28px; margin-right: 28px;
-      border-right: 1px solid rgba(255,255,255,.14);
-    }
-    .hero-stat:last-child { border-right: none; padding-right: 0; margin-right: 0; }
-    .hs-val {
-      font-family: 'Playfair Display', serif;
-      font-size: 30px; font-weight: 900;
-      color: #fff; line-height: 1;
-      letter-spacing: -.025em; margin-bottom: 4px;
-    }
-    .hs-lbl {
-      font-size: 11px; font-weight: 600;
-      color: rgba(255,255,255,.42);
-      text-transform: uppercase; letter-spacing: .1em;
-    }
+    /* CARDS */
+    .card{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:22px 24px;box-shadow:0 1px 10px var(--sombra);margin-bottom:16px}
+    .card-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--ink);margin-bottom:4px}
+    .card-hint{font-size:12.5px;color:var(--muted);font-weight:400;margin-bottom:16px;line-height:1.5}
 
-    /* Right col — module list panel */
-    .hero-panel {
-      background: rgba(255,255,255,.055);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 18px; overflow: hidden;
-      flex-shrink: 0;
-    }
-    .hero-panel-hd {
-      padding: 15px 20px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      font-size: 10px; font-weight: 700;
-      letter-spacing: .14em; text-transform: uppercase;
-      color: rgba(255,255,255,.38);
-    }
-    .hm-row {
-      display: flex; align-items: center;
-      padding: 17px 20px; gap: 14px;
-      border-bottom: 1px solid rgba(255,255,255,.055);
-      text-decoration: none;
-      transition: background .18s;
-    }
-    .hm-row:last-child { border-bottom: none; }
-    .hm-row:hover { background: rgba(255,255,255,.07); }
-    .hm-dot {
-      width: 9px; height: 9px; border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .hm-info { flex: 1; min-width: 0; }
-    .hm-code {
-      font-size: 9.5px; font-weight: 700;
-      letter-spacing: .12em; text-transform: uppercase;
-      color: rgba(255,255,255,.38); margin-bottom: 3px;
-    }
-    .hm-name {
-      font-size: 14px; font-weight: 500;
-      color: rgba(255,255,255,.82);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .hm-arr { color: rgba(255,255,255,.22); flex-shrink: 0; }
+    /* BOTONES */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:9px;border:1.5px solid var(--borde);background:var(--surface);font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;color:var(--ink);transition:all .18s;text-decoration:none}
+    .btn:hover{border-color:#94a3b8;background:var(--bg);transform:translateY(-1px)}
+    .btn-primary{background:var(--verde-oscuro);color:#fff;border-color:var(--verde-oscuro)}
+    .btn-primary:hover{background:var(--verde-medio);box-shadow:0 4px 12px rgba(10,61,43,.25)}
+    .btn-informe-periodo{background:var(--verde-oscuro);color:#fff;border-color:var(--verde-oscuro);font-weight:700;letter-spacing:.01em;padding:11px 18px;box-shadow:0 6px 16px rgba(10,61,43,.18)}
+    .btn-informe-periodo:hover{background:var(--verde-medio);border-color:var(--verde-medio);color:#fff;box-shadow:0 8px 20px rgba(10,61,43,.26);transform:translateY(-1px)}
 
-    .hm-pat { background: #3b82f6; }
-    .hm-viv { background: #22c55e; }
-    .hm-con { background: #f97316; }
-    .hm-ref { background: #a78bfa; }
+    .btn-blue{background:var(--d0);color:#fff;border-color:var(--d0)}
+    .btn-blue:hover{background:#1558a0;box-shadow:0 4px 12px rgba(31,108,176,.3)}
+    .btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+    .actions-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 
-    /* ── CONTEXTO STRIP ───────────────────────────── */
-    .ctx-strip {
-      background: var(--surface);
-      border-bottom: 1px solid var(--borde);
-    }
-    .ctx-inner {
-      max-width: 1480px; margin: 0 auto;
-      display: grid; grid-template-columns: repeat(4,1fr);
-      padding: 0 28px;
-    }
-    .ctx-item {
-      padding: 24px 20px 22px;
-      border-right: 1px solid var(--borde);
-    }
-    .ctx-item:last-child { border-right: none; }
-    .ctx-val {
-      font-family: 'Playfair Display', serif;
-      font-size: 26px; font-weight: 900;
-      color: var(--ink); line-height: 1;
-      letter-spacing: -.02em; margin-bottom: 5px;
-    }
-    .ctx-lbl {
-      font-size: 12px; font-weight: 500;
-      color: var(--muted); letter-spacing: .02em;
-    }
+    /* ESTADO */
+    .estado-txt{font-size:13px;color:var(--muted);font-weight:400;margin-bottom:16px}
+    .estado-txt.error{color:#9b1c1c;font-weight:600}
+    .estado-txt strong{color:var(--ink);font-weight:600}
 
-    /* ── SECCIÓN MÓDULOS ─────────────────────────── */
-    .modulos {
-      max-width: 1480px; margin: 0 auto;
-      padding: 56px 28px 80px;
-    }
-    .sec-head { margin-bottom: 38px; }
-    .sec-eyebrow {
-      font-size: 10.5px; font-weight: 700;
-      letter-spacing: .14em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 12px;
-      display: flex; align-items: center; gap: 14px;
-    }
-    .sec-eyebrow::after {
-      content: ''; flex: 1; height: 1px; background: var(--borde);
-    }
-    .sec-title {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(26px, 3.2vw, 40px);
-      font-weight: 900; color: var(--ink);
-      line-height: 1.1; letter-spacing: -.025em;
-      margin-bottom: 12px;
-    }
-    .sec-desc {
-      font-size: 15px; font-weight: 300;
-      color: var(--muted); line-height: 1.72;
-      max-width: 580px;
-    }
+    /* ═══ VERIFICACIÓN ════════════════════════════════ */
+    .verif-panel{background:var(--surface);border:1px solid var(--borde);border-radius:16px;padding:22px 24px;box-shadow:0 1px 10px var(--sombra);margin-bottom:20px}
+    .verif-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:4px}
+    .verif-hint{font-size:12.5px;color:var(--muted);margin-bottom:18px;line-height:1.55}
+    .nota-meta{background:rgba(26,92,58,0.06);border:1px solid rgba(26,92,58,0.18);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--ink-2);line-height:1.55;margin-bottom:18px}
+    .nota-meta strong{color:var(--acento)}
 
-/* ── CARRUSEL 2D DE MÓDULOS ───────────────────── */
-    .menu-shell {
-      position: relative;
-      border: 1px solid var(--borde);
-      border-radius: 28px;
-      background:
-        radial-gradient(circle at 18% 10%, rgba(201,168,76,.18), transparent 28%),
-        radial-gradient(circle at 82% 18%, rgba(26,92,58,.12), transparent 32%),
-        linear-gradient(180deg, rgba(255,255,255,.96), rgba(246,250,247,.92));
-      box-shadow: 0 18px 60px rgba(10,61,43,.10);
-      overflow: hidden;
-      padding: 28px 26px 30px;
-    }
-    .menu-shell::before {
-      content: '';
-      position: absolute; inset: 0;
-      background-image: radial-gradient(circle, rgba(10,61,43,.055) 1px, transparent 1px);
-      background-size: 24px 24px;
-      mask-image: linear-gradient(180deg, rgba(0,0,0,.85), transparent 78%);
-      pointer-events: none;
-    }
-    .menu-topbar {
-      position: relative; z-index: 5;
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 18px; margin-bottom: 20px;
-    }
-    .menu-label {
-      display: inline-flex; align-items: center; gap: 9px;
-      font-size: 11px; font-weight: 800;
-      letter-spacing: .13em; text-transform: uppercase;
-      color: var(--verde-oscuro);
-      background: rgba(10,61,43,.07);
-      border: 1px solid rgba(10,61,43,.10);
-      border-radius: 999px; padding: 8px 14px;
-    }
-    .menu-label span {
-      width: 7px; height: 7px; border-radius: 999px;
-      background: var(--dorado);
-      box-shadow: 0 0 0 4px rgba(201,168,76,.18);
-    }
-    .menu-hint {
-      font-size: 12.5px; color: var(--muted); font-weight: 500;
-      text-align: right;
-    }
-    .coverflow {
-      position: relative; z-index: 2;
-    }
-    .cover-stage {
-      position: relative;
-      height: 430px;
-      overflow: hidden;
-      border-radius: 24px;
-      outline: none;
-    }
-    .cover-stage:focus-visible {
-      box-shadow: 0 0 0 3px rgba(201,168,76,.38);
-    }
-    .menu-card {
-      --accent: var(--verde-medio);
-      --accent-soft: rgba(26,92,58,.12);
-      position: absolute;
-      top: 22px; left: 50%;
-      width: min(520px, 72vw);
-      min-height: 364px;
-      display: flex;
-      flex-direction: column;
-      background: rgba(255,255,255,.94);
-      border: 1px solid rgba(216,228,221,.95);
-      border-radius: 24px;
-      box-shadow: 0 14px 42px rgba(10,61,43,.10);
-      overflow: hidden;
-      cursor: pointer;
-      transition:
-        transform .48s cubic-bezier(.22,.68,0,1),
-        opacity .35s ease,
-        filter .35s ease,
-        box-shadow .35s ease;
-      will-change: transform, opacity;
-      transform: translateX(-50%) scale(.74);
-      opacity: 0;
-      pointer-events: none;
-      filter: saturate(.82);
-    }
-    .menu-card::before {
-      content: '';
-      height: 7px;
-      background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 68%, #ffffff));
-      flex-shrink: 0;
-    }
-    .menu-card[data-state="active"] {
-      transform: translateX(-50%) scale(1);
-      opacity: 1;
-      z-index: 10;
-      pointer-events: auto;
-      cursor: default;
-      filter: none;
-      box-shadow: 0 22px 68px rgba(10,61,43,.18);
-    }
-    .menu-card[data-state="prev"] {
-      transform: translateX(calc(-50% - 390px)) scale(.84);
-      opacity: .52;
-      z-index: 6;
-      pointer-events: auto;
-    }
-    .menu-card[data-state="next"] {
-      transform: translateX(calc(-50% + 390px)) scale(.84);
-      opacity: .52;
-      z-index: 6;
-      pointer-events: auto;
-    }
-    .menu-card[data-state="far-prev"] {
-      transform: translateX(calc(-50% - 675px)) scale(.68);
-      opacity: .18;
-      z-index: 2;
-    }
-    .menu-card[data-state="far-next"] {
-      transform: translateX(calc(-50% + 675px)) scale(.68);
-      opacity: .18;
-      z-index: 2;
-    }
-    .menu-card[data-state="hidden"] {
-      opacity: 0;
-      z-index: 1;
-      transform: translateX(-50%) scale(.62);
-    }
-    .menu-card:hover:not([data-state="active"]) {
-      opacity: .72;
-      filter: none;
-    }
-    .module-card-body {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      padding: 28px 30px 26px;
-      flex: 1;
-    }
-    .module-card-body::after {
-      content: '';
-      position: absolute;
-      right: -54px; top: -54px;
-      width: 170px; height: 170px;
-      border-radius: 50%;
-      background: var(--accent-soft);
-      pointer-events: none;
-    }
-    .module-head {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      gap: 18px; position: relative; z-index: 1;
-    }
-    .module-code {
-      display: inline-flex; align-items: center;
-      font-size: 11px; font-weight: 800;
-      letter-spacing: .15em; text-transform: uppercase;
-      color: var(--accent);
-      margin-bottom: 10px;
-    }
-    .module-title {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(26px, 2.8vw, 36px);
-      line-height: 1.04;
-      letter-spacing: -.03em;
-      color: var(--ink);
-      max-width: 360px;
-    }
-.module-desc {
-      position: relative; z-index: 1;
-      font-size: 14.5px;
-      color: var(--muted);
-      line-height: 1.72;
-      font-weight: 400;
-      max-width: 440px;
-    }
-    .module-tags {
-      position: relative; z-index: 1;
-      display: flex; flex-wrap: wrap; gap: 8px;
-    }
-    .module-tag {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--ink-2);
-      background: var(--surface-2);
-      border: 1px solid var(--borde);
-      border-radius: 999px;
-      padding: 6px 10px;
-      white-space: nowrap;
-    }
-.menu-card:not([data-state="active"]) .module-desc,
-    .menu-card:not([data-state="active"]) .module-tags,
-    .menu-card:not([data-state="active"]) .module-actions {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-    .menu-card:not([data-state="active"]) .module-card-body {
-      justify-content: center;
-    }
-    .menu-card:not([data-state="active"]) .module-title {
-      font-size: 24px;
-      max-width: 260px;
-    }
-    .menu-card:not([data-state="active"]) .module-icon {
-      width: 54px; height: 54px;
-      border-radius: 18px;
-    }
-    .cover-controls {
-      position: absolute; inset: 0;
-      pointer-events: none;
-      z-index: 15;
-    }
-    .cover-nav {
-      position: absolute;
-      top: 50%; transform: translateY(-50%);
-      width: 46px; height: 46px;
-      border: 1px solid rgba(216,228,221,.92);
-      border-radius: 999px;
-      background: rgba(255,255,255,.92);
-      color: var(--verde-oscuro);
-      box-shadow: 0 12px 32px rgba(10,61,43,.12);
-      display: grid; place-items: center;
-      cursor: pointer;
-      pointer-events: auto;
-      transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
-    }
-    .cover-nav:hover {
-      background: #fff;
-      transform: translateY(-50%) scale(1.05);
-      box-shadow: 0 16px 38px rgba(10,61,43,.18);
-    }
-    .cover-nav:focus-visible,
-    .dot-btn:focus-visible,
-    .menu-card:focus-visible {
-      outline: 3px solid rgba(201,168,76,.45);
-      outline-offset: 3px;
-    }
-    .cover-prev { left: 10px; }
-    .cover-next { right: 10px; }
-    .cover-dots {
-      position: relative; z-index: 4;
-      display: flex; justify-content: center; align-items: center;
-      gap: 9px; margin-top: 2px;
-    }
-    .dot-btn {
-      width: 10px; height: 10px;
-      border: 0;
-      border-radius: 999px;
-      background: #cbd8d1;
-      cursor: pointer;
-      transition: width .24s ease, background .24s ease, transform .18s ease;
-    }
-    .dot-btn:hover { transform: scale(1.16); }
-    .dot-btn[aria-selected="true"] {
-      width: 34px;
-      background: var(--verde-oscuro);
-    }
-.m-pat { --accent: #1e3a8a; --accent-soft: rgba(37,99,235,.12); }
-    .m-viv { --accent: #14532d; --accent-soft: rgba(34,197,94,.13); }
-    .m-con { --accent: #9a3412; --accent-soft: rgba(249,115,22,.14); }
-    .m-ref { --accent: #4c1d95; --accent-soft: rgba(124,58,237,.13); }
+    .verif-controls{display:grid;grid-template-columns:155px 155px 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:18px}
+    @media(max-width:900px){.verif-controls{grid-template-columns:1fr 1fr}}
+    @media(max-width:600px){.verif-controls{grid-template-columns:1fr}}
+    .vc-group{display:flex;flex-direction:column;gap:5px}
+    .vc-group label{font-size:10.5px;font-weight:700;color:var(--ink-2);letter-spacing:.07em;text-transform:uppercase}
+    .vc-group select,.vc-group input{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13.5px;font-family:inherit;background:var(--surface-2);color:var(--ink);outline:none;transition:border-color .18s,box-shadow .18s;width:100%}
+    .vc-group select:focus,.vc-group input:focus{border-color:var(--acento);box-shadow:0 0 0 3px rgba(26,92,58,.10);background:var(--surface)}
 
-        /* ── FOOTER ──────────────────────────────────── */
-    footer {
-      background: var(--verde-oscuro);
-      position: relative; overflow: hidden;
-    }
-    .footer-wm {
-      position: absolute; left: 50%; top: 50%;
-      transform: translate(-50%,-50%);
-      font-family: 'Playfair Display', serif;
-      font-size: 96px; font-weight: 900;
-      letter-spacing: -.04em; color: #fff; opacity: .04;
-      pointer-events: none; user-select: none;
-      white-space: nowrap; line-height: 1;
-    }
-    .footer-inner {
-      max-width: 1480px; margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: 16px; align-items: start;
-      position: relative; z-index: 1;
-      padding: 26px 28px 0;
-    }
-    .footer-col { color: rgba(255,255,255,.65); }
-    .footer-col strong {
-      color: #fff; font-weight: 700; font-size: 13px;
-      display: block; margin-bottom: 4px;
-    }
-    .footer-col span { display: block; font-size: 11.5px; line-height: 1.65; }
-    .footer-center { text-align: center; }
-    .footer-badge {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 5px 16px; border-radius: 999px;
-      font-size: 10.5px; font-weight: 700;
-      letter-spacing: .1em; text-transform: uppercase;
-      background: rgba(201,168,76,.18);
-      border: 1px solid rgba(201,168,76,.38);
-      color: var(--dorado-claro);
-    }
-    .footer-badge-desc {
-      font-size: 11.5px; margin-top: 8px;
-      color: rgba(255,255,255,.48);
-    }
-    .footer-col-right {
-      text-align: right; color: rgba(255,255,255,.5);
-    }
-    .footer-col-right strong {
-      color: rgba(255,255,255,.78); font-size: 12px;
-      font-weight: 600; display: block; margin-bottom: 3px;
-    }
-    .footer-col-right span { display: block; font-size: 11.5px; line-height: 1.65; }
-    .footer-divider {
-      grid-column: 1/-1; height: 1px;
-      background: rgba(255,255,255,.10);
-      margin: 18px 0 10px;
-    }
-    .footer-copy {
-      grid-column: 1/-1; text-align: center;
-      font-size: 11px; color: rgba(255,255,255,.28);
-      letter-spacing: .04em; padding-bottom: 20px;
-    }
+    /* KPIs de verificación */
+    .verif-resumen{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:900px){.verif-resumen{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){.verif-resumen{grid-template-columns:repeat(2,1fr)}}
+    .vr-card{border-radius:12px;padding:14px 16px;border:1px solid var(--borde);background:var(--surface)}
+    .vr-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase;margin-bottom:8px}
+    .vr-value{font-family:'Playfair Display',serif;font-size:28px;font-weight:900;line-height:1;margin-bottom:4px;color:var(--ink)}
+    .vr-sub{font-size:11.5px;color:var(--muted)}
 
-    /* ── RESPONSIVE ──────────────────────────────── */
-    @media (max-width: 1060px) {
-      .hero-inner { grid-template-columns: 1fr; gap: 48px; }
-      .hero-panel  { max-width: 440px; }
-      .ctx-inner   { grid-template-columns: repeat(2,1fr); }
-      .ctx-item:nth-child(2n) { border-right: none; }
-      .menu-shell { padding: 24px 18px 26px; }
-      .cover-stage { height: 420px; }
-      .menu-card { width: min(500px, 78vw); }
-      .menu-card[data-state="prev"] { transform: translateX(calc(-50% - 300px)) scale(.82); }
-      .menu-card[data-state="next"] { transform: translateX(calc(-50% + 300px)) scale(.82); }
-      .menu-card[data-state="far-prev"] { transform: translateX(calc(-50% - 520px)) scale(.66); }
-      .menu-card[data-state="far-next"] { transform: translateX(calc(-50% + 520px)) scale(.66); }
-.footer-inner { grid-template-columns: 1fr; gap: 22px; }
-      .footer-col-right { text-align: left; }
-    }
-    @media (max-width: 600px) {
-      .hero  { padding: 52px 20px 60px; }
-      .modulos { padding: 40px 20px 64px; }
-      .menu-topbar { align-items: flex-start; flex-direction: column; gap: 10px; }
-      .menu-hint { text-align: left; }
-      .cover-stage { height: 500px; }
-      .menu-card { width: min(360px, 86vw); min-height: 442px; top: 18px; }
-      .menu-card[data-state="prev"] { transform: translateX(calc(-50% - 230px)) scale(.80); opacity: .18; }
-      .menu-card[data-state="next"] { transform: translateX(calc(-50% + 230px)) scale(.80); opacity: .18; }
-      .menu-card[data-state="far-prev"],
-      .menu-card[data-state="far-next"] { opacity: 0; pointer-events: none; }
-      .module-card-body { padding: 24px 22px 22px; gap: 16px; }
-      .module-head { gap: 12px; }
-.module-title { font-size: 28px; }
-.cover-nav { width: 42px; height: 42px; top: auto; bottom: 16px; transform: none; }
-      .cover-nav:hover { transform: scale(1.04); }
-      .cover-prev { left: calc(50% - 58px); }
-      .cover-next { right: calc(50% - 58px); }
-      .cover-dots { margin-top: 12px; }
-.ctx-inner  { grid-template-columns: 1fr 1fr; padding: 0 20px; }
-      header { padding: 12px 20px 0; }
-    }
+    .periodo-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:999px;background:var(--acento-bg);border:1px solid var(--acento-borde);font-size:12.5px;font-weight:600;color:var(--acento);margin-bottom:16px}
+
+    /* Tabla verificación */
+    .verif-table-wrap{overflow-x:auto}
+    .verif-table{width:100%;border-collapse:collapse;font-size:13px}
+    .verif-table th{background:var(--bg);padding:10px 14px;text-align:left;font-weight:700;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:2px solid var(--borde);white-space:nowrap}
+    .verif-table td{padding:10px 14px;border-bottom:1px solid var(--borde);vertical-align:middle}
+    .verif-table tr:last-child td{border-bottom:none}
+    .verif-table tr:hover td{background:var(--surface-2)}
+
+    /* Filas expandibles */
+    .vc-row-guarda{cursor:pointer;user-select:none}
+    .vc-row-guarda:hover td{background:rgba(26,92,58,0.04)!important}
+    .vc-toggle{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:var(--surface-2);border:1px solid var(--borde);color:var(--muted);transition:transform .2s,background .15s;flex-shrink:0}
+    .vc-row-guarda.open .vc-toggle{transform:rotate(90deg);background:var(--acento);color:#fff;border-color:var(--acento)}
+    .vc-subrows{display:none}
+    .vc-subrows.open{display:table-row-group}
+    .vc-num{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:50%;background:var(--borde);font-size:10px;font-weight:700;color:var(--muted)}
+    .vc-coord{font-family:monospace;font-size:11px;color:var(--muted)}
+
+    /* Badges */
+    .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600}
+    .badge-verde{background:#dcfce7;color:#15803d}.badge-rojo{background:#fee2e2;color:#b91c1c}
+    .badge-amarillo{background:#fef9c3;color:#854d0e}.badge-azul{background:#dbeafe;color:#1e40af}
+    .badge-gris{background:#f3f4f6;color:#6b7280}.badge-naranja{background:#fff7ed;color:#9a3412}
+
+    /* Barra de progreso */
+    .prog-wrap{display:flex;align-items:center;gap:8px}
+    .prog-bar-bg{flex:1;height:7px;background:var(--borde);border-radius:999px;overflow:hidden;min-width:60px}
+    .prog-bar-fill{height:100%;border-radius:999px;transition:width .4s ease}
+    .prog-fill-verde{background:#22c55e}.prog-fill-amarillo{background:#f59e0b}.prog-fill-rojo{background:#ef4444}
+    .prog-num{font-size:12px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+
+    /* Meta reforestación badge especial */
+    .meta-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:rgba(168,28,42,0.08);border:1px solid rgba(168,28,42,0.25);font-size:11.5px;font-weight:700;color:#a81c2a}
+
+    /* TABLA TABULATOR */
+    #tabla-registros .tabulator{border-radius:12px;overflow:hidden;font-size:13px;font-family:'DM Sans',sans-serif}
+    .tabulator .tabulator-header{background:var(--bg)!important;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+    .tabulator-row:hover{background:var(--surface-2)!important}
+
+    /* ANÁLISIS */
+    .guarda-selector{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:20px}
+    .guarda-selector label{font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:5px}
+    .guarda-selector select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface-2);color:var(--ink);outline:none;min-width:280px;transition:border-color .18s}
+    .guarda-selector select:focus{border-color:var(--acento)}
+
+    .kpis-guarda{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+    @media(max-width:900px){.kpis-guarda{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:600px){.kpis-guarda{grid-template-columns:repeat(2,1fr)}}
+    .kpi-g{background:var(--surface);border:1px solid var(--borde);border-top:3px solid transparent;border-radius:14px;padding:14px 16px;box-shadow:0 1px 8px var(--sombra)}
+    .kpi-g-0{border-top-color:var(--d0)}.kpi-g-1{border-top-color:var(--d1)}.kpi-g-2{border-top-color:var(--d4)}.kpi-g-3{border-top-color:var(--d2)}.kpi-g-4{border-top-color:var(--d5)}
+    .kpi-g-label{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:8px}
+    .kpi-g-value{font-family:'Playfair Display',serif;font-size:26px;font-weight:900;line-height:1;color:var(--ink);margin-bottom:3px}
+    .kpi-g-sub{font-size:11px;color:var(--muted)}
+
+    .charts-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    @media(max-width:700px){.charts-2{grid-column:1fr}}
+    .cw{position:relative;height:240px}
+
+    .resumen-table{width:100%;border-collapse:collapse;font-size:13px}
+    .resumen-table th{background:var(--bg);padding:9px 13px;text-align:left;font-weight:700;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--borde)}
+    .resumen-table td{padding:9px 13px;border-bottom:1px solid var(--borde)}
+    .resumen-table tr:last-child td{border-bottom:none}
+    .resumen-table tr:hover td{background:var(--surface-2)}
+
+    .informe-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;padding:16px 18px;background:var(--surface-2);border:1px solid var(--borde);border-radius:12px;margin-bottom:16px}
+    .informe-bar label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:5px}
+    .informe-bar select{border:1.5px solid var(--borde);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--ink);outline:none;transition:border-color .18s}
+    .sin-datos{text-align:center;padding:48px 20px;color:var(--muted);font-size:14px}
 
 
-    /* ── AJUSTES V2: menú más limpio, rápido y sin accesos duplicados ── */
-    .hero-inner {
-      grid-template-columns: minmax(0, 820px);
-      gap: 0;
-    }
-
-    .coverflow {
-      padding: 0 58px;
-    }
-
-    .menu-card {
-      transition:
-        transform .34s cubic-bezier(.22,.68,0,1),
-        opacity .24s ease,
-        box-shadow .24s ease;
-      filter: none;
-    }
-
-    .menu-card[data-state="active"] { filter: none; }
-    .menu-card:hover:not([data-state="active"]) { filter: none; }
-
-    .module-head {
-      display: block;
-    }
-
-    .module-title {
-      max-width: 430px;
-    }
-
-    .cover-controls {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 15;
-    }
-
-    .cover-prev { left: 0; }
-    .cover-next { right: 0; }
-    .cover-dots { margin-top: 14px; }
-
-    @media (max-width: 1060px) {
-      .hero-inner { grid-template-columns: 1fr; gap: 0; }
-      .coverflow { padding: 0 50px; }
-    }
-
-    @media (max-width: 600px) {
-      .menu-shell {
-        padding: 22px 14px 24px;
-        border-radius: 22px;
-      }
-
-      .menu-shell::before { opacity: .32; }
-      .coverflow { padding: 0; }
-      .cover-stage { height: 456px; overflow: hidden; }
-
-      .menu-card {
-        width: min(360px, 90vw);
-        min-height: 410px;
-        top: 14px;
-        transition: transform .20s ease, opacity .16s ease, box-shadow .16s ease;
-        box-shadow: 0 14px 34px rgba(10,61,43,.13);
-      }
-
-      .menu-card[data-state="prev"],
-      .menu-card[data-state="next"],
-      .menu-card[data-state="far-prev"],
-      .menu-card[data-state="far-next"] {
-        transform: translateX(-50%) scale(.94);
-        opacity: 0;
-        pointer-events: none;
-      }
-
-      .module-card-body {
-        padding: 23px 22px 22px;
-        gap: 15px;
-      }
-
-      .module-head { display: block; }
-      .module-title { font-size: 27px; max-width: 100%; }
-      .module-desc { font-size: 13.8px; line-height: 1.62; }
-      .module-tags { gap: 7px; }
-.cover-controls {
-        position: relative;
-        inset: auto;
-        display: flex;
-        justify-content: center;
-        gap: 16px;
-        margin-top: 8px;
-        pointer-events: none;
-      }
-
-      .cover-nav {
-        position: relative;
-        top: auto;
-        left: auto;
-        right: auto;
-        width: 42px;
-        height: 42px;
-        transform: none;
-      }
-
-      .cover-nav:hover { transform: scale(1.04); }
-      .cover-dots { margin-top: 10px; }
-    }
-
-    /* ── AJUSTES V3: tarjetas como único acceso al módulo ── */
-    .cover-stage { height: 360px; }
-    .menu-card {
-      min-height: 300px;
-      cursor: pointer;
-    }
-    .menu-card[data-state="active"] {
-      cursor: pointer;
-    }
-    .menu-card[data-state="active"]:hover {
-      transform: translateX(-50%) scale(1.012);
-      box-shadow: 0 26px 74px rgba(10,61,43,.20);
-    }
-    .menu-card[data-state="active"]::after {
-      content: 'Clic para abrir';
-      position: absolute;
-      right: 22px;
-      bottom: 20px;
-      z-index: 2;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      color: var(--accent);
-      background: var(--accent-soft);
-      border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
-      border-radius: 999px;
-      padding: 8px 12px;
-    }
-    .module-card-body {
-      padding-bottom: 62px;
-    }
-
-    @media (max-width: 1060px) {
-      .cover-stage { height: 350px; }
-      .menu-card { min-height: 292px; }
-    }
-
-    @media (max-width: 600px) {
-      .cover-stage { height: 384px; }
-      .menu-card {
-        min-height: 330px;
-        width: min(348px, 90vw);
-      }
-      .module-card-body { padding-bottom: 60px; }
-      .menu-card[data-state="active"]::after {
-        left: 22px;
-        right: auto;
-        bottom: 18px;
-      }
-    }
+    .header-stripe{height:4px;background:linear-gradient(90deg,var(--mod-dark),var(--mod-mid),var(--mod-light));margin:0 -28px -16px;transform-origin:left}
 
 
-    /* ── AJUSTES V5: flotación suave + apertura sin pantalla de salida ── */
-    @keyframes menuFloatActive {
-      0%, 100% { translate: 0 0; }
-      50% { translate: 0 -8px; }
-    }
+    .tabla-control-card{padding:18px 20px}
+    .table-note{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.45}
+    .tabulator .tabulator-header .tabulator-col{background:#edf9f0!important;border-right:1px solid var(--borde)!important}
+    .tabulator .tabulator-header .tabulator-col-title{color:var(--ink-2);font-weight:800}
+    .tabulator .tabulator-header-filter input{border:1px solid #cde7d6;border-radius:7px;padding:4px 7px;font-size:11.5px;background:#fff;color:var(--ink)}
+    .tabulator-row{border-bottom:1px solid #edf4ef!important}
+    .tabulator-row.tabulator-row-even{background:#fbfffc!important}
+    .tabulator-row:hover{background:#edfff4!important}
+    .tabulator-row.tabulator-selected{background:#d1fae5!important}
+    .tb-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}
+    .tb-chip-ok{background:#dcfce7;color:#166534;border:1px solid #86efac}
+    .tb-chip-warn{background:#fef9c3;color:#854d0e;border:1px solid #fde68a}
+    .tb-chip-bad{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+    .tb-chip-info{background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe}
+    .tb-chip-neutral{background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb}
 
-    @keyframes menuFloatSide {
-      0%, 100% { translate: 0 0; }
-      50% { translate: 0 -5px; }
-    }
-
-    @keyframes moduleEnter {
-      0% {
-        scale: 1;
-        translate: 0 0;
-        filter: brightness(1) saturate(1);
-      }
-      55% {
-        scale: 1.035;
-        translate: 0 -8px;
-        filter: brightness(1.03) saturate(1.05);
-      }
-      100% {
-        scale: 1.06;
-        translate: 0 -12px;
-        filter: brightness(1.06) saturate(1.08);
-      }
-    }
-
-    .menu-card[data-state="active"] {
-      animation: menuFloatActive 4.6s ease-in-out infinite;
-    }
-
-    .menu-card[data-state="prev"],
-    .menu-card[data-state="next"] {
-      animation: menuFloatSide 5.2s ease-in-out infinite;
-    }
-
-    .menu-card[data-state="far-prev"],
-    .menu-card[data-state="far-next"] {
-      animation: menuFloatSide 6.2s ease-in-out infinite;
-    }
-
-    .m-viv { animation-delay: -.7s; }
-    .m-con { animation-delay: -1.2s; }
-    .m-ref { animation-delay: -1.8s; }
-
-    .cover-stage.is-sliding .menu-card,
-    .cover-stage.is-entering .menu-card {
-      animation-play-state: paused;
-      translate: 0 0;
-    }
-
-    .cover-stage.is-entering .menu-card:not(.is-entering-module) {
-      opacity: 0 !important;
-      filter: blur(4px) saturate(.72);
-      pointer-events: none;
-    }
-
-    .menu-card.is-entering-module {
-      z-index: 80 !important;
-      cursor: progress !important;
-      pointer-events: none;
-      animation: moduleEnter .42s cubic-bezier(.18,.78,.12,1) forwards !important;
-      box-shadow: 0 34px 92px rgba(10,61,43,.30) !important;
-    }
-
-    .menu-card.is-entering-module::after {
-      content: 'Abriendo';
-      color: #fff;
-      background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, #0a3d2b));
-      border-color: transparent;
-      box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 28%, transparent);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .menu-card {
-        animation: none !important;
-        translate: 0 0 !important;
-      }
-    }
-
-
+    /* FOOTER */
+    footer{background:linear-gradient(105deg,var(--verde-oscuro),#0f6b45);color:rgba(255,255,255,.52);text-align:center;padding:22px 24px;font-size:12px;font-weight:400;letter-spacing:.04em;flex-shrink:0;position:relative;overflow:hidden}
+    footer strong{color:rgba(255,255,255,.86);font-weight:700}
   </style>
 </head>
 <body>
-<!-- ── HEADER ── -->
+
 <header>
-<div class="header-inner">
-<div class="logo-group">
-<a href="https://conap.gob.gt/" rel="noopener noreferrer" target="_blank">
-<img alt="CONAP" src="assets/conap_logo.jpg"/>
-</a>
-<a href="https://amigosdeatitlan.org/" rel="noopener noreferrer" target="_blank">
-<img alt="AALA" src="assets/aala_logo.png"/>
-</a>
-</div>
-<div class="header-right">
-<h1>Centro de consulta de datos</h1>
-<p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
-<div class="header-chip">
-<span class="chip-dot"></span>
-        Sistema activo · 2026
-      </div>
-</div>
-</div>
-<div aria-hidden="true" class="header-wm">CONAP</div>
-<div class="header-stripe"></div>
+  <div class="header-inner">
+    <div class="logo-group">
+      <img src="../../assets/conap_logo.jpg" alt="CONAP">
+      <img src="../../assets/aala_logo.png" alt="AALA">
+    </div>
+    <div class="header-right">
+      <h1>Centro de consulta de datos</h1>
+      <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
+      <div class="header-chip"><span class="chip-dot"></span>AC297 · Registros y verificación</div>
+    </div>
+  </div>
+  <div class="header-stripe" aria-hidden="true"></div>
 </header>
-<!-- ── HERO ── -->
-<section class="hero">
-<div aria-hidden="true" class="hero-texture"></div>
-<div aria-hidden="true" class="hero-glow"></div>
-<div class="hero-inner">
-<div class="hero-left">
-<div class="hero-eyebrow">
-<span class="dot"></span>
-        CONAP · Altiplano Central · Guatemala · 2026
+
+<nav class="module-nav">
+  <div class="module-nav-inner">
+    <a href="../../index.html" class="nav-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Inicio
+    </a>
+    <a href="dashboard.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      Mapa geográfico
+    </a>
+    <a href="tablero.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Tablero dinámico
+    </a>
+    <a href="registros.html" class="nav-tab active">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      Registros y verificación
+    </a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="inner-tabs">
+    <button class="inner-tab active" data-panel="panel-verif">Verificación de cumplimiento</button>
+    <button class="inner-tab" data-panel="panel-registros">Tabla de registros y exportación</button>
+    <button class="inner-tab" data-panel="panel-analisis">Análisis por guardarecursos</button>
+  </div>
+
+  <!-- ══ PANEL 1 — VERIFICACIÓN ══════════════════════ -->
+  <div id="panel-verif" class="tab-panel active">
+    <div class="verif-panel">
+      <div class="verif-title">Verificación de consumo forestal familiar</div>
+      <div class="verif-hint">
+        El período de corte es del <strong>25 de cada mes al 25 del siguiente</strong>.
+        Seleccione el período para ver los consumos registrados, los árboles aprobados y la meta de reforestación por compromiso de cada guardarecursos.
       </div>
-<h1 class="hero-title">
-        Datos de campo<br/>
-<em>para la conservación</em><br/>
-        de áreas protegidas
-      </h1>
-<p class="hero-desc">
-        Plataforma de consulta de registros de actividades de guardarecursos en las áreas protegidas de la Dirección Regional Altiplano Central. Acceda a mapas, tableros de análisis y datos completos por boleta de campo.
-      </p>
-<div class="hero-stats">
-<div class="hero-stat">
-<div class="hs-val">4</div>
-<div class="hs-lbl">Boletas activas</div>
-</div>
-<div class="hero-stat">
-<div class="hs-val">3</div>
-<div class="hs-lbl">Vistas por módulo</div>
-</div>
-<div class="hero-stat">
-<div class="hs-val">Diario</div>
-<div class="hs-lbl">Actualización</div>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- ── CONTEXTO STRIP ── -->
-<div class="ctx-strip">
-<div class="ctx-inner">
-<div class="ctx-item">
-<div class="ctx-val">4</div>
-<div class="ctx-lbl">Boletas de campo monitoreadas</div>
-</div>
-<div class="ctx-item">
-<div class="ctx-val">3</div>
-<div class="ctx-lbl">Vistas de análisis por módulo</div>
-</div>
-<div class="ctx-item">
-<div class="ctx-val">Diario</div>
-<div class="ctx-lbl">Frecuencia de actualización</div>
-</div>
-<div class="ctx-item">
-<div class="ctx-val">2026</div>
-<div class="ctx-lbl">Sistema en línea</div>
-</div>
-</div>
-</div>
-<!-- ── MÓDULOS ── -->
-<section class="modulos" id="modulos">
-<div class="sec-head">
-<div class="sec-eyebrow">Boletas de campo</div>
-<h2 class="sec-title">Seleccione un módulo de consulta</h2>
-<p class="sec-desc">Desplácese entre las boletas disponibles y seleccione la tarjeta central para abrir el módulo correspondiente.</p>
-</div>
-<div aria-label="Carrusel de módulos de consulta" class="menu-shell">
-<div class="menu-topbar">
-<div class="menu-label"><span aria-hidden="true"></span> Menú de módulos</div>
-<p class="menu-hint">Use las flechas, los puntos, el teclado o deslice en pantalla táctil. La tarjeta central abre el módulo.</p>
-</div>
-<div class="coverflow">
-<div aria-label="Selector de boletas de campo" aria-roledescription="carrusel" class="cover-stage" id="moduleCarousel" tabindex="0">
-<!-- AC192 Patrullajes -->
-<article aria-label="AC 192 Patrullajes. Seleccione la tarjeta activa para abrir el módulo." class="menu-card m-pat" data-href="boletas/patrullajes/dashboard.html" data-index="0" tabindex="0">
-<div class="module-card-body">
-<div class="module-head">
-<div>
-<span class="module-code">AC 192 · Patrullajes</span>
-<h3 class="module-title">Control y vigilancia de áreas protegidas</h3>
-</div>
-</div>
-<p class="module-desc">Registro de patrullajes realizados por guardarecursos: duración de jornada, kilómetros recorridos, tipo de patrullaje e incidencias observadas.</p>
-<div aria-label="Temas del módulo" class="module-tags">
-<span class="module-tag">Control</span>
-<span class="module-tag">Vigilancia</span>
-<span class="module-tag">Incidencias</span>
-<span class="module-tag">Kilómetros</span>
+
+      <div class="nota-meta">
+        <strong>Regla de meta de reforestación:</strong> por cada árbol aprobado para corte en consumo forestal familiar, se deben sembrar 10 árboles como compromiso de reforestación.
+        La columna <strong>"Meta reforest."</strong> muestra cuántos árboles debe comprometerse a sembrar en el período.
+      </div>
+
+      <div class="verif-controls">
+        <div class="vc-group"><label>Desde (25 del mes)</label><input type="date" id="vc-desde"/></div>
+        <div class="vc-group"><label>Hasta (25 del mes)</label><input type="date" id="vc-hasta"/></div>
+        <div class="vc-group"><label>Guardarecursos (opcional)</label><select id="vc-guarda"><option value="">Todos</option></select></div>
+        <div class="vc-group"><label>Meta de consumos</label><input type="number" id="vc-meta-consumos" value="0" min="0" placeholder="Ej: 4"/></div>
+        <button class="btn btn-primary" id="vc-aplicar" style="height:40px;align-self:flex-end">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Verificar
+        </button>
+      </div>
+
+      <div id="vc-periodo-tag" class="periodo-tag" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="vc-periodo-label"></span>
+      </div>
+
+      <!-- KPIs del período -->
+      <div class="verif-resumen" id="vc-resumen" style="display:none">
+        <div class="vr-card" style="border-top:3px solid var(--d0)"><div class="vr-label">Consumos en período</div><div class="vr-value" id="vc-total">–</div><div class="vr-sub">registros</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d1)"><div class="vr-label">Árboles aprobados</div><div class="vr-value" id="vc-arboles">–</div><div class="vr-sub">total a talar</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d4)"><div class="vr-label">Meta reforestación</div><div class="vr-value" id="vc-meta-ref">–</div><div class="vr-sub">árboles a sembrar (×10)</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d2)"><div class="vr-label">Guardarecursos activos</div><div class="vr-value" id="vc-guardas">–</div><div class="vr-sub">en el período</div></div>
+        <div class="vr-card" style="border-top:3px solid var(--d5)"><div class="vr-label">Municipios cubiertos</div><div class="vr-value" id="vc-munis">–</div><div class="vr-sub">distintos</div></div>
+      </div>
+
+      <!-- Tabla expandible -->
+      <div id="vc-tabla-wrap" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <span style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.10em;text-transform:uppercase">
+            Detalle por guardarecursos — haga clic en una fila para ver los consumos individuales con desglose de especies
+          </span>
+          <div style="display:flex;gap:6px">
+            <button class="btn" id="vc-expand-all" style="font-size:11.5px;padding:5px 12px">Expandir todos</button>
+            <button class="btn" id="vc-collapse-all" style="font-size:11.5px;padding:5px 12px">Colapsar todos</button>
+          </div>
+        </div>
+        <div class="verif-table-wrap">
+          <table class="verif-table">
+            <thead>
+              <tr>
+                <th style="width:28px"></th>
+                <th>Guardarecursos</th>
+                <th>Consumos</th>
+                <th>Árboles aprobados</th>
+                <th>Meta reforest.</th>
+                <th>Municipios</th>
+                <th>Especie principal</th>
+                <th id="th-cumplimiento" style="display:none">vs. Meta consumos</th>
+                <th id="th-avance" style="display:none">Avance</th>
+              </tr>
+            </thead>
+            <tbody id="vc-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="vc-export-xlsx">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar Excel (con desglose de especies)
+          </button>
+          <button class="btn" id="vc-export-csv">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      <div id="vc-empty" class="sin-datos">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <p style="margin-top:12px">Seleccione el período y haga clic en <strong>Verificar</strong></p>
+      </div>
+    </div>
+
+    <div class="card informe-general-card">
+      <div class="card-title">Informe general del periodo seleccionado</div>
+      <div class="card-hint">
+        Este informe usa únicamente las fechas seleccionadas arriba. No depende del guardarecurso elegido, de la meta ni de haber presionado Verificar. Siempre consolida todos los guardarecursos del periodo.
+      </div>
+      <div class="actions-bar" style="justify-content:flex-end">
+        <button class="btn btn-informe-periodo" id="btn-informe-general-periodo-word">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+          Generar informe Word del periodo seleccionado
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PANEL 2 — TABLA ════════════════════════════ -->
+  <div id="panel-registros" class="tab-panel">
+    <p class="estado-txt" id="estado-registros">Cargando datos…</p>
+    <div class="card">
+      <div class="card-title">Exportar registros</div>
+      <div class="card-hint">Descarga todos los registros visibles en la tabla con los filtros de columna aplicados</div>
+      <div class="actions-bar">
+        <button class="btn" id="download-csv">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar CSV
+        </button>
+        <button class="btn btn-primary" id="download-xlsx">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar Excel
+        </button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Informe de registro individual</div>
+      <div class="card-hint">Selecciona una fila en la tabla y genera el informe de ese consumo específico</div>
+      <div class="actions-bar">
+        <button class="btn btn-blue" id="generate-report-word">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe Word
+        </button>
+        <button class="btn" id="generate-report-pdf">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe PDF
+        </button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Informe mensual narrativo</div>
+      <div class="card-hint">Genera un resumen ejecutivo del mes con totales de árboles, especies, guardarecursos y meta de reforestación</div>
+      <div class="informe-bar">
+        <div><label>Selecciona el mes</label><select id="monthly-month-select"></select></div>
+        <button class="btn btn-blue" id="generate-monthly-report-word" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe mensual Word
+        </button>
+        <button class="btn" id="generate-monthly-report-pdf" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Informe mensual PDF
+        </button>
+      </div>
+    </div>
+    <div class="card tabla-control-card" style="overflow:hidden"><div id="tabla-registros"></div><div class="table-note">Puede usar los filtros de columna, seleccionar una fila para informe individual y exportar los registros visibles.</div></div>
+  </div>
+
+  <!-- ══ PANEL 3 — ANÁLISIS ═════════════════════════ -->
+  <div id="panel-analisis" class="tab-panel">
+    <p class="estado-txt" id="estado-analisis">Selecciona un guardarecursos para ver su perfil</p>
+    <div class="guarda-selector">
+      <div><label>Guardarecursos</label><select id="sel-guarda"><option value="">Selecciona…</option></select></div>
+      <button class="btn btn-primary" id="btn-informe-guarda" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Exportar perfil Word
+      </button>
+    </div>
+    <div id="guarda-kpis" class="kpis-guarda" style="display:none">
+      <div class="kpi-g kpi-g-0"><div class="kpi-g-label">Consumos</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">total registrados</div></div>
+      <div class="kpi-g kpi-g-1"><div class="kpi-g-label">Árboles aprobados</div><div class="kpi-g-value" id="g-arboles">–</div><div class="kpi-g-sub">total a talar</div></div>
+      <div class="kpi-g kpi-g-2"><div class="kpi-g-label">Meta reforestación</div><div class="kpi-g-value" id="g-meta">–</div><div class="kpi-g-sub">árboles a sembrar (×10)</div></div>
+      <div class="kpi-g kpi-g-3"><div class="kpi-g-label">Municipios</div><div class="kpi-g-value" id="g-munis">–</div><div class="kpi-g-sub">distintos cubiertos</div></div>
+      <div class="kpi-g kpi-g-4"><div class="kpi-g-label">Promedio</div><div class="kpi-g-value" id="g-prom">–</div><div class="kpi-g-sub">árboles por consumo</div></div>
+    </div>
+    <div id="guarda-charts" class="charts-2" style="display:none">
+      <div class="card"><div class="card-title">Consumos por período (corte 25)</div><div class="card-hint">Agrupados por período operativo mensual</div><div class="cw"><canvas id="g-c-mes"></canvas></div></div>
+      <div class="card"><div class="card-title">Especies aprobadas</div><div class="card-hint">Desglose por especie de los árboles autorizados</div><div class="cw"><canvas id="g-c-esp"></canvas></div></div>
+    </div>
+    <div id="guarda-tabla-wrap" class="card" style="display:none">
+      <div class="card-title">Detalle por municipio</div>
+      <div class="card-hint">Consumos, árboles aprobados y meta de reforestación por municipio de atención</div>
+      <div style="overflow-x:auto">
+        <table class="resumen-table">
+          <thead><tr><th>Municipio</th><th>Consumos</th><th>Árboles aprobados</th><th>Meta reforest.</th><th>Prom. árboles</th><th>Fuera municipio</th></tr></thead>
+          <tbody id="guarda-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="guarda-empty" class="sin-datos">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <p style="margin-top:12px">Selecciona un guardarecursos para ver su análisis individual</p>
+    </div>
+  </div>
 </div>
 
-</div>
-</article>
-<!-- AC210 Viveros -->
-<article aria-label="AC 210 Asistencia a viveros. Seleccione la tarjeta activa para abrir el módulo." class="menu-card m-viv" data-href="boletas/viveros/dashboard.html" data-index="1" tabindex="0">
-<div class="module-card-body">
-<div class="module-head">
-<div>
-<span class="module-code">AC 210 · Viveros</span>
-<h3 class="module-title">Asistencia técnica a viveros forestales</h3>
-</div>
-</div>
-<p class="module-desc">Seguimiento de asistencias técnicas brindadas a viveros comunitarios e institucionales, con actividades por visita, jornada y cobertura territorial.</p>
-<div aria-label="Temas del módulo" class="module-tags">
-<span class="module-tag">Viveros</span>
-<span class="module-tag">Asistencia</span>
-<span class="module-tag">Jornadas</span>
-<span class="module-tag">Cobertura</span>
-</div>
-
-</div>
-</article>
-<!-- AC297 Consumo Forestal -->
-<article aria-label="AC 297 Consumo forestal familiar. Seleccione la tarjeta activa para abrir el módulo." class="menu-card m-con" data-href="boletas/consumo_forestal/dashboard.html" data-index="2" tabindex="0">
-<div class="module-card-body">
-<div class="module-head">
-<div>
-<span class="module-code">AC 297 · Consumo familiar</span>
-<h3 class="module-title">Consumo forestal familiar autorizado</h3>
-</div>
-</div>
-<p class="module-desc">Control del consumo forestal familiar autorizado en comunidades del área de influencia: especies, cantidades aprobadas y compromisos de reforestación.</p>
-<div aria-label="Temas del módulo" class="module-tags">
-<span class="module-tag">Especies</span>
-<span class="module-tag">Volúmenes</span>
-<span class="module-tag">Autorizaciones</span>
-<span class="module-tag">Compromisos</span>
-</div>
-
-</div>
-</article>
-<!-- AC282 Reforestaciones -->
-<article aria-label="AC 282 Reforestaciones. Seleccione la tarjeta activa para abrir el módulo." class="menu-card m-ref" data-href="boletas/reforestaciones/dashboard.html" data-index="3" tabindex="0">
-<div class="module-card-body">
-<div class="module-head">
-<div>
-<span class="module-code">AC 282 · Reforestaciones</span>
-<h3 class="module-title">Monitoreo a reforestaciones por compromiso</h3>
-</div>
-</div>
-<p class="module-desc">Asistencia técnica y monitoreo de reforestaciones establecidas por compromiso de consumo forestal familiar: área, especies y responsable del monitoreo.</p>
-<div aria-label="Temas del módulo" class="module-tags">
-<span class="module-tag">Área</span>
-<span class="module-tag">Especies</span>
-<span class="module-tag">Monitoreo</span>
-<span class="module-tag">Compromisos</span>
-</div>
-
-</div>
-</article>
-</div>
-<div aria-hidden="false" class="cover-controls">
-<button aria-label="Módulo anterior" class="cover-nav cover-prev" type="button">
-<svg fill="none" height="19" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" width="19"><path d="M15 18l-6-6 6-6"></path></svg>
-</button>
-<button aria-label="Módulo siguiente" class="cover-nav cover-next" type="button">
-<svg fill="none" height="19" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" width="19"><path d="M9 18l6-6-6-6"></path></svg>
-</button>
-</div>
-<div aria-label="Seleccionar módulo" class="cover-dots" role="tablist">
-<button aria-label="Ir a Patrullajes" class="dot-btn" data-go="0" type="button"></button>
-<button aria-label="Ir a Viveros" class="dot-btn" data-go="1" type="button"></button>
-<button aria-label="Ir a Consumo forestal" class="dot-btn" data-go="2" type="button"></button>
-<button aria-label="Ir a Reforestaciones" class="dot-btn" data-go="3" type="button"></button>
-</div>
-</div>
-</div>
-</section>
-<!-- ── FOOTER ── -->
 <footer>
-<div aria-hidden="true" class="footer-wm">CONAP</div>
-<div class="footer-inner">
-<div class="footer-col">
-<strong>CONAP</strong>
-<span>Consejo Nacional de Áreas Protegidas</span>
-<span>Dirección Regional Altiplano Central</span>
-</div>
-<div class="footer-center">
-<div class="footer-badge">Sistema de Monitoreo · 2026</div>
-<div class="footer-badge-desc">Centro de consulta de datos de actividades de campo</div>
-</div>
-<div class="footer-col footer-col-right">
-<span>Desarrollado por</span>
-<strong>Laboratorio SIG · AALA</strong>
-<span>Asociación Amigos del Lago de Atitlán</span>
-</div>
-<div class="footer-divider"></div>
-<div class="footer-copy">© 2026 · Todos los datos son de uso oficial · Sistema de Monitoreo CONAP</div>
-</div>
+  <strong>CONAP · Dirección Regional Altiplano Central</strong> · Laboratorio SIG AALA · © 2026
 </footer>
+
 <script>
-  (function () {
-    const stage = document.getElementById('moduleCarousel');
-    if (!stage) return;
+/* ═══ ESPECIES ════════════════════════════════════════════ */
+const ESPECIES = [
+  {field:"Cantidad de Pino (Pinus pseudostrobus)",       label:"Pino",         color:"#1a7a38"},
+  {field:"Cantidad de Cipres (Cupressus lusitanica)",    label:"Ciprés",       color:"#1f6cb0"},
+  {field:"Cantidad de Aliso (Alnus jorullensis)",        label:"Aliso",        color:"#b05608"},
+  {field:"Cantidad de Encino (Quercus sp)",              label:"Encino",       color:"#6b2680"},
+  {field:"Cantidad de Palo Blanco (Vernonia patens)",    label:"Palo Blanco",  color:"#016660"},
+  {field:"Cantidad de Cajete (Heliocarpus donnellsmithii)", label:"Cajete",   color:"#7a4508"},
+  {field:"Cantidad de Madron (Arbutus xalapensis)",      label:"Madrón",      color:"#3d8fbf"},
+  {field:"Cantidad de Mano de mono (Oreopanax xalapensis)", label:"Mano de mono", color:"#b51a72"},
+  {field:"Cantidad de Matilisguate (Tabebuia rosea)",    label:"Matilisguate", color:"#448a1e"},
+  {field:"Cantidad de Aguacate (Persea americana)",      label:"Aguacate",     color:"#c85840"},
+  {field:"Cantidad de Casuarina (Casuarina equisetifolia)", label:"Casuarina", color:"#4e359a"},
+  {field:"Cantidad de Otro",                             label:"Otro",         color:"#94a3b8"},
+];
 
-    const carousel = stage.closest('.coverflow') || document;
-    const cards = Array.from(stage.querySelectorAll('.menu-card'));
-    const dots = Array.from(document.querySelectorAll('.dot-btn'));
-    const prevBtn = carousel.querySelector('.cover-prev');
-    const nextBtn = carousel.querySelector('.cover-next');
-    const total = cards.length;
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    let activeIndex = 0;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let slideTimer = null;
-    let isOpening = false;
+/* ═══ NORMALIZACIÓN ═══════════════════════════════════════ */
+const EXCLUIDOS = new Set([
+  "daniel estuardo barillas coo","daniel estuardo barillas",
+  "domingo alfonso mendoza quiacain","domingo alfonso mendoza",
+  "job' kotz'ij eligia morales quino","job kotzij eligia morales quino",
+  "jose manuel vasquez upun","pedro chiviliu esquina",
+  "ruben enrique sumoza mendoza","ruben enrique sumoza",
+]);
+const MERGE = {
+  "edgar bartolo batin navichoc":"Edgar Bartolo Batín Navichoc",
+  "edgar bartolo batín navichoc":"Edgar Bartolo Batín Navichoc",
+  "henry regino mendez chavajay":"Henry Regino Méndez Chavajay",
+  "mario cesar tale coche":"Mario César Talé Coché",
+  "rafaél enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "rafael enrique chiciy chocoy":"Rafael Enrique Chiciy Chocoy",
+  "bernabe lopez sajvin":"Bernabé López Sajvín",
+  "santos maurico vicente mendoza":"Santos Mauricio Vicente Mendoza",
+  "santos mauricio vicente mendoza":"Santos Mauricio Vicente Mendoza",
+  "cornelio marco antonio perechu tzep":"Cornelio Marco Antonio Perechu Tzep",
+  "cornelio marco antonio perechú tzep":"Cornelio Marco Antonio Perechu Tzep",
+  "vicente francisco omar perez cox":"Vicente Francisco Omar Pérez Cox",
+  "antonio federico tzaj y tzaj":"Antonio Federico Tzaj Y Tzaj",
+};
+function canonStr(s){return String(s||"").trim().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ");}
+function normGuarda(n){if(!n)return null;const c=canonStr(n);if(EXCLUIDOS.has(c))return null;return MERGE[c]||n.trim();}
 
-    function circularDistance(index, active) {
-      let diff = index - active;
-      if (diff > total / 2) diff -= total;
-      if (diff < -total / 2) diff += total;
-      return diff;
+/* ═══ GLOBALS ═════════════════════════════════════════════ */
+let DATOS=[];
+let tablaTabulator;
+let mapaMeses=new Map();
+const PAL=["#4ade80","#fb7185","#60a5fa","#fbbf24","#f87171","#2dd4bf","#c084fc","#34d399","#f9a8d4","#a3e635","#fb923c","#93c5fd"];
+const MESES_S=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MESES_ES=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const LABELS={muni:new Map(),guarda:new Map()};
+
+/* ═══ UTILIDADES ══════════════════════════════════════════ */
+const norm=v=>v==null?"":String(v).trim().replace(/\s+/g," ");
+const sum_=arr=>arr.reduce((a,b)=>a+b,0);
+function escH(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function slug(s){return String(s||"").toLowerCase().trim().replace(/\s+/g,"_").replace(/[^\w\-]/g,"");}
+function safeInt(v){const n=parseInt(String(v||"").trim());return isNaN(n)?0:n;}
+function bestL(a,b){a=norm(a);b=norm(b);if(!a)return b;if(!b)return a;const ht=s=>/[áéíóúüñÁÉÍÓÚÜÑ]/.test(s);if(ht(b)&&!ht(a))return b;return b.length>a.length?b:a;}
+
+function parseCreation(s){
+  s=String(s||"").trim();if(!s)return null;
+  let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+  if(m)return new Date(+m[3],+m[1]-1,+m[2],+m[4],+m[5],+m[6]);
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);
+  const dt=new Date(s);return isNaN(dt)?null:dt;
+}
+function fmtDate(dt){if(!dt||isNaN(dt))return"–";return String(dt.getDate()).padStart(2,"0")+"/"+String(dt.getMonth()+1).padStart(2,"0")+"/"+dt.getFullYear();}
+function isoDate(dt){return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
+function periodoOp(dt){if(!dt||isNaN(dt))return null;const d=dt.getDate(),m=dt.getMonth(),y=dt.getFullYear();if(d>=26){const nm=m===11?0:m+1,ny=m===11?y+1:y;return ny+"-"+String(nm+1).padStart(2,"0");}return y+"-"+String(m+1).padStart(2,"0");}
+function mShort(k){const[y,m]=k.split("-");return MESES_S[+m-1]+"'"+String(y).slice(2);}
+
+/* ═══ CARGA Y PROCESO ═════════════════════════════════════ */
+function procesarDatos(raw){
+  return raw.map(r=>{
+    const gn=normGuarda(r["Nombre del guardarecursos"]);if(!gn)return null;
+    const dt=parseCreation(r["CreationDate"]);
+    const arboles=safeInt(r["Cantidad total de arboles a talar"]);
+    const cm=canonStr(r["Municipio"]);
+    const cg=canonStr(gn);
+    const espMap={};ESPECIES.forEach(e=>{espMap[e.field]=safeInt(r[e.field]||"0");});
+    if(cm)LABELS.muni.set(cm,bestL(LABELS.muni.get(cm),r["Municipio"]));
+    if(cg)LABELS.guarda.set(cg,bestL(LABELS.guarda.get(cg),gn));
+    return{...r,__guarda:gn,__dt:dt,__periodo:periodoOp(dt),__arboles:arboles,__meta:arboles*10,__cm:cm,__cg:cg,...espMap};
+  }).filter(Boolean);
+}
+
+/* ═══ TABS ════════════════════════════════════════════════ */
+document.querySelectorAll(".inner-tab").forEach(tab=>{
+  tab.addEventListener("click",()=>{
+    document.querySelectorAll(".inner-tab").forEach(t=>t.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(tab.dataset.panel).classList.add("active");
+  });
+});
+
+/* ═══ VERIFICACIÓN ════════════════════════════════════════ */
+function initVcSelects(){
+  const guardas=[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
+  const sel=document.getElementById("vc-guarda");
+  sel.innerHTML='<option value="">Todos los guardarecursos</option>';
+  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o);});
+  const dates=DATOS.map(r=>r.__dt).filter(d=>d&&!isNaN(d)).sort((a,b)=>a-b);
+  if(dates.length){
+    const hoy=new Date();
+    const hasta=new Date(hoy.getFullYear(),hoy.getMonth(),25);
+    const desde=new Date(hoy.getFullYear(),hoy.getMonth()-1,26);
+    document.getElementById("vc-desde").value=isoDate(desde);
+    document.getElementById("vc-hasta").value=isoDate(hasta);
+  }
+}
+
+function ejecutarVerificacion(){
+  const desdeStr=document.getElementById("vc-desde").value;
+  const hastaStr=document.getElementById("vc-hasta").value;
+  const guardaFiltro=document.getElementById("vc-guarda").value;
+  const metaConsumos=parseInt(document.getElementById("vc-meta-consumos").value)||0;
+  if(!desdeStr||!hastaStr){alert("Defina el período completo.");return;}
+  const desde=new Date(desdeStr+"T00:00:00");
+  const hasta=new Date(hastaStr+"T23:59:59");
+
+  const enPeriodo=DATOS.filter(r=>{
+    if(!r.__dt||isNaN(r.__dt))return false;
+    if(r.__dt<desde||r.__dt>hasta)return false;
+    if(guardaFiltro&&r.__guarda!==guardaFiltro)return false;
+    return true;
+  });
+
+  // Tag de período
+  document.getElementById("vc-periodo-tag").style.display="";
+  document.getElementById("vc-periodo-label").textContent=`Período: ${fmtDate(desde)} al ${fmtDate(hasta)}${guardaFiltro?" · "+guardaFiltro:""}`;
+
+  // KPIs globales
+  const totalArboles=sum_(enPeriodo.map(r=>r.__arboles));
+  const metaRef=totalArboles*10;
+  document.getElementById("vc-total").textContent=enPeriodo.length.toLocaleString("es");
+  document.getElementById("vc-arboles").textContent=totalArboles.toLocaleString("es");
+  document.getElementById("vc-meta-ref").textContent=metaRef.toLocaleString("es");
+  document.getElementById("vc-guardas").textContent=new Set(enPeriodo.map(r=>r.__guarda)).size;
+  document.getElementById("vc-munis").textContent=new Set(enPeriodo.map(r=>r.__cm).filter(Boolean)).size;
+  document.getElementById("vc-resumen").style.display="grid";
+
+  document.getElementById("th-cumplimiento").style.display=metaConsumos>0?"":"none";
+  document.getElementById("th-avance").style.display=metaConsumos>0?"":"none";
+
+  // Construir filas
+  const tbody=document.getElementById("vc-tbody");tbody.innerHTML="";
+  const todosGuardas=guardaFiltro?[guardaFiltro]:[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
+  const filasSummary=[];
+  const totalCols=9+(metaConsumos>0?2:0);
+
+  todosGuardas.forEach(g=>{
+    const sub=enPeriodo.filter(r=>r.__guarda===g).sort((a,b)=>a.__dt-b.__dt);
+    const cnt=sub.length;
+    const arb=sum_(sub.map(r=>r.__arboles));
+    const metaG=arb*10;
+    const munis=new Set(sub.map(r=>r.__cm).filter(Boolean)).size;
+
+    // Especie principal
+    const espTotales=ESPECIES.map(e=>({label:e.label,total:sum_(sub.map(r=>r[e.field]||0))})).filter(e=>e.total>0);
+    espTotales.sort((a,b)=>b.total-a.total);
+    const espPrincipal=espTotales[0]?.label||"–";
+
+    filasSummary.push({g,cnt,arb,metaG,munis,espPrincipal,registros:sub});
+  });
+  filasSummary.sort((a,b)=>b.arb-a.arb);
+
+  filasSummary.forEach(({g,cnt,arb,metaG,munis,espPrincipal,registros},idx)=>{
+    const uid="grp-"+idx;
+    let cumpleCel="",avanceCel="";
+    if(metaConsumos>0){
+      const cumple=cnt>=metaConsumos,pctAv=Math.min(Math.round(cnt/metaConsumos*100),100);
+      const colP=pctAv>=100?"prog-fill-verde":pctAv>=60?"prog-fill-amarillo":"prog-fill-rojo";
+      const bCls=cumple?"badge-verde":cnt>0?"badge-amarillo":"badge-rojo";
+      cumpleCel=`<td><span class="badge ${bCls}">${cumple?"Cumplido":cnt>0?"Parcial":"Sin registro"} (${cnt}/${metaConsumos})</span></td>`;
+      avanceCel=`<td><div class="prog-wrap"><div class="prog-bar-bg"><div class="prog-bar-fill ${colP}" style="width:${pctAv}%"></div></div><span class="prog-num">${pctAv}%</span></div></td>`;
     }
 
-    function markSliding() {
-      stage.classList.add('is-sliding');
-      window.clearTimeout(slideTimer);
-      slideTimer = window.setTimeout(() => {
-        stage.classList.remove('is-sliding');
-      }, prefersReducedMotion.matches ? 80 : 520);
-    }
+    const trHead=document.createElement("tr");
+    trHead.className="vc-row-guarda";trHead.dataset.uid=uid;
+    trHead.innerHTML=`
+      <td><span class="vc-toggle"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg></span></td>
+      <td><strong>${escH(g)}</strong></td>
+      <td><span class="badge ${cnt>0?"badge-azul":"badge-gris"}">${cnt} consumo${cnt!==1?"s":""}</span></td>
+      <td><strong style="color:var(--d1)">${arb.toLocaleString("es")}</strong> árbol${arb!==1?"es":""}</td>
+      <td><span class="meta-tag">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        ${metaG} a sembrar
+      </span></td>
+      <td>${munis}</td>
+      <td><span class="badge badge-gris" style="font-size:11px">${escH(espPrincipal)}</span></td>
+      ${cumpleCel}${avanceCel}`;
+    tbody.appendChild(trHead);
 
-    function setActive(nextIndex) {
-      const previousIndex = activeIndex;
-      activeIndex = (nextIndex + total) % total;
-      if (previousIndex !== activeIndex) markSliding();
+    // Sub-tabla con cada consumo individual + desglose de especies
+    const trSub=document.createElement("tr");
+    trSub.className="vc-subrows";trSub.dataset.uid=uid;
+    trSub.innerHTML=`<td colspan="${totalCols}" style="padding:0">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#eef4f0">
+          <td style="width:28px;padding:6px 8px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase">#</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Fecha</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Municipio</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Usuario</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Referencia</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Total árboles</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Meta reforest.</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Especies (desglose)</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Latitud</td>
+          <td style="padding:6px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;white-space:nowrap">Longitud</td>
+        </tr></thead>
+        <tbody>
+          ${registros.map((r,i)=>{
+            const espDetalle=ESPECIES.filter(e=>(r[e.field]||0)>0).map(e=>`${e.label}: ${r[e.field]}`).join(" · ")||"–";
+            return `<tr style="border-left:3px solid ${r.__arboles>10?"var(--d2)":"transparent"}">
+              <td style="padding:7px 8px;border-bottom:1px solid #e8f0eb;text-align:center"><span class="vc-num">${i+1}</span></td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;white-space:nowrap;font-weight:500">${fmtDate(r.__dt)}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb">${escH(norm(r["Municipio"])||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-size:11.5px">${escH(norm(r["Nombre del usuario"])||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-size:11px;color:var(--muted)">${escH(norm(r["Referencia de ubicacion"])||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;text-align:center">
+                <strong style="font-size:14px;color:var(--d1)">${r.__arboles}</strong>
+              </td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;text-align:center">
+                <span class="meta-tag" style="font-size:10.5px">${r.__meta}</span>
+              </td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb;font-size:11px;color:var(--ink-2)">${escH(espDetalle)}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${norm(r["Y"]||"–")}</td>
+              <td style="padding:7px 10px;border-bottom:1px solid #e8f0eb" class="vc-coord">${norm(r["X"]||"–")}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table></td>`;
+    tbody.appendChild(trSub);
+  });
 
-      cards.forEach((card, index) => {
-        const diff = circularDistance(index, activeIndex);
-        let state = 'hidden';
-
-        if (diff === 0) state = 'active';
-        else if (diff === -1) state = 'prev';
-        else if (diff === 1) state = 'next';
-        else if (diff < -1) state = 'far-prev';
-        else if (diff > 1) state = 'far-next';
-
-        card.dataset.state = state;
-        card.setAttribute('aria-current', state === 'active' ? 'true' : 'false');
-      });
-
-      dots.forEach((dot, index) => {
-        const selected = index === activeIndex;
-        dot.setAttribute('aria-selected', selected ? 'true' : 'false');
-        dot.tabIndex = selected ? 0 : -1;
-      });
-    }
-
-    function goNext() { setActive(activeIndex + 1); }
-    function goPrev() { setActive(activeIndex - 1); }
-
-    function resetOpeningState() {
-      isOpening = false;
-      stage.classList.remove('is-entering');
-      stage.removeAttribute('aria-busy');
-      cards.forEach((card) => card.classList.remove('is-entering-module'));
-      setActive(activeIndex);
-    }
-
-    window.addEventListener('pageshow', resetOpeningState);
-
-    function openActiveCard() {
-      if (isOpening) return;
-
-      const activeCard = cards[activeIndex];
-      const href = activeCard ? activeCard.dataset.href : '';
-      if (!href) return;
-
-      isOpening = true;
-      stage.classList.add('is-entering');
-      stage.setAttribute('aria-busy', 'true');
-      activeCard.classList.add('is-entering-module');
-
-      window.setTimeout(() => {
-        window.location.href = href;
-      }, prefersReducedMotion.matches ? 40 : 430);
-    }
-
-    if (prevBtn) prevBtn.addEventListener('click', goPrev);
-    if (nextBtn) nextBtn.addEventListener('click', goNext);
-
-    cards.forEach((card, index) => {
-      card.addEventListener('click', () => {
-        if (index !== activeIndex) {
-          setActive(index);
-          return;
-        }
-        openActiveCard();
-      });
-
-      card.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          if (index !== activeIndex) setActive(index);
-          else openActiveCard();
-        }
-      });
+  // Toggle
+  tbody.querySelectorAll(".vc-row-guarda").forEach(row=>{
+    row.addEventListener("click",()=>{
+      const uid=row.dataset.uid,isOpen=row.classList.contains("open");
+      row.classList.toggle("open",!isOpen);
+      tbody.querySelectorAll(`.vc-subrows[data-uid="${uid}"]`).forEach(s=>s.classList.toggle("open",!isOpen));
     });
+  });
+  document.getElementById("vc-expand-all").onclick=()=>{
+    tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));
+    tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"));
+  };
+  document.getElementById("vc-collapse-all").onclick=()=>{
+    tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.remove("open"));
+    tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.remove("open"));
+  };
+  if(guardaFiltro){setTimeout(()=>{tbody.querySelectorAll(".vc-row-guarda").forEach(r=>r.classList.add("open"));tbody.querySelectorAll(".vc-subrows").forEach(s=>s.classList.add("open"));},80);}
 
-    dots.forEach((dot) => {
-      dot.addEventListener('click', () => setActive(Number(dot.dataset.go)));
+  document.getElementById("vc-tabla-wrap").style.display="";
+  document.getElementById("vc-empty").style.display="none";
+  document.getElementById("vc-export-csv").onclick=()=>exportVcCSV(filasSummary,desde,hasta);
+  document.getElementById("vc-export-xlsx").onclick=()=>exportVcXLSX(filasSummary,desde,hasta);
+}
+
+function exportVcCSV(filas,desde,hasta){
+  const header=["Guardarecursos","#","Fecha","Municipio","Usuario","Referencia","Total árboles","Meta reforest.",...ESPECIES.map(e=>e.label),"Latitud","Longitud"];
+  const rows=[];
+  filas.forEach(({g,cnt,arb,metaG,registros})=>{
+    registros.forEach((r,i)=>rows.push([g,i+1,fmtDate(r.__dt),norm(r["Municipio"]),norm(r["Nombre del usuario"]),norm(r["Referencia de ubicacion"]),r.__arboles,r.__meta,...ESPECIES.map(e=>r[e.field]||0),norm(r["Y"]),norm(r["X"])]));
+  });
+  const csv=[header,...rows].map(r=>r.map(v=>'"'+String(v||"").replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);
+  a.download=`verificacion_consumo_${fmtDate(desde).replace(/\//g,"-")}_al_${fmtDate(hasta).replace(/\//g,"-")}.csv`;a.click();
+}
+
+function exportVcXLSX(filas,desde,hasta){
+  if(typeof XLSX==="undefined"){alert("XLSX no disponible");return}
+  const hSum=[["Guardarecursos","Consumos","Árboles aprobados","Meta reforest.","Municipios","Especie principal"]];
+  filas.forEach(({g,cnt,arb,metaG,munis,espPrincipal})=>hSum.push([g,cnt,arb,metaG,munis,espPrincipal]));
+  const hDet=[["Guardarecursos","#","Fecha","Municipio","Usuario","Referencia","Total árboles","Meta reforest.",...ESPECIES.map(e=>e.label),"Latitud","Longitud"]];
+  filas.forEach(({g,registros})=>registros.forEach((r,i)=>hDet.push([g,i+1,fmtDate(r.__dt),norm(r["Municipio"]),norm(r["Nombre del usuario"]),norm(r["Referencia de ubicacion"]),r.__arboles,r.__meta,...ESPECIES.map(e=>r[e.field]||0),norm(r["Y"]),norm(r["X"])])));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(hSum),"Resumen");
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(hDet),"Consumos individuales");
+  XLSX.writeFile(wb,`verificacion_consumo_${fmtDate(desde).replace(/\//g,"-")}_al_${fmtDate(hasta).replace(/\//g,"-")}.xlsx`);
+}
+
+/* ═══ TABLA TABULATOR ════════════════════════════════════ */
+function inicializarTabla(){
+  const espCols=ESPECIES.map(e=>({title:e.label,field:e.field,width:90,hozAlign:"center",formatter:c=>{const v=safeInt(c.getValue());return v>0?`<strong style="color:${e.color}">${v}</strong>`:'<span style="color:#d1d5db">–</span>';}}));
+  const cols=[
+    {title:"Guardarecursos",field:"Nombre del guardarecursos",headerFilter:"input",width:210,frozen:true},
+    {title:"Fecha",field:"CreationDate",headerFilter:"input",width:150,formatter:c=>{const d=parseCreation(c.getValue());return d&&!isNaN(d)?fmtDate(d):c.getValue()||"–";}},
+    {title:"Municipio",field:"Municipio",headerFilter:"input",width:160},
+    {title:"Usuario",field:"Nombre del usuario",headerFilter:"input",width:200},
+    {title:"Referencia",field:"Referencia de ubicacion",headerFilter:"input",width:200},
+    {title:"Total árboles",field:"Cantidad total de arboles a talar",width:120,hozAlign:"center",formatter:c=>{const v=safeInt(c.getValue());return v>0?`<strong style="font-size:14px;color:#1a7a38">${v}</strong>`:"–";}},
+    {title:"Meta reforest.",field:"__meta_display",width:120,hozAlign:"center",formatter:c=>{const r=c.getRow().getData();const m=safeInt(r["Cantidad total de arboles a talar"])*10;return m>0?`<span style="background:rgba(168,28,42,0.08);border:1px solid rgba(168,28,42,0.25);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;color:#a81c2a">${m}</span>`:"<span style='color:#d1d5db'>0</span>";}},
+    {title:"Área protegida",field:"Area protegida",headerFilter:"input",width:180},
+    ...espCols,
+    {title:"Latitud",field:"Y",width:100,hozAlign:"right"},
+    {title:"Longitud",field:"X",width:100,hozAlign:"right"},
+  ];
+  tablaTabulator=new Tabulator("#tabla-registros",{data:DATOS,layout:"fitDataStretch",pagination:"local",paginationSize:25,paginationSizeSelector:[15,25,50,100],columns:cols,movableColumns:true,selectableRows:1});
+  document.getElementById("download-csv").addEventListener("click",()=>tablaTabulator.download("csv","ac297_consumo_forestal.csv"));
+  document.getElementById("download-xlsx").addEventListener("click",()=>tablaTabulator.download("xlsx","ac297_consumo_forestal.xlsx",{sheetName:"Datos"}));
+  document.getElementById("estado-registros").innerHTML=`<strong>${DATOS.length.toLocaleString("es")}</strong> registros cargados · las celdas en verde muestran el total de árboles, en rojo la meta de reforestación`;
+}
+
+/* ═══ SELECTOR MESES ═════════════════════════════════════ */
+function inicializarSelectorMeses(){
+  mapaMeses=new Map();
+  DATOS.forEach(r=>{if(!r.__dt||isNaN(r.__dt))return;const y=r.__dt.getFullYear(),m=r.__dt.getMonth()+1,k=y+"-"+String(m).padStart(2,"0");if(!mapaMeses.has(k))mapaMeses.set(k,{anio:y,mes:m});});
+  const sel=document.getElementById("monthly-month-select");
+  const claves=[...mapaMeses.keys()].sort();
+  if(!claves.length){sel.innerHTML="<option>Sin meses</option>";return}
+  sel.innerHTML='<option value="" disabled selected>Seleccione un mes…</option>';
+  claves.forEach(k=>{const{anio,mes}=mapaMeses.get(k);const nm=MESES_ES[mes-1];const o=document.createElement("option");o.value=k;o.textContent=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+anio;sel.appendChild(o);});
+  sel.addEventListener("change",()=>{const h=!!sel.value;document.getElementById("generate-monthly-report-word").disabled=!h;document.getElementById("generate-monthly-report-pdf").disabled=!h;});
+}
+
+/* ═══ ANÁLISIS POR GUARDA ════════════════════════════════ */
+const GC={};
+function mkGChart(id,cfg){if(GC[id])GC[id].destroy();GC[id]=new Chart(document.getElementById(id),cfg);}
+Chart.defaults.font.family="'DM Sans',sans-serif";Chart.defaults.color="#6a8878";
+const TT={backgroundColor:"rgba(7,24,15,0.93)",titleFont:{size:13,weight:"600"},bodyFont:{size:12.5},padding:12,cornerRadius:10};
+
+function initGuardaSelector(){
+  const guardas=[...new Set(DATOS.map(r=>r.__guarda).filter(Boolean))].sort();
+  const sel=document.getElementById("sel-guarda");
+  sel.innerHTML="<option value=''>Selecciona…</option>";
+  guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o);});
+  sel.addEventListener("change",()=>{const g=sel.value;document.getElementById("btn-informe-guarda").disabled=!g;g?renderGuarda(g):clearGuarda();});
+}
+
+function clearGuarda(){
+  ["guarda-kpis","guarda-charts","guarda-tabla-wrap"].forEach(id=>document.getElementById(id).style.display="none");
+  document.getElementById("guarda-empty").style.display="";
+  document.getElementById("estado-analisis").textContent="Selecciona un guardarecursos para ver su perfil";
+}
+
+function renderGuarda(nombre){
+  const regs=DATOS.filter(r=>r.__guarda===nombre);if(!regs.length){clearGuarda();return;}
+  document.getElementById("guarda-empty").style.display="none";
+  document.getElementById("estado-analisis").textContent=`Perfil de ${nombre} · ${regs.length} consumos`;
+  const arboles=sum_(regs.map(r=>r.__arboles));
+  const meta=arboles*10;
+  const munis=new Set(regs.map(r=>r.__cm).filter(Boolean));
+  const prom=regs.length?arboles/regs.length:0;
+  document.getElementById("g-total").textContent=regs.length;
+  document.getElementById("g-arboles").textContent=arboles.toLocaleString("es");
+  document.getElementById("g-meta").textContent=meta.toLocaleString("es");
+  document.getElementById("g-munis").textContent=munis.size;
+  document.getElementById("g-prom").textContent=regs.length?prom.toFixed(1):"–";
+  document.getElementById("guarda-kpis").style.display="grid";
+
+  // Por período
+  const mPer=new Map();regs.forEach(r=>{if(r.__periodo)mPer.set(r.__periodo,(mPer.get(r.__periodo)||0)+1);});
+  const perKeys=[...mPer.keys()].sort();
+  mkGChart("g-c-mes",{type:"bar",data:{labels:perKeys.map(mShort),datasets:[{label:"Consumos",data:perKeys.map(k=>mPer.get(k)),backgroundColor:PAL[0]+"cc",borderColor:PAL[0],borderWidth:1,borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} consumos`}}},scales:{x:{grid:{display:false},ticks:{font:{size:11.5}}},y:{beginAtZero:true,grid:{color:"rgba(0,0,0,.05)"},ticks:{font:{size:11.5}}}}}});
+
+  // Especies
+  const espFilt=ESPECIES.map(e=>({...e,total:sum_(regs.map(r=>r[e.field]||0))})).filter(e=>e.total>0).sort((a,b)=>b.total-a.total);
+  mkGChart("g-c-esp",{type:"doughnut",data:{labels:espFilt.map(e=>e.label),datasets:[{data:espFilt.map(e=>e.total),backgroundColor:espFilt.map(e=>e.color+"cc"),borderColor:espFilt.map(e=>e.color),borderWidth:2,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:"60%",plugins:{legend:{position:"bottom",labels:{font:{size:12},padding:10,usePointStyle:true,pointStyleWidth:10}},tooltip:{...TT,callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/arboles*100)}%)`}}}}});
+  document.getElementById("guarda-charts").style.display="grid";
+
+  // Tabla por municipio
+  const mMuni=new Map();regs.forEach(r=>{if(r.__cm)mMuni.set(r.__cm,(mMuni.get(r.__cm)||{cnt:0,arb:0}));const e=mMuni.get(r.__cm);e.cnt++;e.arb+=r.__arboles;});
+  const tbody=document.getElementById("guarda-tbody");tbody.innerHTML="";
+  [...mMuni.entries()].sort((a,b)=>b[1].arb-a[1].arb).forEach(([cm,{cnt,arb}])=>{
+    const metaMu=arb*10;
+    const muLabel=LABELS.muni.get(cm)||cm;
+    const sub=regs.filter(r=>r.__cm===cm);
+    const fueraCount=sub.filter(r=>canonStr(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"])==="si"||canonStr(r["Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?"]).includes("si")).length;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td><strong>${escH(muLabel)}</strong></td><td>${cnt}</td><td><strong style="color:var(--d1)">${arb}</strong></td><td><span class="meta-tag" style="font-size:11px">${metaMu}</span></td><td>${cnt>0?(arb/cnt).toFixed(1):"–"}</td><td>${fueraCount>0?`<span class="badge badge-azul">${fueraCount}</span>`:`<span class="badge badge-gris">0</span>`}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById("guarda-tabla-wrap").style.display="";
+}
+
+/* ═══ DOCUMENTOS ══════════════════════════════════════════ */
+const CSS_DOC=`<style>body,p,td,th{font-family:"Times New Roman",serif;font-size:10pt;line-height:1.4}h1{font-size:14pt;font-weight:bold;margin:0 0 8pt;text-align:center}h2{font-size:12pt;font-weight:bold;margin:12pt 0 6pt}p{margin:0 0 6pt;text-align:justify}section{page-break-inside:avoid;margin-bottom:8pt}</style>`;
+function docWord(n,h){const s="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_DOC+"</head><body>"+h+"</body></html>";const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff",s],{type:"application/msword"}));a.download=n;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function docPDF(n,h){if(typeof html2pdf==="undefined"){alert("html2pdf no disponible");return}const d=document.createElement("div");d.style.padding="10px";d.innerHTML=CSS_DOC+h;document.body.appendChild(d);html2pdf().set({margin:10,filename:n,image:{type:"jpeg",quality:.98},html2canvas:{scale:2},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(d).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d));}
+
+function generarInformeRegistro(fmt){
+  if(!tablaTabulator)return;
+  const sel=tablaTabulator.getSelectedData();if(!sel||!sel.length){alert("Selecciona una fila en la tabla.");return}
+  const r=sel[0];
+  const guarda=r["Nombre del guardarecursos"]||"",muni=r["Municipio"]||"",usuario=r["Nombre del usuario"]||"";
+  const ref=r["Referencia de ubicacion"]||"",area=r["Area protegida"]||"",obs=r["Observaciones"]||"";
+  const dt=parseCreation(r["CreationDate"]);
+  const arboles=safeInt(r["Cantidad total de arboles a talar"]);
+  const meta=arboles*10;
+  const espDetalle=ESPECIES.filter(e=>safeInt(r[e.field]||"0")>0).map(e=>`${e.label}: ${r[e.field]}`).join(", ")||"–";
+  let h=`<section><h1>Informe de consumo forestal familiar (AC297)</h1><p style="text-align:center">Sistema de monitoreo CONAP - DRAC - Altiplano Central</p><hr/></section>`;
+  h+=`<section><h2>1. Datos de identificación</h2><p><strong>Guardarecursos:</strong> ${escH(guarda)}</p><p><strong>Fecha:</strong> ${fmtDate(dt)}</p><p><strong>Municipio:</strong> ${escH(muni)}</p><p><strong>Nombre del usuario:</strong> ${escH(usuario)}</p><p><strong>Referencia de ubicación:</strong> ${escH(ref)}</p><p><strong>Área protegida:</strong> ${escH(area)}</p></section>`;
+  h+=`<section><h2>2. Árboles aprobados y meta de reforestación</h2><p><strong>Total de árboles a talar:</strong> ${arboles}</p><p><strong>Meta de reforestación por compromiso:</strong> ${meta} árbol${meta!==1?"es":""} (${arboles} × 10)</p><p><strong>Desglose por especie:</strong> ${escH(espDetalle)}</p></section>`;
+  h+=`<section><h2>3. Observaciones</h2><p>${escH(obs||"Sin observaciones registradas.")}</p></section>`;
+  h+=`<section><h2>4. Firmas</h2><p>______________________________<br/>Guardarecursos / Responsable</p><p>______________________________<br/>Supervisión</p></section>`;
+  const base="informe_ac297_"+slug(guarda)+"_"+slug(fmtDate(dt));
+  fmt==="pdf"?docPDF(base+".pdf",h):docWord(base+".doc",h);
+}
+
+function generarInformeMensual(fmt){
+  if(!DATOS.length){alert("Sin datos cargados.");return}
+  const sel=document.getElementById("monthly-month-select");if(!sel.value){alert("Seleccione un mes.");return}
+  const{anio,mes}=mapaMeses.get(sel.value)||{};if(!anio)return;
+  const nm=MESES_ES[mes-1];const etiq=nm.charAt(0).toUpperCase()+nm.slice(1)+" "+anio;
+  const regs=DATOS.filter(r=>r.__dt&&!isNaN(r.__dt)&&r.__dt.getFullYear()===anio&&r.__dt.getMonth()+1===mes);
+  if(!regs.length){alert("Sin registros para "+etiq);return}
+  const total=regs.length;
+  const arboles=sum_(regs.map(r=>r.__arboles));
+  const meta=arboles*10;
+  const munis=new Set(regs.map(r=>norm(r["Municipio"])).filter(Boolean));
+  const guardas=new Set(regs.map(r=>r.__guarda).filter(Boolean));
+  const mGuar={};regs.forEach(r=>{if(r.__guarda)mGuar[r.__guarda]={cnt:(mGuar[r.__guarda]?.cnt||0)+1,arb:(mGuar[r.__guarda]?.arb||0)+r.__arboles};});
+  const gOrd=Object.entries(mGuar).sort((a,b)=>b[1].arb-a[1].arb);
+  const espTot=ESPECIES.map(e=>({label:e.label,total:sum_(regs.map(r=>r[e.field]||0))})).filter(e=>e.total>0).sort((a,b)=>b.total-a.total);
+  let h=`<section><h1>Informe mensual de consumo forestal familiar (AC297)</h1><p style="text-align:center">CONAP - DRAC - Altiplano Central · <strong>${escH(etiq)}</strong></p><hr/></section>`;
+  h+=`<section><h2>1. Resumen general</h2><p>En ${escH(etiq)} se registraron <strong>${total}</strong> consumos forestales familiares en <strong>${munis.size}</strong> municipio(s), atendidos por <strong>${guardas.size}</strong> guardarecursos.</p><p>Total de árboles aprobados: <strong>${arboles.toLocaleString("es")}</strong> · Meta de reforestación por compromiso: <strong>${meta.toLocaleString("es")}</strong> árbol${meta!==1?"es":""} (razón 1:10, por cada árbol cortado se siembran diez)</p></section>`;
+  h+=`<section><h2>2. Guardarecursos con más árboles aprobados</h2><p>${gOrd.slice(0,5).map(([g,{cnt,arb}])=>`<strong>${escH(g)}</strong>: ${cnt} consumo${cnt!==1?"s":""}, ${arb} árbol${arb!==1?"es":""}, meta: ${arb*10}`).join("<br/>")}</p></section>`;
+  h+=`<section><h2>3. Especies más solicitadas</h2><ul>${espTot.slice(0,6).map(e=>`<li>${escH(e.label)}: ${e.total} árbol${e.total!==1?"es":""} (${Math.round(e.total/arboles*100)}%)</li>`).join("")}</ul></section>`;
+  h+=`<section><h2>4. Nota metodológica</h2><p>Generado automáticamente desde el sistema AC297 de CONAP-DRAC. La meta de reforestación se calcula multiplicando por 10 el total de árboles aprobados para corte.</p></section>`;
+  const base="informe_mensual_ac297_"+anio+"_"+String(mes).padStart(2,"0");
+  fmt==="pdf"?docPDF(base+".pdf",h):docWord(base+".doc",h);
+}
+
+function generarInformeGuarda(){
+  const nombre=document.getElementById("sel-guarda").value;if(!nombre)return;
+  const regs=DATOS.filter(r=>r.__guarda===nombre);if(!regs.length){alert("Sin registros");return}
+  const arboles=sum_(regs.map(r=>r.__arboles));const meta=arboles*10;
+  const munis=[...new Set(regs.map(r=>norm(r["Municipio"])).filter(Boolean))];
+  const espFilt=ESPECIES.map(e=>({...e,total:sum_(regs.map(r=>r[e.field]||0))})).filter(e=>e.total>0).sort((a,b)=>b.total-a.total);
+  let h=`<section><h1>Perfil de consumo forestal familiar</h1><p style="text-align:center">AC297 · <strong>${escH(nombre)}</strong></p><hr/></section>`;
+  h+=`<section><h2>Resumen</h2><p><strong>Consumos registrados:</strong> ${regs.length}</p><p><strong>Árboles aprobados:</strong> ${arboles.toLocaleString("es")}</p><p><strong>Meta de reforestación por compromiso:</strong> ${meta.toLocaleString("es")} árbol${meta!==1?"es":""}</p><p><strong>Municipios atendidos:</strong> ${munis.map(m=>`<strong>${escH(m)}</strong>`).join(", ")}</p></section>`;
+  h+=`<section><h2>Especies aprobadas</h2><ul>${espFilt.map(e=>`<li>${escH(e.label)}: ${e.total} árbol${e.total!==1?"es":""} (${Math.round(e.total/arboles*100)}%)</li>`).join("")}</ul></section>`;
+  docWord("perfil_ac297_"+slug(nombre)+".doc",h);
+}
+
+
+/* ═══════════════════════════════════════════════════
+   INFORME GENERAL DESDE PLANTILLA WORD
+   Machote recomendado:
+   docs/boletas/consumo_forestal/ESQUELETO INFORME GENERAL DE CONSUMO FORESTAL FAMILIAR.docx
+
+   Requisito:
+   docs/assets/pizzip.min.js
+
+   El botón reemplaza marcadores de texto como {{TOTAL_CONSUMOS}}
+   y coloca la tabla consolidada en {{TABLA_GUARDARECURSOS}}.
+═══════════════════════════════════════════════════ */
+const INFORME_TEMPLATE_URL = "ESQUELETO INFORME GENERAL DE CONSUMO FORESTAL FAMILIAR.docx";
+const INFORME_TEMPLATE_CANDIDATES = [
+  INFORME_TEMPLATE_URL,
+  "ESQUELETO INFORME GENERAL DE CONSUMO FORESTAL.docx",
+  "ESQUELETO INFORME GENERAL DE CONSUMOS FORESTALES.docx",
+  "ESQUELETO INFORME GENERAL DE CONSUMOS.docx"
+];
+
+function fmtGT(n, max = 0, min = 0) {
+  if (n === null || n === undefined || !isFinite(n)) return "–";
+  return Number(n).toLocaleString("en-US", {
+    minimumFractionDigits: min,
+    maximumFractionDigits: max
+  });
+}
+
+function cleanLabel(v) {
+  const s = String(v || "").trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Sin dato";
+}
+
+function fechaInforme(dt) {
+  if (!dt || isNaN(dt)) return "–";
+  return dt.toLocaleDateString("es-GT", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+function cFrases(arr) {
+  if (!arr.length) return "";
+  if (arr.length === 1) return arr[0];
+  return arr.slice(0, -1).join(", ") + " y " + arr[arr.length - 1];
+}
+
+function topMapInforme(regs, fn) {
+  const m = new Map();
+  regs.forEach(r => {
+    const k = cleanLabel(fn(r));
+    if (k && k !== "Sin dato") m.set(k, (m.get(k) || 0) + 1);
+  });
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+function topMapSumInforme(regs, kFn, vFn) {
+  const m = new Map();
+  regs.forEach(r => {
+    const k = cleanLabel(kFn(r));
+    const v = Number(vFn(r) || 0);
+    if (k && k !== "Sin dato" && isFinite(v)) m.set(k, (m.get(k) || 0) + v);
+  });
+  return [...m.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+function textListTopPlain(arr, n = 5, suffix = "registros") {
+  const out = arr.slice(0, n).map(([k, v]) => `${k} (${fmtGT(v, 0)} ${suffix})`);
+  return out.length ? cFrases(out) : "No se identificaron registros suficientes para establecer un ranking.";
+}
+
+function regsPorRangoInforme(inicio, fin) {
+  return DATOS.filter(r =>
+    r.__dt &&
+    !isNaN(r.__dt) &&
+    r.__dt >= inicio &&
+    r.__dt <= fin
+  );
+}
+
+function datosInformePlantillaConsumo(inicio, fin, regs) {
+  const total = regs.length;
+  const totalArboles = sum_(regs.map(r => r.__arboles));
+
+  // Regla correcta:
+  // por cada árbol aprobado para corte, se deben sembrar 10 árboles.
+  const metaReforestacion = totalArboles * 10;
+
+  const guardas = new Set(regs.map(r => r.__guarda).filter(Boolean));
+  const municipios = new Set(regs.map(r => norm(r["Municipio"])).filter(Boolean));
+  const usuarios = new Set(regs.map(r => norm(r["Nombre del usuario"])).filter(Boolean));
+  const promedioArboles = total ? totalArboles / total : 0;
+
+  function areaNormalizadaInforme(v) {
+    const c = canonStr(v);
+
+    if (!c) return "Sin dato";
+    if (c.includes("fuera")) return "Fuera de RUMCLA";
+    if (c.includes("rumcla")) return "RUMCLA";
+
+    return cleanLabel(v);
+  }
+
+  function esDentroRumcla(v) {
+    const c = canonStr(v);
+    if (!c) return false;
+    if (c.includes("fuera")) return false;
+    return c.includes("rumcla");
+  }
+
+  function esFueraRumcla(v) {
+    const c = canonStr(v);
+    if (!c) return false;
+    if (c.includes("fuera")) return true;
+    return !c.includes("rumcla");
+  }
+
+  function esSi(v) {
+    const c = canonStr(v);
+    return c === "si" || c === "sí";
+  }
+
+  const CAMPO_APOYO_EXTERNO = "Esta atendiendo un consumo fuera de su municipio de intervencion cedido por otro guardarecurso?";
+
+  const totalRumcla = regs.filter(r => esDentroRumcla(r["Area protegida"])).length;
+  const totalFueraRumcla = regs.filter(r => esFueraRumcla(r["Area protegida"])).length;
+
+  const totalApoyoExterno = regs.filter(r => esSi(r[CAMPO_APOYO_EXTERNO])).length;
+  const totalSinApoyo = total - totalApoyoExterno;
+  const porcentajeApoyo = total ? (totalApoyoExterno / total) * 100 : 0;
+
+  const areas = new Set(
+    regs
+      .map(r => areaNormalizadaInforme(r["Area protegida"]))
+      .filter(v => v && v !== "Sin dato")
+  );
+
+  const especiesTotales = ESPECIES
+    .map(e => ({
+      label: e.label,
+      total: sum_(regs.map(r => Number(r[e.field] || 0)))
+    }))
+    .filter(e => e.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  const topMunicipiosConsumos = topMapInforme(regs, r => r["Municipio"]);
+  const topMunicipiosArboles = topMapSumInforme(regs, r => r["Municipio"], r => r.__arboles);
+
+  const topAreas = topMapInforme(regs, r => areaNormalizadaInforme(r["Area protegida"]));
+  const topEspecies = especiesTotales.map(e => [e.label, e.total]);
+
+  const porGuarda = new Map();
+
+  regs.forEach(r => {
+    const g = r.__guarda || "Sin guardarecurso";
+
+    if (!porGuarda.has(g)) {
+      porGuarda.set(g, {
+        g,
+        total: 0,
+        arboles: 0,
+        meta: 0,
+        municipios: new Set(),
+        usuarios: new Set(),
+        especies: new Map()
+      });
+    }
+
+    const o = porGuarda.get(g);
+
+    o.total += 1;
+    o.arboles += Number(r.__arboles || 0);
+    o.meta += Number(r.__arboles || 0) * 10;
+
+    if (r["Municipio"]) o.municipios.add(cleanLabel(r["Municipio"]));
+    if (r["Nombre del usuario"]) o.usuarios.add(cleanLabel(r["Nombre del usuario"]));
+
+    ESPECIES.forEach(e => {
+      const val = Number(r[e.field] || 0);
+      if (val > 0) {
+        o.especies.set(e.label, (o.especies.get(e.label) || 0) + val);
+      }
     });
+  });
 
-    stage.addEventListener('keydown', (event) => {
-      if (event.key === 'ArrowRight') {
-        event.preventDefault();
-        goNext();
-      }
-      if (event.key === 'ArrowLeft') {
-        event.preventDefault();
-        goPrev();
-      }
-      if (event.key === 'Home') {
-        event.preventDefault();
-        setActive(0);
-      }
-      if (event.key === 'End') {
-        event.preventDefault();
-        setActive(total - 1);
-      }
-    });
+  const guardasConsol = [...porGuarda.values()]
+    .map(o => {
+      const especiePrincipal = [...o.especies.entries()].sort((a, b) => b[1] - a[1])[0];
 
-    stage.addEventListener('touchstart', (event) => {
-      const touch = event.changedTouches[0];
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-    }, { passive: true });
+      return {
+        ...o,
+        meta: o.arboles * 10,
+        especiePrincipal: especiePrincipal
+          ? `${especiePrincipal[0]} (${fmtGT(especiePrincipal[1])})`
+          : "Sin dato"
+      };
+    })
+    .sort((a, b) => b.arboles - a.arboles);
 
-    stage.addEventListener('touchend', (event) => {
-      const touch = event.changedTouches[0];
-      const dx = touch.clientX - touchStartX;
-      const dy = touch.clientY - touchStartY;
+  return {
+    FECHA_INICIO: fechaInforme(inicio),
+    FECHA_FIN: fechaInforme(fin),
+    FECHA_GENERACION: fechaInforme(new Date()),
 
-      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
-        if (dx < 0) goNext();
-        else goPrev();
+    TOTAL_CONSUMOS: fmtGT(total, 0),
+    TOTAL_GUARDARECURSOS: fmtGT(guardas.size, 0),
+    TOTAL_MUNICIPIOS: fmtGT(municipios.size, 0),
+    TOTAL_AREAS_PROTEGIDAS: fmtGT(areas.size, 0),
+    TOTAL_USUARIOS: fmtGT(usuarios.size, 0),
+
+    TOTAL_ARBOLES_APROBADOS: fmtGT(totalArboles, 0),
+    META_REFORESTACION: fmtGT(metaReforestacion, 0),
+
+    // Se dejan ambos nombres para que funcione con cualquier versión del machote.
+    PROMEDIO_ARBOLES: fmtGT(promedioArboles, 2, 2),
+    PROMEDIO_ARBOLES_CONSUMO: fmtGT(promedioArboles, 2, 2),
+
+    TOTAL_RUMCLA: fmtGT(totalRumcla, 0),
+    TOTAL_FUERA_RUMCLA: fmtGT(totalFueraRumcla, 0),
+
+    TOTAL_APOYO_EXTERNO: fmtGT(totalApoyoExterno, 0),
+    TOTAL_SIN_APOYO: fmtGT(totalSinApoyo, 0),
+    PORCENTAJE_APOYO: fmtGT(porcentajeApoyo, 1, 1),
+
+    TOP_MUNICIPIOS_CONSUMOS: textListTopPlain(topMunicipiosConsumos, 5, "consumos"),
+    TOP_MUNICIPIOS_ARBOLES: textListTopPlain(topMunicipiosArboles, 5, "árboles"),
+    TOP_AREAS_PROTEGIDAS: textListTopPlain(topAreas, 5, "registros"),
+    TOP_ESPECIES: textListTopPlain(topEspecies, 6, "árboles"),
+
+    TOP_GUARDARECURSOS_CONSUMOS: textListTopPlain(
+      guardasConsol.map(o => [o.g, o.total]),
+      5,
+      "consumos"
+    ),
+
+    TOP_GUARDARECURSOS_ARBOLES: textListTopPlain(
+      guardasConsol.map(o => [o.g, o.arboles]),
+      5,
+      "árboles"
+    ),
+
+    __guardasConsol: guardasConsol
+  };
+}
+
+function xmlEsc(v) {
+  return String(v ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function regEsc(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function tokenRegex(token) {
+  const gap = '(?:</w:t>(?:\\s|<[^>]+>)*<w:t[^>]*>)?';
+  return new RegExp(token.split("").map(regEsc).join(gap), "g");
+}
+
+function replaceDocxToken(xml, token, value) {
+  return xml.replace(tokenRegex(token), xmlEsc(value));
+}
+
+function wCell(text, width, opts = {}) {
+  const align = opts.align || "left";
+  const bold = opts.bold || false;
+  const shade = opts.shade ? `<w:shd w:fill="${opts.shade}"/>` : "";
+  const size = opts.size || "14";
+
+  return `
+    <w:tc>
+      <w:tcPr>
+        <w:tcW w:w="${width}" w:type="dxa"/>
+        ${shade}
+        <w:vAlign w:val="center"/>
+      </w:tcPr>
+      <w:p>
+        <w:pPr><w:jc w:val="${align}"/></w:pPr>
+        <w:r>
+          <w:rPr>
+            ${bold ? "<w:b/>" : ""}
+            <w:sz w:val="${size}"/>
+            <w:szCs w:val="${size}"/>
+          </w:rPr>
+          <w:t xml:space="preserve">${xmlEsc(text)}</w:t>
+        </w:r>
+      </w:p>
+    </w:tc>
+  `;
+}
+
+function crearTablaGuardarecursosConsumoWordXml(guardasConsol) {
+  const widths = [520, 3300, 920, 1040, 920, 1120, 1700];
+  const headers = ["#", "Guardarecurso", "Consumos", "Árboles", "Meta", "Municipios", "Especie principal"];
+
+  const grid = widths.map(w => `<w:gridCol w:w="${w}"/>`).join("");
+
+  const headerRow =
+    `<w:tr>${headers.map((h, i) =>
+      wCell(h, widths[i], {
+        bold: true,
+        shade: "DCFCE7",
+        align: i === 0 ? "center" : "left",
+        size: "13"
+      })
+    ).join("")}</w:tr>`;
+
+  const rows = guardasConsol.map((o, i) => {
+    const cells = [
+      String(i + 1),
+      o.g,
+      fmtGT(o.total, 0),
+      fmtGT(o.arboles, 0),
+      fmtGT(o.arboles * 10, 0),
+      fmtGT(o.municipios.size, 0),
+      o.especiePrincipal
+    ];
+
+    return `<w:tr>${cells.map((c, j) =>
+      wCell(c, widths[j], {
+        align: j === 0 || j >= 2 && j <= 5 ? "center" : "left",
+        size: "13"
+      })
+    ).join("")}</w:tr>`;
+  }).join("");
+
+  const empty =
+    `<w:tr>${wCell("Sin registros en el período seleccionado.", widths.reduce((a, b) => a + b, 0), { size: "13" })}</w:tr>`;
+
+  return `
+    <w:tbl>
+      <w:tblPr>
+        <w:tblW w:w="0" w:type="auto"/>
+        <w:tblBorders>
+          <w:top w:val="single" w:sz="4"/>
+          <w:left w:val="single" w:sz="4"/>
+          <w:bottom w:val="single" w:sz="4"/>
+          <w:right w:val="single" w:sz="4"/>
+          <w:insideH w:val="single" w:sz="4"/>
+          <w:insideV w:val="single" w:sz="4"/>
+        </w:tblBorders>
+        <w:tblCellMar>
+          <w:top w:w="40" w:type="dxa"/>
+          <w:left w:w="50" w:type="dxa"/>
+          <w:bottom w:w="40" w:type="dxa"/>
+          <w:right w:w="50" w:type="dxa"/>
+        </w:tblCellMar>
+      </w:tblPr>
+      <w:tblGrid>${grid}</w:tblGrid>
+      ${headerRow}
+      ${rows || empty}
+    </w:tbl>
+  `;
+}
+
+async function ensurePizZipLoaded() {
+  if (typeof PizZip !== "undefined") return true;
+
+  if (window.PizZipReady && typeof window.PizZipReady.then === "function") {
+    try {
+      await window.PizZipReady;
+      if (typeof PizZip !== "undefined") return true;
+    } catch (e) {}
+  }
+
+  await new Promise(resolve => {
+    const existe = document.querySelector('script[data-local-pizzip="1"]');
+    if (existe) {
+      setTimeout(resolve, 300);
+      return;
+    }
+
+    const sc = document.createElement("script");
+    sc.src = "../../assets/pizzip.min.js";
+    sc.async = false;
+    sc.dataset.localPizzip = "1";
+    sc.onload = async () => {
+      if (window.PizZipReady && typeof window.PizZipReady.then === "function") {
+        try { await window.PizZipReady; } catch (e) {}
       }
-    }, { passive: true });
+      resolve();
+    };
+    sc.onerror = () => resolve();
+    document.head.appendChild(sc);
+  });
 
-    setActive(0);
-  })();
+  return typeof PizZip !== "undefined";
+}
+
+async function cargarPlantillaInformeConsumo() {
+  const expanded = [];
+  INFORME_TEMPLATE_CANDIDATES.forEach(name => {
+    expanded.push(name, encodeURI(name), "./" + encodeURI(name));
+  });
+
+  for (const url of expanded) {
+    try {
+      const r = await fetch(url, { cache: "no-store" });
+      if (r.ok) return await r.arrayBuffer();
+    } catch (e) {}
+  }
+
+  throw new Error(
+    "No se pudo cargar la plantilla Word del informe. Verifique que el archivo exista en docs/boletas/consumo_forestal/."
+  );
+}
+
+async function generarInformeConsumoDesdePlantillaWord(nombre, inicio, fin, regs) {
+  if (!regs.length) {
+    alert("No hay registros para el periodo seleccionado.");
+    return;
+  }
+
+  const okPizZip = await ensurePizZipLoaded();
+
+  if (!okPizZip) {
+    alert("No se pudo cargar PizZip desde docs/assets/pizzip.min.js.");
+    return;
+  }
+
+  let buf;
+
+  try {
+    buf = await cargarPlantillaInformeConsumo();
+  } catch (err) {
+    alert(err.message || "No se pudo cargar la plantilla Word.");
+    return;
+  }
+
+  const data = datosInformePlantillaConsumo(inicio, fin, regs);
+  const zip = new PizZip(buf);
+
+  const file = zip.file("word/document.xml");
+
+  if (!file) {
+    alert("La plantilla no contiene word/document.xml válido.");
+    return;
+  }
+
+  let xml = file.asText();
+
+  xml = replaceDocxToken(xml, "{{TABLA_GUARDARECURSOS}}", "__TABLA_GUARDARECURSOS__");
+
+  Object.entries(data).forEach(([k, v]) => {
+    if (k.startsWith("__")) return;
+    xml = replaceDocxToken(xml, `{{${k}}}`, v);
+  });
+
+  const tableXml = crearTablaGuardarecursosConsumoWordXml(data.__guardasConsol);
+
+  const markerParagraphRe =
+    /<w:p\b(?:(?!<\/w:p>)[\s\S])*?__TABLA_GUARDARECURSOS__(?:(?!<\/w:p>)[\s\S])*?<\/w:p>/;
+
+  if (markerParagraphRe.test(xml)) {
+    xml = xml.replace(markerParagraphRe, tableXml);
+  } else {
+    xml = xml.replace("__TABLA_GUARDARECURSOS__", "");
+    xml = xml.replace("</w:body>", tableXml + "</w:body>");
+  }
+
+  zip.file("word/document.xml", xml);
+
+  const blob = zip.generate({
+    type: "blob",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  });
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = nombre;
+  document.body.appendChild(a);
+  a.click();
+
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    document.body.removeChild(a);
+  }, 0);
+}
+
+function nombrePeriodoInformeConsumo(inicio, fin) {
+  const fi = isoDate(inicio);
+  const ff = isoDate(fin);
+  return `informe_general_consumo_forestal_${fi}_al_${ff}.docx`;
+}
+
+function generarInformePeriodoSeleccionadoConsumoWord() {
+  const desdeStr = document.getElementById("vc-desde")?.value;
+  const hastaStr = document.getElementById("vc-hasta")?.value;
+
+  if (!desdeStr || !hastaStr) {
+    alert("Defina el período completo antes de generar el informe.");
+    return;
+  }
+
+  const inicio = new Date(desdeStr + "T00:00:00");
+  const fin = new Date(hastaStr + "T23:59:59");
+
+  if (isNaN(inicio) || isNaN(fin) || inicio > fin) {
+    alert("El período seleccionado no es válido.");
+    return;
+  }
+
+  const regs = regsPorRangoInforme(inicio, fin);
+
+  generarInformeConsumoDesdePlantillaWord(
+    nombrePeriodoInformeConsumo(inicio, fin),
+    inicio,
+    fin,
+    regs
+  );
+}
+
+
+/* ═══ INICIO ══════════════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded",function(){
+  if(typeof Tabulator==="undefined"){alert("No se pudo cargar Tabulator.");return}
+  document.getElementById("btn-informe-guarda").addEventListener("click",generarInformeGuarda);
+  document.getElementById("generate-report-word").addEventListener("click",()=>generarInformeRegistro("word"));
+  document.getElementById("generate-report-pdf").addEventListener("click",()=>generarInformeRegistro("pdf"));
+  document.getElementById("generate-monthly-report-word").addEventListener("click",()=>generarInformeMensual("word"));
+  document.getElementById("generate-monthly-report-pdf").addEventListener("click",()=>generarInformeMensual("pdf"));
+  document.getElementById("vc-aplicar").addEventListener("click",ejecutarVerificacion);
+  document.getElementById("btn-informe-general-periodo-word").addEventListener("click",generarInformePeriodoSeleccionadoConsumoWord);
+
+  const urls=["../../datos/base3_datos.csv","https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base3_datos.csv"];
+  let p=Promise.reject();
+  urls.forEach(url=>{p=p.catch(()=>fetch(url,{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("HTTP "+r.status);return r.arrayBuffer();}));});
+  p.then(buf=>{
+    const u8=new Uint8Array(buf);
+    const t1=new TextDecoder("utf-8",{fatal:false}).decode(u8);
+    const t2=new TextDecoder("windows-1252",{fatal:false}).decode(u8);
+    const text=(t2.match(/\uFFFD/g)||[]).length<(t1.match(/\uFFFD/g)||[]).length?t2:t1;
+    const l0=text.split("\n")[0];
+    const dl=[";",",","\t"].sort((a,b)=>l0.split(b).length-l0.split(a).length)[0];
+    const parsed=Papa.parse(text,{header:true,skipEmptyLines:true,delimiter:dl});
+    DATOS=procesarDatos(parsed.data||[]);
+    inicializarTabla();
+    initVcSelects();
+    inicializarSelectorMeses();
+    initGuardaSelector();
+  }).catch(e=>{
+    const el=document.getElementById("estado-registros");if(el){el.textContent="Error: "+e.message;el.className="estado-txt error";}
+  });
+});
 </script>
 </body>
 </html>
