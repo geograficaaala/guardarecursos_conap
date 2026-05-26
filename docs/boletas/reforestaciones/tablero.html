@@ -489,7 +489,7 @@
     </a>
     <a href="datos.html" class="nav-tab">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-      Verificador
+      Registros y verificación
     </a>
   </div>
 </nav>
@@ -763,6 +763,86 @@ let CLICK_GUARDA = [];
 const norm = v => v == null ? "" : String(v).trim().replace(/\s+/g," ");
 const canon = v => norm(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
 const cleanLabel = v => norm(v).replace(/_/g," ").replace(/\b\w/g, c => c.toUpperCase());
+
+const MUNICIPIOS_OFICIALES = [
+  "Concepción", "Nahualá", "Panajachel", "San Andrés Semetabaj", "San Antonio Palopó",
+  "San José Chacayá", "San Juan La Laguna", "San Lucas Tolimán", "San Marcos La Laguna",
+  "San Pablo La Laguna", "San Pedro La Laguna", "Santa Catarina Ixtahuacán", "Santa Catarina Palopó",
+  "Santa Clara La Laguna", "Santa Cruz La Laguna", "Santa Lucía Utatlán", "Santa María Visitación",
+  "Santiago Atitlán", "Sololá"
+];
+const MUNICIPIO_ALIASES = new Map([
+  ["concepcion", "Concepción"],
+  ["nahuala", "Nahualá"],
+  ["panajachel", "Panajachel"],
+  ["solola", "Sololá"],
+  ["san andres semetabaj", "San Andrés Semetabaj"],
+  ["san andres semetabaj solola", "San Andrés Semetabaj"],
+  ["san antonio palopo", "San Antonio Palopó"],
+  ["san jose chacaya", "San José Chacayá"],
+  ["san jose chacaya solola", "San José Chacayá"],
+  ["san juan la laguna", "San Juan La Laguna"],
+  ["san juan laguna", "San Juan La Laguna"],
+  ["san lucas toliman", "San Lucas Tolimán"],
+  ["san marcos la laguna", "San Marcos La Laguna"],
+  ["san marcos laguna", "San Marcos La Laguna"],
+  ["san pablo la laguna", "San Pablo La Laguna"],
+  ["san pablo laguna", "San Pablo La Laguna"],
+  ["san pedro la laguna", "San Pedro La Laguna"],
+  ["san pedro laguna", "San Pedro La Laguna"],
+  ["santa catarina ixtahuacan", "Santa Catarina Ixtahuacán"],
+  ["santa catarina palopo", "Santa Catarina Palopó"],
+  ["santa clara la laguna", "Santa Clara La Laguna"],
+  ["santa clara laguna", "Santa Clara La Laguna"],
+  ["santa cruz la laguna", "Santa Cruz La Laguna"],
+  ["santa cruz laguna", "Santa Cruz La Laguna"],
+  ["santa lucia utatlan", "Santa Lucía Utatlán"],
+  ["santa lucia utalan", "Santa Lucía Utatlán"],
+  ["santa lucia utatlan solola", "Santa Lucía Utatlán"],
+  ["santa maria visitacion", "Santa María Visitación"],
+  ["santa maria visitacion solola", "Santa María Visitación"],
+  ["santiago atitlan", "Santiago Atitlán"],
+  ["stgo atitlan", "Santiago Atitlán"]
+]);
+
+function levenshtein(a,b){
+  a = canon(a); b = canon(b);
+  if(a === b) return 0;
+  if(!a) return b.length;
+  if(!b) return a.length;
+  const prev = Array.from({length:b.length+1},(_,i)=>i);
+  const curr = new Array(b.length+1);
+  for(let i=1;i<=a.length;i++){
+    curr[0]=i;
+    for(let j=1;j<=b.length;j++){
+      const cost = a[i-1] === b[j-1] ? 0 : 1;
+      curr[j] = Math.min(curr[j-1]+1, prev[j]+1, prev[j-1]+cost);
+    }
+    for(let j=0;j<=b.length;j++) prev[j]=curr[j];
+  }
+  return prev[b.length];
+}
+
+function normalizarMunicipio(v){
+  const raw = norm(v);
+  const c = canon(raw);
+  if(!c) return {label:"Sin municipio", key:"sin municipio"};
+  const alias = MUNICIPIO_ALIASES.get(c);
+  if(alias) return {label:alias, key:canon(alias)};
+
+  let mejor = null;
+  let mejorDist = Infinity;
+  MUNICIPIOS_OFICIALES.forEach(nombre=>{
+    const d = levenshtein(c, nombre);
+    if(d < mejorDist){ mejorDist = d; mejor = nombre; }
+  });
+
+  const limite = c.length <= 8 ? 1 : c.length <= 16 ? 2 : 3;
+  if(mejor && mejorDist <= limite) return {label:mejor, key:canon(mejor)};
+
+  const etiqueta = cleanLabel(raw);
+  return {label:etiqueta, key:canon(etiqueta)};
+}
 const uniq = arr => [...new Set(arr.filter(Boolean))];
 const sum = arr => arr.reduce((a,b)=>a+b,0);
 const fmt = (n,d=0) => Number(n||0).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -859,13 +939,14 @@ function enrich(data){
     const area = parseNumber(r["Area de reforestacion"]);
     const especies = splitSpecies(r["Especies reforestadas"] + (r["Especifique otra especie"] ? ","+r["Especifique otra especie"] : ""));
     const dt = parseDate(r["Fecha"]);
+    const muni = normalizarMunicipio(r["Municipio"]);
     return {
       ...r, __idx: idx+1,
       __guarda: cleanLabel(r["Nombre del guardarrecursos"]),
       __cg: canon(r["Nombre del guardarrecursos"]),
       __areaProt: cleanLabel(r["Area protegida"] || r["Especifique el area protegida"]),
       __cap: canon(r["Area protegida"] || r["Especifique el area protegida"]),
-      __municipio: cleanLabel(r["Municipio"]), __cm: canon(r["Municipio"]),
+      __municipio: muni.label, __cm: muni.key,
       __lugar: norm(r["Nombre del area o lugar de la reforestacion establecida"]),
       __tipo: cleanLabel(r["Tipo de reforestacion"]), __ct: canon(r["Tipo de reforestacion"]),
       __area: area, __especies: especies, __ce: especies.map(canon).filter(Boolean),
