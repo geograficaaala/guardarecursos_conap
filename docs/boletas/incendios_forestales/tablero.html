@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>AC283 · Tablero dinámico · Incendios forestales</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <style>
+    :root {
+      --verde-oscuro: #064e3b;
+      --verde-medio:  #16a34a;
+      --bg:           #f3f8f4;
+      --surface:      #ffffff;
+      --surface-2:    #f7fcf8;
+      --ink:          #102218;
+      --ink-2:        #254736;
+      --muted:        #5f7b6e;
+      --borde:        #d7eadf;
+      --sombra:       rgba(6,78,59,0.07);
+      --acento:       #16a34a;
+      --acento-bg:    rgba(34,197,94,0.10);
+      --acento-borde: rgba(34,197,94,0.28);
+      --dorado:       #d8b94f;
+      --dorado-claro: #f4d35e;
+      --mod-dark:     #047857;
+      --mod-mid:      #22c55e;
+      --mod-light:    #86efac;
+      --d0:#4ade80; --d1:#fb7185; --d2:#60a5fa; --d3:#fbbf24;
+      --d4:#f87171; --d5:#2dd4bf; --d6:#c084fc; --d7:#34d399;
+      --d8:#f9a8d4; --d9:#a3e635; --d10:#fb923c; --d11:#93c5fd;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+      line-height: 1.55;
+      opacity: 0;
+      animation: bodyIn .45s cubic-bezier(.22,.68,0,1.2) forwards;
+    }
+
+    @keyframes bodyIn  { to { opacity: 1; } }
+    @keyframes stripeIn  { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes kpiIn     { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes cardIn    { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes chipIn    { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
+    @keyframes blink     { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.6); } }
+    @media (prefers-reduced-motion: reduce) { body { animation: none; opacity: 1; } }
+
+    /* ── HEADER ── */
+    header {
+      background: linear-gradient(105deg, var(--verde-oscuro) 0%, var(--verde-medio) 100%);
+      color: #fff;
+      padding: 14px 28px 16px;
+      position: sticky; top: 0; z-index: 200;
+      box-shadow: 0 2px 28px rgba(0,0,0,.26);
+      flex-shrink: 0;
+      overflow: visible;
+    }
+    .header-inner {
+      max-width: 1480px; margin: 0 auto;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      position: relative; z-index: 1;
+    }
+    .header-wm { display: none; }
+    .header-stripe {
+      height: 4px;
+      background: linear-gradient(90deg, var(--mod-dark), var(--mod-mid), var(--mod-light));
+      margin: 0 -28px -16px;
+      transform-origin: left;
+      animation: stripeIn .65s cubic-bezier(.22,.68,0,1.1) .25s both;
+    }
+    .logo-group {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.10);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 999px; padding: 5px 14px;
+    }
+    .logo-group img {
+      height: 36px; max-width: 112px; object-fit: contain;
+      background: #fff; border-radius: 999px; padding: 3px 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .header-right { text-align: right; flex: 1; }
+    .header-right h1 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 1px; }
+    .header-right p  { font-size: 12px; opacity: .58; font-weight: 300; }
+    .header-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 6px; padding: 3px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.20);
+      background: rgba(255,255,255,.08);
+      font-size: 10px; letter-spacing: .12em;
+      text-transform: uppercase; font-weight: 600;
+    }
+    .chip-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #86efac;
+      animation: blink 2.4s ease-in-out infinite;
+    }
+
+    /* ── NAV ── */
+    .module-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--borde);
+      padding: 0 28px;
+      box-shadow: 0 1px 8px rgba(0,0,0,.04);
+      flex-shrink: 0;
+    }
+    .module-nav-inner {
+      max-width: 1480px; margin: 0 auto;
+      display: flex; align-items: stretch;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .module-nav-inner::-webkit-scrollbar { display: none; }
+    .nav-back {
+      display: flex; align-items: center; gap: 6px;
+      padding: 13px 18px 13px 0;
+      text-decoration: none; font-size: 13px; font-weight: 500;
+      color: var(--muted); border-right: 1px solid var(--borde);
+      margin-right: 8px; white-space: nowrap;
+      transition: color .18s;
+    }
+    .nav-back:hover { color: var(--verde-medio); }
+    .nav-tab {
+      display: flex; align-items: center; gap: 7px;
+      padding: 0 18px; text-decoration: none;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      border-bottom: 3px solid transparent;
+      white-space: nowrap; height: 50px;
+      transition: color .18s, border-color .18s;
+    }
+    .nav-tab:hover  { color: var(--acento); border-bottom-color: rgba(26,92,58,.2); }
+    .nav-tab.active { color: var(--acento); border-bottom-color: var(--acento); font-weight: 600; }
+
+    /* ── PÁGINA ── */
+    .page {
+      max-width: 1480px; width: 100%;
+      margin: 0 auto; padding: 28px 28px 72px; flex: 1;
+    }
+
+    /* ── FILTROS ── */
+    .filtros-panel {
+      background: var(--surface);
+      border: 1px solid var(--borde);
+      border-radius: 16px; padding: 20px 24px;
+      box-shadow: 0 2px 16px var(--sombra);
+      margin-bottom: 24px;
+      animation: slideDown .4s cubic-bezier(.22,.68,0,1.1) .1s both;
+    }
+    .filtros-titulo {
+      font-size: 10.5px; font-weight: 700; color: var(--muted);
+      letter-spacing: .13em; text-transform: uppercase;
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .filtros-grid {
+      display: grid;
+      grid-template-columns: 155px 155px 1fr 1fr 1fr 1fr auto auto;
+      gap: 12px; align-items: end;
+    }
+    .fg { display: flex; flex-direction: column; gap: 5px; }
+    .fg label {
+      font-size: 10.5px; font-weight: 700; color: var(--ink-2);
+      letter-spacing: .07em; text-transform: uppercase;
+    }
+    .fg select, .fg input[type="date"], .fg input[type="search"] {
+      border: 1.5px solid var(--borde); border-radius: 9px;
+      padding: 8px 11px; font-size: 13.5px; font-family: inherit;
+      background: var(--surface-2); color: var(--ink);
+      transition: border-color .18s, box-shadow .18s;
+      outline: none; width: 100%;
+    }
+    .fg select:focus, .fg input:focus {
+      border-color: var(--acento);
+      box-shadow: 0 0 0 3px rgba(26,92,58,.10);
+      background: var(--surface);
+    }
+    .btn-filtro {
+      padding: 8px 18px; border-radius: 9px;
+      border: 1.5px solid var(--borde);
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: all .18s;
+      white-space: nowrap; height: 40px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-aplicar { background: var(--verde-oscuro); color: #fff; border-color: var(--verde-oscuro); }
+    .btn-aplicar:hover { background: var(--verde-medio); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(10,61,43,.25); }
+    .btn-limpiar { background: var(--surface); color: var(--muted); }
+    .btn-limpiar:hover { border-color: #94a3b8; color: var(--ink); }
+    .chips-wrap { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+    .chip-activo {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 13px; border-radius: 999px;
+      background: var(--acento-bg); border: 1px solid var(--acento-borde);
+      font-size: 12px; font-weight: 500; color: var(--acento);
+      animation: chipIn .2s ease both;
+    }
+
+    /* ── ESTADO ── */
+    .estado-bar {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px; flex-wrap: wrap; gap: 8px;
+    }
+    .estado-txt { font-size: 13px; color: var(--muted); font-weight: 400; }
+    .estado-txt.error { color: #9b1c1c; font-weight: 600; }
+    .estado-txt strong { color: var(--ink); font-weight: 600; }
+
+    /* ── KPIs ── */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 14px; margin-bottom: 28px;
+    }
+    @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px)  { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--borde);
+      border-top: 3px solid transparent;
+      border-radius: 14px; padding: 18px 18px 15px;
+      box-shadow: 0 1px 8px var(--sombra);
+      transition: box-shadow .22s, transform .22s;
+      animation: kpiIn .45s cubic-bezier(.22,.68,0,1.1) both;
+    }
+    .kpi:nth-child(1) { animation-delay: .10s; }
+    .kpi:nth-child(2) { animation-delay: .15s; }
+    .kpi:nth-child(3) { animation-delay: .20s; }
+    .kpi:nth-child(4) { animation-delay: .25s; }
+    .kpi:nth-child(5) { animation-delay: .30s; }
+    .kpi:nth-child(6) { animation-delay: .35s; }
+    .kpi:hover { box-shadow: 0 6px 22px rgba(10,61,43,.11); transform: translateY(-2px); }
+    .kpi-0 { border-top-color: var(--d0); }
+    .kpi-1 { border-top-color: var(--d1); }
+    .kpi-2 { border-top-color: var(--d2); }
+    .kpi-3 { border-top-color: var(--d4); }
+    .kpi-4 { border-top-color: var(--d5); }
+    .kpi-5 { border-top-color: var(--d3); }
+    .kpi-label {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      letter-spacing: .10em; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .kpi-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px; font-weight: 900;
+      line-height: 1; color: var(--ink); margin-bottom: 5px;
+    }
+    .kpi-rango {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      padding-top: 8px;
+      line-height: 1.25;
+    }
+    .kpi-sub { font-size: 11.5px; color: var(--muted); font-weight: 400; }
+
+    /* ── DIVISORES ── */
+    .sec-divider {
+      display: flex; align-items: center; gap: 14px;
+      font-size: 10.5px; font-weight: 700; color: var(--muted);
+      letter-spacing: .14em; text-transform: uppercase;
+      margin: 32px 0 20px;
+    }
+    .sec-divider::before, .sec-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--borde);
+    }
+
+    /* ── TARJETAS GRÁFICA ── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 860px) { .charts-grid { grid-template-columns: 1fr; } }
+    .cc {
+      background: var(--surface);
+      border: 1px solid var(--borde);
+      border-radius: 16px; padding: 22px 24px 20px;
+      box-shadow: 0 1px 10px var(--sombra);
+      display: flex; flex-direction: column;
+      transition: box-shadow .22s;
+      animation: cardIn .5s cubic-bezier(.22,.68,0,1.1) both;
+    }
+    .cc:hover { box-shadow: 0 4px 22px rgba(10,61,43,.10); }
+    .cc.full { grid-column: span 2; }
+    @media (max-width: 860px) { .cc.full { grid-column: span 1; } }
+    .charts-grid .cc:nth-child(1) { animation-delay: .08s; }
+    .charts-grid .cc:nth-child(2) { animation-delay: .14s; }
+    .charts-grid .cc:nth-child(3) { animation-delay: .20s; }
+    .charts-grid .cc:nth-child(4) { animation-delay: .26s; }
+    .charts-grid .cc:nth-child(5) { animation-delay: .32s; }
+    .cc-head {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 10px; margin-bottom: 4px;
+    }
+    .cc-meta { flex: 1; }
+    .cc-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 16.5px; font-weight: 700; color: var(--ink);
+      line-height: 1.25; margin-bottom: 4px;
+    }
+    .cc-hint { font-size: 12px; color: var(--muted); font-weight: 400; line-height: 1.55; }
+    .cc-sep { width: 100%; height: 1px; background: var(--borde); margin: 10px 0 16px; }
+    .btn-png {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 11px; border-radius: 9px;
+      border: 1.5px solid var(--borde);
+      background: var(--surface-2);
+      font-size: 11px; font-weight: 600; font-family: inherit;
+      color: var(--ink-2); cursor: pointer;
+      transition: all .18s; white-space: nowrap; flex-shrink: 0;
+      letter-spacing: .03em;
+    }
+    .btn-png:hover,
+    .btn-aplicar:hover {
+      background: var(--verde-medio);
+      border-color: var(--verde-medio);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(10,61,43,.22);
+    }
+
+    /* ── CANVAS ── */
+    .cw { position: relative; }
+    .h200 { height: 200px; } .h240 { height: 240px; } .h260 { height: 260px; }
+    .h280 { height: 280px; } .h300 { height: 300px; } .h340 { height: 340px; }
+    .h360 { height: 360px; } .h400 { height: 400px; } .h420 { height: 420px; }
+    .h460 { height: 460px; } .h480 { height: 480px; } .h520 { height: 520px; }
+
+    /* ── TABLA ── */
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--borde);
+      border-radius: 12px;
+      background: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 860px;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #edf2ef;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f6faf7;
+      color: var(--ink-2);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 900;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody tr:hover { background: #fbfdfc; }
+    .tag {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--acento-bg);
+      border: 1px solid var(--acento-borde);
+      color: var(--acento);
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--verde-oscuro);
+      position: relative; overflow: hidden;
+      flex-shrink: 0;
+    }
+    .footer-wm {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%,-50%);
+      font-family: 'Playfair Display', serif;
+      font-size: 96px; font-weight: 900;
+      letter-spacing: -.04em; color: #fff; opacity: .04;
+      pointer-events: none; user-select: none;
+      white-space: nowrap; line-height: 1;
+    }
+    .footer-inner {
+      max-width: 1480px; margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 16px; align-items: start;
+      position: relative; z-index: 1;
+      padding: 26px 28px 0;
+    }
+    .footer-col { color: rgba(255,255,255,.65); }
+    .footer-col strong {
+      color: #fff; font-weight: 700; font-size: 13px;
+      display: block; margin-bottom: 4px;
+    }
+    .footer-col span { display: block; font-size: 11.5px; line-height: 1.65; }
+    .footer-center { text-align: center; }
+    .footer-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 14px; border-radius: 999px;
+      font-size: 10.5px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+    }
+    .footer-mod-desc {
+      font-size: 11.5px; margin-top: 7px;
+      color: rgba(255,255,255,.68);
+    }
+    .footer-col-right {
+      text-align: right; color: rgba(255,255,255,.5);
+    }
+    .footer-col-right strong {
+      color: rgba(255,255,255,.78); font-size: 12px;
+      font-weight: 600; display: block; margin-bottom: 3px;
+    }
+    .footer-col-right span { display: block; font-size: 11.5px; line-height: 1.65; }
+    .footer-divider {
+      grid-column: 1/-1; height: 1px;
+      background: rgba(255,255,255,.10);
+      margin: 18px 0 10px;
+    }
+    .footer-copy {
+      grid-column: 1/-1; text-align: center;
+      font-size: 11px; color: rgba(255,255,255,.28);
+      letter-spacing: .04em; padding-bottom: 20px;
+    }
+
+    @media (max-width: 1180px) { .filtros-grid { grid-template-columns: 1fr 1fr 1fr; } }
+    @media (max-width: 860px) {
+      .footer-inner { grid-template-columns: 1fr; gap: 20px; }
+      .footer-col-right { text-align: left; }
+    }
+    @media (max-width: 660px)  {
+      .filtros-grid { grid-template-columns: 1fr; }
+      .cc-head { flex-direction: column; align-items: stretch; }
+      .btn-png { justify-content: center; }
+    }
+  
+
+    /* Ajustes específicos AC283 */
+    .filtros-grid { grid-template-columns: 145px 145px repeat(8, minmax(120px,1fr)) auto auto; }
+    .kpis { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 1280px) { .filtros-grid { grid-template-columns: repeat(4,1fr); } .kpis { grid-template-columns: repeat(4,1fr); } }
+    @media (max-width: 900px) { .filtros-grid { grid-template-columns: repeat(2,1fr); } .kpis { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 620px) { .filtros-grid { grid-template-columns: 1fr; } .kpis { grid-template-columns: 1fr 1fr; } }
+    .kpi-6 { border-top-color: var(--d6); }
+    .kpi-7 { border-top-color: var(--d10); }
+    .risk-badge { display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap; }
+    .risk-low { background:#dcfce7;color:#166534;border:1px solid #86efac; }
+    .risk-med { background:#fef9c3;color:#854d0e;border:1px solid #fde68a; }
+    .risk-high { background:#fee2e2;color:#991b1b;border:1px solid #fecaca; }
+    .small-note{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:9px}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="logo-group">
+      <img src="../../assets/conap_logo.jpg" alt="CONAP">
+      <img src="../../assets/aala_logo.png" alt="AALA">
+    </div>
+    <div class="header-right">
+      <h1>Centro de consulta de datos</h1>
+      <p>Sistema de monitoreo · CONAP – Dirección Regional Altiplano Central</p>
+      <div class="header-chip"><span class="chip-dot"></span>AC283 · Incendios forestales</div>
+    </div>
+  </div>
+  <div class="header-wm" aria-hidden="true">CONAP</div>
+  <div class="header-stripe"></div>
+</header>
+<nav class="module-nav">
+  <div class="module-nav-inner">
+    <a href="../../index.html" class="nav-back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>Inicio</a>
+    <a href="dashboard.html" class="nav-tab"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>Mapa geográfico</a>
+    <a href="tablero.html" class="nav-tab active"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Tablero dinámico</a>
+    <a href="datos.html" class="nav-tab"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>Registros y verificación</a>
+  </div>
+</nav>
+<main class="page">
+  <section class="filtros-panel">
+    <div class="filtros-titulo"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filtros globales para el análisis</div>
+    <div class="filtros-grid">
+      <div class="fg"><label for="f-desde">Desde</label><input id="f-desde" type="date"></div>
+      <div class="fg"><label for="f-hasta">Hasta</label><input id="f-hasta" type="date"></div>
+      <div class="fg"><label for="f-municipio">Municipio</label><select id="f-municipio"><option value="">Todos</option></select></div>
+      <div class="fg"><label for="f-guarda">Guardarecurso</label><select id="f-guarda"><option value="">Todos</option></select></div>
+      <div class="fg"><label for="f-area">Área protegida</label><select id="f-area"><option value="">Todas</option></select></div>
+      <div class="fg"><label for="f-tipo">Tipo incendio</label><select id="f-tipo"><option value="">Todos</option></select></div>
+      <div class="fg"><label for="f-causa">Causa</label><select id="f-causa"><option value="">Todas</option></select></div>
+      <div class="fg"><label for="f-institucion">Institución</label><select id="f-institucion"><option value="">Todas</option></select></div>
+      <div class="fg"><label for="f-aereo">Medios aéreos</label><select id="f-aereo"><option value="">Todos</option></select></div>
+      <div class="fg"><label for="f-rango">Superficie</label><select id="f-rango"><option value="">Todas</option></select></div>
+      <button class="btn-filtro btn-aplicar" id="btn-aplicar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Aplicar</button>
+      <button class="btn-filtro btn-limpiar" id="btn-limpiar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Limpiar</button>
+    </div>
+    <div class="chips-wrap" id="chips-wrap"></div>
+  </section>
+  <div class="estado-bar"><span class="estado-txt" id="estado">Cargando datos…</span></div>
+  <section class="kpis">
+    <div class="kpi kpi-0"><div class="kpi-label">Incendios</div><div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub">registros visibles</div></div>
+    <div class="kpi kpi-1"><div class="kpi-label">Superficie total</div><div class="kpi-value" id="kpi-sup">–</div><div class="kpi-sub">hectáreas afectadas</div></div>
+    <div class="kpi kpi-2"><div class="kpi-label">Bosque natural</div><div class="kpi-value" id="kpi-bosque">–</div><div class="kpi-sub">hectáreas afectadas</div></div>
+    <div class="kpi kpi-3"><div class="kpi-label">Plantación</div><div class="kpi-value" id="kpi-plantacion">–</div><div class="kpi-sub">hectáreas afectadas</div></div>
+    <div class="kpi kpi-4"><div class="kpi-label">Municipios</div><div class="kpi-value" id="kpi-munis">–</div><div class="kpi-sub">con registros</div></div>
+    <div class="kpi kpi-5"><div class="kpi-label">Guardarecursos</div><div class="kpi-value" id="kpi-guardas">–</div><div class="kpi-sub">activos</div></div>
+    <div class="kpi kpi-6"><div class="kpi-label">Medios aéreos</div><div class="kpi-value" id="kpi-aereos">–</div><div class="kpi-sub">incendios con apoyo</div></div>
+    <div class="kpi kpi-7"><div class="kpi-label">Prom. control</div><div class="kpi-value kpi-rango" id="kpi-control">–</div><div class="kpi-sub">aviso a control</div></div>
+  </section>
+  <div class="sec-divider">Análisis temporal y operativo</div>
+  <section class="charts-grid">
+    <div class="cc full"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Tendencia mensual de incendios y superficie afectada</div><div class="cc-hint">Evolución de eventos registrados y hectáreas afectadas en el período filtrado</div></div><button class="btn-png" id="png-tendencia">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h320"><canvas id="c-tendencia"></canvas></div><div class="small-note">Período activo: <strong id="kpi-rango">–</strong></div></div>
+  </section>
+  <div class="sec-divider">Análisis territorial</div>
+  <section class="charts-grid">
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Incendios por municipio</div><div class="cc-hint">Top de municipios por registros · clic para filtrar</div></div><button class="btn-png" id="png-municipio">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h360"><canvas id="c-municipio"></canvas></div></div>
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Superficie afectada por municipio</div><div class="cc-hint">Suma de hectáreas afectadas por municipio</div></div><button class="btn-png" id="png-superficie-municipio">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h360"><canvas id="c-superficie-municipio"></canvas></div></div>
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Cobertura RUMCLA</div><div class="cc-hint">Distribución dentro y fuera de RUMCLA</div></div><button class="btn-png" id="png-rumcla">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h300"><canvas id="c-rumcla"></canvas></div></div>
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Rangos de superficie</div><div class="cc-hint">Clasificación por hectáreas afectadas</div></div><button class="btn-png" id="png-rangos">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h300"><canvas id="c-rangos"></canvas></div></div>
+  </section>
+  <div class="sec-divider">Causas, bosque y tipo de incendio</div>
+  <section class="charts-grid">
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Causas más frecuentes</div><div class="cc-hint">Causas reportadas en la boleta</div></div><button class="btn-png" id="png-causas">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h360"><canvas id="c-causas"></canvas></div></div>
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Superficie afectada por causa</div><div class="cc-hint">Hectáreas acumuladas por causa reportada</div></div><button class="btn-png" id="png-causas-sup">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h360"><canvas id="c-causas-sup"></canvas></div></div>
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Tipo de incendio</div><div class="cc-hint">Rastrero, de copas, subterráneo o combinaciones</div></div><button class="btn-png" id="png-tipo">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h300"><canvas id="c-tipo"></canvas></div></div>
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Tipo de bosque afectado</div><div class="cc-hint">Plantación y bosque natural según registros</div></div><button class="btn-png" id="png-bosque">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h300"><canvas id="c-bosque"></canvas></div></div>
+  </section>
+  <div class="sec-divider">Respuesta, instituciones y técnicas</div>
+  <section class="charts-grid">
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Incendios por guardarecurso</div><div class="cc-hint">Responsables con mayor número de registros · clic para filtrar</div></div><button class="btn-png" id="png-guarda">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h360"><canvas id="c-guarda"></canvas></div></div>
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Instituciones participantes</div><div class="cc-hint">Frecuencia de participación institucional</div></div><button class="btn-png" id="png-instituciones">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h360"><canvas id="c-instituciones"></canvas></div></div>
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Tiempo promedio hasta control por municipio</div><div class="cc-hint">Horas promedio desde aviso hasta control</div></div><button class="btn-png" id="png-tiempo-municipio">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h360"><canvas id="c-tiempo-municipio"></canvas></div></div>
+    <div class="cc"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Medios aéreos</div><div class="cc-hint">Incendios con y sin apoyo aéreo</div></div><button class="btn-png" id="png-aereos">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h300"><canvas id="c-aereos"></canvas></div></div>
+    <div class="cc full"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Técnicas de extinción</div><div class="cc-hint">Ataque directo, indirecto y control natural</div></div><button class="btn-png" id="png-tecnicas">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h300"><canvas id="c-tecnicas"></canvas></div></div>
+  </section>
+  <div class="sec-divider">Resumen municipal</div>
+  <section class="charts-grid"><div class="cc full"><div class="cc-head"><div class="cc-meta"><div class="cc-title">Resumen municipal de incendios forestales</div><div class="cc-hint">Consolida registros, superficie, causas y tiempos de control sobre los filtros activos</div></div></div><div class="cc-sep"></div><div class="table-wrap"><table><thead><tr><th>Municipio</th><th>Incendios</th><th>Superficie ha</th><th>Bosque natural ha</th><th>Plantación ha</th><th>Causa principal</th><th>Prom. control</th><th>Complejidad alta</th><th>Último aviso</th></tr></thead><tbody id="tabla-resumen"></tbody></table></div></div></section>
+</main>
+<footer>
+  <div class="footer-wm" aria-hidden="true">CONAP</div><div class="footer-inner"><div class="footer-col"><strong>CONAP</strong><span>Consejo Nacional de Áreas Protegidas</span><span>Dirección Regional Altiplano Central</span></div><div class="footer-center"><div class="footer-badge" style="background:rgba(248,113,113,.18);border:1px solid rgba(248,113,113,.38);color:#fecaca;">AC 283 · Incendios forestales</div><div class="footer-mod-desc">Control y liquidación de incendios forestales</div></div><div class="footer-col footer-col-right"><span>Desarrollado por</span><strong>Laboratorio SIG · AALA</strong><span>Asociación Amigos del Lago de Atitlán</span></div><div class="footer-divider"></div><div class="footer-copy">© 2026 · Todos los datos son de uso oficial · Sistema de Monitoreo CONAP</div></div>
+</footer>
+<script>
+/* ═══════════════════════════════════════════════════════════
+   AC283 · CONTROL Y LIQUIDACIÓN DE INCENDIOS FORESTALES
+   Tablero dinámico homologado con los módulos anteriores
+═══════════════════════════════════════════════════════════ */
+const CSV_URLS = [
+  "../../datos/base5_datos.csv",
+  "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base5_datos.csv"
+];
+
+const CHART_COLOR = {
+  green900:"#064e3b", green800:"#166534", green700:"#15803d", green600:"#16a34a", green500:"#22c55e", green400:"#4ade80",
+  yellow900:"#713f12", yellow800:"#854d0e", yellow700:"#a16207", yellow600:"#ca8a04", yellow500:"#eab308", yellow400:"#facc15",
+  red900:"#7f1d1d", red800:"#991b1b", red700:"#b91c1c", red600:"#dc2626", red500:"#ef4444", red400:"#f87171",
+  gray500:"#6b7280", gray300:"#d1d5db",
+  blue700:"#1d4ed8", blue500:"#60a5fa", teal400:"#2dd4bf", purple400:"#c084fc", pink300:"#f9a8d4", lime400:"#a3e635", orange600:"#ea580c", orange400:"#fb923c"
+};
+const PAL = [
+  CHART_COLOR.red700, CHART_COLOR.orange600, CHART_COLOR.yellow700, CHART_COLOR.green700,
+  CHART_COLOR.blue700, CHART_COLOR.teal400, CHART_COLOR.purple400, CHART_COLOR.red500,
+  CHART_COLOR.green500, CHART_COLOR.yellow500, CHART_COLOR.orange400, CHART_COLOR.blue500
+];
+const COLOR_INCENDIO = CHART_COLOR.red700;
+const COLOR_SUPERFICIE = CHART_COLOR.orange600;
+const COLOR_TIEMPO = CHART_COLOR.blue700;
+const COLOR_INSTITUCION = CHART_COLOR.yellow700;
+const GC = "rgba(6,78,59,0.055)";
+const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+Chart.defaults.font.family = "'DM Sans',sans-serif";
+Chart.defaults.font.size   = 13;
+Chart.defaults.color       = "#5f7b6e";
+Chart.defaults.locale      = "en-US";
+Chart.defaults.plugins.legend.labels.usePointStyle = false;
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+Chart.defaults.plugins.legend.labels.boxHeight = 12;
+Chart.defaults.scales.linear.ticks.callback = value => Number(value).toLocaleString("en-US");
+if(typeof ChartDataLabels !== "undefined"){
+  Chart.register(ChartDataLabels);
+  Chart.defaults.set("plugins.datalabels",{display:false});
+}
+const TT = {
+  backgroundColor:"rgba(7,24,15,0.93)",
+  titleFont:{size:13,weight:"600",family:"'DM Sans',sans-serif"},
+  bodyFont:{size:12.5,family:"'DM Sans',sans-serif"},
+  padding:12, cornerRadius:10,
+  borderColor:"rgba(255,255,255,0.06)", borderWidth:1
+};
+
+const CHARTS = {};
+let ROWS = [];
+let CLICK_MUNI = [];
+let CLICK_GUARDA = [];
+const norm = v => v == null ? "" : String(v).trim().replace(/\s+/g," ");
+const canon = v => norm(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+const uniq = arr => [...new Set(arr.filter(Boolean))];
+const sum = arr => arr.reduce((a,b)=>a+b,0);
+const avg = arr => { const v=arr.filter(x=>Number.isFinite(x)); return v.length ? sum(v)/v.length : null; };
+const fmt = (n,d=0) => Number(n||0).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+function cleanLabel(v){
+  const s = norm(v).replace(/_/g," ");
+  if(!s) return "Sin dato";
+  return s.replace(/\b\w/g, c => c.toLocaleUpperCase("es-GT"));
+}
+function labelValue(v){
+  const c = canon(v);
+  const map = {
+    "si":"Sí", "no":"No",
+    "telefono":"Teléfono", "redes sociales":"Redes sociales", "personal":"Personal", "radio":"Radio",
+    "rumcla":"RUMCLA", "fuera de rumcla":"Fuera de RUMCLA",
+    "plantacion":"Plantación", "bosque natural":"Bosque natural",
+    "rastrero":"Rastrero", "de copas":"De copas", "copas":"De copas", "subterraneo":"Subterráneo",
+    "ataque directo":"Ataque directo", "ataque indirecto":"Ataque indirecto", "control natural":"Control natural",
+    "quemas agricolas":"Quemas agrícolas", "quemas de pastos":"Quemas de pastos", "quema de basura":"Quema de basura",
+    "lenadores":"Leñadores", "causa natural":"Causa natural", "desconocida":"Desconocida", "intencionales":"Intencionales",
+    "del estado":"Del Estado", "comunal":"Comunal", "privada":"Privada", "municipal":"Municipal", "mixto":"Mixto",
+    "bomberos voluntarios":"Bomberos Voluntarios", "policia nacional civil pnc":"Policía Nacional Civil PNC", "conap":"CONAP", "conred":"CONRED", "marn":"MARN", "inab":"INAB", "ongs":"ONGs"
+  };
+  return map[c] || cleanLabel(v);
+}
+function parseNumber(v){
+  if(v === null || v === undefined || v === "") return 0;
+  const s = String(v).trim().replace(/,/g,".").replace(/[^0-9.\-]/g,"");
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : 0;
+}
+function parseDate(v){
+  const s = norm(v); if(!s) return null;
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m){
+    const a=+m[1], b=+m[2], y=+m[3];
+    const month = a>12 ? b : a;
+    const day   = a>12 ? a : b;
+    return new Date(Date.UTC(y, month-1, day, +(m[4]||0), +(m[5]||0), +(m[6]||0)));
+  }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if(m) return new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +(m[4]||0), +(m[5]||0), +(m[6]||0)));
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+function parseTimeParts(v){
+  const s=norm(v); if(!s) return {h:0,m:0,s:0,has:false};
+  let m=s.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+  if(!m) return {h:0,m:0,s:0,has:false};
+  let h=+m[1]; const mi=+m[2]; const se=+(m[3]||0); const ap=(m[4]||"").toUpperCase();
+  if(ap==="PM" && h<12) h+=12; if(ap==="AM" && h===12) h=0;
+  return {h,m:mi,s:se,has:true};
+}
+function combineDateTime(dateVal,timeVal){
+  const d=parseDate(dateVal); if(!d) return null;
+  const t=parseTimeParts(timeVal);
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), t.h, t.m, t.s));
+}
+function hoursBetween(a,b){
+  if(!a || !b || isNaN(a) || isNaN(b) || b<a) return null;
+  return (b-a)/3600000;
+}
+function fmtHours(h){
+  if(!Number.isFinite(h)) return "–";
+  if(h < 1) return `${Math.round(h*60)} min`;
+  if(h < 24) return `${fmt(h,1)} h`;
+  return `${fmt(h/24,1)} días`;
+}
+function fmtDate(dt){
+  if(!dt) return "–";
+  return String(dt.getUTCDate()).padStart(2,"0")+"/"+String(dt.getUTCMonth()+1).padStart(2,"0")+"/"+dt.getUTCFullYear();
+}
+function isoDate(dt){ return dt ? dt.toISOString().slice(0,10) : ""; }
+function mKey(dt){ return dt.getUTCFullYear()+"-"+String(dt.getUTCMonth()+1).padStart(2,"0"); }
+function mShort(k){ const [y,m]=k.split("-"); return MESES_S[+m-1]+"'"+String(y).slice(2); }
+function splitMulti(v){
+  const s=norm(v); if(!s) return [];
+  return s.split(/[,;|]+|\s{2,}/).map(x=>labelValue(x)).filter(Boolean).filter(x=>canon(x)!=="nan");
+}
+function firstNonEmpty(...vals){ return vals.find(v=>norm(v)) || ""; }
+function wrapLabel(label,maxChars=24){
+  const words=String(label||"").split(/\s+/).filter(Boolean); const lines=[]; let line="";
+  words.forEach(w=>{ const next=line?line+" "+w:w; if(next.length>maxChars && line){lines.push(line); line=w;} else line=next; });
+  if(line) lines.push(line); return lines.length?lines:[String(label||"")];
+}
+function levenshtein(a,b){
+  a=canon(a); b=canon(b); if(a===b)return 0; if(!a)return b.length; if(!b)return a.length;
+  const prev=Array.from({length:b.length+1},(_,i)=>i), curr=new Array(b.length+1);
+  for(let i=1;i<=a.length;i++){ curr[0]=i; for(let j=1;j<=b.length;j++){ const cost=a[i-1]===b[j-1]?0:1; curr[j]=Math.min(curr[j-1]+1,prev[j]+1,prev[j-1]+cost); } for(let j=0;j<=b.length;j++)prev[j]=curr[j]; }
+  return prev[b.length];
+}
+const MUNICIPIOS_OFICIALES=["Acatenango","Concepción","Nahualá","Panajachel","San Andrés Semetabaj","San Antonio Palopó","San José Chacayá","San Juan La Laguna","San Lucas Tolimán","San Marcos La Laguna","San Pablo La Laguna","San Pedro La Laguna","Santa Catarina Ixtahuacán","Santa Catarina Palopó","Santa Clara La Laguna","Santa Cruz La Laguna","Santa Lucía Utatlán","Santa María Visitación","Santiago Atitlán","Sololá","Tecpán"];
+const MUNICIPIO_ALIASES=new Map([
+  ["solola","Sololá"],["sololas","Sololá"],["nahuala","Nahualá"],["tecpan","Tecpán"],["acatenango","Acatenango"],
+  ["san andres semetabaj","San Andrés Semetabaj"],["santa lucia utatlan","Santa Lucía Utatlán"],["san jose chacaya","San José Chacayá"],
+  ["san lucas toliman","San Lucas Tolimán"],["san lucas toliman solola","San Lucas Tolimán"],["santa maria visitacion","Santa María Visitación"],
+  ["santa cruz la lagunacaserill","Santa Cruz La Laguna"],["santa cruz la laguna caserill","Santa Cruz La Laguna"],["santa cruz la laguna","Santa Cruz La Laguna"],
+  ["santiago atitlan","Santiago Atitlán"],["san pedro la laguna","San Pedro La Laguna"],["santa catarina palopo","Santa Catarina Palopó"]
+]);
+function normalizarMunicipio(v){
+  const raw=norm(v), c=canon(raw); if(!c) return {label:"Sin municipio",key:"sin municipio"};
+  if(MUNICIPIO_ALIASES.has(c)) { const x=MUNICIPIO_ALIASES.get(c); return {label:x,key:canon(x)}; }
+  let mejor=null, dist=Infinity; MUNICIPIOS_OFICIALES.forEach(n=>{const d=levenshtein(c,n); if(d<dist){dist=d; mejor=n;}});
+  const lim=c.length<=8?1:c.length<=16?2:3; if(mejor && dist<=lim) return {label:mejor,key:canon(mejor)};
+  const lab=cleanLabel(raw); return {label:lab,key:canon(lab)};
+}
+
+async function loadCSV(){
+  for(const url of CSV_URLS){
+    try{
+      const r=await fetch(url,{cache:"no-store"}); if(!r.ok) continue;
+      const buf=await r.arrayBuffer(); const u8=new Uint8Array(buf);
+      const t1=new TextDecoder("utf-8",{fatal:false}).decode(u8);
+      const t2=new TextDecoder("windows-1252",{fatal:false}).decode(u8);
+      const text=(t2.match(/\uFFFD/g)||[]).length < (t1.match(/\uFFFD/g)||[]).length ? t2 : t1;
+      const parsed=parseCSV(text); if(parsed.data.length) return parsed;
+    }catch(e){}
+  }
+  throw new Error("No se pudo cargar base5_datos.csv");
+}
+function parseCSV(text){
+  const first=text.split(/\r?\n/)[0]||"";
+  const delim=[";",",","\t"].sort((a,b)=>first.split(b).length-first.split(a).length)[0];
+  const rows=[]; let row=[], field="", q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){field+='"'; i++;} else q=false; } else field+=c; continue; }
+    if(c==='"'){q=true; continue;} if(c===delim){row.push(field); field=""; continue;} if(c==='\n'){row.push(field); rows.push(row); row=[]; field=""; continue;} if(c==='\r') continue; field+=c;
+  }
+  row.push(field); rows.push(row);
+  const headers=(rows.shift()||[]).map(h=>norm(h).replace(/^\uFEFF/,""));
+  const data=rows.filter(r=>r.some(v=>norm(v))).map(r=>Object.fromEntries(headers.map((h,i)=>[h,norm(r[i]||"")])));
+  return {headers,data,delimiter:delim};
+}
+function complejidad(r){
+  let score=0;
+  if(r.__sup>=5) score++;
+  if(Number.isFinite(r.__hControl) && r.__hControl>=6) score++;
+  if(Number.isFinite(r.__hLiquidacion) && r.__hLiquidacion>=12) score++;
+  if(r.__aereo) score++;
+  if(r.__instituciones.length>=3) score++;
+  if(r.__tipoIncendio.some(x=>["de copas","subterraneo","subterraneo"].includes(canon(x)))) score++;
+  const label=score>=4?"Alta":score>=2?"Media":"Baja";
+  return {score,label};
+}
+function enrich(data){
+  return data.map((r,idx)=>{
+    const muni=normalizarMunicipio(firstNonEmpty(r["Municipio"],r["Municipio calculado"]));
+    const aviso=combineDateTime(r["Fecha aviso"],r["Hora aviso"]);
+    const llegadaMT=combineDateTime(r["Fecha llegada medios terrestres"],r["Hora llegada medios terrestres"]);
+    const llegadaMA=combineDateTime(r["Fecha llegada medios aereos"],r["Hora llegada medios aereos"]);
+    const control=combineDateTime(r["Fecha control"],r["Hora control"]);
+    const liquidacion=combineDateTime(r["Fecha liquidacion"],r["Hora liquidacion"]);
+    const areaProt=labelValue(firstNonEmpty(r["Area protegida"],r["Especifique el area protegida"]));
+    const out={
+      ...r,__idx:idx+1,
+      __guarda:labelValue(r["Nombre del guardarrecursos"]), __cg:canon(r["Nombre del guardarrecursos"]),
+      __region:labelValue(r["Region"]),
+      __areaProt:areaProt, __cap:canon(areaProt),
+      __departamento:labelValue(r["Departamento"]),
+      __municipio:muni.label, __cm:muni.key,
+      __referencia:norm(r["Referencia de ubicacion"]),
+      __dt:aviso, __mes:aviso?mKey(aviso):"",
+      __llegadaMT:llegadaMT, __llegadaMA:llegadaMA, __control:control, __liquidacion:liquidacion,
+      __forma:labelValue(r["Forma de aviso"]), __cf:canon(r["Forma de aviso"]),
+      __aereo:canon(r["Llegaron medios aereos"])==="si",
+      __propiedad:splitMulti(r["Propiedad del terreno"]),
+      __tipoBosque:splitMulti(r["Tipo de bosque"]),
+      __plantacion:parseNumber(r["Area plantacion ha"]),
+      __bosqueNatural:parseNumber(r["Area bosque natural ha"]),
+      __sup:parseNumber(r["Superficie total ha"]),
+      __tipoIncendio:splitMulti(r["Tipo de incendio"]),
+      __tecnicas:splitMulti(r["Tecnicas de extincion"]),
+      __instituciones:splitMulti(r["Instituciones participantes"]).concat(splitMulti(r["Instituciones otro"])),
+      __causas:splitMulti(r["Causas incendio"]).concat(splitMulti(r["Causas otro"])),
+      __topografia:labelValue(r["Topografia"]),
+      __vegetacion:labelValue(r["Tipo de vegetacion"]),
+      __pendiente:parseNumber(r["Pendiente porcentaje"]),
+      __obs:norm(r["Observaciones"]),
+      __x:parseNumber(r["X"]), __y:parseNumber(r["Y"])
+    };
+    out.__hRespMT=hoursBetween(out.__dt,out.__llegadaMT);
+    out.__hRespMA=hoursBetween(out.__dt,out.__llegadaMA);
+    out.__hControl=hoursBetween(out.__dt,out.__control);
+    out.__hLiquidacion=hoursBetween(out.__dt,out.__liquidacion);
+    out.__hControlLiquidacion=hoursBetween(out.__control,out.__liquidacion);
+    const cx=complejidad(out); out.__complejidad=cx.label; out.__score=cx.score;
+    return out;
+  });
+}
+function group(rows, fn){ const m=new Map(); rows.forEach(r=>{const k=fn(r); if(!k)return; m.set(k,(m.get(k)||0)+1);}); return [...m.entries()]; }
+function groupSum(rows, keyFn, valFn){ const m=new Map(); rows.forEach(r=>{const k=keyFn(r); if(!k)return; m.set(k,(m.get(k)||0)+(valFn(r)||0));}); return [...m.entries()]; }
+function groupAvg(rows,keyFn,valFn){ const m=new Map(); rows.forEach(r=>{const k=keyFn(r); const v=valFn(r); if(!k||!Number.isFinite(v))return; if(!m.has(k))m.set(k,[]); m.get(k).push(v);}); return [...m.entries()].map(([k,a])=>[k,avg(a)]); }
+function explodeGroup(rows, listFn){ const m=new Map(); rows.forEach(r=>listFn(r).forEach(k=>m.set(k,(m.get(k)||0)+1))); return [...m.entries()]; }
+function explodeSum(rows, listFn, valFn){ const m=new Map(); rows.forEach(r=>listFn(r).forEach(k=>m.set(k,(m.get(k)||0)+(valFn(r)||0)))); return [...m.entries()]; }
+function topPairs(pairs,n=10){ return pairs.filter(p=>p[0] && p[0]!=="Sin dato").sort((a,b)=>(b[1]||0)-(a[1]||0)||String(a[0]).localeCompare(String(b[0]),"es")).slice(0,n); }
+
+function mkChart(id,cfg){ if(CHARTS[id])CHARTS[id].destroy(); const el=document.getElementById(id); if(!el)return; CHARTS[id]=new Chart(el,cfg); }
+function dlPNG(id,fn){ const c=CHARTS[id]; if(!c)return; const cv=c.canvas, off=document.createElement("canvas"); off.width=cv.width; off.height=cv.height; const ctx=off.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,off.width,off.height); ctx.drawImage(cv,0,0); const a=document.createElement("a"); a.href=off.toDataURL("image/png"); a.download=fn+".png"; a.click(); }
+function barHorizontal(id,pairs,label,color,unit,onClick){
+  const labels=pairs.map(p=>p[0]), vals=pairs.map(p=>p[1]); const maxValue=Math.max(0,...vals); const cw=document.getElementById(id)?.closest(".cw"); if(cw)cw.style.height=Math.max(300,labels.length*34+80)+"px";
+  mkChart(id,{type:"bar",data:{labels,datasets:[{label,data:vals,backgroundColor:color,borderColor:color,borderWidth:1,borderRadius:5,borderSkipped:false}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,layout:{padding:{top:8,right:72,left:8,bottom:8}},plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${Number(c.parsed.x||0).toLocaleString("en-US")} ${unit}`}},datalabels:{display:true,anchor:"end",align:"right",offset:6,clamp:true,clip:false,color:"#254736",font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},formatter:v=>v>0?Number(v).toLocaleString("en-US",{maximumFractionDigits:1}):""}},scales:{x:{beginAtZero:true,suggestedMax:maxValue?maxValue*1.18:undefined,grid:{color:GC},ticks:{font:{size:12},callback:v=>Number(v).toLocaleString("en-US")}},y:{grid:{display:false},ticks:{autoSkip:false,crossAlign:"far",padding:8,font:{size:11.2,weight:"600"},color:"#254736",callback:function(value){return wrapLabel(this.getLabelForValue(value),24);}}}},onClick}});
+}
+function donut(id,pairs,unit){ const total=sum(pairs.map(p=>p[1])); mkChart(id,{type:"doughnut",data:{labels:pairs.map(p=>p[0]),datasets:[{data:pairs.map(p=>p[1]),backgroundColor:pairs.map((_,i)=>PAL[i%PAL.length]),borderColor:pairs.map((_,i)=>PAL[i%PAL.length]),borderWidth:2,hoverOffset:12}]},options:{responsive:true,maintainAspectRatio:false,cutout:"62%",plugins:{legend:{position:"bottom",labels:{font:{size:11.5},boxWidth:12,boxHeight:12}},tooltip:{...TT,callbacks:{label:c=>{const v=Number(c.parsed||0); const pct=total?Math.round(v/total*100):0; return ` ${c.label}: ${v.toLocaleString("en-US")} ${unit} (${pct}%)`;}}},datalabels:{display:false}}}}); }
+
+function fillSel(id,pairs,placeholder){ const el=document.getElementById(id); if(!el)return; el.innerHTML=`<option value="">${placeholder}</option>`; pairs.forEach(([v,l])=>{const o=document.createElement("option"); o.value=v; o.textContent=l; el.appendChild(o);}); }
+function topAlpha(rows,k,l){ const m=new Map(); rows.forEach(r=>{ if(r[k]) m.set(r[k],r[l]); }); return [...m.entries()].sort((a,b)=>a[1].localeCompare(b[1],"es")); }
+function mapFromList(rows, listFn){ const m=new Map(); rows.forEach(r=>listFn(r).forEach(x=>m.set(canon(x),x))); return [...m.entries()].sort((a,b)=>a[1].localeCompare(b[1],"es")); }
+function initFilters(){
+  const dates=ROWS.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b); if(dates.length){document.getElementById("f-desde").value=isoDate(dates[0]); document.getElementById("f-hasta").value=isoDate(dates[dates.length-1]);}
+  fillSel("f-municipio",topAlpha(ROWS,"__cm","__municipio"),"Todos los municipios");
+  fillSel("f-guarda",topAlpha(ROWS,"__cg","__guarda"),"Todos");
+  fillSel("f-area",topAlpha(ROWS,"__cap","__areaProt"),"Todas");
+  fillSel("f-tipo",mapFromList(ROWS,r=>r.__tipoIncendio),"Todos");
+  fillSel("f-causa",mapFromList(ROWS,r=>r.__causas),"Todas");
+  fillSel("f-institucion",mapFromList(ROWS,r=>r.__instituciones),"Todas");
+  fillSel("f-aereo",[["si","Sí"],["no","No"]],"Todos");
+  fillSel("f-rango",[["0-1","0–1 ha"],["1-5","1–5 ha"],["5-10","5–10 ha"],["10-50","10–50 ha"],["50+","> 50 ha"]],"Todos");
+}
+function getF(){ return {desde:val("f-desde"),hasta:val("f-hasta"),muni:val("f-municipio"),guarda:val("f-guarda"),area:val("f-area"),tipo:val("f-tipo"),causa:val("f-causa"),institucion:val("f-institucion"),aereo:val("f-aereo"),rango:val("f-rango")}; }
+function val(id){return document.getElementById(id).value;}
+function inRange(sup,r){ if(!r)return true; if(r==="0-1")return sup>=0&&sup<1; if(r==="1-5")return sup>=1&&sup<5; if(r==="5-10")return sup>=5&&sup<10; if(r==="10-50")return sup>=10&&sup<50; if(r==="50+")return sup>=50; return true; }
+function applyF(f){ return ROWS.filter(r=>{ if(f.desde&&r.__dt&&r.__dt<new Date(f.desde+"T00:00:00Z"))return false; if(f.hasta&&r.__dt&&r.__dt>new Date(f.hasta+"T23:59:59Z"))return false; if(f.muni&&r.__cm!==f.muni)return false; if(f.guarda&&r.__cg!==f.guarda)return false; if(f.area&&r.__cap!==f.area)return false; if(f.tipo&&!r.__tipoIncendio.map(canon).includes(f.tipo))return false; if(f.causa&&!r.__causas.map(canon).includes(f.causa))return false; if(f.institucion&&!r.__instituciones.map(canon).includes(f.institucion))return false; if(f.aereo&&((f.aereo==="si")!==r.__aereo))return false; if(f.rango&&!inRange(r.__sup,f.rango))return false; return true; }); }
+function renderChips(f){
+  const w=document.getElementById("chips-wrap"); w.innerHTML=""; const add=t=>{const s=document.createElement("span"); s.className="chip-activo"; s.textContent=t; w.appendChild(s);};
+  if(f.desde||f.hasta)add(`${f.desde?f.desde.split("-").reverse().join("/"):"inicio"} — ${f.hasta?f.hasta.split("-").reverse().join("/"):"hoy"}`);
+  const label=id=>document.querySelector(`#${id} option:checked`)?.textContent||"";
+  if(f.muni)add("Municipio: "+label("f-municipio")); if(f.guarda)add("Guardarecurso: "+label("f-guarda")); if(f.area)add("Área: "+label("f-area")); if(f.tipo)add("Tipo: "+label("f-tipo")); if(f.causa)add("Causa: "+label("f-causa")); if(f.institucion)add("Institución: "+label("f-institucion")); if(f.aereo)add("Aéreos: "+label("f-aereo")); if(f.rango)add("Superficie: "+label("f-rango"));
+}
+function update(){ const f=getF(); const rows=applyF(f); renderChips(f); renderKPIs(rows); renderCharts(rows); renderTable(rows); document.getElementById("estado").innerHTML=`<strong>${rows.length.toLocaleString("en-US")}</strong> registros visibles de <strong>${ROWS.length.toLocaleString("en-US")}</strong> cargados desde base5_datos.csv`; }
+function renderKPIs(rows){
+  const dates=rows.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b); const sup=sum(rows.map(r=>r.__sup)); const plant=sum(rows.map(r=>r.__plantacion)); const bosque=sum(rows.map(r=>r.__bosqueNatural)); const aereos=rows.filter(r=>r.__aereo).length; const avgControl=avg(rows.map(r=>r.__hControl));
+  document.getElementById("kpi-total").textContent=fmt(rows.length);
+  document.getElementById("kpi-sup").textContent=fmt(sup,sup%1?1:0);
+  document.getElementById("kpi-bosque").textContent=fmt(bosque,bosque%1?1:0);
+  document.getElementById("kpi-plantacion").textContent=fmt(plant,plant%1?1:0);
+  document.getElementById("kpi-munis").textContent=fmt(uniq(rows.map(r=>r.__cm)).length);
+  document.getElementById("kpi-guardas").textContent=fmt(uniq(rows.map(r=>r.__cg)).length);
+  document.getElementById("kpi-aereos").textContent=fmt(aereos);
+  document.getElementById("kpi-control").textContent=fmtHours(avgControl);
+  document.getElementById("kpi-rango").textContent=dates.length?fmtDate(dates[0])+" – "+fmtDate(dates[dates.length-1]):"–";
+}
+function renderCharts(rows){
+  const byMes=group(rows,r=>r.__mes).sort((a,b)=>a[0].localeCompare(b[0])); const supMes=groupSum(rows,r=>r.__mes,r=>r.__sup).sort((a,b)=>a[0].localeCompare(b[0]));
+  mkChart("c-tendencia",{type:"line",data:{labels:byMes.map(x=>mShort(x[0])),datasets:[{label:"Incendios",data:byMes.map(x=>x[1]),borderColor:COLOR_INCENDIO,backgroundColor:"rgba(185,28,28,0.12)",borderWidth:3,tension:.32,fill:true,pointRadius:4,pointHoverRadius:6,pointBackgroundColor:"#fff",pointBorderColor:COLOR_INCENDIO,pointBorderWidth:2,yAxisID:"y"},{label:"Superficie ha",data:supMes.map(x=>x[1]),borderColor:COLOR_SUPERFICIE,backgroundColor:"rgba(234,88,12,0.10)",borderWidth:3,tension:.32,fill:false,pointRadius:4,pointHoverRadius:6,pointBackgroundColor:"#fff",pointBorderColor:COLOR_SUPERFICIE,pointBorderWidth:2,yAxisID:"y1"}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},layout:{padding:{top:8,right:12,left:4,bottom:4}},plugins:{legend:{display:true,position:"bottom"},tooltip:{...TT},datalabels:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:12.5},maxRotation:0}},y:{beginAtZero:true,grid:{color:GC},position:"left",title:{display:true,text:"Incendios"}},y1:{beginAtZero:true,grid:{drawOnChartArea:false},position:"right",title:{display:true,text:"Superficie ha"}}}}});
+  const byMuni=topPairs(group(rows,r=>r.__municipio||"Sin municipio"),12); CLICK_MUNI=byMuni.map(([label])=>{const f=rows.find(r=>(r.__municipio||"Sin municipio")===label); return f?f.__cm:"";});
+  barHorizontal("c-municipio",byMuni,"Incendios",COLOR_INCENDIO,"incendios",(e,els)=>{if(!els.length)return; const k=CLICK_MUNI[els[0].index]; if(k){document.getElementById("f-municipio").value=k; update();}});
+  barHorizontal("c-superficie-municipio",topPairs(groupSum(rows,r=>r.__municipio||"Sin municipio",r=>r.__sup),12),"Superficie",COLOR_SUPERFICIE,"ha");
+  const byGuarda=topPairs(group(rows,r=>r.__guarda||"Sin responsable"),12); CLICK_GUARDA=byGuarda.map(([label])=>{const f=rows.find(r=>(r.__guarda||"Sin responsable")===label); return f?f.__cg:"";});
+  barHorizontal("c-guarda",byGuarda,"Incendios",COLOR_INSTITUCION,"incendios",(e,els)=>{if(!els.length)return; const k=CLICK_GUARDA[els[0].index]; if(k){document.getElementById("f-guarda").value=k; update();}});
+  barHorizontal("c-causas",topPairs(explodeGroup(rows,r=>r.__causas),12),"Incendios",COLOR_INCENDIO,"registros");
+  barHorizontal("c-causas-sup",topPairs(explodeSum(rows,r=>r.__causas,r=>r.__sup),12),"Superficie",COLOR_SUPERFICIE,"ha");
+  barHorizontal("c-instituciones",topPairs(explodeGroup(rows,r=>r.__instituciones),12),"Participaciones",COLOR_INSTITUCION,"registros");
+  barHorizontal("c-tiempo-municipio",topPairs(groupAvg(rows,r=>r.__municipio,r=>r.__hControl),12),"Promedio",COLOR_TIEMPO,"horas");
+  donut("c-rumcla",topPairs(group(rows,r=>canon(r.__areaProt).includes("fuera")?"Fuera de RUMCLA":"RUMCLA"),4),"incendios");
+  donut("c-tipo",topPairs(explodeGroup(rows,r=>r.__tipoIncendio),8),"registros");
+  donut("c-bosque",topPairs(explodeGroup(rows,r=>r.__tipoBosque),8),"registros");
+  donut("c-aereos",[["Sin medios aéreos",rows.filter(r=>!r.__aereo).length],["Con medios aéreos",rows.filter(r=>r.__aereo).length]],"incendios");
+  donut("c-tecnicas",topPairs(explodeGroup(rows,r=>r.__tecnicas),8),"registros");
+  const rangos=["0–1 ha","1–5 ha","5–10 ha","10–50 ha","> 50 ha"], vals=[0,0,0,0,0]; rows.forEach(r=>{const s=r.__sup; if(s<1)vals[0]++; else if(s<5)vals[1]++; else if(s<10)vals[2]++; else if(s<50)vals[3]++; else vals[4]++;});
+  mkChart("c-rangos",{type:"bar",data:{labels:rangos,datasets:[{label:"Incendios",data:vals,backgroundColor:COLOR_SUPERFICIE,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:TT,datalabels:{display:true,anchor:"end",align:"top",color:"#254736",font:{size:11,weight:"700"}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:GC}}}}});
+}
+function renderTable(rows){
+  const m=new Map(); rows.forEach(r=>{const k=r.__municipio||"Sin municipio"; if(!m.has(k))m.set(k,[]); m.get(k).push(r);});
+  const html=[...m.entries()].map(([muni,sub])=>{const sup=sum(sub.map(r=>r.__sup)); const bosque=sum(sub.map(r=>r.__bosqueNatural)); const plant=sum(sub.map(r=>r.__plantacion)); const caus=topPairs(explodeGroup(sub,r=>r.__causas),1)[0]?.[0]||"–"; const avgC=avg(sub.map(r=>r.__hControl)); const alta=sub.filter(r=>r.__complejidad==="Alta").length; const dates=sub.map(r=>r.__dt).filter(Boolean).sort((a,b)=>b-a); return `<tr><td><strong>${muni}</strong></td><td><span class="tag">${fmt(sub.length)}</span></td><td>${fmt(sup,sup%1?1:0)}</td><td>${fmt(bosque,bosque%1?1:0)}</td><td>${fmt(plant,plant%1?1:0)}</td><td>${caus}</td><td>${fmtHours(avgC)}</td><td>${alta?`<span class="risk-badge risk-high">${alta} alta</span>`:`<span class="risk-badge risk-low">0 alta</span>`}</td><td>${dates.length?fmtDate(dates[0]):"–"}</td></tr>`;}).sort().join("");
+  document.getElementById("tabla-resumen").innerHTML=html||`<tr><td colspan="9">Sin registros para los filtros seleccionados.</td></tr>`;
+}
+function bindExports(){
+  const bind=(btn,id,fn)=>document.getElementById(btn)?.addEventListener("click",()=>dlPNG(id,fn));
+  bind("png-tendencia","c-tendencia","ac283_tendencia_incendios"); bind("png-municipio","c-municipio","ac283_incendios_municipio"); bind("png-superficie-municipio","c-superficie-municipio","ac283_superficie_municipio"); bind("png-rumcla","c-rumcla","ac283_rumcla"); bind("png-guarda","c-guarda","ac283_guardarecursos"); bind("png-causas","c-causas","ac283_causas"); bind("png-causas-sup","c-causas-sup","ac283_superficie_causa"); bind("png-tipo","c-tipo","ac283_tipo_incendio"); bind("png-bosque","c-bosque","ac283_tipo_bosque"); bind("png-aereos","c-aereos","ac283_medios_aereos"); bind("png-instituciones","c-instituciones","ac283_instituciones"); bind("png-tiempo-municipio","c-tiempo-municipio","ac283_tiempo_control_municipio"); bind("png-tecnicas","c-tecnicas","ac283_tecnicas_extincion"); bind("png-rangos","c-rangos","ac283_rangos_superficie");
+}
+async function main(){
+  try{ const parsed=await loadCSV(); ROWS=enrich(parsed.data); initFilters(); update(); }
+  catch(e){ document.getElementById("estado").textContent=e.message; document.getElementById("estado").className="estado-txt error"; }
+  document.getElementById("btn-aplicar").addEventListener("click",update);
+  document.getElementById("btn-limpiar").addEventListener("click",()=>{initFilters(); ["f-municipio","f-guarda","f-area","f-tipo","f-causa","f-institucion","f-aereo","f-rango"].forEach(id=>document.getElementById(id).value=""); update();});
+  ["f-desde","f-hasta","f-municipio","f-guarda","f-area","f-tipo","f-causa","f-institucion","f-aereo","f-rango"].forEach(id=>document.getElementById(id).addEventListener("change",update));
+  bindExports();
+}
+main();
+</script>
+</body>
+</html>
