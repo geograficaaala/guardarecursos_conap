@@ -9,29 +9,32 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <style>
     :root {
-      --verde-oscuro: #0a3d2b;
-      --verde-medio:  #1a5c3a;
-      --bg:           #f0f4f1;
+      --verde-oscuro: #064e3b;
+      --verde-medio:  #16a34a;
+      --bg:           #f3f8f4;
       --surface:      #ffffff;
-      --surface-2:    #f6faf7;
-      --ink:          #0c1e13;
-      --ink-2:        #2a4535;
-      --muted:        #6a8878;
-      --borde:        #d8e4dd;
-      --sombra:       rgba(10,61,43,0.06);
-      --acento:       #1a5c3a;
-      --acento-bg:    rgba(26,92,58,0.06);
-      --acento-borde: rgba(26,92,58,0.20);
-      --dorado:       #c9a84c;
-      --dorado-claro: #e8c97a;
-      --mod-dark:#4c1d95; --mod-mid:#7c3aed; --mod-light:#a78bfa;
-
-      --d0:#1f6cb0; --d1:#1a7a38; --d2:#b05608; --d3:#6b2680;
-      --d4:#a81c2a; --d5:#016660; --d6:#7a4508; --d7:#3d8fbf;
-      --d8:#b51a72; --d9:#448a1e; --d10:#c85840; --d11:#4e359a;
+      --surface-2:    #f7fcf8;
+      --ink:          #102218;
+      --ink-2:        #254736;
+      --muted:        #5f7b6e;
+      --borde:        #d7eadf;
+      --sombra:       rgba(6,78,59,0.07);
+      --acento:       #16a34a;
+      --acento-bg:    rgba(34,197,94,0.10);
+      --acento-borde: rgba(34,197,94,0.28);
+      --dorado:       #d8b94f;
+      --dorado-claro: #f4d35e;
+      --mod-dark:     #047857;
+      --mod-mid:      #22c55e;
+      --mod-light:    #86efac;
+      --d0:#4ade80; --d1:#fb7185; --d2:#60a5fa; --d3:#fbbf24;
+      --d4:#f87171; --d5:#2dd4bf; --d6:#c084fc; --d7:#34d399;
+      --d8:#f9a8d4; --d9:#a3e635; --d10:#fb923c; --d11:#93c5fd;
     }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
+
     body {
       font-family: 'DM Sans', sans-serif;
       background: var(--bg);
@@ -44,6 +47,7 @@
       opacity: 0;
       animation: bodyIn .45s cubic-bezier(.22,.68,0,1.2) forwards;
     }
+
     @keyframes bodyIn  { to { opacity: 1; } }
     @keyframes stripeIn  { from { transform: scaleX(0); } to { transform: scaleX(1); } }
     @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -57,32 +61,23 @@
     header {
       background: linear-gradient(105deg, var(--verde-oscuro) 0%, var(--verde-medio) 100%);
       color: #fff;
-      padding: 14px 28px 0;
+      padding: 14px 28px 16px;
       position: sticky; top: 0; z-index: 200;
       box-shadow: 0 2px 28px rgba(0,0,0,.26);
       flex-shrink: 0;
-      overflow: hidden;
+      overflow: visible;
     }
     .header-inner {
       max-width: 1480px; margin: 0 auto;
       display: flex; align-items: center;
       justify-content: space-between; gap: 16px; flex-wrap: wrap;
       position: relative; z-index: 1;
-      padding-bottom: 13px;
     }
-    .header-wm {
-      position: absolute; right: 22px; top: 50%;
-      transform: translateY(-54%);
-      font-family: 'Playfair Display', serif;
-      font-size: 74px; font-weight: 900;
-      letter-spacing: -.04em;
-      color: #fff; opacity: .05;
-      pointer-events: none; user-select: none;
-      line-height: 1; z-index: 0;
-    }
+    .header-wm { display: none; }
     .header-stripe {
       height: 4px;
-      background: linear-gradient(90deg, var(--mod-dark), var(--mod-light));
+      background: linear-gradient(90deg, var(--mod-dark), var(--mod-mid), var(--mod-light));
+      margin: 0 -28px -16px;
       transform-origin: left;
       animation: stripeIn .65s cubic-bezier(.22,.68,0,1.1) .25s both;
     }
@@ -262,6 +257,13 @@
       font-size: 32px; font-weight: 900;
       line-height: 1; color: var(--ink); margin-bottom: 5px;
     }
+    .kpi-rango {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      padding-top: 8px;
+      line-height: 1.25;
+    }
     .kpi-sub { font-size: 11.5px; color: var(--muted); font-weight: 400; }
 
     /* ── DIVISORES ── */
@@ -311,47 +313,21 @@
     }
     .cc-hint { font-size: 12px; color: var(--muted); font-weight: 400; line-height: 1.55; }
     .cc-sep { width: 100%; height: 1px; background: var(--borde); margin: 10px 0 16px; }
-    .cc-filters {
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-      margin-bottom: 14px; padding: 10px 14px;
-      background: var(--surface-2); border: 1px solid var(--borde);
-      border-radius: 10px;
-    }
-    .cc-filters label {
-      font-size: 10px; font-weight: 700; color: var(--ink-2);
-      letter-spacing: .07em; text-transform: uppercase; white-space: nowrap;
-    }
-    .cc-filters select, .cc-filters input[type="date"] {
-      border: 1.5px solid var(--borde); border-radius: 7px;
-      padding: 5px 9px; font-size: 12.5px; font-family: inherit;
-      background: var(--surface); color: var(--ink); outline: none;
-      transition: border-color .15s;
-    }
-    .cc-filters select:focus,
-    .cc-filters input[type="date"]:focus { border-color: var(--acento); }
-    .cc-btn {
-      padding: 5px 12px; border-radius: 7px;
-      border: 1.5px solid transparent;
-      background: var(--verde-oscuro); color: #fff;
-      font-size: 11.5px; font-weight: 600; font-family: inherit;
-      cursor: pointer; transition: background .18s;
-    }
-    .cc-btn:hover { background: var(--verde-medio); }
-    .cc-btn-clear { background: var(--surface); color: var(--muted); border-color: var(--borde); }
-    .cc-btn-clear:hover { color: var(--ink); border-color: #94a3b8; }
     .btn-png {
       display: inline-flex; align-items: center; gap: 5px;
-      padding: 5px 11px; border-radius: 7px;
+      padding: 5px 11px; border-radius: 9px;
       border: 1.5px solid var(--borde);
       background: var(--surface-2);
       font-size: 11px; font-weight: 600; font-family: inherit;
-      color: var(--muted); cursor: pointer;
+      color: var(--ink-2); cursor: pointer;
       transition: all .18s; white-space: nowrap; flex-shrink: 0;
       letter-spacing: .03em;
     }
-    .btn-png:hover {
-      background: var(--verde-oscuro); color: #fff;
-      border-color: var(--verde-oscuro);
+    .btn-png:hover,
+    .btn-aplicar:hover {
+      background: var(--verde-medio);
+      border-color: var(--verde-medio);
+      color: #fff;
       transform: translateY(-1px);
       box-shadow: 0 3px 10px rgba(10,61,43,.22);
     }
@@ -362,7 +338,48 @@
     .h280 { height: 280px; } .h300 { height: 300px; } .h340 { height: 340px; }
     .h360 { height: 360px; } .h400 { height: 400px; } .h420 { height: 420px; }
     .h460 { height: 460px; } .h480 { height: 480px; } .h520 { height: 520px; }
-    #heatmap-container { overflow-x: auto; padding-bottom: 6px; }
+
+    /* ── TABLA ── */
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--borde);
+      border-radius: 12px;
+      background: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 860px;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #edf2ef;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f6faf7;
+      color: var(--ink-2);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 900;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    tbody tr:hover { background: #fbfdfc; }
+    .tag {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--acento-bg);
+      border: 1px solid var(--acento-borde);
+      color: var(--acento);
+      font-size: 11.5px;
+      font-weight: 700;
+    }
 
     /* ── FOOTER ── */
     footer {
@@ -422,17 +439,17 @@
       font-size: 11px; color: rgba(255,255,255,.28);
       letter-spacing: .04em; padding-bottom: 20px;
     }
-    @media (max-width: 860px) { .footer-inner { grid-template-columns: 1fr; gap: 20px; } .footer-col-right { text-align: left; } }
-    @media (max-width: 1180px) { .filtros-grid { grid-template-columns: 1fr 1fr 1fr; } }
-    @media (max-width: 660px)  { .filtros-grid { grid-template-columns: 1fr; } }
-    .table-wrap { overflow: auto; border: 1px solid var(--borde); border-radius: 12px; background: #fff; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 860px; }
-    th, td { padding: 10px 12px; border-bottom: 1px solid #edf2ef; text-align: left; vertical-align: top; }
-    th { background: #f6faf7; color: var(--ink-2); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; font-weight: 900; position: sticky; top: 0; z-index: 1; }
-    tbody tr:hover { background: #fbfdfc; }
-    .tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; background: var(--acento-bg); border: 1px solid var(--acento-borde); color: var(--acento); font-size: 11.5px; font-weight: 700; }
-    .warning { color: #9b1c1c; font-weight: 700; }
 
+    @media (max-width: 1180px) { .filtros-grid { grid-template-columns: 1fr 1fr 1fr; } }
+    @media (max-width: 860px) {
+      .footer-inner { grid-template-columns: 1fr; gap: 20px; }
+      .footer-col-right { text-align: left; }
+    }
+    @media (max-width: 660px)  {
+      .filtros-grid { grid-template-columns: 1fr; }
+      .cc-head { flex-direction: column; align-items: stretch; }
+      .btn-png { justify-content: center; }
+    }
   </style>
 </head>
 <body>
@@ -458,17 +475,32 @@
 
 <nav class="module-nav">
   <div class="module-nav-inner">
-    <a href="../../index.html" class="nav-back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg> Inicio</a>
-    <a href="dashboard.html" class="nav-tab "><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg> Mapa geográfico</a>
-    <a href="tablero.html" class="nav-tab active"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Tablero dinámico</a>
-    <a href="datos.html" class="nav-tab "><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg> Verificador</a>
+    <a href="../../index.html" class="nav-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Inicio
+    </a>
+    <a href="dashboard.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      Mapa geográfico
+    </a>
+    <a href="tablero.html" class="nav-tab active">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Tablero dinámico
+    </a>
+    <a href="datos.html" class="nav-tab">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      Verificador
+    </a>
   </div>
 </nav>
 
 <main class="page">
 
   <section class="filtros-panel">
-    <div class="filtros-titulo">Filtros del tablero</div>
+    <div class="filtros-titulo">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filtros globales para el análisis
+    </div>
     <div class="filtros-grid">
       <div class="fg"><label for="f-desde">Desde</label><input id="f-desde" type="date"></div>
       <div class="fg"><label for="f-hasta">Hasta</label><input id="f-hasta" type="date"></div>
@@ -476,8 +508,14 @@
       <div class="fg"><label for="f-guarda">Guardarecurso</label><select id="f-guarda"><option value="">Todos</option></select></div>
       <div class="fg"><label for="f-area">Área protegida</label><select id="f-area"><option value="">Todas</option></select></div>
       <div class="fg"><label for="f-especie">Especie</label><select id="f-especie"><option value="">Todas</option></select></div>
-      <button class="btn-filtro btn-aplicar" id="btn-aplicar">Aplicar</button>
-      <button class="btn-filtro btn-limpiar" id="btn-limpiar">Limpiar</button>
+      <button class="btn-filtro btn-aplicar" id="btn-aplicar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Aplicar
+      </button>
+      <button class="btn-filtro btn-limpiar" id="btn-limpiar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Limpiar
+      </button>
     </div>
     <div class="chips-wrap" id="chips-wrap"></div>
   </section>
@@ -490,19 +528,146 @@
     <div class="kpi kpi-2"><div class="kpi-label">Área reforestada</div><div class="kpi-value" id="kpi-area">–</div><div class="kpi-sub">área total registrada</div></div>
     <div class="kpi kpi-3"><div class="kpi-label">Municipios</div><div class="kpi-value" id="kpi-munis">–</div><div class="kpi-sub">con registros</div></div>
     <div class="kpi kpi-4"><div class="kpi-label">Especies</div><div class="kpi-value" id="kpi-especies">–</div><div class="kpi-sub">reportadas</div></div>
-    <div class="kpi kpi-5"><div class="kpi-label">Período activo</div><div class="kpi-value" style="font-size:13px;padding-top:9px" id="kpi-rango">–</div><div class="kpi-sub">rango de fechas</div></div>
+    <div class="kpi kpi-5"><div class="kpi-label">Período activo</div><div class="kpi-value kpi-rango" id="kpi-rango">–</div><div class="kpi-sub">rango de fechas</div></div>
   </section>
 
   <div class="sec-divider">Análisis temporal</div>
   <section class="charts-grid">
-    <div class="cc full"><div class="cc-head"><div><div class="cc-title">Tendencia mensual de monitoreos</div><div class="cc-hint">Volumen total por mes en el período filtrado</div></div><button class="btn-png" onclick="downloadChart('c-tendencia','ac282_tendencia_mensual')">Exportar PNG</button></div><div class="cc-sep"></div><div class="cw h360"><canvas id="c-tendencia"></canvas></div></div>
-    <div class="cc"><div class="cc-head"><div><div class="cc-title">Monitoreos por municipio</div><div class="cc-hint">Top 10 municipios por cantidad de registros</div></div></div><div class="cc-sep"></div><div class="cw"><canvas id="c-municipio"></canvas></div></div>
-    <div class="cc"><div class="cc-head"><div><div class="cc-title">Área registrada por municipio</div><div class="cc-hint">Suma del campo Área de reforestación</div></div></div><div class="cc-sep"></div><div class="cw"><canvas id="c-area-municipio"></canvas></div></div>
-    <div class="cc"><div class="cc-head"><div><div class="cc-title">Monitoreos por guardarecurso</div><div class="cc-hint">Top 10 responsables</div></div></div><div class="cc-sep"></div><div class="cw"><canvas id="c-guarda"></canvas></div></div>
-    <div class="cc"><div class="cc-head"><div><div class="cc-title">Especies reportadas</div><div class="cc-hint">Frecuencia de especies en los registros</div></div></div><div class="cc-sep"></div><div class="cw"><canvas id="c-especies"></canvas></div></div>
-    <div class="cc"><div class="cc-head"><div><div class="cc-title">Área protegida</div><div class="cc-hint">Distribución de registros por área protegida</div></div></div><div class="cc-sep"></div><div class="cw"><canvas id="c-area-prot"></canvas></div></div>
-    <div class="cc"><div class="cc-head"><div><div class="cc-title">Tipo de reforestación</div><div class="cc-hint">Distribución del campo Tipo de reforestación</div></div></div><div class="cc-sep"></div><div class="cw"><canvas id="c-tipo"></canvas></div></div>
-    <div class="cc full"><div class="cc-head"><div><div class="cc-title">Resumen municipal</div><div class="cc-hint">Tabla calculada sobre los registros filtrados</div></div></div><div class="cc-sep"></div><div class="table-wrap"><table><thead><tr><th>Municipio</th><th>Registros</th><th>Área total</th><th>Guardarecursos</th><th>Especies</th><th>Última fecha</th></tr></thead><tbody id="tabla-resumen"></tbody></table></div></div>
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Tendencia mensual de monitoreos</div>
+          <div class="cc-hint">Evolución mensual de los monitoreos de reforestación en el período filtrado</div>
+        </div>
+        <button class="btn-png" id="png-tendencia">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-tendencia"></canvas></div>
+    </div>
+  </section>
+
+  <div class="sec-divider">Análisis territorial</div>
+  <section class="charts-grid">
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Monitoreos por municipio</div>
+          <div class="cc-hint">Top de municipios por número de registros · haz clic en una barra para filtrar</div>
+        </div>
+        <button class="btn-png" id="png-municipio">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h320"><canvas id="c-municipio"></canvas></div>
+    </div>
+
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Área registrada por municipio</div>
+          <div class="cc-hint">Suma del campo área de reforestación por municipio atendido</div>
+        </div>
+        <button class="btn-png" id="png-area-municipio">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h320"><canvas id="c-area-municipio"></canvas></div>
+    </div>
+
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Área protegida</div>
+          <div class="cc-hint">Distribución de registros por área protegida o zona reportada</div>
+        </div>
+        <button class="btn-png" id="png-area-prot">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-area-prot"></canvas></div>
+    </div>
+
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Tipo de reforestación</div>
+          <div class="cc-hint">Composición de los registros según el tipo de reforestación reportado</div>
+        </div>
+        <button class="btn-png" id="png-tipo">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h300"><canvas id="c-tipo"></canvas></div>
+    </div>
+  </section>
+
+  <div class="sec-divider">Análisis operativo y botánico</div>
+  <section class="charts-grid">
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Monitoreos por guardarecurso</div>
+          <div class="cc-hint">Top de responsables por número de monitoreos registrados · haz clic para filtrar</div>
+        </div>
+        <button class="btn-png" id="png-guarda">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h360"><canvas id="c-guarda"></canvas></div>
+    </div>
+
+    <div class="cc">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Especies reportadas</div>
+          <div class="cc-hint">Frecuencia de especies presentes en los registros de reforestación</div>
+        </div>
+        <button class="btn-png" id="png-especies">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar PNG
+        </button>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="cw h360"><canvas id="c-especies"></canvas></div>
+    </div>
+
+    <div class="cc full">
+      <div class="cc-head">
+        <div class="cc-meta">
+          <div class="cc-title">Resumen municipal</div>
+          <div class="cc-hint">Tabla calculada sobre los registros filtrados; consolida monitoreos, área, guardarecursos, especies y última fecha</div>
+        </div>
+      </div>
+      <div class="cc-sep"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Municipio</th>
+              <th>Registros</th>
+              <th>Área total</th>
+              <th>Guardarecursos</th>
+              <th>Especies</th>
+              <th>Última fecha</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-resumen"></tbody>
+        </table>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -515,7 +680,7 @@
       <span>Dirección Regional Altiplano Central</span>
     </div>
     <div class="footer-center">
-      <div class="footer-badge" style="background:rgba(124,58,237,.18);border:1px solid rgba(124,58,237,.38);color:#c4b5fd;">
+      <div class="footer-badge" style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.38);color:#86efac;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <path d="M17 8C8 10 5.9 16.17 3.82 19.33"/><path d="M17 8c-2-1-5-1-8 2"/><path d="M17 8c1-3.5 4-6 4-6S18 5 17 8z"/>
         </svg>
@@ -534,24 +699,80 @@
 </footer>
 
 <script>
-
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTES DE DISEÑO Y GRÁFICAS — HOMOLOGADAS CON AC297
+═══════════════════════════════════════════════════════════ */
 const CSV_URLS = [
   "../../datos/base4_datos.csv",
   "https://raw.githubusercontent.com/geograficaaala/guardarecursos_conap/main/docs/datos/base4_datos.csv"
 ];
-const PAL = ["#1f6cb0","#1a7a38","#b05608","#6b2680","#a81c2a","#016660","#7a4508","#3d8fbf","#b51a72","#448a1e","#c85840","#4e359a"];
+
+const CHART_COLOR = {
+  green900:"#064e3b", green800:"#166534", green700:"#15803d", green600:"#16a34a", green500:"#22c55e", green400:"#4ade80",
+  yellow900:"#713f12", yellow800:"#854d0e", yellow700:"#a16207", yellow600:"#ca8a04", yellow500:"#eab308", yellow400:"#facc15",
+  red900:"#7f1d1d", red800:"#991b1b", red700:"#b91c1c", red600:"#dc2626", red500:"#ef4444", red400:"#f87171",
+  gray500:"#6b7280", gray300:"#d1d5db",
+  blue500:"#60a5fa", teal400:"#2dd4bf", purple400:"#c084fc", pink300:"#f9a8d4", lime400:"#a3e635", orange400:"#fb923c"
+};
+
+const PAL = [
+  CHART_COLOR.green700, CHART_COLOR.green600, CHART_COLOR.green500, CHART_COLOR.green800,
+  CHART_COLOR.yellow700, CHART_COLOR.yellow600, CHART_COLOR.yellow500, CHART_COLOR.yellow800,
+  CHART_COLOR.red700, CHART_COLOR.red600, CHART_COLOR.red500, CHART_COLOR.red800,
+  CHART_COLOR.blue500, CHART_COLOR.teal400, CHART_COLOR.purple400, CHART_COLOR.orange400
+];
+
+const COLOR_MONITOREO = CHART_COLOR.green700;
+const COLOR_AREA = CHART_COLOR.green600;
+const COLOR_GUARDA = CHART_COLOR.yellow700;
+const COLOR_ESPECIE = CHART_COLOR.red700;
+const GC = "rgba(6,78,59,0.055)";
 const MESES_S = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+Chart.defaults.font.family = "'DM Sans',sans-serif";
+Chart.defaults.font.size   = 13;
+Chart.defaults.color       = "#5f7b6e";
+Chart.defaults.locale      = "en-US";
+Chart.defaults.plugins.legend.labels.usePointStyle = false;
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+Chart.defaults.plugins.legend.labels.boxHeight = 12;
+Chart.defaults.plugins.legend.labels.borderRadius = 0;
+Chart.defaults.scales.linear.ticks.callback = value => Number(value).toLocaleString("en-US");
+
+if(typeof ChartDataLabels !== "undefined"){
+  Chart.register(ChartDataLabels);
+  Chart.defaults.set("plugins.datalabels",{display:false});
+}
+
+const TT = {
+  backgroundColor:"rgba(7,24,15,0.93)",
+  titleFont:{size:13,weight:"600",family:"'DM Sans',sans-serif"},
+  bodyFont:{size:12.5,family:"'DM Sans',sans-serif"},
+  padding:12, cornerRadius:10,
+  borderColor:"rgba(255,255,255,0.06)", borderWidth:1
+};
+
+const CHARTS = {};
+let ROWS = [];
+let CLICK_MUNI = [];
+let CLICK_GUARDA = [];
+
+/* ═══════════════════════════════════════════════════════════
+   UTILIDADES
+═══════════════════════════════════════════════════════════ */
 const norm = v => v == null ? "" : String(v).trim().replace(/\s+/g," ");
 const canon = v => norm(v).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
 const cleanLabel = v => norm(v).replace(/_/g," ").replace(/\b\w/g, c => c.toUpperCase());
 const uniq = arr => [...new Set(arr.filter(Boolean))];
 const sum = arr => arr.reduce((a,b)=>a+b,0);
-const fmt = (n,d=0) => Number(n||0).toLocaleString("es-GT",{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmt = (n,d=0) => Number(n||0).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+
 function parseNumber(v){
   const s = norm(v).replace(/,/g,".").replace(/[^0-9.\-]/g,"");
   const n = parseFloat(s);
   return Number.isFinite(n) ? n : null;
 }
+
 function parseDate(v){
   const s = norm(v); if(!s) return null;
   let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
@@ -562,17 +783,36 @@ function parseDate(v){
   if(Number.isFinite(n) && n > 20000 && n < 70000) return new Date(Date.UTC(1899,11,30) + n*86400000);
   return null;
 }
+
 function fmtDate(dt){
   if(!dt) return "–";
   return String(dt.getUTCDate()).padStart(2,"0")+"/"+String(dt.getUTCMonth()+1).padStart(2,"0")+"/"+dt.getUTCFullYear();
 }
+
 function isoDate(dt){ return dt ? dt.toISOString().slice(0,10) : ""; }
 function mKey(dt){ return dt.getUTCFullYear()+"-"+String(dt.getUTCMonth()+1).padStart(2,"0"); }
-function mShort(k){ const [y,m]=k.split("-"); return MESES_S[+m-1]+" '"+String(y).slice(2); }
+function mShort(k){ const [y,m]=k.split("-"); return MESES_S[+m-1]+"'"+String(y).slice(2); }
+
 function splitSpecies(v){
   const base = norm(v).replace(/;/g,",").replace(/\by\b/gi,",");
   return base.split(",").map(x=>cleanLabel(x)).filter(x=>x && x.length>1);
 }
+
+function wrapLabel(label, maxChars=24){
+  const words=String(label||"").split(/\s+/).filter(Boolean);
+  const lines=[]; let line="";
+  words.forEach(w=>{
+    const next=line ? line + " " + w : w;
+    if(next.length > maxChars && line){ lines.push(line); line=w; }
+    else line=next;
+  });
+  if(line) lines.push(line);
+  return lines.length ? lines : [String(label||"")];
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARGA CSV
+═══════════════════════════════════════════════════════════ */
 async function loadCSV(){
   for(const url of CSV_URLS){
     try{
@@ -581,18 +821,24 @@ async function loadCSV(){
       const t1 = new TextDecoder("utf-8",{fatal:false}).decode(u8);
       const t2 = new TextDecoder("windows-1252",{fatal:false}).decode(u8);
       const text = (t2.match(/\uFFFD/g)||[]).length < (t1.match(/\uFFFD/g)||[]).length ? t2 : t1;
-      const parsed = parseCSV(text); if(parsed.data.length) return parsed;
+      const parsed = parseCSV(text);
+      if(parsed.data.length) return parsed;
     }catch(e){}
   }
   throw new Error("No se pudo cargar base4_datos.csv");
 }
+
 function parseCSV(text){
   const first = text.split(/\r?\n/)[0] || "";
   const delim = [";",",","\t"].sort((a,b)=>first.split(b).length-first.split(a).length)[0];
   const rows=[]; let row=[], field="", q=false;
   for(let i=0;i<text.length;i++){
     const c=text[i];
-    if(q){ if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else q=false; } else field+=c; continue; }
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else q=false; }
+      else field+=c;
+      continue;
+    }
     if(c==='"'){ q=true; continue; }
     if(c===delim){ row.push(field); field=""; continue; }
     if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=""; continue; }
@@ -604,6 +850,10 @@ function parseCSV(text){
   const data = rows.filter(r=>r.some(v=>norm(v))).map(r=>Object.fromEntries(headers.map((h,i)=>[h,norm(r[i]||"")])));
   return {headers,data,delimiter:delim};
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ENRIQUECIMIENTO
+═══════════════════════════════════════════════════════════ */
 function enrich(data){
   return data.map((r,idx)=>{
     const area = parseNumber(r["Area de reforestacion"]);
@@ -623,214 +873,400 @@ function enrich(data){
     };
   });
 }
-function group(rows, fn){ const m = new Map(); rows.forEach(r=>{ const k=fn(r); if(!k) return; m.set(k,(m.get(k)||0)+1); }); return [...m.entries()]; }
-function groupSum(rows, keyFn, valFn){ const m = new Map(); rows.forEach(r=>{ const k=keyFn(r); if(!k) return; m.set(k,(m.get(k)||0)+(valFn(r)||0)); }); return [...m.entries()]; }
-function topPairs(pairs,n=10){ return pairs.sort((a,b)=>b[1]-a[1] || String(a[0]).localeCompare(String(b[0]),"es")).slice(0,n); }
-function chartGradient(ctx, color){ const gr = ctx.createLinearGradient(0,0,0,320); gr.addColorStop(0,color+"dd"); gr.addColorStop(1,color+"22"); return gr; }
-const charts = {};
-function mkChart(id,cfg){ if(charts[id]) charts[id].destroy(); const el=document.getElementById(id); if(!el) return; charts[id]=new Chart(el,cfg); }
-function baseOpts(extra={}){ return Object.assign({ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{backgroundColor:"#0c1e13",titleFont:{weight:"800"},bodyFont:{size:12},padding:10,cornerRadius:8}, datalabels:{display:false} }, scales:{ x:{grid:{display:false},ticks:{color:"#6a8878",font:{size:11}}}, y:{beginAtZero:true,grid:{color:"#e7eee9"},ticks:{color:"#6a8878",font:{size:11}}} } }, extra); }
-function downloadChart(id,fn){ const ch=charts[id]; if(!ch) return; const a=document.createElement("a"); a.href=ch.toBase64Image("image/png",1); a.download=fn+".png"; a.click(); }
 
-let ROWS = [];
-function fillSel(id, pairs, placeholder){
-  const el=document.getElementById(id); el.innerHTML=`<option value="">${placeholder}</option>`;
-  pairs.forEach(([v,l])=>{ const o=document.createElement("option"); o.value=v; o.textContent=l; el.appendChild(o); });
+/* ═══════════════════════════════════════════════════════════
+   AGRUPADORES
+═══════════════════════════════════════════════════════════ */
+function group(rows, fn){
+  const m = new Map();
+  rows.forEach(r=>{ const k=fn(r); if(!k) return; m.set(k,(m.get(k)||0)+1); });
+  return [...m.entries()];
 }
-function topAlpha(rows,k,l){ const m=new Map(); rows.forEach(r=>{ if(r[k]) m.set(r[k], r[l]); }); return [...m.entries()].sort((a,b)=>a[1].localeCompare(b[1],"es")); }
+
+function groupSum(rows, keyFn, valFn){
+  const m = new Map();
+  rows.forEach(r=>{
+    const k=keyFn(r); if(!k) return;
+    m.set(k,(m.get(k)||0)+(valFn(r)||0));
+  });
+  return [...m.entries()];
+}
+
+function topPairs(pairs,n=10){
+  return pairs.sort((a,b)=>b[1]-a[1] || String(a[0]).localeCompare(String(b[0]),"es")).slice(0,n);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHART HELPERS
+═══════════════════════════════════════════════════════════ */
+function mkChart(id,cfg){
+  if(CHARTS[id]) CHARTS[id].destroy();
+  const el=document.getElementById(id);
+  if(!el) return;
+  CHARTS[id]=new Chart(el,cfg);
+}
+
+function dlPNG(id,fn){
+  const c=CHARTS[id]; if(!c)return;
+  const cv=c.canvas, off=document.createElement("canvas");
+  off.width=cv.width; off.height=cv.height;
+  const ctx=off.getContext("2d");
+  ctx.fillStyle="#fff"; ctx.fillRect(0,0,off.width,off.height);
+  ctx.drawImage(cv,0,0);
+  const a=document.createElement("a");
+  a.href=off.toDataURL("image/png"); a.download=fn+".png"; a.click();
+}
+
+function barHorizontal(id, pairs, label, color, unit, onClick){
+  const labels=pairs.map(p=>p[0]);
+  const vals=pairs.map(p=>p[1]);
+  const maxValue=Math.max(0,...vals);
+  const cw=document.getElementById(id)?.closest(".cw");
+  if(cw) cw.style.height=Math.max(300, labels.length*34 + 80) + "px";
+
+  mkChart(id,{
+    type:"bar",
+    data:{
+      labels,
+      datasets:[{
+        label,
+        data:vals,
+        backgroundColor:color,
+        borderColor:color,
+        borderWidth:1,
+        borderRadius:5,
+        borderSkipped:false
+      }]
+    },
+    options:{
+      indexAxis:"y",
+      responsive:true,
+      maintainAspectRatio:false,
+      layout:{padding:{top:8,right:72,left:8,bottom:8}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{...TT,callbacks:{label:c=>` ${Number(c.parsed.x||0).toLocaleString("en-US")} ${unit}`}},
+        datalabels:{
+          display:true,
+          anchor:"end",
+          align:"right",
+          offset:6,
+          clamp:true,
+          clip:false,
+          color:"#254736",
+          font:{size:10.5,weight:"700",family:"'DM Sans',sans-serif"},
+          formatter:v=>v>0?Number(v).toLocaleString("en-US"):""
+        }
+      },
+      scales:{
+        x:{
+          beginAtZero:true,
+          suggestedMax:maxValue ? maxValue*1.18 : undefined,
+          grid:{color:GC},
+          ticks:{font:{size:12},callback:v=>Number(v).toLocaleString("en-US")}
+        },
+        y:{
+          grid:{display:false},
+          ticks:{
+            autoSkip:false,
+            crossAlign:"far",
+            padding:8,
+            font:{size:11.2,weight:"600"},
+            color:"#254736",
+            callback:function(value){return wrapLabel(this.getLabelForValue(value), 24);}
+          }
+        }
+      },
+      onClick
+    }
+  });
+}
+
+function donut(id,pairs,unit){
+  const total=sum(pairs.map(p=>p[1]));
+  mkChart(id,{
+    type:"doughnut",
+    data:{
+      labels:pairs.map(p=>p[0]),
+      datasets:[{
+        data:pairs.map(p=>p[1]),
+        backgroundColor:pairs.map((_,i)=>PAL[i%PAL.length]),
+        borderColor:pairs.map((_,i)=>PAL[i%PAL.length]),
+        borderWidth:2,
+        hoverOffset:12
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      cutout:"62%",
+      plugins:{
+        legend:{position:"bottom",labels:{font:{size:11.5},boxWidth:12,boxHeight:12}},
+        tooltip:{...TT,callbacks:{label:c=>{
+          const v=Number(c.parsed||0);
+          const pct=total?Math.round(v/total*100):0;
+          return ` ${c.label}: ${v.toLocaleString("en-US")} ${unit} (${pct}%)`;
+        }}},
+        datalabels:{display:false}
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FILTROS
+═══════════════════════════════════════════════════════════ */
+function fillSel(id, pairs, placeholder){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.innerHTML=`<option value="">${placeholder}</option>`;
+  pairs.forEach(([v,l])=>{
+    const o=document.createElement("option");
+    o.value=v; o.textContent=l;
+    el.appendChild(o);
+  });
+}
+
+function topAlpha(rows,k,l){
+  const m=new Map();
+  rows.forEach(r=>{ if(r[k]) m.set(r[k], r[l]); });
+  return [...m.entries()].sort((a,b)=>a[1].localeCompare(b[1],"es"));
+}
+
 function initFilters(){
   const dates=ROWS.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
-  if(dates.length){ document.getElementById("f-desde").value=isoDate(dates[0]); document.getElementById("f-hasta").value=isoDate(dates[dates.length-1]); }
+  if(dates.length){
+    document.getElementById("f-desde").value=isoDate(dates[0]);
+    document.getElementById("f-hasta").value=isoDate(dates[dates.length-1]);
+  }
   fillSel("f-municipio", topAlpha(ROWS,"__cm","__municipio"), "Todos los municipios");
   fillSel("f-guarda", topAlpha(ROWS,"__cg","__guarda"), "Todos");
   fillSel("f-area", topAlpha(ROWS,"__cap","__areaProt"), "Todas");
-  const esp=new Map(); ROWS.forEach(r=>r.__especies.forEach(e=>esp.set(canon(e), e))); fillSel("f-especie", [...esp.entries()].sort((a,b)=>a[1].localeCompare(b[1],"es")), "Todas");
+  const esp=new Map();
+  ROWS.forEach(r=>r.__especies.forEach(e=>esp.set(canon(e), e)));
+  fillSel("f-especie", [...esp.entries()].sort((a,b)=>a[1].localeCompare(b[1],"es")), "Todas");
 }
-function getF(){ return { desde:document.getElementById("f-desde").value, hasta:document.getElementById("f-hasta").value, muni:document.getElementById("f-municipio").value, guarda:document.getElementById("f-guarda").value, area:document.getElementById("f-area").value, especie:document.getElementById("f-especie").value }; }
-function applyF(f){ return ROWS.filter(r=>{
-  if(f.desde && r.__dt && r.__dt < new Date(f.desde+"T00:00:00Z")) return false;
-  if(f.hasta && r.__dt && r.__dt > new Date(f.hasta+"T23:59:59Z")) return false;
-  if(f.muni && r.__cm !== f.muni) return false;
-  if(f.guarda && r.__cg !== f.guarda) return false;
-  if(f.area && r.__cap !== f.area) return false;
-  if(f.especie && !r.__ce.includes(f.especie)) return false;
-  return true;
-}); }
+
+function getF(){
+  return {
+    desde:document.getElementById("f-desde").value,
+    hasta:document.getElementById("f-hasta").value,
+    muni:document.getElementById("f-municipio").value,
+    guarda:document.getElementById("f-guarda").value,
+    area:document.getElementById("f-area").value,
+    especie:document.getElementById("f-especie").value
+  };
+}
+
+function applyF(f){
+  return ROWS.filter(r=>{
+    if(f.desde && r.__dt && r.__dt < new Date(f.desde+"T00:00:00Z")) return false;
+    if(f.hasta && r.__dt && r.__dt > new Date(f.hasta+"T23:59:59Z")) return false;
+    if(f.muni && r.__cm !== f.muni) return false;
+    if(f.guarda && r.__cg !== f.guarda) return false;
+    if(f.area && r.__cap !== f.area) return false;
+    if(f.especie && !r.__ce.includes(f.especie)) return false;
+    return true;
+  });
+}
+
 function renderChips(f){
-  const w=document.getElementById("chips-wrap"); w.innerHTML=""; const add=t=>{ const s=document.createElement("span"); s.className="chip-activo"; s.textContent=t; w.appendChild(s); };
-  if(f.desde) add("Desde "+f.desde); if(f.hasta) add("Hasta "+f.hasta);
+  const w=document.getElementById("chips-wrap");
+  w.innerHTML="";
+  const add=t=>{
+    const s=document.createElement("span");
+    s.className="chip-activo";
+    s.textContent=t;
+    w.appendChild(s);
+  };
+  if(f.desde||f.hasta){
+    const de=f.desde?f.desde.split("-").reverse().join("/"):"inicio";
+    const ha=f.hasta?f.hasta.split("-").reverse().join("/"):"hoy";
+    add(`${de} — ${ha}`);
+  }
   const label=id=>document.querySelector(`#${id} option:checked`)?.textContent || "";
-  if(f.muni) add("Municipio: "+label("f-municipio")); if(f.guarda) add("Guardarecurso: "+label("f-guarda")); if(f.area) add("Área: "+label("f-area")); if(f.especie) add("Especie: "+label("f-especie"));
+  if(f.muni) add("Municipio: "+label("f-municipio"));
+  if(f.guarda) add("Guardarecurso: "+label("f-guarda"));
+  if(f.area) add("Área: "+label("f-area"));
+  if(f.especie) add("Especie: "+label("f-especie"));
 }
-function update(){ const f=getF(); const rows=applyF(f); renderChips(f); renderKPIs(rows); renderCharts(rows); renderTable(rows); document.getElementById("estado").innerHTML=`<strong>${rows.length.toLocaleString("es-GT")}</strong> registros visibles de <strong>${ROWS.length.toLocaleString("es-GT")}</strong> cargados desde base4_datos.csv`; }
+
+function update(){
+  const f=getF();
+  const rows=applyF(f);
+  renderChips(f);
+  renderKPIs(rows);
+  renderCharts(rows);
+  renderTable(rows);
+  document.getElementById("estado").innerHTML=`<strong>${rows.length.toLocaleString("en-US")}</strong> registros visibles de <strong>${ROWS.length.toLocaleString("en-US")}</strong> cargados desde base4_datos.csv`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KPIs
+═══════════════════════════════════════════════════════════ */
 function renderKPIs(rows){
   const dates=rows.map(r=>r.__dt).filter(Boolean).sort((a,b)=>a-b);
   const area=sum(rows.map(r=>r.__area||0));
+  const esps=new Set();
+  rows.forEach(r=>r.__ce.forEach(e=>esps.add(e)));
+
   document.getElementById("kpi-total").textContent=fmt(rows.length);
   document.getElementById("kpi-guardas").textContent=fmt(uniq(rows.map(r=>r.__cg)).length);
   document.getElementById("kpi-area").textContent=fmt(area, area%1?1:0);
   document.getElementById("kpi-munis").textContent=fmt(uniq(rows.map(r=>r.__cm)).length);
-  const esps=new Set(); rows.forEach(r=>r.__ce.forEach(e=>esps.add(e))); document.getElementById("kpi-especies").textContent=fmt(esps.size);
+  document.getElementById("kpi-especies").textContent=fmt(esps.size);
   document.getElementById("kpi-rango").textContent=dates.length ? fmtDate(dates[0])+" – "+fmtDate(dates[dates.length-1]) : "–";
 }
+
+/* ═══════════════════════════════════════════════════════════
+   GRÁFICAS
+═══════════════════════════════════════════════════════════ */
 function renderCharts(rows){
   const byMes = group(rows, r=>r.__mes).sort((a,b)=>a[0].localeCompare(b[0]));
-  mkChart("c-tendencia", { type:"line", data:{labels:byMes.map(x=>mShort(x[0])), datasets:[{label:"Monitoreos", data:byMes.map(x=>x[1]), fill:true, tension:.35, borderColor:PAL[0], backgroundColor:ctx=>chartGradient(ctx.chart.ctx,PAL[0]), pointRadius:4, pointBackgroundColor:PAL[0]}]}, options:baseOpts({plugins:{legend:{display:false}, datalabels:{display:false}}}) });
-  bar("c-municipio", topPairs(group(rows,r=>r.__municipio||"Sin municipio"),10), "Registros", PAL[1]);
-  bar("c-area-municipio", topPairs(groupSum(rows,r=>r.__municipio||"Sin municipio",r=>r.__area),10), "Área", PAL[2]);
-  bar("c-guarda", topPairs(group(rows,r=>r.__guarda||"Sin responsable"),10), "Registros", PAL[3]);
-  const esp=new Map(); rows.forEach(r=>r.__especies.forEach(e=>esp.set(e,(esp.get(e)||0)+1))); bar("c-especies", topPairs([...esp.entries()],10), "Registros", PAL[4]);
-  doughnut("c-area-prot", topPairs(group(rows,r=>r.__areaProt||"Sin dato"),8));
-  doughnut("c-tipo", topPairs(group(rows,r=>r.__tipo||"Sin dato"),8));
+  mkChart("c-tendencia", {
+    type:"line",
+    data:{
+      labels:byMes.map(x=>mShort(x[0])),
+      datasets:[{
+        label:"Monitoreos",
+        data:byMes.map(x=>x[1]),
+        borderColor:COLOR_MONITOREO,
+        backgroundColor:"rgba(21,128,61,0.14)",
+        borderWidth:3,
+        tension:0.32,
+        fill:true,
+        pointRadius:4,
+        pointHoverRadius:6,
+        pointBackgroundColor:"#ffffff",
+        pointBorderColor:COLOR_MONITOREO,
+        pointBorderWidth:2,
+        pointHitRadius:12
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:"index",intersect:false},
+      layout:{padding:{top:8,right:12,left:4,bottom:4}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{...TT,callbacks:{label:c=>` Monitoreos registrados: ${Number(c.parsed.y||0).toLocaleString("en-US")}`}},
+        datalabels:{display:false}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:12.5},maxRotation:0,autoSkip:true,maxTicksLimit:10}},
+        y:{beginAtZero:true,grid:{color:GC},ticks:{font:{size:12},callback:v=>Number(v).toLocaleString("en-US")},title:{display:true,text:"Monitoreos registrados",font:{size:12,weight:"600"},color:"#5f7b6e"}}
+      }
+    }
+  });
+
+  const byMunicipio = topPairs(group(rows,r=>r.__municipio||"Sin municipio"),12);
+  CLICK_MUNI = byMunicipio.map(([label])=>{
+    const found=rows.find(r=>(r.__municipio||"Sin municipio")===label);
+    return found ? found.__cm : "";
+  });
+  barHorizontal("c-municipio", byMunicipio, "Registros", COLOR_MONITOREO, "registros", (e,els)=>{
+    if(!els.length) return;
+    const k=CLICK_MUNI[els[0].index];
+    if(k){ document.getElementById("f-municipio").value=k; update(); }
+  });
+
+  barHorizontal("c-area-municipio",
+    topPairs(groupSum(rows,r=>r.__municipio||"Sin municipio",r=>r.__area),12),
+    "Área registrada",
+    COLOR_AREA,
+    "unidades de área"
+  );
+
+  const byGuarda=topPairs(group(rows,r=>r.__guarda||"Sin responsable"),12);
+  CLICK_GUARDA = byGuarda.map(([label])=>{
+    const found=rows.find(r=>(r.__guarda||"Sin responsable")===label);
+    return found ? found.__cg : "";
+  });
+  barHorizontal("c-guarda", byGuarda, "Registros", COLOR_GUARDA, "registros", (e,els)=>{
+    if(!els.length) return;
+    const k=CLICK_GUARDA[els[0].index];
+    if(k){ document.getElementById("f-guarda").value=k; update(); }
+  });
+
+  const esp=new Map();
+  rows.forEach(r=>r.__especies.forEach(e=>esp.set(e,(esp.get(e)||0)+1)));
+  barHorizontal("c-especies",
+    topPairs([...esp.entries()],12),
+    "Registros",
+    COLOR_ESPECIE,
+    "registros"
+  );
+
+  donut("c-area-prot", topPairs(group(rows,r=>r.__areaProt||"Sin dato"),8), "registros");
+  donut("c-tipo", topPairs(group(rows,r=>r.__tipo||"Sin dato"),8), "registros");
 }
-function bar(id,pairs,label,color){
-  const labels=pairs.map(p=>p[0]); const vals=pairs.map(p=>p[1]);
-  mkChart(id,{type:"bar",data:{labels,datasets:[{label,data:vals,backgroundColor:ctx=>chartGradient(ctx.chart.ctx,color),borderColor:color,borderWidth:1,borderRadius:6,borderSkipped:false}]},options:baseOpts({indexAxis:labels.some(x=>String(x).length>18)?"y":"x",plugins:{legend:{display:false},datalabels:{display:false}}})});
-}
-function doughnut(id,pairs){
-  mkChart(id,{type:"doughnut",data:{labels:pairs.map(p=>p[0]),datasets:[{data:pairs.map(p=>p[1]),backgroundColor:pairs.map((_,i)=>PAL[i%PAL.length]+"cc"),borderColor:"#fff",borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:10,font:{size:11}}},datalabels:{display:false}}}});
-}
+
+/* ═══════════════════════════════════════════════════════════
+   TABLA
+═══════════════════════════════════════════════════════════ */
 function renderTable(rows){
-  const m=new Map(); rows.forEach(r=>{ const k=r.__municipio||"Sin municipio"; if(!m.has(k))m.set(k,[]); m.get(k).push(r); });
+  const m=new Map();
+  rows.forEach(r=>{
+    const k=r.__municipio||"Sin municipio";
+    if(!m.has(k))m.set(k,[]);
+    m.get(k).push(r);
+  });
+
   const html=[...m.entries()].map(([muni,sub])=>{
-    const area=sum(sub.map(r=>r.__area||0)); const g=uniq(sub.map(r=>r.__cg)).length; const es=new Set(); sub.forEach(r=>r.__ce.forEach(e=>es.add(e))); const dates=sub.map(r=>r.__dt).filter(Boolean).sort((a,b)=>b-a);
-    return `<tr><td><strong>${muni}</strong></td><td>${fmt(sub.length)}</td><td>${fmt(area,area%1?1:0)}</td><td>${fmt(g)}</td><td>${fmt(es.size)}</td><td>${dates.length?fmtDate(dates[0]):"–"}</td></tr>`;
+    const area=sum(sub.map(r=>r.__area||0));
+    const g=uniq(sub.map(r=>r.__cg)).length;
+    const es=new Set();
+    sub.forEach(r=>r.__ce.forEach(e=>es.add(e)));
+    const dates=sub.map(r=>r.__dt).filter(Boolean).sort((a,b)=>b-a);
+    return `<tr>
+      <td><strong>${muni}</strong></td>
+      <td><span class="tag">${fmt(sub.length)}</span></td>
+      <td>${fmt(area,area%1?1:0)}</td>
+      <td>${fmt(g)}</td>
+      <td>${fmt(es.size)}</td>
+      <td>${dates.length?fmtDate(dates[0]):"–"}</td>
+    </tr>`;
   }).sort().join("");
+
   document.getElementById("tabla-resumen").innerHTML=html||`<tr><td colspan="6">Sin registros para los filtros seleccionados.</td></tr>`;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   SETUP
+═══════════════════════════════════════════════════════════ */
+function bindExports(){
+  const bind=(btn,id,fn)=>document.getElementById(btn)?.addEventListener("click",()=>dlPNG(id,fn));
+  bind("png-tendencia","c-tendencia","ac282_tendencia_mensual");
+  bind("png-municipio","c-municipio","ac282_monitoreos_municipio");
+  bind("png-area-municipio","c-area-municipio","ac282_area_municipio");
+  bind("png-guarda","c-guarda","ac282_monitoreos_guardarecurso");
+  bind("png-especies","c-especies","ac282_especies_reportadas");
+  bind("png-area-prot","c-area-prot","ac282_area_protegida");
+  bind("png-tipo","c-tipo","ac282_tipo_reforestacion");
+}
+
 async function main(){
-  if(window.ChartDataLabels) Chart.register(ChartDataLabels);
-  try{ const p=await loadCSV(); ROWS=enrich(p.data); initFilters(); update(); }
-  catch(e){ document.getElementById("estado").textContent=e.message; document.getElementById("estado").className="estado-txt error"; }
+  try{
+    const parsed=await loadCSV();
+    ROWS=enrich(parsed.data);
+    initFilters();
+    update();
+  }catch(e){
+    document.getElementById("estado").textContent=e.message;
+    document.getElementById("estado").className="estado-txt error";
+  }
+
   document.getElementById("btn-aplicar").addEventListener("click", update);
-  document.getElementById("btn-limpiar").addEventListener("click",()=>{ initFilters(); ["f-municipio","f-guarda","f-area","f-especie"].forEach(id=>document.getElementById(id).value=""); update(); });
+  document.getElementById("btn-limpiar").addEventListener("click",()=>{
+    initFilters();
+    ["f-municipio","f-guarda","f-area","f-especie"].forEach(id=>document.getElementById(id).value="");
+    update();
+  });
   ["f-desde","f-hasta","f-municipio","f-guarda","f-area","f-especie"].forEach(id=>document.getElementById(id).addEventListener("change", update));
+  bindExports();
 }
 main();
 </script>
-<script>if(window.Chart){Chart.defaults.font.family="'DM Sans',sans-serif";}</script>
-
-<script>
-(function(){
-  /* paleta verde elegante */
-  var G = ['#0d4a32','#1a7050','#28936c','#3aad84','#4ec49a','#2a6e58','#3a8a72','#5aaa90','#1e5e48','#4a8068','#7aaa96','#156040'];
-  if(window.PAL && Array.isArray(PAL))   PAL.splice.apply(PAL,   [0, PAL.length].concat(G));
-  if(window.PAL_A && Array.isArray(PAL_A)) PAL_A.splice.apply(PAL_A, [0, PAL_A.length].concat(G.map(function(c){ return c+'bb'; })));
-
-  /* Chart.js defaults */
-  if(window.Chart){
-    Chart.defaults.font.family = "'DM Sans', sans-serif";
-    var LL = Chart.defaults.plugins.legend.labels;
-    LL.usePointStyle = false; LL.boxWidth = 12; LL.boxHeight = 12;
-    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(6,22,14,.94)';
-    Chart.defaults.plugins.tooltip.cornerRadius = 10;
-    Chart.defaults.plugins.tooltip.padding = 12;
-    Chart.defaults.plugins.tooltip.titleFont = {size:13, weight:'600', family:"'DM Sans',sans-serif"};
-    Chart.defaults.plugins.tooltip.bodyFont  = {size:12.5, family:"'DM Sans',sans-serif"};
-  }
-
-  /* Anular chartGradient si existe (reforestaciones) */
-  if(typeof chartGradient === 'function'){
-    chartGradient = function(ctx, color){ return color + '66'; };
-  }
-
-  /* Override mkChart: sin bordes, sin degradados */
-  if(typeof mkChart === 'function'){
-    var _mk = mkChart;
-    mkChart = function(id, cfg){
-      var isGrad = function(v){ return v && typeof v === 'object' && typeof v.addColorStop === 'function'; };
-      ((cfg && cfg.data && cfg.data.datasets) || []).forEach(function(ds, i){
-        /* reemplazar degradados (objeto o función) con color sólido suave */
-        if(isGrad(ds.backgroundColor) || typeof ds.backgroundColor === 'function')
-          ds.backgroundColor = G[i % G.length] + '55';
-        if(isGrad(ds.borderColor) || typeof ds.borderColor === 'function')
-          ds.borderColor = G[i % G.length];
-        var t = cfg.type || '';
-        /* sin bordes en barras y donuts */
-        if(['bar','doughnut','pie'].indexOf(t) > -1 || ds.type === 'bar') ds.borderWidth = 0;
-        if(['doughnut','pie'].indexOf(t) > -1) ds.borderColor = 'transparent';
-        /* arrays de colores (barras multicolor) — sin borde */
-        if(Array.isArray(ds.backgroundColor)) ds.borderWidth = 0;
-      });
-      _mk(id, cfg);
-    };
-  }
-
-  /* CSS del sistema local */
-  var st = document.createElement('style');
-  st.textContent = '.cdf{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 12px;background:#f6faf7;border:1px solid #d8e4dd;border-radius:9px;margin-bottom:12px}.cdf-lbl{font-size:9.5px;font-weight:700;color:#6a8878;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}.cdf input[type=date]{border:1.5px solid #d8e4dd;border-radius:7px;padding:4px 8px;font-size:12px;font-family:inherit;background:#fff;color:#0c1e13;outline:none}.cdf input[type=date]:focus{border-color:#1a5c3a;box-shadow:0 0 0 2px rgba(26,92,58,.1)}.cdf-x{padding:3px 9px;border-radius:6px;border:1.5px solid #d8e4dd;background:#fff;color:#6a8878;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}.cdf-x:hover{border-color:#94a3b8;color:#0c1e13}.cw{position:relative}.cc-tip{position:absolute;top:8px;right:8px;max-width:210px;background:rgba(6,22,14,.92);color:#b8f0d4;font-size:11px;line-height:1.5;padding:9px 12px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .22s;z-index:20;border:1px solid rgba(255,255,255,.08)}.cw:hover .cc-tip{opacity:1}';
-  document.head.appendChild(st);
-
-  /* Mapeo chartId → función de redibujado */
-  var FN = {'c-tendencia':function(r){if(typeof renderCharts!=='undefined')renderCharts(r);},'c-municipio':function(r){if(typeof renderCharts!=='undefined')renderCharts(r);},'c-area-municipio':function(r){if(typeof renderCharts!=='undefined')renderCharts(r);},'c-guarda':function(r){if(typeof renderCharts!=='undefined')renderCharts(r);},'c-especies':function(r){if(typeof renderCharts!=='undefined')renderCharts(r);},'c-area-prot':function(r){if(typeof renderCharts!=='undefined')renderCharts(r);},'c-tipo':function(r){if(typeof renderCharts!=='undefined')renderCharts(r);}};
-
-  /* Filtrado por fechas locales (sobre filtro global activo) */
-  function locRows(desde, hasta){
-    var base = (typeof applyF === 'function' && typeof getF === 'function')
-               ? applyF(getF())
-               : (window.ROWS || []);
-    if(!desde && !hasta) return base;
-    return base.filter(function(r){
-      if(!r.__dt) return true;
-      if(desde && r.__dt < new Date(desde + 'T00:00:00Z')) return false;
-      if(hasta && r.__dt > new Date(hasta + 'T23:59:59Z')) return false;
-      return true;
-    });
-  }
-
-  function redrawOne(cid, card){
-    var dEl = card.querySelector('.cdf-d');
-    var hEl = card.querySelector('.cdf-h');
-    var rows = locRows(dEl ? dEl.value : '', hEl ? hEl.value : '');
-    if(FN[cid]) FN[cid](rows);
-  }
-
-  /* Agregar tooltip contextual + selector de fecha a cada tarjeta */
-  function setup(){
-    document.querySelectorAll('.cc').forEach(function(card){
-      var cv   = card.querySelector('canvas');
-      var sep  = card.querySelector('.cc-sep');
-      var hint = card.querySelector('.cc-hint');
-      var cw   = card.querySelector('.cw');
-
-      /* tooltip: muestra la descripción al pasar el mouse sobre el gráfico */
-      if(cw && hint && hint.textContent.trim()){
-        var tip = document.createElement('div');
-        tip.className = 'cc-tip';
-        tip.textContent = hint.textContent.trim();
-        cw.appendChild(tip);
-      }
-
-      /* selector de fechas local */
-      if(!cv || !cv.id) return;
-      var cid = cv.id;
-      if(!FN[cid]) return;
-      if(card.querySelector('.cdf')) return; /* evitar duplicados */
-      if(!sep) return;
-
-      var div = document.createElement('div');
-      div.className = 'cdf';
-      div.innerHTML =
-        '<span class="cdf-lbl">Período</span>' +
-        '<input type="date" class="cdf-d" title="Desde">' +
-        '<span style="color:#9ab0a6;font-size:13px">—</span>' +
-        '<input type="date" class="cdf-h" title="Hasta">' +
-        '<button class="cdf-x" type="button" title="Limpiar período">×</button>';
-      sep.after(div);
-
-      div.querySelector('.cdf-d').addEventListener('change', function(){ redrawOne(cid, card); });
-      div.querySelector('.cdf-h').addEventListener('change', function(){ redrawOne(cid, card); });
-      div.querySelector('.cdf-x').addEventListener('click', function(){
-        div.querySelector('.cdf-d').value = '';
-        div.querySelector('.cdf-h').value = '';
-        redrawOne(cid, card);
-      });
-    });
-  }
-
-  setup();
-})();
-</script>
-
 </body>
 </html>
