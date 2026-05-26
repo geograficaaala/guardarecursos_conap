@@ -233,6 +233,7 @@
     .hm-viv { background: #22c55e; }
     .hm-con { background: #f97316; }
     .hm-ref { background: #a78bfa; }
+    .hm-inc { background: #ef4444; }
 
     /* ── CONTEXTO STRIP ───────────────────────────── */
     .ctx-strip {
@@ -547,6 +548,7 @@
     .m-viv { --accent: #14532d; --accent-soft: rgba(34,197,94,.13); }
     .m-con { --accent: #9a3412; --accent-soft: rgba(249,115,22,.14); }
     .m-ref { --accent: #4c1d95; --accent-soft: rgba(124,58,237,.13); }
+    .m-inc { --accent: #b91c1c; --accent-soft: rgba(239,68,68,.13); }
 
         /* ── FOOTER ──────────────────────────────────── */
     footer {
@@ -853,6 +855,7 @@
     .m-viv { animation-delay: -.7s; }
     .m-con { animation-delay: -1.2s; }
     .m-ref { animation-delay: -1.8s; }
+    .m-inc { animation-delay: -2.3s; }
 
     .cover-stage.is-sliding .menu-card,
     .cover-stage.is-entering .menu-card {
@@ -886,6 +889,70 @@
       .menu-card {
         animation: none !important;
         translate: 0 0 !important;
+      }
+    }
+
+    /* ── AJUSTES V6: quinto módulo + tarjetas compactas con CTA siempre visible ── */
+    .cover-stage { height: 400px; }
+    .menu-card { min-height: 338px; }
+    .module-card-body {
+      gap: 12px;
+      padding: 24px 28px 78px;
+    }
+    .module-code { margin-bottom: 8px; }
+    .module-title {
+      font-size: clamp(24px, 2.25vw, 32px);
+      line-height: 1.05;
+      max-width: 450px;
+    }
+    .module-desc {
+      font-size: 13.6px;
+      line-height: 1.55;
+      max-width: 455px;
+    }
+    .module-tags { gap: 6px; }
+    .module-tag {
+      font-size: 10.5px;
+      padding: 5px 9px;
+    }
+    .menu-card[data-state="active"]::after {
+      bottom: 18px;
+      right: 20px;
+      padding: 7px 11px;
+    }
+    .m-ref .module-title {
+      font-size: clamp(23px, 2.05vw, 30px);
+      letter-spacing: -.035em;
+    }
+
+    @media (max-width: 1060px) {
+      .cover-stage { height: 392px; }
+      .menu-card { min-height: 330px; }
+      .module-card-body { padding-bottom: 76px; }
+    }
+
+    @media (max-width: 600px) {
+      .cover-stage { height: 438px; }
+      .menu-card {
+        min-height: 378px;
+        width: min(350px, 90vw);
+      }
+      .module-card-body {
+        padding: 22px 20px 76px;
+        gap: 12px;
+      }
+      .module-title,
+      .m-ref .module-title {
+        font-size: 25px;
+        line-height: 1.06;
+      }
+      .module-desc {
+        font-size: 13.2px;
+        line-height: 1.52;
+      }
+      .menu-card[data-state="active"]::after {
+        left: 20px;
+        bottom: 18px;
       }
     }
 
@@ -936,7 +1003,7 @@
       </p>
 <div class="hero-stats">
 <div class="hero-stat">
-<div class="hs-val">4</div>
+<div class="hs-val">5</div>
 <div class="hs-lbl">Boletas activas</div>
 </div>
 <div class="hero-stat">
@@ -955,7 +1022,7 @@
 <div class="ctx-strip">
 <div class="ctx-inner">
 <div class="ctx-item">
-<div class="ctx-val">4</div>
+<div class="ctx-val">5</div>
 <div class="ctx-lbl">Boletas de campo monitoreadas</div>
 </div>
 <div class="ctx-item">
@@ -1062,6 +1129,25 @@
 
 </div>
 </article>
+<!-- AC283 Incendios forestales -->
+<article aria-label="AC 283 Incendios forestales. Seleccione la tarjeta activa para abrir el módulo." class="menu-card m-inc" data-href="boletas/incendios_forestales/tablero.html" data-index="4" tabindex="0">
+<div class="module-card-body">
+<div class="module-head">
+<div>
+<span class="module-code">AC 283 · Incendios forestales</span>
+<h3 class="module-title">Control y liquidación de incendios forestales</h3>
+</div>
+</div>
+<p class="module-desc">Registro operativo de avisos, llegada de medios, superficie afectada, causas, técnicas de extinción, instituciones participantes, control y liquidación de incendios.</p>
+<div aria-label="Temas del módulo" class="module-tags">
+<span class="module-tag">Incendios</span>
+<span class="module-tag">Superficie</span>
+<span class="module-tag">Causas</span>
+<span class="module-tag">Liquidación</span>
+</div>
+
+</div>
+</article>
 </div>
 <div aria-hidden="false" class="cover-controls">
 <button aria-label="Módulo anterior" class="cover-nav cover-prev" type="button">
@@ -1076,6 +1162,7 @@
 <button aria-label="Ir a Viveros" class="dot-btn" data-go="1" type="button"></button>
 <button aria-label="Ir a Consumo forestal" class="dot-btn" data-go="2" type="button"></button>
 <button aria-label="Ir a Reforestaciones" class="dot-btn" data-go="3" type="button"></button>
+<button aria-label="Ir a Incendios forestales" class="dot-btn" data-go="4" type="button"></button>
 </div>
 </div>
 </div>
