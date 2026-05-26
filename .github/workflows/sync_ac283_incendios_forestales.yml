@@ -1,0 +1,839 @@
+# .github/workflows/sync_ac283_incendios_forestales.yml
+#
+# AC283 · Control y liquidación de incendios forestales
+# Sincroniza ArcGIS Online / Survey123 → docs/datos/base5_datos.csv
+#
+# Este workflow sigue la arquitectura del AC282:
+#   1. Descarga la capa de Survey123 desde ArcGIS REST.
+#   2. Normaliza nombres de columnas a etiquetas estables para los HTML.
+#   3. Convierte fechas y horas antes de limpiar texto.
+#   4. Conserva histórico válido si existiera un CSV previo.
+#   5. Deduplica prefiriendo registros nuevos de ArcGIS.
+#   6. Publica docs/datos/base5_datos.csv.
+
+name: Sincronizar AC283 Incendios Forestales
+
+on:
+  schedule:
+    - cron: "55 18 * * *"   # 12:55 mediodía Guatemala
+    - cron: "55 6 * * *"    # 00:55 medianoche Guatemala
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-ac283-incendios-forestales
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Reconstruir CSV limpio de AC283
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install requests pandas
+
+      - name: Descargar, limpiar y reconstruir base5_datos.csv
+        env:
+          # Usa los mismos secrets que los workflows existentes.
+          # Si la capa es pública, el workflow también funciona sin credenciales.
+          AGOL_USERNAME: ${{ secrets.AGOL_USERNAME }}
+          AGOL_PASSWORD: ${{ secrets.AGOL_PASSWORD }}
+          AGOL_ORG_URL:  ${{ secrets.AGOL_ORG_URL }}
+
+          # Opcional: si más adelante cambia el servicio, crear este secret.
+          AC283_FEATURE_SERVICE_URL: ${{ secrets.AC283_FEATURE_SERVICE_URL }}
+        run: |
+          python3 << 'PYEOF'
+          import os
+          import re
+          import sys
+          import time
+          import unicodedata
+          import requests
+          import pandas as pd
+
+          DEFAULT_SERVICE_URL = "https://services1.arcgis.com/IA5cEykpHJ28SD85/arcgis/rest/services/service_555febf73d144439a4d9942cb14a7713_form/FeatureServer"
+          ORG_URL  = (os.environ.get("AGOL_ORG_URL") or "https://www.arcgis.com").rstrip("/")
+          USERNAME = (os.environ.get("AGOL_USERNAME") or "").strip()
+          PASSWORD = (os.environ.get("AGOL_PASSWORD") or "").strip()
+
+          SERVICE_URL = (os.environ.get("AC283_FEATURE_SERVICE_URL") or DEFAULT_SERVICE_URL).strip().rstrip("/")
+          OUTPUT_CSV = "docs/datos/base5_datos.csv"
+          PAGE_SIZE  = 1000
+
+          COLS = [
+              "ObjectID",
+              "GlobalID",
+              "Nombre del guardarrecursos",
+              "Region",
+              "Area protegida",
+              "Especifique el area protegida",
+              "Departamento",
+              "Municipio calculado",
+              "Municipio",
+              "Referencia de ubicacion",
+              "Fecha aviso",
+              "Hora aviso",
+              "Forma de aviso",
+              "Fecha llegada medios terrestres",
+              "Hora llegada medios terrestres",
+              "Llegaron medios aereos",
+              "Fecha llegada medios aereos",
+              "Hora llegada medios aereos",
+              "Propiedad del terreno",
+              "Tipo de bosque",
+              "Area plantacion ha",
+              "Area bosque natural ha",
+              "Pendiente porcentaje",
+              "Topografia",
+              "Tipo de vegetacion",
+              "Superficie total ha",
+              "Tipo de incendio",
+              "Tecnicas de extincion",
+              "Fecha control",
+              "Hora control",
+              "Instituciones participantes",
+              "Instituciones otro",
+              "Fecha liquidacion",
+              "Hora liquidacion",
+              "Causas incendio",
+              "Causas otro",
+              "Observaciones",
+              "CreationDate",
+              "Creator",
+              "EditDate",
+              "Editor",
+              "X",
+              "Y",
+          ]
+
+          RENAME = {
+              # IDs del sistema
+              "objectid": "ObjectID",
+              "OBJECTID": "ObjectID",
+              "ObjectID": "ObjectID",
+              "globalid": "GlobalID",
+              "GLOBALID": "GlobalID",
+              "GlobalID": "GlobalID",
+
+              # Identidad / ubicación
+              "nombre_guardarecurso": "Nombre del guardarrecursos",
+              "nombre_guardarrecursos": "Nombre del guardarrecursos",
+              "guardarecurso": "Nombre del guardarrecursos",
+              "Nombre del guardarrecursos": "Nombre del guardarrecursos",
+              "region": "Region",
+              "Region": "Region",
+              "area_protegida": "Area protegida",
+              "Área protegida": "Area protegida",
+              "Area protegida": "Area protegida",
+              "area_protegida_otro": "Especifique el area protegida",
+              "Especifique el área protegida": "Especifique el area protegida",
+              "Especifique el area protegida": "Especifique el area protegida",
+              "departamento": "Departamento",
+              "Departamento": "Departamento",
+              "municipio_calc": "Municipio calculado",
+              "municipio": "Municipio",
+              "Municipio": "Municipio",
+              "referencia_ubicacion": "Referencia de ubicacion",
+              "Referencia de ubicación (caserío, comunidad, aldea, cantón, parcelamiento etc)": "Referencia de ubicacion",
+
+              # Aviso / respuesta
+              "aviso_fecha": "Fecha aviso",
+              "Fecha en que se recibió el aviso": "Fecha aviso",
+              "aviso_hora": "Hora aviso",
+              "Hora en que se recibió el aviso": "Hora aviso",
+              "forma_aviso": "Forma de aviso",
+              "Forma de recibir aviso": "Forma de aviso",
+              "llegada_mt_fecha": "Fecha llegada medios terrestres",
+              "Fecha de llegada de los primeros medios terrestres": "Fecha llegada medios terrestres",
+              "llegada_mt_hora": "Hora llegada medios terrestres",
+              "Hora de llegada de los primeros medios terrestres": "Hora llegada medios terrestres",
+              "llegaron_aereos": "Llegaron medios aereos",
+              "¿Llegaron medios aéreos?": "Llegaron medios aereos",
+              "llegada_ma_fecha": "Fecha llegada medios aereos",
+              "Fecha de llegada de medios aéreos": "Fecha llegada medios aereos",
+              "llegada_ma_hora": "Hora llegada medios aereos",
+              "Hora de llegada de medios aéreos": "Hora llegada medios aereos",
+
+              # Terreno / superficie
+              "propiedad_terreno": "Propiedad del terreno",
+              "Tipo de propiedad del terreno afectado (selección múltiple)": "Propiedad del terreno",
+              "tipo_bosque": "Tipo de bosque",
+              "Tipo de bosque donde ocurrió el incendio": "Tipo de bosque",
+              "area_plantacion_ha": "Area plantacion ha",
+              "Área afectada Plantación (ha)": "Area plantacion ha",
+              "area_bosque_natural_ha": "Area bosque natural ha",
+              "Área afectada Bosque natural (ha)": "Area bosque natural ha",
+              "pendiente_porcentaje": "Pendiente porcentaje",
+              '"No llenar puesto que se calculará automáticamente en el portal" (Porcentaje (%) de inclinación del terreno)': "Pendiente porcentaje",
+              "topografia": "Topografia",
+              '"No llenar puesto que se calculará automáticamente en el portal" (Topografía del terreno)': "Topografia",
+              "tipo_vegetacion": "Tipo de vegetacion",
+              '"No llenar puesto que se calculará automáticamente en el portal" (Tipo de vegetación donde se dio el incendio)': "Tipo de vegetacion",
+              "superficie_total_ha": "Superficie total ha",
+              "Superficie afectada total (ha)": "Superficie total ha",
+
+              # Incendio / control / liquidación
+              "tipo_incendio": "Tipo de incendio",
+              "Tipo de incendio": "Tipo de incendio",
+              "tecnicas_extincion": "Tecnicas de extincion",
+              "Técnicas de extinción": "Tecnicas de extincion",
+              "control_fecha": "Fecha control",
+              "Fecha en que se controló el incendio": "Fecha control",
+              "control_hora": "Hora control",
+              "Hora en que se controló el incendio": "Hora control",
+              "instituciones_participantes": "Instituciones participantes",
+              "Instituciones y personal que participaron": "Instituciones participantes",
+              "instituciones_otro": "Instituciones otro",
+              "Otro - especifique": "Instituciones otro",
+              "liquidacion_fecha": "Fecha liquidacion",
+              "Fecha en que se extinguió (liquidación) el incendio": "Fecha liquidacion",
+              "liquidacion_hora": "Hora liquidacion",
+              "Hora en que se extinguió (liquidación) el incendio": "Hora liquidacion",
+              "causas_incendio": "Causas incendio",
+              "Causas del incendio": "Causas incendio",
+              "causas_otro": "Causas otro",
+              "observaciones": "Observaciones",
+              "Observaciones adicionales": "Observaciones",
+
+              # Sistema
+              "CreationDate": "CreationDate",
+              "Creator": "Creator",
+              "EditDate": "EditDate",
+              "Editor": "Editor",
+
+              # Coordenadas
+              "x": "X",
+              "y": "Y",
+              "X": "X",
+              "Y": "Y",
+          }
+
+          FIX_AREA = {
+              "rumcla": "RUMCLA",
+              "fuera_rumcla": "Fuera de RUMCLA",
+              "fuera_de_rumcla": "Fuera de RUMCLA",
+              "fuera de rumcla": "Fuera de RUMCLA",
+          }
+
+          FIX_SINO = {
+              "si": "Sí",
+              "sí": "Sí",
+              "s": "Sí",
+              "no": "No",
+              "n": "No",
+              "nan": "",
+              "none": "",
+              "null": "",
+              "nat": "",
+          }
+
+          VALUE_LABELS = {
+              # Forma de aviso
+              "radio": "Radio",
+              "redes_sociales": "Redes sociales",
+              "redes": "Redes sociales",
+              "telefono": "Teléfono",
+              "teléfono": "Teléfono",
+              "personal": "Personal",
+
+              # Propiedad del terreno
+              "estado": "Del Estado",
+              "del_estado": "Del Estado",
+              "comunal": "Comunal",
+              "concesion": "En concesión",
+              "en_concesion": "En concesión",
+              "privada": "Privada",
+              "municipal": "Municipal",
+              "usufructo": "Usufructo",
+              "mixto": "Mixto",
+
+              # Tipo de bosque
+              "plantacion": "Plantación",
+              "plantación": "Plantación",
+              "bosque_natural": "Bosque natural",
+              "natural": "Bosque natural",
+
+              # Tipo de incendio
+              "rastrero": "Rastrero",
+              "copas": "De copas",
+              "de_copas": "De copas",
+              "subterraneo": "Subterráneo",
+              "subterráneo": "Subterráneo",
+
+              # Técnicas
+              "ataque_directo": "Ataque directo",
+              "directo": "Ataque directo",
+              "ataque_indirecto": "Ataque indirecto",
+              "indirecto": "Ataque indirecto",
+              "control_natural": "Control natural",
+
+              # Instituciones
+              "inab": "INAB",
+              "conap": "CONAP",
+              "conap_guardarrecursos": "CONAP (guardarecursos)",
+              "conap_guardarecursos": "CONAP (guardarecursos)",
+              "ejercito": "Ejército",
+              "ejército": "Ejército",
+              "conred": "CONRED",
+              "marn": "MARN",
+              "municipalidad": "Municipalidad",
+              "bomberos_voluntarios": "Bomberos Voluntarios",
+              "bomberos": "Bomberos Voluntarios",
+              "ongs": "ONGs",
+              "ong": "ONGs",
+              "policia_nacional_civil_pnc": "Policía Nacional Civil PNC",
+              "pnc": "Policía Nacional Civil PNC",
+              "particulares": "Particulares",
+              "otro": "Otro",
+
+              # Causas
+              "fogatas": "Fogatas",
+              "colmeneros": "Colmeneros",
+              "carboneros": "Carboneros",
+              "cazadores": "Cazadores",
+              "lenadores": "Leñadores",
+              "leñadores": "Leñadores",
+              "quemas_agricolas": "Quemas agrícolas",
+              "quemas_agrícolas": "Quemas agrícolas",
+              "quemas_de_pastos": "Quemas de pastos",
+              "quemas_pastos": "Quemas de pastos",
+              "intencionales": "Intencionales",
+              "quema_de_basura": "Quema de basura",
+              "quema_basura": "Quema de basura",
+              "causa_natural": "Causa natural",
+              "natural": "Causa natural",
+              "desconocida": "Desconocida",
+              "desconocido": "Desconocida",
+          }
+
+          def clean_text(value):
+              if pd.isna(value):
+                  return ""
+              text = str(value).strip()
+              if text.lower() in {"nan", "none", "null", "nat"}:
+                  return ""
+              return text
+
+          def strip_accents(text):
+              return "".join(
+                  ch for ch in unicodedata.normalize("NFKD", str(text))
+                  if not unicodedata.combining(ch)
+              )
+
+          def norm_key(text):
+              text = strip_accents(clean_text(text)).lower().strip()
+              text = re.sub(r"[^a-z0-9]+", "_", text)
+              return re.sub(r"_+", "_", text).strip("_")
+
+          def key_text(value):
+              text = strip_accents(clean_text(value)).lower()
+              text = re.sub(r"\s+", " ", text).strip()
+              return text
+
+          def map_value(value):
+              raw = clean_text(value)
+              if not raw:
+                  return ""
+              k = norm_key(raw)
+              return VALUE_LABELS.get(k, raw.replace("_", " ").strip())
+
+          def map_multi(value):
+              raw = clean_text(value)
+              if not raw:
+                  return ""
+
+              # Si la celda completa ya corresponde a un código o label, no dividirla.
+              full_key = norm_key(raw)
+              if full_key in VALUE_LABELS:
+                  return VALUE_LABELS[full_key]
+
+              # Survey123 select_multiple suele venir separado por espacios.
+              # También se admiten comas o punto y coma en históricos.
+              raw = raw.replace(";", ",")
+              if "," in raw:
+                  parts = [p.strip() for p in raw.split(",") if p.strip()]
+              else:
+                  parts = [p.strip() for p in raw.split() if p.strip()]
+
+              labels = []
+              seen = set()
+              for p in parts:
+                  label = map_value(p)
+                  key = norm_key(label)
+                  if label and key not in seen:
+                      labels.append(label)
+                      seen.add(key)
+
+              return ", ".join(labels)
+
+          def parse_datetime_series(series, prefer_dayfirst=False):
+              """Parsea fechas de ArcGIS/Survey123 y CSV histórico de forma tolerante."""
+              if series is None:
+                  return pd.Series(dtype="datetime64[ns]")
+
+              s = pd.Series(series).copy()
+              result = pd.Series(pd.NaT, index=s.index, dtype="datetime64[ns]")
+
+              numeric = pd.to_numeric(s, errors="coerce")
+
+              # ArcGIS suele entregar milisegundos Unix.
+              mask_ms = numeric.between(10**11, 2 * 10**13, inclusive="both")
+              if mask_ms.any():
+                  result.loc[mask_ms] = pd.to_datetime(numeric.loc[mask_ms], unit="ms", errors="coerce")
+
+              mask_s = result.isna() & numeric.between(10**8, 2 * 10**10, inclusive="both")
+              if mask_s.any():
+                  result.loc[mask_s] = pd.to_datetime(numeric.loc[mask_s], unit="s", errors="coerce")
+
+              mask_excel = result.isna() & numeric.between(20000, 80000, inclusive="both")
+              if mask_excel.any():
+                  result.loc[mask_excel] = pd.to_datetime(
+                      numeric.loc[mask_excel], unit="D", origin="1899-12-30", errors="coerce"
+                  )
+
+              text = s.apply(clean_text)
+              mask_text = result.isna() & (text != "")
+              if mask_text.any():
+                  parsed = pd.to_datetime(text.loc[mask_text], errors="coerce", dayfirst=prefer_dayfirst)
+                  result.loc[mask_text] = parsed
+
+              mask_text_2 = result.isna() & (text != "")
+              if mask_text_2.any():
+                  parsed2 = pd.to_datetime(text.loc[mask_text_2], errors="coerce", dayfirst=not prefer_dayfirst)
+                  result.loc[mask_text_2] = parsed2
+
+              return result
+
+          def format_form_date(series):
+              # Formato usado por los verificadores: M/D/YYYY.
+              dt = parse_datetime_series(series, prefer_dayfirst=False)
+              out = []
+              for val in dt:
+                  if pd.isna(val):
+                      out.append("")
+                  else:
+                      out.append(f"{val.month}/{val.day}/{val.year}")
+              return pd.Series(out, index=pd.Series(series).index)
+
+          def format_system_datetime(series):
+              dt = parse_datetime_series(series, prefer_dayfirst=False)
+              out = []
+              for val in dt:
+                  if pd.isna(val):
+                      out.append("")
+                  else:
+                      out.append(val.strftime("%m/%d/%Y %H:%M:%S.%f"))
+              return pd.Series(out, index=pd.Series(series).index)
+
+          def format_time_only(series):
+              s = pd.Series(series).copy()
+              dt = parse_datetime_series(s, prefer_dayfirst=False)
+              out = s.apply(clean_text)
+
+              mask_dt = dt.notna()
+              if mask_dt.any():
+                  out.loc[mask_dt] = dt.loc[mask_dt].dt.strftime("%H:%M")
+
+              out = out.str.replace(r"^(\d{1,2}:\d{2}):\d{2}$", r"\1", regex=True)
+              out = out.str.replace(
+                  r"^(\d{1,2}):(\d{2})$",
+                  lambda m: f"{int(m.group(1)):02d}:{m.group(2)}",
+                  regex=True,
+              )
+              out = out.replace({"nan": "", "None": "", "NaT": ""})
+              return out
+
+          def auth_token():
+              if not USERNAME or not PASSWORD:
+                  print("Sin credenciales AGOL. Se intentará consultar la capa como pública.")
+                  return ""
+
+              r = requests.post(
+                  f"{ORG_URL}/sharing/rest/generateToken",
+                  data={
+                      "username": USERNAME,
+                      "password": PASSWORD,
+                      "referer": "https://www.arcgis.com",
+                      "expiration": 120,
+                      "f": "json",
+                  },
+                  timeout=30,
+              )
+              r.raise_for_status()
+              data = r.json()
+              if "error" in data:
+                  print(f"ERROR de autenticación: {data['error']}")
+                  sys.exit(1)
+              return data["token"]
+
+          def token_params(token):
+              return {"token": token} if token else {}
+
+          def find_layer_url(service_url, token):
+              if re.search(r"/FeatureServer/\d+$", service_url, flags=re.I):
+                  return service_url
+
+              r = requests.get(service_url, params={"f": "json", **token_params(token)}, timeout=30)
+              r.raise_for_status()
+              sj = r.json()
+              if "error" in sj:
+                  print(f"ERROR leyendo servicio: {sj['error']}")
+                  sys.exit(1)
+
+              layers = sj.get("layers") or []
+              if layers:
+                  layer_id = layers[0].get("id", 0)
+                  print(f"  Capa seleccionada: {layer_id} · {layers[0].get('name', '')}")
+                  return f"{service_url}/{layer_id}"
+
+              return f"{service_url}/0"
+
+          def download_features(layer_url, token):
+              r_fields = requests.get(layer_url, params={"f": "json", **token_params(token)}, timeout=30)
+              r_fields.raise_for_status()
+              layer_info = r_fields.json()
+              if "error" in layer_info:
+                  print(f"ERROR leyendo layer: {layer_info['error']}")
+                  sys.exit(1)
+
+              fields = layer_info.get("fields", [])
+              print(f"  Campos en ArcGIS ({len(fields)}): {[f.get('name') for f in fields]}")
+
+              r_count = requests.get(
+                  f"{layer_url}/query",
+                  params={"where": "1=1", "returnCountOnly": "true", "f": "json", **token_params(token)},
+                  timeout=30,
+              )
+              r_count.raise_for_status()
+              count_json = r_count.json()
+              if "error" in count_json:
+                  print(f"ERROR contando registros: {count_json['error']}")
+                  sys.exit(1)
+
+              total = count_json.get("count", 0)
+              print(f"✓ Registros en ArcGIS: {total}")
+
+              pages = []
+              offset = 0
+
+              while True:
+                  r = requests.get(
+                      f"{layer_url}/query",
+                      params={
+                          "where": "1=1",
+                          "outFields": "*",
+                          "resultOffset": offset,
+                          "resultRecordCount": PAGE_SIZE,
+                          "returnGeometry": "true",
+                          "f": "json",
+                          **token_params(token),
+                      },
+                      timeout=60,
+                  )
+                  r.raise_for_status()
+                  rj = r.json()
+                  if "error" in rj:
+                      print(f"ERROR en query ArcGIS: {rj['error']}")
+                      sys.exit(1)
+
+                  features = rj.get("features", [])
+                  if not features:
+                      break
+
+                  rows_page = []
+                  for feat in features:
+                      attrs = dict(feat.get("attributes", {}))
+                      geo = feat.get("geometry") or {}
+                      if "x" not in attrs and "X" not in attrs and geo.get("x") is not None:
+                          attrs["x"] = geo["x"]
+                      if "y" not in attrs and "Y" not in attrs and geo.get("y") is not None:
+                          attrs["y"] = geo["y"]
+                      rows_page.append(attrs)
+
+                  pages.append(pd.DataFrame(rows_page))
+                  offset += len(features)
+                  print(f"  Descargados: {offset}/{total}", end="\r")
+
+                  if len(features) < PAGE_SIZE and not rj.get("exceededTransferLimit", False):
+                      break
+
+                  time.sleep(0.2)
+
+              print()
+              df = pd.concat(pages, ignore_index=True) if pages else pd.DataFrame()
+              return df, fields
+
+          def normalize_columns_from_aliases(df, fields):
+              aliases = {f.get("name"): f.get("alias") for f in fields if f.get("name") and f.get("alias")}
+              rename_by_norm = {norm_key(k): v for k, v in RENAME.items()}
+              dynamic_rename = dict(RENAME)
+
+              for name, alias in aliases.items():
+                  alias_norm = norm_key(alias)
+                  name_norm = norm_key(name)
+
+                  if alias_norm in rename_by_norm:
+                      dynamic_rename[name] = rename_by_norm[alias_norm]
+                  elif name_norm in rename_by_norm:
+                      dynamic_rename[name] = rename_by_norm[name_norm]
+
+              return df.rename(columns=dynamic_rename)
+
+          def clean_numeric_column(series):
+              s = pd.Series(series).apply(clean_text)
+              out = pd.to_numeric(
+                  s.str.replace(",", ".", regex=False).str.replace(r"[^0-9.\-]", "", regex=True),
+                  errors="coerce",
+              )
+              return out
+
+          def prepare_new_dataframe(df_raw, fields):
+              if df_raw.empty:
+                  return pd.DataFrame(columns=COLS + ["_source_id", "_source_priority"])
+
+              df = normalize_columns_from_aliases(df_raw, fields)
+
+              id_candidates = [c for c in ["GlobalID", "GLOBALID", "globalid", "ObjectID", "OBJECTID", "objectid"] if c in df.columns]
+              df["_source_id"] = df[id_candidates[0]].apply(clean_text) if id_candidates else ""
+              df["_source_priority"] = 1
+
+              for c in COLS:
+                  if c not in df.columns:
+                      df[c] = ""
+
+              # Fechas y horas antes de limpiar texto.
+              for col in [
+                  "Fecha aviso",
+                  "Fecha llegada medios terrestres",
+                  "Fecha llegada medios aereos",
+                  "Fecha control",
+                  "Fecha liquidacion",
+              ]:
+                  df[col] = format_form_date(df[col])
+
+              for col in ["CreationDate", "EditDate"]:
+                  df[col] = format_system_datetime(df[col])
+
+              for col in [
+                  "Hora aviso",
+                  "Hora llegada medios terrestres",
+                  "Hora llegada medios aereos",
+                  "Hora control",
+                  "Hora liquidacion",
+              ]:
+                  df[col] = format_time_only(df[col])
+
+              # Numéricos.
+              for col in [
+                  "Area plantacion ha",
+                  "Area bosque natural ha",
+                  "Pendiente porcentaje",
+                  "Superficie total ha",
+                  "X",
+                  "Y",
+              ]:
+                  nums = clean_numeric_column(df[col])
+                  df[col] = nums.map(lambda x: "" if pd.isna(x) else f"{float(x):g}")
+
+              # Limpieza texto.
+              for c in COLS:
+                  df[c] = df[c].apply(clean_text)
+
+              df["Region"] = df["Region"].replace("", "Altiplano Central")
+              df["Area protegida"] = df["Area protegida"].apply(lambda v: FIX_AREA.get(norm_key(v), clean_text(v).replace("_", " ").strip().title() if clean_text(v) else ""))
+
+              df["Llegaron medios aereos"] = df["Llegaron medios aereos"].apply(lambda v: FIX_SINO.get(norm_key(v), clean_text(v)))
+
+              df["Forma de aviso"] = df["Forma de aviso"].apply(map_value)
+              df["Propiedad del terreno"] = df["Propiedad del terreno"].apply(map_multi)
+              df["Tipo de bosque"] = df["Tipo de bosque"].apply(map_multi)
+              df["Tipo de incendio"] = df["Tipo de incendio"].apply(map_multi)
+              df["Tecnicas de extincion"] = df["Tecnicas de extincion"].apply(map_multi)
+              df["Instituciones participantes"] = df["Instituciones participantes"].apply(map_multi)
+              df["Causas incendio"] = df["Causas incendio"].apply(map_multi)
+
+              # Si municipio viene vacío, usar municipio calculado.
+              mask_muni_empty = df["Municipio"].str.strip() == ""
+              df.loc[mask_muni_empty, "Municipio"] = df.loc[mask_muni_empty, "Municipio calculado"]
+
+              raw_count = len(df)
+              df = df[df["Fecha aviso"].str.strip() != ""].copy()
+              dropped = raw_count - len(df)
+              print(f"✓ ArcGIS con Fecha aviso válida: {len(df)} registros")
+              if dropped:
+                  print(f"⚠ ArcGIS sin Fecha aviso descartados: {dropped} registros")
+
+              if raw_count > 0 and len(df) == 0:
+                  print("ERROR: ArcGIS devolvió registros, pero ninguno tiene Fecha aviso válida.")
+                  print("No se actualiza el CSV para evitar borrar la base. Revisar nombre/formato del campo aviso_fecha.")
+                  sys.exit(1)
+
+              return df[COLS + ["_source_id", "_source_priority"]]
+
+          def read_existing_csv(path):
+              for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
+                  try:
+                      df = pd.read_csv(path, sep=";", encoding=enc)
+                      print(f"✓ Histórico existente: {len(df)} registros (encoding: {enc})")
+                      return df
+                  except UnicodeDecodeError:
+                      continue
+              print("⚠ No se pudo leer el CSV histórico. Se reconstruirá solo con ArcGIS.")
+              return pd.DataFrame()
+
+          def prepare_legacy_dataframe(path):
+              if not os.path.exists(path):
+                  print("Sin histórico previo.")
+                  return pd.DataFrame(columns=COLS + ["_source_id", "_source_priority"])
+
+              df = read_existing_csv(path)
+              if df.empty:
+                  return pd.DataFrame(columns=COLS + ["_source_id", "_source_priority"])
+
+              for c in COLS:
+                  if c not in df.columns:
+                      df[c] = ""
+              if "_source_id" not in df.columns:
+                  df["_source_id"] = ""
+              df["_source_priority"] = 0
+
+              for col in [
+                  "Fecha aviso",
+                  "Fecha llegada medios terrestres",
+                  "Fecha llegada medios aereos",
+                  "Fecha control",
+                  "Fecha liquidacion",
+              ]:
+                  df[col] = format_form_date(df[col])
+
+              for col in ["CreationDate", "EditDate"]:
+                  df[col] = format_system_datetime(df[col])
+
+              for col in [
+                  "Hora aviso",
+                  "Hora llegada medios terrestres",
+                  "Hora llegada medios aereos",
+                  "Hora control",
+                  "Hora liquidacion",
+              ]:
+                  df[col] = format_time_only(df[col])
+
+              for c in COLS + ["_source_id"]:
+                  df[c] = df[c].apply(clean_text)
+
+              before = len(df)
+              df = df[df["Fecha aviso"].str.strip() != ""].copy()
+              print(f"✓ Histórico con Fecha aviso válida conservado: {len(df)} registros")
+              if before - len(df):
+                  print(f"✓ Histórico sin Fecha aviso eliminado: {before - len(df)} registros")
+
+              return df[COLS + ["_source_id", "_source_priority"]]
+
+          def make_dedupe_key(df):
+              date_key = parse_datetime_series(df["Fecha aviso"], prefer_dayfirst=False).dt.strftime("%Y-%m-%d").fillna("")
+              superficie = pd.to_numeric(df["Superficie total ha"], errors="coerce").round(4).astype(str).replace("nan", "")
+              return (
+                  df["Nombre del guardarrecursos"].map(key_text) + "|" +
+                  date_key + "|" +
+                  df["Hora aviso"].map(key_text) + "|" +
+                  df["Municipio"].map(key_text) + "|" +
+                  df["Referencia de ubicacion"].map(key_text) + "|" +
+                  superficie + "|" +
+                  df["Tipo de incendio"].map(key_text) + "|" +
+                  df["Causas incendio"].map(key_text) + "|" +
+                  df["X"].map(key_text) + "|" +
+                  df["Y"].map(key_text)
+              )
+
+          def rebuild_csv(df_legacy, df_new):
+              combined = pd.concat([df_legacy, df_new], ignore_index=True)
+              if combined.empty:
+                  print("ERROR: no hay registros válidos para publicar.")
+                  sys.exit(1)
+
+              combined["_source_id"] = combined["_source_id"].fillna("").astype(str).str.strip()
+              with_id = combined[combined["_source_id"] != ""].copy()
+              without_id = combined[combined["_source_id"] == ""].copy()
+
+              if not with_id.empty:
+                  with_id = with_id.sort_values("_source_priority").drop_duplicates(subset="_source_id", keep="last")
+
+              combined = pd.concat([without_id, with_id], ignore_index=True)
+
+              combined["_fallback_key"] = make_dedupe_key(combined)
+              before = len(combined)
+              combined = (
+                  combined.sort_values("_source_priority")
+                  .drop_duplicates(subset="_fallback_key", keep="last")
+                  .copy()
+              )
+              print(f"✓ Duplicados eliminados: {before - len(combined)}")
+
+              combined["_sort_fecha"] = parse_datetime_series(combined["Fecha aviso"], prefer_dayfirst=False)
+              combined["_sort_creation"] = parse_datetime_series(combined["CreationDate"], prefer_dayfirst=False)
+              combined = (
+                  combined.sort_values(["_sort_fecha", "_sort_creation"], na_position="last")
+                  .drop(columns=["_sort_fecha", "_sort_creation", "_fallback_key", "_source_id", "_source_priority"], errors="ignore")
+                  .reset_index(drop=True)
+              )
+
+              before_final = len(combined)
+              combined = combined[combined["Fecha aviso"].apply(clean_text) != ""].copy()
+              if before_final - len(combined):
+                  print(f"✓ Filas sin Fecha aviso removidas al final: {before_final - len(combined)}")
+
+              if combined.empty:
+                  print("ERROR: el CSV final quedó vacío. No se publicará.")
+                  sys.exit(1)
+
+              return combined[COLS]
+
+          print("Autenticando en ArcGIS Online si hay credenciales...")
+          token = auth_token()
+          print("✓ Autenticación lista")
+
+          print(f"✓ Servicio: {SERVICE_URL}")
+          layer_url = find_layer_url(SERVICE_URL, token)
+          print(f"✓ Layer URL: {layer_url}")
+
+          df_raw, fields = download_features(layer_url, token)
+          df_new = prepare_new_dataframe(df_raw, fields)
+          df_legacy = prepare_legacy_dataframe(OUTPUT_CSV)
+          final = rebuild_csv(df_legacy, df_new)
+
+          final_dates = parse_datetime_series(final["Fecha aviso"], prefer_dayfirst=False)
+          print(f"✓ CSV final: {len(final)} registros")
+          print(f"✓ Rango Fecha aviso: {final_dates.min()} → {final_dates.max()}")
+          print("✓ Registros por guardarecurso:")
+          print(final["Nombre del guardarrecursos"].replace("", "Sin nombre").value_counts().to_string())
+
+          os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
+          final.to_csv(OUTPUT_CSV, index=False, sep=";", encoding="utf-8-sig")
+          print(f"✓ Archivo guardado: {OUTPUT_CSV}")
+          PYEOF
+
+      - name: Publicar cambios al repositorio
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/datos/base5_datos.csv
+
+          if git diff --staged --quiet; then
+            echo "Sin cambios en base5_datos.csv. No se necesita commit."
+          else
+            FECHA=$(TZ="America/Guatemala" date '+%d/%m/%Y %H:%M GT')
+            git commit -m "🔄 AC283 Incendios forestales · CSV limpio · $FECHA"
+            git push
+          fi
