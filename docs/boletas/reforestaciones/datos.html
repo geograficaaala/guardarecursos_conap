@@ -989,7 +989,15 @@ const CSS_REPORTE = `<style>
   body{font-family:Arial,sans-serif;color:#111;margin:28px;line-height:1.45} h1{font-size:22px;text-align:center;color:#0a3d2b;margin:0 0 8px} h2{font-size:16px;color:#0a3d2b;border-bottom:1px solid #d8e4dd;padding-bottom:4px;margin-top:20px}.center{text-align:center}.small{font-size:11px;color:#555}.section{margin-bottom:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.box{border:1px solid #d8e4dd;border-radius:8px;padding:8px;background:#f6faf7}.label{font-size:10px;text-transform:uppercase;color:#555;font-weight:bold}.value{font-size:14px}table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px}th{background:#eaf2ed;color:#0a3d2b;text-transform:uppercase;font-size:9.5px}td,th{border:1px solid #d8e4dd;padding:6px}.num{text-align:right}.firma{display:flex;justify-content:space-around;margin-top:36px;text-align:center;color:#333}
 </style>`;
 function resumenPeriodo(regs){
-  return {total:regs.length,guardas:new Set(regs.map(r=>r.__guarda)).size,municipios:new Set(regs.map(r=>r.__municipio).filter(Boolean)).size,area:regs.reduce((a,r)=>a+(Number(r.__area)||0),0),especies:new Set(regs.flatMap(r=>r.__especies).map(e=>canonStr(e)).filter(Boolean)).size,tipos:new Set(regs.map(r=>r.__tipo).filter(Boolean)).size};
+  return {
+    total: regs.length,
+    guardas: new Set(regs.map(r=>r.__guarda).filter(Boolean)).size,
+    municipios: new Set(regs.map(r=>r.__municipio).filter(Boolean)).size,
+    areas: new Set(regs.map(r=>r.__area_prot).filter(Boolean).map(v=>canonStr(v))).size,
+    area: regs.reduce((a,r)=>a+(Number(r.__area)||0),0),
+    especies: new Set(regs.flatMap(r=>r.__especies).map(e=>canonStr(e)).filter(Boolean)).size,
+    tipos: new Set(regs.map(r=>r.__tipo).filter(Boolean).map(v=>canonStr(v))).size
+  };
 }
 function construirInformeCorteHTML(inicio,fin,regs){
   const res=resumenPeriodo(regs);
@@ -1042,33 +1050,113 @@ function fechaInforme(dt) {
 }
 
 function datosInformePlantillaReforestaciones(inicio, fin, regs) {
-  const res = resumenPeriodo(regs);
+  const total = regs.length;
+  const totalArea = regs.reduce((a, r) => a + (Number(r.__area) || 0), 0);
+  const promedioArea = total ? totalArea / total : 0;
+
+  function labelLimpio(v) {
+    const s = String(v || "").trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+    return s ? s.replace(/\b\w/g, ch => ch.toUpperCase()) : "Sin dato";
+  }
+
+  function areaNormalizadaInforme(v) {
+    const c = canonStr(v);
+    if (!c) return "Sin dato";
+    if (c.includes("fuera")) return "Fuera de RUMCLA";
+    if (c.includes("rumcla")) return "RUMCLA";
+    return labelLimpio(v);
+  }
+
+  function esDentroRumcla(v) {
+    const c = canonStr(v);
+    if (!c) return false;
+    if (c.includes("fuera")) return false;
+    return c.includes("rumcla");
+  }
+
+  function esFueraRumcla(v) {
+    const c = canonStr(v);
+    if (!c) return false;
+    if (c.includes("fuera")) return true;
+    return !c.includes("rumcla");
+  }
+
+  const guardas = new Set(regs.map(r => r.__guarda).filter(Boolean));
+  const municipios = new Set(regs.map(r => r.__municipio).filter(Boolean));
+  const areas = new Set(
+    regs
+      .map(r => areaNormalizadaInforme(r.__area_prot))
+      .filter(v => v && v !== "Sin dato")
+  );
+  const especies = new Set(
+    regs
+      .flatMap(r => r.__especies || [])
+      .map(e => canonStr(e))
+      .filter(Boolean)
+  );
+  const tipos = new Set(regs.map(r => canonStr(r.__tipo)).filter(Boolean));
+
+  const totalRumcla = regs.filter(r => esDentroRumcla(r.__area_prot)).length;
+  const totalFueraRumcla = regs.filter(r => esFueraRumcla(r.__area_prot)).length;
+
   const topMunicipios = topMap(regs, r => r.__municipio);
-  const topAreas = topMap(regs, r => r.__area_prot);
-  const topTipos = topMap(regs, r => r.__tipo);
-  const topEspecies = topMap(regs, r => r.__especies[0] || "");
-  const topGuardas = consolidarGuardas(regs);
+  const topMunicipiosArea = sumMap(regs, r => r.__municipio, r => r.__area);
+  const topAreas = topMap(regs, r => areaNormalizadaInforme(r.__area_prot));
+  const topTipos = topMap(regs, r => labelLimpio(r.__tipo));
+
+  const especiesMap = new Map();
+  regs.forEach(r => {
+    (r.__especies || []).forEach(e => {
+      const label = labelLimpio(e);
+      if (!label || label === "Sin dato") return;
+      especiesMap.set(label, (especiesMap.get(label) || 0) + 1);
+    });
+  });
+  const topEspecies = [...especiesMap.entries()].sort((a, b) => b[1] - a[1]);
+
+  const guardasConsol = consolidarGuardas(regs);
 
   return {
     FECHA_INICIO: fechaInforme(inicio),
     FECHA_FIN: fechaInforme(fin),
     FECHA_GENERACION: fechaInforme(new Date()),
 
-    TOTAL_MONITOREOS: fmtGT(res.total, 0, 0),
-    TOTAL_GUARDARECURSOS: fmtGT(res.guardas, 0, 0),
-    TOTAL_MUNICIPIOS: fmtGT(res.municipios, 0, 0),
-    TOTAL_AREAS_PROTEGIDAS: fmtGT(res.areas, 0, 0),
-    TOTAL_ESPECIES: fmtGT(res.especies, 0, 0),
-    TOTAL_TIPOS_REFORESTACION: fmtGT(res.tipos, 0, 0),
-    AREA_TOTAL: fmtArea(res.area),
+    TOTAL_MONITOREOS: fmtGT(total, 0, 0),
+    TOTAL_REFORESTACIONES: fmtGT(total, 0, 0),
+    TOTAL_GUARDARECURSOS: fmtGT(guardas.size, 0, 0),
+    TOTAL_MUNICIPIOS: fmtGT(municipios.size, 0, 0),
+    TOTAL_AREAS_PROTEGIDAS: fmtGT(areas.size, 0, 0),
+    TOTAL_ESPECIES: fmtGT(especies.size, 0, 0),
+    TOTAL_TIPOS_REFORESTACION: fmtGT(tipos.size, 0, 0),
+
+    // Alias para distintas versiones del machote Word.
+    AREA_TOTAL: fmtArea(totalArea),
+    TOTAL_AREA_REFORESTADA: fmtArea(totalArea),
+    AREA_REFORESTADA_TOTAL: fmtArea(totalArea),
+    PROMEDIO_AREA: fmtArea(promedioArea),
+    PROMEDIO_AREA_REFORESTADA: fmtArea(promedioArea),
+
+    TOTAL_RUMCLA: fmtGT(totalRumcla, 0, 0),
+    TOTAL_FUERA_RUMCLA: fmtGT(totalFueraRumcla, 0, 0),
 
     TOP_MUNICIPIOS_MONITOREOS: textListTopPlain(topMunicipios, 5, "monitoreos"),
+    TOP_MUNICIPIOS_AREA: textListTopPlain(topMunicipiosArea, 5, "área"),
     TOP_AREAS_PROTEGIDAS: textListTopPlain(topAreas, 5, "registros"),
     TOP_TIPOS_REFORESTACION: textListTopPlain(topTipos, 5, "registros"),
     TOP_ESPECIES: textListTopPlain(topEspecies, 6, "registros"),
-    TOP_GUARDARECURSOS_MONITOREOS: textListTopPlain(topGuardas.map(o => [o.g, o.total]), 5, "monitoreos"),
 
-    __guardasConsol: topGuardas
+    TOP_GUARDARECURSOS_MONITOREOS: textListTopPlain(
+      guardasConsol.map(o => [o.g, o.total]),
+      5,
+      "monitoreos"
+    ),
+    TOP_GUARDARECURSOS_AREA: textListTopPlain(
+      guardasConsol.map(o => [o.g, o.area]),
+      5,
+      "área"
+    ),
+
+    __guardasConsol: guardasConsol
   };
 }
 
@@ -1087,6 +1175,10 @@ function regEsc(s) {
 function tokenRegex(token) {
   const gap = '(?:</w:t>(?:\\s|<[^>]+>)*<w:t[^>]*>)?';
   return new RegExp(token.split("").map(regEsc).join(gap), "g");
+}
+
+function replaceDocxText(xml, text, value) {
+  return xml.replace(tokenRegex(text), xmlEsc(value));
 }
 
 function replaceDocxToken(xml, token, value) {
@@ -1275,6 +1367,10 @@ async function generarInformeReforestacionesDesdePlantillaWord(nombre, inicio, f
 
   let xml = file.asText();
 
+  // Protección por si el machote fue creado desde otro módulo.
+  xml = replaceDocxText(xml, "INFORME GENERAL DE PATRULLAJES", "INFORME GENERAL DE REFORESTACIONES POR COMPROMISO");
+  xml = replaceDocxText(xml, "INFORME GENERAL DE CONSUMOS FORESTALES FAMILIARES", "INFORME GENERAL DE REFORESTACIONES POR COMPROMISO");
+
   xml = replaceDocxToken(xml, "{{TABLA_GUARDARECURSOS}}", "__TABLA_GUARDARECURSOS__");
 
   Object.entries(data).forEach(([k, v]) => {
@@ -1292,6 +1388,9 @@ async function generarInformeReforestacionesDesdePlantillaWord(nombre, inicio, f
     xml = xml.replace("__TABLA_GUARDARECURSOS__", "");
     xml = xml.replace("</w:body>", tableXml + "</w:body>");
   }
+
+  // Última red de seguridad: ningún marcador de texto simple debe quedar visible.
+  xml = xml.replace(/\{\{[A-Z0-9_]+\}\}/g, "–");
 
   zip.file("word/document.xml", xml);
 
