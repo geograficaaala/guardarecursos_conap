@@ -319,8 +319,26 @@ jobs:
           }
 
           def clean_text(value):
-              if pd.isna(value):
+              # En ocasiones, después de renombrar columnas por alias, pandas puede
+              # devolver una Serie cuando hay nombres duplicados. Tomamos el primer
+              # valor no vacío para evitar ValueError: truth value of a Series is ambiguous.
+              if isinstance(value, pd.Series):
+                  for item in value.tolist():
+                      txt = clean_text(item)
+                      if txt:
+                          return txt
                   return ""
+              if isinstance(value, (list, tuple)):
+                  for item in value:
+                      txt = clean_text(item)
+                      if txt:
+                          return txt
+                  return ""
+              try:
+                  if pd.isna(value):
+                      return ""
+              except Exception:
+                  pass
               text = str(value).strip()
               if text.lower() in {"nan", "none", "null", "nat"}:
                   return ""
@@ -591,6 +609,39 @@ jobs:
 
               return df.rename(columns=dynamic_rename)
 
+          def coalesce_duplicate_columns(df):
+              """
+              Después de renombrar por nombres y alias de ArcGIS, dos campos distintos
+              pueden terminar con el mismo nombre final. Cuando pasa eso, df["col"]
+              devuelve un DataFrame y las funciones de limpieza reciben Series en vez
+              de escalares. Esta función fusiona duplicados fila por fila, conservando
+              el primer valor no vacío.
+              """
+              if not df.columns.duplicated().any():
+                  return df
+
+              duplicated_names = sorted(set(df.columns[df.columns.duplicated()].tolist()))
+              print(f"⚠ Columnas duplicadas tras renombrar; se fusionarán: {duplicated_names}")
+
+              out = pd.DataFrame(index=df.index)
+              for col in dict.fromkeys(df.columns):
+                  sub = df.loc[:, df.columns == col]
+
+                  if sub.shape[1] == 1:
+                      out[col] = sub.iloc[:, 0]
+                      continue
+
+                  def first_non_empty(row):
+                      for value in row:
+                          txt = clean_text(value)
+                          if txt:
+                              return txt
+                      return ""
+
+                  out[col] = sub.apply(first_non_empty, axis=1)
+
+              return out
+
           def clean_numeric_column(series):
               s = pd.Series(series).apply(clean_text)
               out = pd.to_numeric(
@@ -604,6 +655,7 @@ jobs:
                   return pd.DataFrame(columns=COLS + ["_source_id", "_source_priority"])
 
               df = normalize_columns_from_aliases(df_raw, fields)
+              df = coalesce_duplicate_columns(df)
 
               id_candidates = [c for c in ["GlobalID", "GLOBALID", "globalid", "ObjectID", "OBJECTID", "objectid"] if c in df.columns]
               df["_source_id"] = df[id_candidates[0]].apply(clean_text) if id_candidates else ""
