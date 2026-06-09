@@ -350,7 +350,7 @@
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
-      min-width: 860px;
+      min-width: 1040px;
     }
     th, td {
       padding: 10px 12px;
@@ -379,6 +379,25 @@
       color: var(--acento);
       font-size: 11.5px;
       font-weight: 700;
+    }
+
+    .species-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      max-width: 360px;
+    }
+    .species-mini-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #f6faf7;
+      border: 1px solid var(--borde);
+      color: var(--ink-2);
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
     }
 
     /* ── FOOTER ── */
@@ -525,7 +544,7 @@
   <section class="kpis">
     <div class="kpi kpi-0"><div class="kpi-label">Monitoreos</div><div class="kpi-value" id="kpi-total">–</div><div class="kpi-sub">registros visibles</div></div>
     <div class="kpi kpi-1"><div class="kpi-label">Guardarecursos</div><div class="kpi-value" id="kpi-guardas">–</div><div class="kpi-sub">activos en el período</div></div>
-    <div class="kpi kpi-2"><div class="kpi-label">Área reforestada</div><div class="kpi-value" id="kpi-area">–</div><div class="kpi-sub">área total registrada</div></div>
+    <div class="kpi kpi-2"><div class="kpi-label">Área reforestada</div><div class="kpi-value" id="kpi-area">–</div><div class="kpi-sub">área total registrada en m²</div></div>
     <div class="kpi kpi-3"><div class="kpi-label">Municipios</div><div class="kpi-value" id="kpi-munis">–</div><div class="kpi-sub">con registros</div></div>
     <div class="kpi kpi-4"><div class="kpi-label">Especies</div><div class="kpi-value" id="kpi-especies">–</div><div class="kpi-sub">reportadas</div></div>
     <div class="kpi kpi-5"><div class="kpi-label">Período activo</div><div class="kpi-value kpi-rango" id="kpi-rango">–</div><div class="kpi-sub">rango de fechas</div></div>
@@ -570,7 +589,7 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Área registrada por municipio</div>
-          <div class="cc-hint">Suma del campo área de reforestación por municipio atendido</div>
+          <div class="cc-hint">Suma del campo área de reforestación por municipio atendido (m²)</div>
         </div>
         <button class="btn-png" id="png-area-municipio">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -632,8 +651,8 @@
     <div class="cc">
       <div class="cc-head">
         <div class="cc-meta">
-          <div class="cc-title">Especies reportadas</div>
-          <div class="cc-hint">Frecuencia de especies presentes en los registros de reforestación</div>
+          <div class="cc-title">Conteo por especie</div>
+          <div class="cc-hint">Cantidad de apariciones de cada especie en los registros filtrados</div>
         </div>
         <button class="btn-png" id="png-especies">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -648,7 +667,7 @@
       <div class="cc-head">
         <div class="cc-meta">
           <div class="cc-title">Resumen municipal</div>
-          <div class="cc-hint">Tabla calculada sobre los registros filtrados; consolida monitoreos, área, guardarecursos, especies y última fecha</div>
+          <div class="cc-hint">Tabla calculada sobre los registros filtrados; consolida monitoreos, área en m², guardarecursos, conteo por especie y última fecha</div>
         </div>
       </div>
       <div class="cc-sep"></div>
@@ -658,9 +677,10 @@
             <tr>
               <th>Municipio</th>
               <th>Registros</th>
-              <th>Área total</th>
+              <th>Área total (m²)</th>
               <th>Guardarecursos</th>
               <th>Especies</th>
+              <th>Conteo por especie</th>
               <th>Última fecha</th>
             </tr>
           </thead>
@@ -846,6 +866,8 @@ function normalizarMunicipio(v){
 const uniq = arr => [...new Set(arr.filter(Boolean))];
 const sum = arr => arr.reduce((a,b)=>a+b,0);
 const fmt = (n,d=0) => Number(n||0).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtArea = n => `${fmt(n, Math.abs(Number(n||0) % 1) > 1e-9 ? 1 : 0)} m²`;
+const escHTML = v => norm(v).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 
 function parseNumber(v){
   const s = norm(v).replace(/,/g,".").replace(/[^0-9.\-]/g,"");
@@ -1193,7 +1215,7 @@ function renderKPIs(rows){
 
   document.getElementById("kpi-total").textContent=fmt(rows.length);
   document.getElementById("kpi-guardas").textContent=fmt(uniq(rows.map(r=>r.__cg)).length);
-  document.getElementById("kpi-area").textContent=fmt(area, area%1?1:0);
+  document.getElementById("kpi-area").textContent=fmtArea(area);
   document.getElementById("kpi-munis").textContent=fmt(uniq(rows.map(r=>r.__cm)).length);
   document.getElementById("kpi-especies").textContent=fmt(esps.size);
   document.getElementById("kpi-rango").textContent=dates.length ? fmtDate(dates[0])+" – "+fmtDate(dates[dates.length-1]) : "–";
@@ -1254,9 +1276,9 @@ function renderCharts(rows){
 
   barHorizontal("c-area-municipio",
     topPairs(groupSum(rows,r=>r.__municipio||"Sin municipio",r=>r.__area),12),
-    "Área registrada",
+    "Área registrada (m²)",
     COLOR_AREA,
-    "unidades de área"
+    "m²"
   );
 
   const byGuarda=topPairs(group(rows,r=>r.__guarda||"Sin responsable"),12);
@@ -1274,9 +1296,9 @@ function renderCharts(rows){
   rows.forEach(r=>r.__especies.forEach(e=>esp.set(e,(esp.get(e)||0)+1)));
   barHorizontal("c-especies",
     topPairs([...esp.entries()],12),
-    "Registros",
+    "Apariciones por especie",
     COLOR_ESPECIE,
-    "registros"
+    "apariciones"
   );
 
   donut("c-area-prot", topPairs(group(rows,r=>r.__areaProt||"Sin dato"),8), "registros");
@@ -1286,6 +1308,22 @@ function renderCharts(rows){
 /* ═══════════════════════════════════════════════════════════
    TABLA
 ═══════════════════════════════════════════════════════════ */
+function speciesCountsHTML(rows){
+  const m = new Map();
+  rows.forEach(r=>{
+    r.__especies.forEach(e=>{
+      const key = canon(e);
+      if(!key) return;
+      const item = m.get(key) || {label:e, count:0};
+      item.count += 1;
+      m.set(key, item);
+    });
+  });
+  const items = [...m.values()].sort((a,b)=>b.count-a.count || a.label.localeCompare(b.label,"es"));
+  if(!items.length) return "–";
+  return `<div class="species-list">${items.map(x=>`<span class="species-mini-tag">${escHTML(x.label)}: ${fmt(x.count)}</span>`).join("")}</div>`;
+}
+
 function renderTable(rows){
   const m=new Map();
   rows.forEach(r=>{
@@ -1301,16 +1339,17 @@ function renderTable(rows){
     sub.forEach(r=>r.__ce.forEach(e=>es.add(e)));
     const dates=sub.map(r=>r.__dt).filter(Boolean).sort((a,b)=>b-a);
     return `<tr>
-      <td><strong>${muni}</strong></td>
+      <td><strong>${escHTML(muni)}</strong></td>
       <td><span class="tag">${fmt(sub.length)}</span></td>
-      <td>${fmt(area,area%1?1:0)}</td>
+      <td>${fmtArea(area)}</td>
       <td>${fmt(g)}</td>
       <td>${fmt(es.size)}</td>
+      <td>${speciesCountsHTML(sub)}</td>
       <td>${dates.length?fmtDate(dates[0]):"–"}</td>
     </tr>`;
   }).sort().join("");
 
-  document.getElementById("tabla-resumen").innerHTML=html||`<tr><td colspan="6">Sin registros para los filtros seleccionados.</td></tr>`;
+  document.getElementById("tabla-resumen").innerHTML=html||`<tr><td colspan="7">Sin registros para los filtros seleccionados.</td></tr>`;
 }
 
 /* ═══════════════════════════════════════════════════════════
