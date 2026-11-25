@@ -4,7 +4,7 @@
   const base = new URL('../boletas/patrullajes/', document.currentScript.src);
   const asset = new URL('jszip.min.js', document.currentScript.src);
   const template = new URL('plantilla_informe_individual.docx', base);
-  const service = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer';
+  const services = ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer','https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer'];
   const mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   const val = (r,k) => String(r[k] ?? '').trim();
   const show = s => s || 'Sin dato (campo vacío)';
@@ -34,7 +34,7 @@
     return f;
   }
   let ready, templateBytes;
-  async function fetchTimed(url, ms=10000){const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),ms);try{const res=await fetch(url,{signal:ac.signal});if(!res.ok)throw Error('HTTP '+res.status);return {blob:await res.blob()};}finally{clearTimeout(timer);}}
+  async function fetchTimed(url, ms=18000){const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),ms);try{const res=await fetch(url,{signal:ac.signal});if(!res.ok)throw Error('HTTP '+res.status);return {blob:await res.blob()};}finally{clearTimeout(timer);}}
   async function setup(){
     if(!ready)ready=(async()=>{if(!global.JSZip){await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=asset.href;s.onload=resolve;s.onerror=()=>reject(Error('No se pudo cargar JSZip'));document.head.append(s);});}if(!global.JSZip)throw Error('JSZip no está disponible');const r=await fetchTimed(template.href);templateBytes=await r.blob.arrayBuffer();})();
     try{await ready;}catch(e){ready=null;throw e;}
@@ -42,21 +42,32 @@
   async function satellite(r,session){
     const c=coords(r);if(!c)return {ok:false,reason:'coordenadas ausentes o a revisar'};
     if(!session.maps)return {ok:false,reason:'generación sin mapa seleccionada'};
-    if(session.failed)return {ok:false,reason:'servicio cartográfico no disponible durante esta descarga'};
     let bitmap;
     try{
-      if(!session.credit){const meta=JSON.parse(await (await fetchTimed(service+'?f=json')).blob.text());session.credit=String(meta.copyrightText||'').trim();if(!session.credit)throw Error('Atribución no disponible');}
       const R=6378137, rad=Math.PI/180, x=R*c.lon*rad,y=R*Math.log(Math.tan(Math.PI/4+c.lat*rad/2)), w=900,h=480, span=1400/Math.cos(c.lat*rad), vh=span*h/w;
       const qs=new URLSearchParams({bbox:[x-span/2,y-vh/2,x+span/2,y+vh/2].join(','),bboxSR:'3857',imageSR:'3857',size:`${w},${h}`,format:'png32',transparent:'false',f:'image'});
-      const {blob}=await fetchTimed(service+'/export?'+qs);if(!blob.type.startsWith('image/'))throw Error('Respuesta no es imagen');
-      bitmap=await createImageBitmap(blob);if(bitmap.width!==w||bitmap.height!==h)throw Error('Dimensiones inesperadas');
+      const errors=[];let credit='';
+      for(const service of services){
+        try{
+          const {blob}=await fetchTimed(service+'/export?'+qs);
+          if(!blob.type.startsWith('image/'))throw Error('Respuesta no es imagen: '+(await blob.text()).slice(0,180));
+          bitmap=await createImageBitmap(blob);
+          if(bitmap.width!==w||bitmap.height!==h){bitmap.close();bitmap=null;throw Error('Dimensiones inesperadas');}
+          if(!session.credits[service]){
+            try{const meta=JSON.parse(await (await fetchTimed(service+'?f=json',5000)).blob.text());session.credits[service]=String(meta.copyrightText||'').trim();}catch(e){console.warn('Metadatos Esri:',e);}
+          }
+          credit=session.credits[service]||'Esri World Imagery; atribución detallada: '+service;
+          break;
+        }catch(e){errors.push(new URL(service).hostname+': '+(e.name==='AbortError'?'tiempo de espera agotado':e.message));}
+      }
+      if(!bitmap)throw Error(errors.join(' | '));
       const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.drawImage(bitmap,0,0);bitmap.close();bitmap=null;
       ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(12,12,48,76);ctx.fillStyle='#111';ctx.font='bold 18px serif';ctx.textAlign='center';ctx.fillText('N',36,32);ctx.beginPath();ctx.moveTo(36,40);ctx.lineTo(23,72);ctx.lineTo(36,65);ctx.lineTo(49,72);ctx.closePath();ctx.fill();
       ctx.beginPath();ctx.arc(w/2,h/2,10,0,Math.PI*2);ctx.fillStyle='#d00000';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();
       const scale=200*w/1400;ctx.fillStyle='rgba(255,255,255,.92)';ctx.fillRect(12,h-50,scale+28,38);ctx.fillStyle='#111';ctx.fillRect(26,h-31,scale,4);ctx.font='16px serif';ctx.textAlign='left';ctx.fillText('0',26,h-13);ctx.textAlign='right';ctx.fillText('200 m',26+scale,h-13);
       const png=await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(Error('No se pudo codificar mapa')),'image/png'));
-      return {ok:true,bytes:new Uint8Array(await png.arrayBuffer()),credit:'Esri World Imagery — '+session.credit};
-    }catch(e){if(bitmap)bitmap.close();session.failed=true;return {ok:false,reason:'no se pudo obtener una imagen satelital del proveedor'};}
+      return {ok:true,bytes:new Uint8Array(await png.arrayBuffer()),credit:credit};
+    }catch(e){if(bitmap)bitmap.close();console.warn('Mapa satelital:',e);return {ok:false,reason:e.message||'error de conexión'};}
   }
   async function build(r,map){const zip=await global.JSZip.loadAsync(templateBytes),f=fields(r,map);let doc=await zip.file('word/document.xml').async('string');doc=doc.replace(/\{\{([A-Z_]+)\}\}/g,(_,k)=>{if(!(k in f))throw Error('Campo de plantilla desconocido: '+k);return xml(f[k]);});if(map.ok)zip.file('word/media/image3.png',map.bytes);zip.file('word/document.xml',doc);return zip.generateAsync({type:'uint8array',compression:'DEFLATE'});}
   function filename(r,i){return `Informe_${safe(name(r))}_${dateKey(val(r,'Fecha de patrullaje'))||'Sin_fecha'}_registro_${r.__fila_csv||i+1}.docx`;}
@@ -64,8 +75,8 @@
   let busy=false;
   async function run(rows,{maps=true,individual=false,progress=()=>{}}={}){
     if(busy)throw Error('Ya se está generando una descarga.');if(!rows.length)throw Error('No hay registros para descargar.');if(individual&&rows.length!==1)throw Error('Selecciona exactamente un registro.');busy=true;
-    try{progress('Cargando plantilla Word…');await setup();const session={maps,failed:false,credit:''},zip=individual?null:new global.JSZip();let missing=0;const used=new Set();for(let i=0;i<rows.length;i++){const r=rows[i];progress(`Generando ${i+1} de ${rows.length}…`);const map=await satellite(r,session);if(!map.ok)missing++;const bytes=await build(r,map);let file=filename(r,i);if(used.has(file))file=file.replace(/\.docx$/,'_'+(i+1)+'.docx');used.add(file);if(individual)download(bytes,file,mime);else zip.file(file,bytes);await new Promise(res=>setTimeout(res,0));}
-      if(zip){progress('Comprimiendo informes…');zip.file('RESUMEN.txt',`Informes generados: ${rows.length}\nCon mapa satelital: ${rows.length-missing}\nSin mapa satelital: ${missing}\nCada documento corresponde a un registro.\n`);download(await zip.generateAsync({type:'uint8array',compression:'STORE'}),`Informes_${safe(name(rows[0]))}_${rows.length}_registros.zip`,'application/zip');}progress(`Listo: ${rows.length} informe(s); ${missing} sin mapa satelital.`);
+    try{progress('Cargando plantilla Word…');await setup();const session={maps,credits:{}},zip=individual?null:new global.JSZip();let missing=0,lastError='';const used=new Set();for(let i=0;i<rows.length;i++){const r=rows[i];progress(`Generando ${i+1} de ${rows.length}…`);const map=await satellite(r,session);if(!map.ok){missing++;lastError=map.reason;}const bytes=await build(r,map);let file=filename(r,i);if(used.has(file))file=file.replace(/\.docx$/,'_'+(i+1)+'.docx');used.add(file);if(individual)download(bytes,file,mime);else zip.file(file,bytes);await new Promise(res=>setTimeout(res,0));}
+      if(zip){progress('Comprimiendo informes…');zip.file('RESUMEN.txt',`Informes generados: ${rows.length}\nCon mapa satelital: ${rows.length-missing}\nSin mapa satelital: ${missing}\nCada documento corresponde a un registro.\n`);download(await zip.generateAsync({type:'uint8array',compression:'STORE'}),`Informes_${safe(name(rows[0]))}_${rows.length}_registros.zip`,'application/zip');}progress(`Listo: ${rows.length} informe(s); ${missing} sin mapa satelital.${lastError?' Último motivo: '+lastError:''}`);
     }finally{busy=false;}
   }
   // UI compartida: no cambia filtros existentes, permite seleccionar una boleta o todas.
