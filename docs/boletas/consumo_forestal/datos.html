@@ -198,7 +198,8 @@
       <a href="base3_tablero.html" class="back-link">📈 Ir al tablero (CSV)</a>
     </div>
 
-    <div id="tabla"></div>
+    <section style="margin:18px 0;padding:16px;border:1px solid #aab9ae;border-radius:10px;background:#fff;color:#173b2a"><h2 style="font-size:18px;margin:0 0 12px">Informes técnicos individuales por boleta · AC297</h2><label>Guardarecursos <select id="consumos-guarda"><option value="">Seleccione un guardarecursos</option></select></label><div id="informes-consumos" style="margin-top:12px">Cargando registros…</div></section>
+<div id="tabla"></div>
   </main>
 
   <!-- Librerías JS necesarias (LOCALES) -->
@@ -275,7 +276,8 @@
         "<head><meta charset='utf-8'><title>Informe</title>" +
         ESTILOS_INFORME +
         "</head><body>";
-      const footer = "</body></html>";
+      const footer = "<script src="../../assets/informes_individuales_consumos.js"></script>
+</body></html>";
       const source = header + contenidoHTML + footer;
 
       const blob = new Blob(["\ufeff", source], {
@@ -1147,5 +1149,6 @@
         });
     });
   </script>
+<script src="../../assets/informes_individuales_consumos.js"></script>
 </body>
 </html>

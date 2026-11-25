@@ -423,7 +423,8 @@
         Exportar perfil Word
       </button>
     </div>
-    <div id="guarda-kpis" class="kpis-guarda" style="display:none">
+    <section style="margin:18px 0;padding:16px;border:1px solid #aab9ae;border-radius:10px;background:#fff;color:#173b2a"><h2 style="font-size:18px;margin:0 0 12px">Informes técnicos individuales por boleta · AC297</h2><label>Guardarecursos <select id="consumos-guarda"><option value="">Seleccione un guardarecursos</option></select></label><div id="informes-consumos" style="margin-top:12px">Cargando registros…</div></section>
+<div id="guarda-kpis" class="kpis-guarda" style="display:none">
       <div class="kpi-g kpi-g-0"><div class="kpi-g-label">Consumos</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">total registrados</div></div>
       <div class="kpi-g kpi-g-1"><div class="kpi-g-label">Árboles aprobados</div><div class="kpi-g-value" id="g-arboles">–</div><div class="kpi-g-sub">total a talar</div></div>
       <div class="kpi-g kpi-g-2"><div class="kpi-g-label">Meta reforestación</div><div class="kpi-g-value" id="g-meta">–</div><div class="kpi-g-sub">árboles a sembrar (×10)</div></div>
@@ -837,7 +838,8 @@ function renderGuarda(nombre){
 
 /* ═══ DOCUMENTOS ══════════════════════════════════════════ */
 const CSS_DOC=`<style>body,p,td,th{font-family:"Times New Roman",serif;font-size:10pt;line-height:1.4}h1{font-size:14pt;font-weight:bold;margin:0 0 8pt;text-align:center}h2{font-size:12pt;font-weight:bold;margin:12pt 0 6pt}p{margin:0 0 6pt;text-align:justify}section{page-break-inside:avoid;margin-bottom:8pt}</style>`;
-function docWord(n,h){const s="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_DOC+"</head><body>"+h+"</body></html>";const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff",s],{type:"application/msword"}));a.download=n;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function docWord(n,h){const s="<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'>"+CSS_DOC+"</head><body>"+h+"<script src="../../assets/informes_individuales_consumos.js"></script>
+</body></html>";const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff",s],{type:"application/msword"}));a.download=n;document.body.appendChild(a);a.click();document.body.removeChild(a);}
 function docPDF(n,h){if(typeof html2pdf==="undefined"){alert("html2pdf no disponible");return}const d=document.createElement("div");d.style.padding="10px";d.innerHTML=CSS_DOC+h;document.body.appendChild(d);html2pdf().set({margin:10,filename:n,image:{type:"jpeg",quality:.98},html2canvas:{scale:2},jsPDF:{unit:"mm",format:"a4",orientation:"portrait"}}).from(d).save().then(()=>document.body.removeChild(d)).catch(()=>document.body.removeChild(d));}
 
 function generarInformeRegistro(fmt){
@@ -1440,5 +1442,6 @@ document.addEventListener("DOMContentLoaded",function(){
   });
 });
 </script>
+<script src="../../assets/informes_individuales_consumos.js"></script>
 </body>
 </html>
