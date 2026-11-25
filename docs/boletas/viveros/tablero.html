@@ -680,7 +680,7 @@
   </div>
 
   <!-- SECCIÓN 4 — GUARDARECURSOS -->
-  <div class="sec-divider">Análisis por guardarecursos</div>
+  <div class="sec-divider">Análisis por guardarecursos</div><div class="card" style="margin:16px 0;padding:16px"><h3>Informes técnicos individuales por boleta</h3><p>Fechas de creación del registro. Selecciona un guardarecursos.</p><div id="informes-viveros"></div></div>
   <div class="charts-grid">
 
     <div class="cc full">
@@ -729,6 +729,7 @@
   </div>
 </footer>
 
+<script src="../../assets/informes_individuales_viveros.js"></script>
 <script>
 /* Paleta institucional alineada con Patrullajes */
 const PAL = [
@@ -851,7 +852,8 @@ async function loadCSV(){
 
 /* ═══ ENRIQUECIMIENTO ═════════════════════════════════════ */
 function enrich(raw){
-  return raw.map(r=>{
+  return raw.map((r,i)=>{
+    r.__fila_csv=i+2;
     const gn=normGuarda(r[F.guarda]); if(!gn)return null;
     const dt=parseCreation(r[F.fecha]);
     const cm=canonStr(r[F.municipio]);
@@ -1172,6 +1174,11 @@ function applyAll(){
     const raw=await loadCSV();
     ROWS=enrich(raw);
     initSelects();
+    const selViv=document.getElementById('f-guarda');
+    const refreshViv=InformesViveros.mount(document.getElementById('informes-viveros'),()=>applyF(getF()),()=>selViv.value?selViv.selectedOptions[0].textContent:'');
+    ['f-guarda','f-desde','f-hasta','f-muni','f-area','f-actividad'].forEach(id=>document.getElementById(id).addEventListener('change',refreshViv));
+    document.getElementById('btn-aplicar').addEventListener('click',refreshViv);
+    document.getElementById('btn-limpiar').addEventListener('click',()=>setTimeout(refreshViv,0));
     document.getElementById("btn-aplicar").addEventListener("click",applyAll);
     document.getElementById("btn-limpiar").addEventListener("click",()=>{
       ["f-muni","f-area","f-guarda","f-actividad"].forEach(id=>{ const el=document.getElementById(id); if(el)el.value=""; });

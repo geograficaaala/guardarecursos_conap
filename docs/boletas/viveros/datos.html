@@ -482,6 +482,7 @@
         Exportar perfil Word
       </button>
     </div>
+    <div class="card" style="margin:16px 0;padding:16px"><h3>Informes técnicos individuales por boleta</h3><p>Fechas de creación del registro. Selecciona un guardarecursos.</p><div id="informes-viveros"></div></div>
     <div id="guarda-kpis" class="kpis-guarda" style="display:none">
       <div class="kpi-g kpi-g-0"><div class="kpi-g-label">Asistencias</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">total registradas</div></div>
       <div class="kpi-g kpi-g-1"><div class="kpi-g-label">Municipios</div><div class="kpi-g-value" id="g-munis">–</div><div class="kpi-g-sub">distintos cubiertos</div></div>
@@ -513,6 +514,7 @@
   <strong>CONAP · Dirección Regional Altiplano Central</strong> · Sistema desarrollado por el Laboratorio SIG · AALA · © 2026
 </footer>
 
+<script src="../../assets/informes_individuales_viveros.js"></script>
 <script>
 /* ═══ CAMPOS CSV ════════════════════════════════════════ */
 const F = {
@@ -593,7 +595,8 @@ function calcDur(a,b){ const x=parseHora(a),y=parseHora(b); if(x===null||y===nul
 
 /* ═══ CARGA Y PROCESO ════════════════════════════════════ */
 function procesarDatos(raw){
-  return raw.map(r=>{
+  return raw.map((r,i)=>{
+    r.__fila_csv=i+2;
     const gn=normGuarda(r[F.guarda]); if(!gn)return null;
     const dt=parseCreation(r[F.fecha]);
     const acts=norm(r[F.act]).split(/[,;]+/).map(a=>norm(a).replace(/_/g," ").trim()).filter(Boolean);
@@ -1680,6 +1683,9 @@ document.addEventListener("DOMContentLoaded",function(){
     initVcSelects();
     inicializarSelectorMeses();
     initGuardaSelector();
+    const selViv=document.getElementById('sel-guarda');
+    const refreshViv=InformesViveros.mount(document.getElementById('informes-viveros'),()=>DATOS.filter(r=>r.__guarda===selViv.value),()=>selViv.value);
+    selViv.addEventListener('change',refreshViv);
   }).catch(e=>{
     const el=document.getElementById("estado-registros"); if(el){el.textContent="Error al cargar datos: "+e.message; el.className="estado-txt error";}
   });
