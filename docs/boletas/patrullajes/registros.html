@@ -468,6 +468,7 @@
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Informe Word
         </button>
+        <span id="ii-registro-status" role="status" aria-live="polite"></span>
       </div>
     </div>
 
@@ -562,6 +563,7 @@
       </button>
     </div>
 
+    <div class="card" id="informes-individuales-guarda" style="margin:12px 0"><div class="card-title">Informes técnicos individuales por boleta</div><div class="card-hint">Selecciona un guardarecursos y, opcionalmente, un rango de fechas.</div><div id="ii-guarda"></div></div>
     <div id="guarda-kpis" class="kpis-guarda" style="display:none">
       <div class="kpi-g kpi-g-0"><div class="kpi-g-label">Patrullajes</div><div class="kpi-g-value" id="g-total">–</div><div class="kpi-g-sub">total registrados</div></div>
       <div class="kpi-g kpi-g-1"><div class="kpi-g-label">Municipios</div><div class="kpi-g-value" id="g-munis">–</div><div class="kpi-g-sub">distintos cubiertos</div></div>
@@ -827,7 +829,7 @@ function latLonAGTM(lat,lon){
 ═══════════════════════════════════════════════════ */
 function procesarDatos(rawData){
   return rawData
-    .map(r=>{
+    .map((r,i)=>{
       const guarda=normGuarda(r["Guarda recursos responsable"]);
       if(!guarda)return null;
       const dt=parseDate(r["Fecha de patrullaje"]);
@@ -842,6 +844,7 @@ function procesarDatos(rawData){
       const calidad=calidadRegistro(r,dt,dur,coordEstado,areaNorm);
       return{
         ...r,
+        __fila_csv: i+2,
         "Guarda recursos responsable": guarda,
         "Área protegida normalizada": areaNorm,
         "Duración calculada": dur!==null?Number(dur.toFixed(2)):"",
@@ -1337,7 +1340,9 @@ function initGuardaSelector(){
   const sel=document.getElementById("sel-guarda");
   sel.innerHTML="<option value=''>Selecciona un guardarecursos…</option>";
   guardas.forEach(g=>{const o=document.createElement("option");o.value=g;o.textContent=g;sel.appendChild(o);});
+  const refreshII=window.InformesIndividuales?.mount(document.getElementById("ii-guarda"),()=>DATOS.filter(r=>r["Guarda recursos responsable"]===sel.value),()=>sel.value);
   sel.addEventListener("change",()=>{
+    refreshII?.();
     const g=sel.value;
     document.getElementById("btn-informe-guarda").disabled=!g;
     g?renderGuarda(g):clearGuarda();
@@ -2119,7 +2124,12 @@ document.addEventListener("DOMContentLoaded",function(){
   if(typeof Tabulator==="undefined"){alert("No se pudo cargar Tabulator.");return}
 
   document.getElementById("btn-informe-guarda").addEventListener("click",generarInformeGuarda);
-  document.getElementById("generate-report-word").addEventListener("click",()=>generarInformeRegistro("word"));
+  document.getElementById("generate-report-word").addEventListener("click",async()=>{
+    const rows=tablaTabulator?.getSelectedData()||[];if(rows.length!==1){alert("Selecciona exactamente una fila en la tabla.");return;}
+    const b=document.getElementById("generate-report-word"),old=b.textContent;b.disabled=true;
+    try{await window.InformesIndividuales.run(rows,{individual:true,progress:t=>document.getElementById("ii-registro-status").textContent=t});}
+    catch(e){alert(e.message);}finally{b.disabled=false;b.textContent=old;}
+  });
   document.getElementById("generate-monthly-report-word").addEventListener("click",()=>generarInformeMensual("word"));
   document.getElementById("vc-aplicar").addEventListener("click",ejecutarVerificacion);
   document.getElementById("vc-informe-word")?.addEventListener("click",()=>generarInformeCorteDesdeVerificacion("word"));
@@ -2145,5 +2155,6 @@ document.addEventListener("DOMContentLoaded",function(){
     });
 });
 </script>
+<script src="../../assets/informes_individuales.js"></script>
 </body>
 </html>

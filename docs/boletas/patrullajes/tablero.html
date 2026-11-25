@@ -1101,6 +1101,7 @@
         <label>Guardarecursos:</label>
         <select id="f-radar-guarda" style="min-width:210px"><option value="">— Comparativo general —</option></select>
       </div>
+      <div id="ii-tablero" style="margin:12px 0"></div>
       <div class="cw h340"><canvas id="c-radar"></canvas></div>
     </div>
 
@@ -1175,6 +1176,7 @@
   </div>
 </footer>
 
+<script src="../../assets/informes_individuales.js"></script>
 <script>
 /* ─── PALETA UNIFICADA ─────────────────────────────────────── */
 const PAL = [
@@ -1403,9 +1405,9 @@ function parseCSV(text){
 /* ─── ENRIQUECIMIENTO ───────────────────────────────────────── */
 function enrich(data){
   const out=[];
-  for(const r of data){
+  for(const [i,r] of data.entries()){
     const gn=normGuarda(r["Guarda recursos responsable"]);if(gn===null)continue;
-    const rr={...r};
+    const rr={...r,__fila_csv:i+2};
     rr.__guarda=gn;rr.__dt=parseDate(r["Fecha de patrullaje"]);
     rr.__mes=rr.__dt?mKey(rr.__dt):"";rr.__dow=rr.__dt?dowMon(rr.__dt):null;
     rr.__hora=parseHour(r["Hora de Inicio del patrullaje"]);
@@ -1838,6 +1840,11 @@ function applyAll(){
       if(gd)gd.value="";if(gh)gh.value="";G12_DESDE=null;G12_HASTA=null;g12(applyF(getF()));
     });
     applyAll();
+    const radar=document.getElementById("f-radar-guarda"), general=document.getElementById("f-guarda");
+    const selectedII=()=>general.value||radar.value;
+    const refreshII=window.InformesIndividuales?.mount(document.getElementById("ii-tablero"),()=>applyF(getF()).filter(r=>r.__cg===selectedII()),()=>LABELS.guarda.get(selectedII())||selectedII());
+    ["f-radar-guarda","f-guarda","f-desde","f-hasta","f-municipio","f-ubic"].forEach(id=>document.getElementById(id)?.addEventListener("change",()=>refreshII?.()));
+    ["btn-aplicar","btn-limpiar"].forEach(id=>document.getElementById(id)?.addEventListener("click",()=>refreshII?.()));
   }catch(e){
     const el=document.getElementById("estado");
     if(el){el.textContent="Error al cargar datos: "+(e.message||e);el.className="estado-txt error";}
