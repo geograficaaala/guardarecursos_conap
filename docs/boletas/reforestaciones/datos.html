@@ -470,6 +470,7 @@
   </div>
 
   <div id="panel-analisis" class="tab-panel">
+<section style="margin:18px 0;padding:16px;border:1px solid #aab9ae;border-radius:10px;background:#fff;color:#173b2a"><h2 style="font-size:18px;margin:0 0 12px">Informes técnicos individuales por boleta · AC282</h2><label>Guardarecursos <select id="monitoreo-guarda"><option value="">Seleccione un guardarecursos</option></select></label><div id="informes-monitoreo" style="margin-top:12px">Cargando registros…</div></section>
     <p class="estado-txt" id="estado-analisis">Selecciona un guardarecursos para ver su perfil de monitoreo</p>
 
     <div class="guarda-selector">
@@ -1017,7 +1018,8 @@ function consolidarGuardas(regs){
   regs.forEach(r=>{const g=r.__guarda;if(!m.has(g))m.set(g,{g,total:0,area:0,municipios:new Set(),especies:new Set(),ultima:null,registros:[]});const o=m.get(g);o.total++;o.area+=Number(r.__area)||0;if(r.__municipio)o.municipios.add(r.__municipio);r.__especies.forEach(e=>o.especies.add(canonStr(e)));if(r.__dt&&(!o.ultima||r.__dt>o.ultima))o.ultima=r.__dt;o.registros.push(r);});
   return [...m.values()].map(o=>({...o,municipios:o.municipios.size,especies:o.especies.size})).sort((a,b)=>b.total-a.total||b.area-a.area);
 }
-function docWord(nombre,html){descargarBlob(nombre,"<html><head><meta charset='utf-8'>"+CSS_REPORTE+"</head><body>"+html+"</body></html>","application/msword;charset=utf-8");}
+function docWord(nombre,html){descargarBlob(nombre,"<html><head><meta charset='utf-8'>"+CSS_REPORTE+"</head><body>"+html+"<script src="../../assets/informes_individuales_monitoreo.js"></script>
+</body></html>","application/msword;charset=utf-8");}
 function docPDF(nombre,html){
   if(typeof html2pdf==="undefined"){alert("No se pudo cargar html2pdf.");return;}
   const d=document.createElement("div");d.className="report-source";d.innerHTML=CSS_REPORTE+html;document.body.appendChild(d);
@@ -1467,5 +1469,6 @@ async function cargar(){
 
 document.addEventListener("DOMContentLoaded",cargar);
 </script>
+<script src="../../assets/informes_individuales_monitoreo.js"></script>
 </body>
 </html>
